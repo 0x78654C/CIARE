@@ -30,6 +30,7 @@ namespace CIARE
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
             this.runCodePb = new System.Windows.Forms.PictureBox();
             this.outputRBT = new System.Windows.Forms.RichTextBox();
@@ -40,14 +41,14 @@ namespace CIARE
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveAsStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.LoadCStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.highlightCMB = new System.Windows.Forms.ComboBox();
             this.highlightLbl = new System.Windows.Forms.Label();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.LoadCStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
@@ -158,6 +159,23 @@ namespace CIARE
             this.saveAsStripMenuItem.Text = "Save As    ( CTRL+Shift+S )";
             this.saveAsStripMenuItem.Click += new System.EventHandler(this.saveAsStripMenuItem_Click);
             // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(210, 6);
+            // 
+            // LoadCStripMenuItem
+            // 
+            this.LoadCStripMenuItem.Name = "LoadCStripMenuItem";
+            this.LoadCStripMenuItem.Size = new System.Drawing.Size(213, 22);
+            this.LoadCStripMenuItem.Text = "Load C# Code Template";
+            this.LoadCStripMenuItem.Click += new System.EventHandler(this.LoadCStripMenuItem_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(210, 6);
+            // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.ForeColor = System.Drawing.Color.Red;
@@ -235,23 +253,6 @@ namespace CIARE
             this.highlightLbl.TabIndex = 8;
             this.highlightLbl.Text = "Highlighting:";
             // 
-            // toolStripSeparator1
-            // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(210, 6);
-            // 
-            // LoadCStripMenuItem
-            // 
-            this.LoadCStripMenuItem.Name = "LoadCStripMenuItem";
-            this.LoadCStripMenuItem.Size = new System.Drawing.Size(213, 22);
-            this.LoadCStripMenuItem.Text = "Load C# Code Template";
-            this.LoadCStripMenuItem.Click += new System.EventHandler(this.LoadCStripMenuItem_Click);
-            // 
-            // toolStripSeparator2
-            // 
-            this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(210, 6);
-            // 
             // label1
             // 
             this.label1.AutoSize = true;
@@ -286,6 +287,7 @@ namespace CIARE
             this.Controls.Add(this.runCodePb);
             this.Controls.Add(this.menuStrip1);
             this.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
