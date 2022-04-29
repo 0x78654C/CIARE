@@ -14,7 +14,7 @@ namespace CIARE
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            textEditorControl1.SetHighlighting("C#"); 
+            ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1, highlightCMB);
             Console.SetOut(new ControlWriter(outputRBT));
             try
             {
@@ -26,6 +26,29 @@ namespace CIARE
             catch { }
         }
 
+        /// <summary>
+        /// Read and apply highlight setting from registry.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="textEditor"></param>
+        /// <param name="comboBox"></param>
+        private void ReadEditorHighlight(string regKeyName, ICSharpCode.TextEditor.TextEditorControl textEditor, ComboBox comboBox)
+        {
+            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", "highlight");
+            if (regHighlight.Length > 0)
+            {
+                textEditor.SetHighlighting(regHighlight);
+                comboBox.Text = regHighlight;
+                return;
+            }
+            RegistryManagement.RegKey_CreateKey(regKeyName, "highlight", "Default");
+        }
+
+        /// <summary>
+        /// Button event for start compile and run code from editor.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
             outputRBT.Text = "Compile and Runing..";
@@ -198,6 +221,36 @@ namespace CIARE
             if (GlobalVariables.savedFile)
             {
                 this.Text = $"CIARE | {GlobalVariables.openedFilePath}";
+            }
+        }
+
+        /// <summary>
+        /// Change Highlight of text via combobox
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void highlightCMB_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (highlightCMB.Text.Length > 0)
+            {
+                textEditorControl1.SetHighlighting(highlightCMB.Text);
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlightCMB.Text);
+            }
+        }
+
+        /// <summary>
+        /// Load predefined C# code sample for run with Roslyn!
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void LoadCStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DialogResult dr = MessageBox.Show("Do you really want to load C# code template?", "CIARE", MessageBoxButtons.YesNo,
+    MessageBoxIcon.Information);
+
+            if (dr == DialogResult.Yes)
+            {
+                textEditorControl1.Text = GlobalVariables.roslynTemplate;
             }
         }
     }

@@ -30,7 +30,6 @@ namespace CIARE
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
             this.runCodePb = new System.Windows.Forms.PictureBox();
             this.outputRBT = new System.Windows.Forms.RichTextBox();
@@ -44,6 +43,13 @@ namespace CIARE
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.highlightCMB = new System.Windows.Forms.ComboBox();
+            this.highlightLbl = new System.Windows.Forms.Label();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.LoadCStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -64,17 +70,17 @@ namespace CIARE
             this.textEditorControl1.Name = "textEditorControl1";
             this.textEditorControl1.Size = new System.Drawing.Size(1120, 582);
             this.textEditorControl1.TabIndex = 0;
-            this.textEditorControl1.Text = resources.GetString("textEditorControl1.Text");
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
             // 
             // runCodePb
             // 
             this.runCodePb.Image = global::CIARE.Properties.Resources.runButton2;
-            this.runCodePb.Location = new System.Drawing.Point(53, 3);
+            this.runCodePb.Location = new System.Drawing.Point(260, 4);
             this.runCodePb.Name = "runCodePb";
             this.runCodePb.Size = new System.Drawing.Size(28, 21);
             this.runCodePb.TabIndex = 2;
             this.runCodePb.TabStop = false;
+            this.toolTip1.SetToolTip(this.runCodePb, "Run code");
             this.runCodePb.Click += new System.EventHandler(this.runCodePb_Click);
             // 
             // outputRBT
@@ -116,6 +122,9 @@ namespace CIARE
             this.openToolStripMenuItem,
             this.saveToolStripMenuItem,
             this.saveAsStripMenuItem,
+            this.toolStripSeparator1,
+            this.LoadCStripMenuItem,
+            this.toolStripSeparator2,
             this.exitToolStripMenuItem});
             this.fIleToolStripMenuItem.Name = "fIleToolStripMenuItem";
             this.fIleToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
@@ -189,12 +198,90 @@ namespace CIARE
             this.splitContainer1.SplitterDistance = 588;
             this.splitContainer1.TabIndex = 6;
             // 
+            // highlightCMB
+            // 
+            this.highlightCMB.FormattingEnabled = true;
+            this.highlightCMB.Items.AddRange(new object[] {
+            "Default",
+            "XML",
+            "HTML",
+            "C++.NET",
+            "BAT",
+            "Coco",
+            "Python",
+            "PHP",
+            "SQL",
+            "C#",
+            "Batch",
+            "Boo",
+            "VBNET",
+            "TeX",
+            "ASP/XHTML",
+            "JavaScript",
+            "Java"});
+            this.highlightCMB.Location = new System.Drawing.Point(141, 2);
+            this.highlightCMB.Name = "highlightCMB";
+            this.highlightCMB.Size = new System.Drawing.Size(80, 21);
+            this.highlightCMB.TabIndex = 7;
+            this.highlightCMB.Text = "Default";
+            this.highlightCMB.SelectedIndexChanged += new System.EventHandler(this.highlightCMB_SelectedIndexChanged);
+            // 
+            // highlightLbl
+            // 
+            this.highlightLbl.AutoSize = true;
+            this.highlightLbl.Location = new System.Drawing.Point(70, 5);
+            this.highlightLbl.Name = "highlightLbl";
+            this.highlightLbl.Size = new System.Drawing.Size(65, 13);
+            this.highlightLbl.TabIndex = 8;
+            this.highlightLbl.Text = "Highlighting:";
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(210, 6);
+            // 
+            // LoadCStripMenuItem
+            // 
+            this.LoadCStripMenuItem.Name = "LoadCStripMenuItem";
+            this.LoadCStripMenuItem.Size = new System.Drawing.Size(213, 22);
+            this.LoadCStripMenuItem.Text = "Load C# Code Template";
+            this.LoadCStripMenuItem.Click += new System.EventHandler(this.LoadCStripMenuItem_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(210, 6);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.Location = new System.Drawing.Point(48, 1);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(13, 18);
+            this.label1.TabIndex = 9;
+            this.label1.Text = "|";
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label2.Location = new System.Drawing.Point(235, 1);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(13, 18);
+            this.label2.TabIndex = 10;
+            this.label2.Text = "|";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
             this.ClientSize = new System.Drawing.Size(1129, 704);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.highlightLbl);
+            this.Controls.Add(this.highlightCMB);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.runCodePb);
             this.Controls.Add(this.menuStrip1);
@@ -232,6 +319,13 @@ namespace CIARE
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.ToolStripMenuItem saveAsStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
+        private System.Windows.Forms.ComboBox highlightCMB;
+        private System.Windows.Forms.Label highlightLbl;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+        private System.Windows.Forms.ToolStripMenuItem LoadCStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
     }
 }
 
