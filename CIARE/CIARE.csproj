@@ -133,6 +133,7 @@
     <Compile Include="Utils\ExtensionMethods.cs" />
     <Compile Include="Utils\FileManage.cs" />
     <Compile Include="Utils\GlobalVariables.cs" />
+    <Compile Include="Utils\RegistryManagement.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
