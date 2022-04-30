@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("CIARE")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Simple text editor using for runtime compilation and execution of C# code!  Link to project: https://github.com/0x78654C/CIARE . Contact: xcoding.dev@gmail.com")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("CIARE")]
-[assembly: AssemblyCopyright("Copyright ©  2022")]
+[assembly: AssemblyCopyright("Copyright (c) 2022 x_coding")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
