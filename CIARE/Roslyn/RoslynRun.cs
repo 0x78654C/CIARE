@@ -43,7 +43,8 @@ namespace CIARE.Roslyn
                             diagnostic.Severity == DiagnosticSeverity.Error);
                         foreach (Diagnostic diagnostic in failures)
                         {
-                            richTextBox.Text = $"Error: {diagnostic.Id}: {diagnostic.GetMessage()}";
+                            richTextBox.Clear();
+                            richTextBox.Text += $"Error: {diagnostic.Id} -> {diagnostic.GetMessage()}"+Environment.NewLine;
                         }
                     }
                     else
@@ -69,9 +70,9 @@ namespace CIARE.Roslyn
                 assembly = null;
                 type = null;
             }
-            catch (Exception e)
+            catch 
             {
-                richTextBox.Text = "Error: "+ e.ToString();
+                //TODO: null the internal errors or will in future add to log system.
             }
         }
 
