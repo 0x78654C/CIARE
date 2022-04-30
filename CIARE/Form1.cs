@@ -1,12 +1,17 @@
 ﻿using CIARE.Utils;
+using ICSharpCode.TextEditor;
+using ICSharpCode.TextEditor.Document;
 using System;
 using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace CIARE
 {
     public partial class Form1 : Form
     {
+        private string _versionName;
+        
         public Form1()
         {
             InitializeComponent();
@@ -14,6 +19,10 @@ namespace CIARE
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            _versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            _versionName = _versionName.Substring(0, _versionName.Length - 2);
+            this.Text = $"CIARE {_versionName}";
+            WaterMark.TextBoxWaterMark(searchBox, "Find text...");
             ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1, highlightCMB);
             Console.SetOut(new ControlWriter(outputRBT));
             try
@@ -21,7 +30,7 @@ namespace CIARE
                 var args = Environment.GetCommandLineArgs();
                 LoadParamFile(args[1], textEditorControl1);
                 GlobalVariables.openedFilePath = args[1];
-                this.Text = $"CIARE | {GlobalVariables.openedFilePath}";
+                this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
             }
             catch { }
         }
@@ -51,7 +60,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
-            outputRBT.Text = "Compile and Runing..";
+            outputRBT.Text = "Compile and Runing..\n";
             runCodePb.Image = Properties.Resources.runButton_gray;
             runCodePb.Enabled = false;
             Roslyn.RoslynRun.CompileAndRun(textEditorControl1.Text, "", outputRBT);
@@ -121,7 +130,7 @@ namespace CIARE
         private void textEditorControl1_TextChanged(object sender, EventArgs e)
         {
             if (GlobalVariables.openedFilePath.Length > 0)
-                this.Text = $"CIARE | *{GlobalVariables.openedFilePath}";
+                this.Text = $"CIARE {_versionName} | *{GlobalVariables.openedFilePath}";
         }
 
         /// <summary>
@@ -133,7 +142,7 @@ namespace CIARE
         {
             textEditorControl1.Clear();
             GlobalVariables.openedFilePath = string.Empty;
-            this.Text = $"CIARE";
+            this.Text = $"CIARE {_versionName}";
         }
 
         /// <summary>
@@ -162,6 +171,25 @@ namespace CIARE
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
+        internal void Find(TextEditorControl editor, string text)
+        {
+            try
+            {
+                var offset = editor.Text.ToLower().IndexOf(text);
+                if (offset > 0)
+                {
+                    var endOffset = offset + text.Length;
+                    editor.ActiveTextAreaControl.TextArea.Caret.Position = editor.ActiveTextAreaControl.TextArea.Document.OffsetToPosition(endOffset);
+                    editor.ActiveTextAreaControl.TextArea.SelectionManager.ClearSelection();
+                    var document = editor.ActiveTextAreaControl.TextArea.Document;
+                    var selection = new DefaultSelection(document, document.OffsetToPosition(offset), document.OffsetToPosition(endOffset));
+                    editor.ActiveTextAreaControl.TextArea.SelectionManager.SetSelection(selection);
+                }
+            }catch(Exception e)
+            {
+                outputRBT.Text = e.ToString();
+            }
+        }
 
         /// <summary>
         /// Open file and set title with path.
@@ -173,7 +201,7 @@ namespace CIARE
             {
                 textEditorControl1.Clear();
                 textEditorControl1.Text = openedData;
-                this.Text = $"CIARE | {GlobalVariables.openedFilePath}";
+                this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
             }
         }
 
@@ -184,7 +212,7 @@ namespace CIARE
         {
             textEditorControl1.Clear();
             GlobalVariables.openedFilePath = string.Empty;
-            this.Text = $"CIARE";
+            this.Text = $"CIARE {_versionName}";
         }
 
         /// <summary>
@@ -197,13 +225,13 @@ namespace CIARE
                 if (GlobalVariables.openedFilePath.Length > 0)
                 {
                     File.WriteAllText(GlobalVariables.openedFilePath, textEditorControl1.Text);
-                    this.Text = $"CIARE | {GlobalVariables.openedFilePath}";
+                    this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
                     return;
                 }
                 FileManage.SaveFile(textEditorControl1.Text);
                 if (GlobalVariables.savedFile)
                 {
-                    this.Text = $"CIARE | {GlobalVariables.openedFilePath}";
+                    this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
                 }
             }
             catch (Exception ex)
@@ -220,7 +248,7 @@ namespace CIARE
             FileManage.SaveFile(textEditorControl1.Text);
             if (GlobalVariables.savedFile)
             {
-                this.Text = $"CIARE | {GlobalVariables.openedFilePath}";
+                this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
             }
         }
 
@@ -251,6 +279,25 @@ namespace CIARE
             if (dr == DialogResult.Yes)
             {
                 textEditorControl1.Text = GlobalVariables.roslynTemplate;
+            }
+        }
+
+        /// <summary>
+        /// Open about window.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AboutBox aboutBox = new AboutBox();
+            aboutBox.ShowDialog();
+        }
+
+        private void findButton_Click(object sender, EventArgs e)
+        {
+            if (searchBox.Text.Length > 0)
+            {
+                Find(textEditorControl1, searchBox.Text);
             }
         }
     }
