@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/0x78654C/CIARE/blob/main/Media/ciare.png" width=200>
+  <img src="https://github.com/0x78654C/CIARE/blob/main/Media/ciare.png" width=150>
 </p>
 
 # CIARE
