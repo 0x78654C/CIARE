@@ -2,6 +2,7 @@
 using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Document;
 using System;
+using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
@@ -11,6 +12,7 @@ namespace CIARE
     public partial class Form1 : Form
     {
         private string _versionName;
+        private int _startPos = 0;
         
         public Form1()
         {
@@ -60,12 +62,16 @@ namespace CIARE
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
+            findButton.Enabled = false;
+            outputRBT.ForeColor = Color.Black;
+            outputRBT.Clear();
             outputRBT.Text = "Compile and Runing..\n";
             runCodePb.Image = Properties.Resources.runButton_gray;
             runCodePb.Enabled = false;
             Roslyn.RoslynRun.CompileAndRun(textEditorControl1.Text, "", outputRBT);
             runCodePb.Image = Properties.Resources.runButton2;
             runCodePb.Enabled = true;
+            findButton.Enabled = true;
             GC.Collect();
         }
 
@@ -171,23 +177,34 @@ namespace CIARE
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        internal void Find(TextEditorControl editor, string text)
+        /// <summary>
+        /// Search next engine for text in text editor.
+        /// </summary>
+        /// <param name="editor"></param>
+        /// <param name="text"></param>
+        private void Find(TextEditorControl editor, string text)
         {
             try
             {
-                var offset = editor.Text.ToLower().IndexOf(text);
+                int pos = _startPos;
+                int leng = editor.Text.Length;
+                string searchText= editor.Text.Substring(pos).ToLower();
+                if (!searchText.Contains(text))
+                    _startPos = 0;
+                var offset = searchText.IndexOf(text) + _startPos;
                 if (offset > 0)
                 {
                     var endOffset = offset + text.Length;
+                    _startPos = endOffset;
                     editor.ActiveTextAreaControl.TextArea.Caret.Position = editor.ActiveTextAreaControl.TextArea.Document.OffsetToPosition(endOffset);
                     editor.ActiveTextAreaControl.TextArea.SelectionManager.ClearSelection();
                     var document = editor.ActiveTextAreaControl.TextArea.Document;
                     var selection = new DefaultSelection(document, document.OffsetToPosition(offset), document.OffsetToPosition(endOffset));
                     editor.ActiveTextAreaControl.TextArea.SelectionManager.SetSelection(selection);
                 }
-            }catch(Exception e)
+            }catch
             {
-                outputRBT.Text = e.ToString();
+                _startPos=0;
             }
         }
 
@@ -236,7 +253,7 @@ namespace CIARE
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error");
+                MessageBox.Show(ex.Message, "Error",MessageBoxButtons.OK,MessageBoxIcon.Error);
             }
         }
 
@@ -293,12 +310,18 @@ namespace CIARE
             aboutBox.ShowDialog();
         }
 
+        /// <summary>
+        /// Find text in text editor button.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void findButton_Click(object sender, EventArgs e)
         {
             if (searchBox.Text.Length > 0)
-            {
                 Find(textEditorControl1, searchBox.Text);
-            }
+            else
+                MessageBox.Show("You need to provide a text to search!", "CIARE", MessageBoxButtons.OK,
+    MessageBoxIcon.Warning);
         }
     }
 }
