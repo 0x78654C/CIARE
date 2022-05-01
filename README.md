@@ -36,3 +36,5 @@ Usefull to run code on the fly and get instant result.
 # Sample pictures
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_menu.png?raw=true)
+
+![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_recursion.png?raw=true)
