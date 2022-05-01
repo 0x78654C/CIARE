@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -44,6 +45,7 @@ namespace CIARE.Roslyn
                         foreach (Diagnostic diagnostic in failures)
                         {
                             richTextBox.Clear();
+                            richTextBox.ForeColor = Color.Red;
                             richTextBox.Text += $"Error: {diagnostic.Id} -> {diagnostic.GetMessage()}"+Environment.NewLine;
                         }
                     }
@@ -99,7 +101,7 @@ namespace CIARE.Roslyn
             }
             catch (Exception e)
             {
-                MessageBox.Show("Error: "+e.Message);
+                MessageBox.Show(e.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
