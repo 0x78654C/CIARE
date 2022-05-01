@@ -13,6 +13,8 @@ namespace CIARE.Roslyn
 {
     public class RoslynRun
     {
+        /* Class for compile and run C# code using Roslyn */
+
         private static string _namesapce; 
         private static string _className;
         public static void CompileAndRun(string code, string param, RichTextBox richTextBox)
