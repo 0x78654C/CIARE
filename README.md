@@ -4,7 +4,7 @@
 
 # CIARE
 Simple text editor with C# runtime compiler and code execution using Roslyn.
-Usefull to run code on the fly and get instant result.
+Useful to run code on the fly and get instant result.
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_main.png?raw=true)
 
@@ -13,10 +13,10 @@ Usefull to run code on the fly and get instant result.
  - Open/Save current text.
  - Search for text in editor.
  - Load predefined C# code sample template.
- - Displayes current edited file (Using * on application title neer file path ).
+ - Display current edited file (Using * on application title near file path ).
  - Compile and run code on ram.
- - Hotkeys for metioned above features. 
- - Display ouput result and errors (ID and message).
+ - Hotkeys for mentioned above features. 
+ - Display output result and errors (ID and message).
  - Highlight code fore various of programing languages.
 
 ## Requirements:
