@@ -51,6 +51,7 @@ namespace CIARE.Roslyn
                     }
                     else
                     {
+                        richTextBox.Clear();
                         ms.Seek(0, SeekOrigin.Begin);
                         assembly = Assembly.Load(ms.ToArray());
                     }
@@ -58,7 +59,6 @@ namespace CIARE.Roslyn
                 }
                 Type type = assembly.GetType($"{_namesapce}.{_className}");
                 object obj = Activator.CreateInstance(type);
-                richTextBox.Clear();
                 type.InvokeMember("Main",
                     BindingFlags.Default | BindingFlags.InvokeMethod,
                     null,
