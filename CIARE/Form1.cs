@@ -189,9 +189,9 @@ namespace CIARE
                 int pos = _startPos;
                 int leng = editor.Text.Length;
                 string searchText= editor.Text.Substring(pos).ToLower();
-                if (!searchText.Contains(text))
+                if (!searchText.Contains(text.ToLower()))
                     _startPos = 0;
-                var offset = searchText.IndexOf(text) + _startPos;
+                var offset = searchText.IndexOf(text.ToLower()) + _startPos;
                 if (offset > 0)
                 {
                     var endOffset = offset + text.Length;
