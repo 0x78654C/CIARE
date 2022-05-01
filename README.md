@@ -3,4 +3,4 @@
 </p>
 
 # CIARE
-Simple text editor with C# runtime compiler and code execution
+Simple text editor with C# runtime compiler and code execution. More info will come...
