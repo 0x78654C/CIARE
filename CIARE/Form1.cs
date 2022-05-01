@@ -13,7 +13,7 @@ namespace CIARE
     {
         private string _versionName;
         private int _startPos = 0;
-        
+
         public Form1()
         {
             InitializeComponent();
@@ -61,6 +61,14 @@ namespace CIARE
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
+        {
+            RunCode();
+        }
+
+        /// <summary>
+        /// Compile and run C# code and controlers handle.
+        /// </summary>
+        private void RunCode()
         {
             findButton.Enabled = false;
             outputRBT.ForeColor = Color.Black;
@@ -173,6 +181,15 @@ namespace CIARE
                 case Keys.O | Keys.Control:
                     OpenFile();
                     return true;
+                case Keys.F | Keys.Control:
+                    Find(textEditorControl1, searchBox.Text);
+                    return true;
+                case Keys.R | Keys.Control:
+                    RunCode();
+                    return true;
+                case Keys.T | Keys.Control:
+                    LoadCSTemplate();
+                    return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
@@ -186,9 +203,16 @@ namespace CIARE
         {
             try
             {
+                if (string.IsNullOrEmpty(text))
+                {
+                    MessageBox.Show("You need to provide a text to search!", "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Warning);
+                    return;
+                }
+
                 int pos = _startPos;
                 int leng = editor.Text.Length;
-                string searchText= editor.Text.Substring(pos).ToLower();
+                string searchText = editor.Text.Substring(pos).ToLower();
                 if (!searchText.Contains(text.ToLower()))
                     _startPos = 0;
                 var offset = searchText.IndexOf(text.ToLower()) + _startPos;
@@ -202,9 +226,10 @@ namespace CIARE
                     var selection = new DefaultSelection(document, document.OffsetToPosition(offset), document.OffsetToPosition(endOffset));
                     editor.ActiveTextAreaControl.TextArea.SelectionManager.SetSelection(selection);
                 }
-            }catch
+            }
+            catch
             {
-                _startPos=0;
+                _startPos = 0;
             }
         }
 
@@ -253,7 +278,7 @@ namespace CIARE
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error",MessageBoxButtons.OK,MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -290,8 +315,16 @@ namespace CIARE
         /// <param name="e"></param>
         private void LoadCStripMenuItem_Click(object sender, EventArgs e)
         {
+            LoadCSTemplate();
+        }
+
+        /// <summary>
+        /// Load C# code sample method.
+        /// </summary>
+        private void LoadCSTemplate()
+        {
             DialogResult dr = MessageBox.Show("Do you really want to load C# code template?", "CIARE", MessageBoxButtons.YesNo,
-    MessageBoxIcon.Information);
+MessageBoxIcon.Information);
 
             if (dr == DialogResult.Yes)
             {
@@ -317,11 +350,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void findButton_Click(object sender, EventArgs e)
         {
-            if (searchBox.Text.Length > 0)
-                Find(textEditorControl1, searchBox.Text);
-            else
-                MessageBox.Show("You need to provide a text to search!", "CIARE", MessageBoxButtons.OK,
-    MessageBoxIcon.Warning);
+            Find(textEditorControl1, searchBox.Text);
         }
     }
 }
