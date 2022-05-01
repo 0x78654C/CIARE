@@ -74,7 +74,7 @@ namespace CIARE
             this.textEditorControl1.Highlighting = null;
             this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
             this.textEditorControl1.Name = "textEditorControl1";
-            this.textEditorControl1.Size = new System.Drawing.Size(1120, 582);
+            this.textEditorControl1.Size = new System.Drawing.Size(1120, 588);
             this.textEditorControl1.TabIndex = 0;
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
             // 
@@ -85,13 +85,13 @@ namespace CIARE
             | System.Windows.Forms.AnchorStyles.Right)));
             this.outputRBT.BackColor = System.Drawing.SystemColors.Window;
             this.outputRBT.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.outputRBT.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.outputRBT.Font = new System.Drawing.Font("Bahnschrift", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.outputRBT.ForeColor = System.Drawing.SystemColors.MenuText;
             this.outputRBT.Location = new System.Drawing.Point(6, 16);
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1105, 63);
+            this.outputRBT.Size = new System.Drawing.Size(1105, 62);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             // 
@@ -107,7 +107,7 @@ namespace CIARE
             this.runCodePb.Size = new System.Drawing.Size(28, 21);
             this.runCodePb.TabIndex = 2;
             this.runCodePb.TabStop = false;
-            this.toolTip1.SetToolTip(this.runCodePb, "Run code");
+            this.toolTip1.SetToolTip(this.runCodePb, "Run code (CTRL + R)");
             this.runCodePb.Click += new System.EventHandler(this.runCodePb_Click);
             // 
             // menuStrip1
@@ -140,53 +140,53 @@ namespace CIARE
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(213, 22);
-            this.toolStripMenuItem1.Text = "New     ( CTRL + N )";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(273, 22);
+            this.toolStripMenuItem1.Text = "New         ( CTRL + N )";
             this.toolStripMenuItem1.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
             // 
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(213, 22);
-            this.openToolStripMenuItem.Text = "Open    ( CTRL + O )";
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(273, 22);
+            this.openToolStripMenuItem.Text = "Open       ( CTRL + O )";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(213, 22);
-            this.saveToolStripMenuItem.Text = "Save   ( CTRL + S ) ";
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(273, 22);
+            this.saveToolStripMenuItem.Text = "Save         ( CTRL + S ) ";
             this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
             // 
             // saveAsStripMenuItem
             // 
             this.saveAsStripMenuItem.Name = "saveAsStripMenuItem";
-            this.saveAsStripMenuItem.Size = new System.Drawing.Size(213, 22);
+            this.saveAsStripMenuItem.Size = new System.Drawing.Size(273, 22);
             this.saveAsStripMenuItem.Text = "Save As    ( CTRL+Shift+S )";
             this.saveAsStripMenuItem.Click += new System.EventHandler(this.saveAsStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(210, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(270, 6);
             // 
             // LoadCStripMenuItem
             // 
             this.LoadCStripMenuItem.Name = "LoadCStripMenuItem";
-            this.LoadCStripMenuItem.Size = new System.Drawing.Size(213, 22);
-            this.LoadCStripMenuItem.Text = "Load C# Code Template";
+            this.LoadCStripMenuItem.Size = new System.Drawing.Size(273, 22);
+            this.LoadCStripMenuItem.Text = "Load C# Code Template    ( CTRL + T )";
             this.LoadCStripMenuItem.Click += new System.EventHandler(this.LoadCStripMenuItem_Click);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(210, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(270, 6);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.ForeColor = System.Drawing.Color.Red;
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(213, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(273, 22);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -214,7 +214,7 @@ namespace CIARE
             this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBox1.Location = new System.Drawing.Point(6, 3);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(1117, 85);
+            this.groupBox1.Size = new System.Drawing.Size(1117, 84);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -233,8 +233,8 @@ namespace CIARE
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.groupBox1);
-            this.splitContainer1.Size = new System.Drawing.Size(1129, 680);
-            this.splitContainer1.SplitterDistance = 588;
+            this.splitContainer1.Size = new System.Drawing.Size(1129, 688);
+            this.splitContainer1.SplitterDistance = 594;
             this.splitContainer1.TabIndex = 6;
             // 
             // highlightCMB
@@ -313,11 +313,11 @@ namespace CIARE
             // 
             // findButton
             // 
-            this.findButton.Location = new System.Drawing.Point(491, 1);
+            this.findButton.Location = new System.Drawing.Point(491, 0);
             this.findButton.Name = "findButton";
-            this.findButton.Size = new System.Drawing.Size(75, 23);
+            this.findButton.Size = new System.Drawing.Size(97, 23);
             this.findButton.TabIndex = 13;
-            this.findButton.Text = "Find";
+            this.findButton.Text = "Find ( CTRL + F )";
             this.findButton.UseVisualStyleBackColor = true;
             this.findButton.Click += new System.EventHandler(this.findButton_Click);
             // 
@@ -326,7 +326,7 @@ namespace CIARE
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
-            this.ClientSize = new System.Drawing.Size(1129, 704);
+            this.ClientSize = new System.Drawing.Size(1129, 712);
             this.Controls.Add(this.findButton);
             this.Controls.Add(this.searchBox);
             this.Controls.Add(this.label3);
