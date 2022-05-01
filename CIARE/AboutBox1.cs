@@ -11,7 +11,7 @@ namespace CIARE
             InitializeComponent();
             this.Text = String.Format("About {0}", AssemblyTitle);
             this.labelProductName.Text = AssemblyProduct;
-            string version = AssemblyVersion.Substring(0, AssemblyVersion.Length - 2);
+            string version =AssemblyVersion.Substring(0, AssemblyVersion.Length - 2);
             this.labelVersion.Text = String.Format("Version {0}", version);
             this.labelCopyright.Text = AssemblyCopyright;
             this.labelCompanyName.Text = AssemblyCompany;
