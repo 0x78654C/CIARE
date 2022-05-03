@@ -15,13 +15,10 @@ namespace CIARE.Roslyn
     {
         /* Class for compile and run C# code using Roslyn */
 
-        private static string _namesapce; 
-        private static string _className;
         public static void CompileAndRun(string code, string param, RichTextBox richTextBox)
         {
             try
             {
-                ParseCode(code);
                 Assembly assembly = null;
                 SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
                 string assemblyName = Path.GetRandomFileName();
@@ -34,7 +31,7 @@ namespace CIARE.Roslyn
                     assemblyName,
                     syntaxTrees: new[] { syntaxTree },
                     references: references,
-                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                    options: new CSharpCompilationOptions(OutputKind.ConsoleApplication));
 
                 using (var ms = new MemoryStream())
                 {
@@ -59,51 +56,12 @@ namespace CIARE.Roslyn
                     }
                     ms.Close();
                 }
-                Type type = assembly.GetType($"{_namesapce}.{_className}");
-                object obj = Activator.CreateInstance(type);
-                type.InvokeMember("Main",
-                    BindingFlags.Default | BindingFlags.InvokeMethod,
-                    null,
-                    obj,
-                    new object[] { param });
-                _className = "";
-                _namesapce = "";
-                obj = null;
-                references = null;
-                compilation = null;
-                assembly = null;
-                type = null;
+                MethodInfo myMethod = assembly.EntryPoint;
+                myMethod.Invoke(null, new object[] { new string[0]});
             }
-            catch 
+            catch
             {
-                //TODO: null the internal errors or will in future add to log system.
-            }
-        }
-
-        private static void ParseCode(string code)
-        {
-            try
-            {
-                string line;
-                using (var reader = new StringReader(code))
-                {
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        if (line.ContainsText("namespace"))
-                        {
-                            _namesapce = line.Split(' ').ParameterAfter("namespace");
-                        }
-
-                        if (line.ContainsText("class"))
-                        {
-                            _className = line.Split(' ').ParameterAfter("class");
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                //TODO: maybe log it?
             }
         }
     }
