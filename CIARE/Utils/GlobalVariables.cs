@@ -16,9 +16,9 @@ using System.Windows.Forms;
 
 namespace Test_Code
 {
-  public class Test
+  class Test
   {	
-     public void Main(string arg)
+     static void Main(string[] arg)
      {
         //Do work here!
      }
