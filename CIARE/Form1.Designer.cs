@@ -208,7 +208,7 @@ namespace CIARE
             // 
             this.compileToexeCtrlShiftBToolStripMenuItem.Name = "compileToexeCtrlShiftBToolStripMenuItem";
             this.compileToexeCtrlShiftBToolStripMenuItem.Size = new System.Drawing.Size(251, 22);
-            this.compileToexeCtrlShiftBToolStripMenuItem.Text = "Compile to EXE ( Ctrlt + B )";
+            this.compileToexeCtrlShiftBToolStripMenuItem.Text = "Compile to EXE ( Ctrl + B )";
             this.compileToexeCtrlShiftBToolStripMenuItem.Click += new System.EventHandler(this.compileToexeCtrlShiftBToolStripMenuItem_Click);
             // 
             // compileToDLLCtrlSfitBToolStripMenuItem
