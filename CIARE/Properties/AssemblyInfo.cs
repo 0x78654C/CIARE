@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("CIARE")]
-[assembly: AssemblyDescription("Simple text editor using for runtime compilation and execution of C# code!  Link to project: https://github.com/0x78654C/CIARE . Contact: xcoding.dev@gmail.com")]
+[assembly: AssemblyDescription("Simple text editor using for runtime compilation and execution of C# code or just compile to binary file (.exe or .dll)!  Link to project: https://github.com/0x78654C/CIARE . Contact: xcoding.dev@gmail.com")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("CIARE")]
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.1.0")]
-[assembly: AssemblyFileVersion("1.0.1.0")]
+[assembly: AssemblyVersion("1.0.2.0")]
+[assembly: AssemblyFileVersion("1.0.2.0")]
