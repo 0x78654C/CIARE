@@ -14,7 +14,9 @@ Useful to run code on the fly and get instant result.
  - Search for text in editor.
  - Load predefined C# code sample template.
  - Display current edited file (Using * on application title near file path ).
- - Compile and run code on ram.
+ - Compile and run code on ram using Roslyn.
+ - Compile code to binary files(.exe or .dll).
+ - Show runtime(ms) for code compile and exectuion or compile only.
  - Hotkeys for mentioned above features. 
  - Display output result and errors (ID and message).
  - Highlight code fore various of programing languages.
