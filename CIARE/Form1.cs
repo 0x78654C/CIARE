@@ -165,6 +165,7 @@ namespace CIARE
         /// <param name="msg"></param>
         /// <param name="keyData"></param>
         /// <returns></returns>
+        [Obsolete]
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             switch (keyData)
@@ -189,6 +190,12 @@ namespace CIARE
                     return true;
                 case Keys.T | Keys.Control:
                     LoadCSTemplate();
+                    return true;
+                case Keys.B | Keys.Control:
+                      CompileBinaryExe();
+                    return true;
+                case Keys.B | Keys.Control | Keys.Shift:
+                    CompileBinaryDll();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -325,9 +332,10 @@ MessageBoxIcon.Warning);
         {
             DialogResult dr = MessageBox.Show("Do you really want to load C# code template?", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Information);
-
             if (dr == DialogResult.Yes)
             {
+                GlobalVariables.openedFilePath = string.Empty;
+                this.Text = $"CIARE {_versionName}";
                 textEditorControl1.Text = GlobalVariables.roslynTemplate;
             }
         }
@@ -351,6 +359,52 @@ MessageBoxIcon.Information);
         private void findButton_Click(object sender, EventArgs e)
         {
             Find(textEditorControl1, searchBox.Text);
+        }
+
+        /// <summary>
+        /// Compile code to binary exe file.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        [Obsolete]
+        private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            CompileBinaryExe();
+        }
+
+        /// <summary>
+        /// Compile code to EXE binary file method.
+        /// </summary>
+        [Obsolete]
+        private void CompileBinaryExe()
+        {
+            GlobalVariables.exeName = true;
+            BinaryName binaryName = new BinaryName();
+            binaryName.ShowDialog();
+            Roslyn.RoslynRun.BinaryCompile(textEditorControl1.Text, true, GlobalVariables.binaryName, outputRBT);
+        }
+
+        /// <summary>
+        /// Compile code to DLL binary file method.
+        /// </summary>
+        [Obsolete]
+        private void CompileBinaryDll()
+        {
+            GlobalVariables.exeName = false;
+            BinaryName binaryName = new BinaryName();
+            binaryName.ShowDialog();
+            Roslyn.RoslynRun.BinaryCompile(textEditorControl1.Text, false, GlobalVariables.binaryName, outputRBT);
+        }
+
+        /// <summary>
+        /// Compile code to DLL binary file.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        [Obsolete]
+        private void compileToDLLCtrlSfitBToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            CompileBinaryDll();
         }
     }
 }
