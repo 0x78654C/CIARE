@@ -6,6 +6,7 @@
         public static string openedFilePath = string.Empty;
         public static bool savedFile = false;
         public static bool exeName = false;
+        public static bool checkFormOpen = false;
         public static string binaryName = string.Empty; 
         public static readonly string registryPath = "SOFTWARE\\CIARE";
         public static readonly string roslynTemplate = @"/*
