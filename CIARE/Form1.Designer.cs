@@ -75,10 +75,9 @@ namespace CIARE
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.textEditorControl1.Highlighting = null;
             this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
             this.textEditorControl1.Name = "textEditorControl1";
-            this.textEditorControl1.Size = new System.Drawing.Size(1120, 588);
+            this.textEditorControl1.Size = new System.Drawing.Size(1200, 589);
             this.textEditorControl1.TabIndex = 0;
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
             // 
@@ -89,13 +88,13 @@ namespace CIARE
             | System.Windows.Forms.AnchorStyles.Right)));
             this.outputRBT.BackColor = System.Drawing.SystemColors.Window;
             this.outputRBT.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.outputRBT.Font = new System.Drawing.Font("Bahnschrift", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.outputRBT.Font = new System.Drawing.Font("Bahnschrift", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.outputRBT.ForeColor = System.Drawing.SystemColors.MenuText;
             this.outputRBT.Location = new System.Drawing.Point(6, 16);
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1105, 62);
+            this.outputRBT.Size = new System.Drawing.Size(1185, 96);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             // 
@@ -123,7 +122,7 @@ namespace CIARE
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1129, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(1209, 24);
             this.menuStrip1.TabIndex = 4;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -242,7 +241,7 @@ namespace CIARE
             this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBox1.Location = new System.Drawing.Point(6, 3);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(1117, 84);
+            this.groupBox1.Size = new System.Drawing.Size(1197, 118);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -261,8 +260,8 @@ namespace CIARE
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.groupBox1);
-            this.splitContainer1.Size = new System.Drawing.Size(1129, 688);
-            this.splitContainer1.SplitterDistance = 594;
+            this.splitContainer1.Size = new System.Drawing.Size(1209, 723);
+            this.splitContainer1.SplitterDistance = 595;
             this.splitContainer1.TabIndex = 6;
             // 
             // highlightCMB
@@ -286,7 +285,7 @@ namespace CIARE
             "ASP/XHTML",
             "JavaScript",
             "Java"});
-            this.highlightCMB.Location = new System.Drawing.Point(242, 2);
+            this.highlightCMB.Location = new System.Drawing.Point(238, 2);
             this.highlightCMB.Name = "highlightCMB";
             this.highlightCMB.Size = new System.Drawing.Size(80, 21);
             this.highlightCMB.TabIndex = 7;
@@ -296,7 +295,7 @@ namespace CIARE
             // highlightLbl
             // 
             this.highlightLbl.AutoSize = true;
-            this.highlightLbl.Location = new System.Drawing.Point(171, 5);
+            this.highlightLbl.Location = new System.Drawing.Point(167, 5);
             this.highlightLbl.Name = "highlightLbl";
             this.highlightLbl.Size = new System.Drawing.Size(65, 13);
             this.highlightLbl.TabIndex = 8;
@@ -338,6 +337,7 @@ namespace CIARE
             this.searchBox.Name = "searchBox";
             this.searchBox.Size = new System.Drawing.Size(114, 20);
             this.searchBox.TabIndex = 12;
+            this.searchBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // findButton
             // 
@@ -354,7 +354,7 @@ namespace CIARE
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
-            this.ClientSize = new System.Drawing.Size(1129, 712);
+            this.ClientSize = new System.Drawing.Size(1209, 747);
             this.Controls.Add(this.findButton);
             this.Controls.Add(this.searchBox);
             this.Controls.Add(this.label3);
