@@ -13,7 +13,7 @@ namespace CIARE
     {
         private string _versionName;
         private int _startPos = 0;
-
+        [Obsolete]
         public Form1()
         {
             InitializeComponent();
@@ -192,7 +192,7 @@ namespace CIARE
                     LoadCSTemplate();
                     return true;
                 case Keys.B | Keys.Control:
-                      CompileBinaryExe();
+                    CompileBinaryExe();
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
                     CompileBinaryDll();
@@ -380,7 +380,8 @@ MessageBoxIcon.Information);
         {
             GlobalVariables.exeName = true;
             BinaryName binaryName = new BinaryName();
-            binaryName.ShowDialog();
+            if (!GlobalVariables.checkFormOpen)
+                binaryName.ShowDialog();
             Roslyn.RoslynRun.BinaryCompile(textEditorControl1.Text, true, GlobalVariables.binaryName, outputRBT);
         }
 
@@ -392,7 +393,8 @@ MessageBoxIcon.Information);
         {
             GlobalVariables.exeName = false;
             BinaryName binaryName = new BinaryName();
-            binaryName.ShowDialog();
+            if (!GlobalVariables.checkFormOpen)
+                binaryName.ShowDialog();
             Roslyn.RoslynRun.BinaryCompile(textEditorControl1.Text, false, GlobalVariables.binaryName, outputRBT);
         }
 
