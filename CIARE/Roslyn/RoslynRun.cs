@@ -98,20 +98,21 @@ namespace CIARE.Roslyn
         [Obsolete]
         public static void BinaryCompile(string code, bool exeFile, string outPut, RichTextBox richTextBox)
         {
-            richTextBox.ForeColor = Color.Black;
             string pathOutput = Application.StartupPath + "\\binary\\";
+            richTextBox.Clear();
             if (string.IsNullOrEmpty(code))
             {
                 richTextBox.ForeColor = Color.Red;
                 richTextBox.Text = "ERROR: There is no code in the editor to compile!";
                 return;
             }
-            if (string.IsNullOrEmpty(outPut))
-            {
-                richTextBox.ForeColor = Color.Red;
-                richTextBox.Text = "ERROR: You need to provide a name for the binary file!";
+            if (string.IsNullOrEmpty(Utils.GlobalVariables.binaryName))
                 return;
-            }
+
+            if (string.IsNullOrEmpty(outPut))
+                return;
+            
+            richTextBox.ForeColor = Color.Black;
             s_timeSpan = new TimeSpan();
             s_stopWatch = new Stopwatch();
             s_stopWatch.Start();
@@ -146,11 +147,12 @@ namespace CIARE.Roslyn
             else
             {
                 //Successful Compile
-                richTextBox.Text = $"Success!\n Binary saved in: {pathOutput + outPut}";
+                richTextBox.Text = $"Success!\nBinary saved in: {pathOutput + outPut}";
                 s_stopWatch.Stop();
                 s_timeSpan = s_stopWatch.Elapsed;
                 richTextBox.Text += $"\n\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
             }
+            Utils.GlobalVariables.binaryName = string.Empty;
         }
     }
 }
