@@ -9,7 +9,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using System.CodeDom.Compiler;
-using Microsoft.CSharp;
 using System.Diagnostics;
 
 namespace CIARE.Roslyn
@@ -19,6 +18,7 @@ namespace CIARE.Roslyn
         /* Class for compile and run C# code using Roslyn */
         private static Stopwatch s_stopWatch;
         private static TimeSpan s_timeSpan;
+        
         /// <summary>
         /// Compile and run C# using Roslyn.
         /// </summary>
@@ -95,11 +95,18 @@ namespace CIARE.Roslyn
         /// <param name="exeFile"></param>
         /// <param name="outPut"></param>
         /// <param name="richTextBox"></param>
-        [Obsolete]
         public static void BinaryCompile(string code, bool exeFile, string outPut, RichTextBox richTextBox)
         {
+            string roslynDir = Application.StartupPath+"\\bin\\Roslyn\\";
             string pathOutput = Application.StartupPath + "\\binary\\";
+            string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
             richTextBox.Clear();
+            if (!Directory.Exists(roslynDir))
+            {
+                richTextBox.ForeColor = Color.Red;
+                richTextBox.Text = $"ERROR: Directory does not exist -> {roslynDir}";
+                return;
+            }
             if (string.IsNullOrEmpty(code))
             {
                 richTextBox.ForeColor = Color.Red;
@@ -122,17 +129,16 @@ namespace CIARE.Roslyn
                 richTextBox.Text = "Compile EXE binary file ...";
             else
                 richTextBox.Text = "Compile DLL binary file ...";
-            CSharpCodeProvider codeProvider = new CSharpCodeProvider();
-            ICodeCompiler icc = codeProvider.CreateCompiler();
             string Output = pathOutput + outPut;
-            richTextBox.Clear();
-            CompilerParameters parameters = new CompilerParameters();
-            //Make sure we generate an EXE, not a DLL
-            parameters.GenerateExecutable = exeFile;
-            parameters.OutputAssembly = Output;
-            parameters.ReferencedAssemblies.Clear();
-            parameters.ReferencedAssemblies.AddRange(Assembly.GetExecutingAssembly().GetReferencedAssemblies().Select(a => a.Name + ".dll").ToArray());
-            CompilerResults results = icc.CompileAssemblyFromSource(parameters, code);
+            CodeDomProvider provider = new Microsoft.CodeDom.Providers.DotNetCompilerPlatform.CSharpCodeProvider();
+            CompilerParameters cp = new CompilerParameters();
+            cp.ReferencedAssemblies.Clear();
+            cp.ReferencedAssemblies.AddRange(Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
+        .Where(t => ManageCheck.IsManaged(t)).ToArray());
+            cp.GenerateExecutable = exeFile;
+            cp.GenerateInMemory = false;
+            cp.OutputAssembly = Output;
+            CompilerResults results = provider.CompileAssemblyFromSource(cp, code);
             if (results.Errors.Count > 0)
             {
                 richTextBox.ForeColor = Color.Red;
