@@ -75,6 +75,7 @@ namespace CIARE
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textEditorControl1.Highlighting = null;
             this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
             this.textEditorControl1.Name = "textEditorControl1";
             this.textEditorControl1.Size = new System.Drawing.Size(1200, 589);
@@ -371,6 +372,7 @@ namespace CIARE
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "CIARE";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).EndInit();
             this.menuStrip1.ResumeLayout(false);

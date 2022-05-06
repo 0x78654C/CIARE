@@ -408,5 +408,38 @@ MessageBoxIcon.Information);
         {
             CompileBinaryDll();
         }
+
+        /// <summary>
+        /// Run the method for unsaved data check on form closing.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            ManageUnsavedData(textEditorControl1);
+        }
+
+        /// <summary>
+        /// Handle unsaved data from editor on from closing event.
+        /// </summary>
+        /// <param name="textEditorControl"></param>
+        private void ManageUnsavedData(TextEditorControl textEditorControl)
+        {
+            DialogResult dr = DialogResult.No;
+            if (this.Text.Contains("| *"))
+            {
+                dr = MessageBox.Show("There is unsaved data in editor. Do you want to save it?", "CIARE", MessageBoxButtons.YesNo,
+MessageBoxIcon.Warning);
+            }
+            else if (!this.Text.Contains("|"))
+            {
+                if (!string.IsNullOrEmpty(textEditorControl.Text))
+                    dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNo,
+    MessageBoxIcon.Warning);
+            }
+
+             if (dr == DialogResult.Yes)
+                SaveToFile();
+        }
     }
 }
