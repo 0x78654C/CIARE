@@ -30,6 +30,11 @@ Useful to run code on the fly and get instant result.
  Install-Package Microsoft.CodeAnalysis.CSharp -pre
  ```
 
+ For Roslyn C# compiler to binary use NuGet command in Commands project:
+ ```
+ Install-Package Microsoft.CodeDom.Providers.DotNetCompilerPlatform -Version 4.1.0-preview1
+ ```
+
  As code highlighter I use ICSharpCode.TextEditor.Extended (https://github.com/megakraken/ICSharpCode.TextEditor).
  For ICSharpCode.TextEditor.Extended use NuGet command in Commands project:
  ```
