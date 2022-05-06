@@ -13,7 +13,6 @@ namespace CIARE
     {
         private string _versionName;
         private int _startPos = 0;
-        [Obsolete]
         public Form1()
         {
             InitializeComponent();
@@ -165,7 +164,6 @@ namespace CIARE
         /// <param name="msg"></param>
         /// <param name="keyData"></param>
         /// <returns></returns>
-        [Obsolete]
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             switch (keyData)
@@ -366,7 +364,6 @@ MessageBoxIcon.Information);
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        [Obsolete]
         private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
         {
             CompileBinaryExe();
@@ -375,7 +372,6 @@ MessageBoxIcon.Information);
         /// <summary>
         /// Compile code to EXE binary file method.
         /// </summary>
-        [Obsolete]
         private void CompileBinaryExe()
         {
             GlobalVariables.exeName = true;
@@ -383,12 +379,12 @@ MessageBoxIcon.Information);
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
             Roslyn.RoslynRun.BinaryCompile(textEditorControl1.Text, true, GlobalVariables.binaryName, outputRBT);
+            GC.Collect();
         }
 
         /// <summary>
         /// Compile code to DLL binary file method.
         /// </summary>
-        [Obsolete]
         private void CompileBinaryDll()
         {
             GlobalVariables.exeName = false;
@@ -396,6 +392,7 @@ MessageBoxIcon.Information);
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
             Roslyn.RoslynRun.BinaryCompile(textEditorControl1.Text, false, GlobalVariables.binaryName, outputRBT);
+            GC.Collect();
         }
 
         /// <summary>
@@ -403,7 +400,6 @@ MessageBoxIcon.Information);
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        [Obsolete]
         private void compileToDLLCtrlSfitBToolStripMenuItem_Click(object sender, EventArgs e)
         {
             CompileBinaryDll();
