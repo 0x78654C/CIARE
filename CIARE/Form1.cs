@@ -424,7 +424,7 @@ MessageBoxIcon.Information);
             DialogResult dr = DialogResult.No;
             if (this.Text.Contains("| *"))
             {
-                dr = MessageBox.Show("There is unsaved data in editor. Do you want to save it?", "CIARE", MessageBoxButtons.YesNo,
+                dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Warning);
             }
             else if (!this.Text.Contains("|"))
