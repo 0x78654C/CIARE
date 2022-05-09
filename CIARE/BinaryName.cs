@@ -43,6 +43,7 @@ namespace CIARE
                 {
                     MessageBox.Show("File name needs to end with '.dll' extension!", "CIARE", MessageBoxButtons.OK,
  MessageBoxIcon.Warning);
+                    GlobalVariables.exeName = false;
                     return;
                 }
                 GlobalVariables.binaryName = binaryNameTxt.Text;
@@ -54,7 +55,6 @@ namespace CIARE
                 MessageBox.Show("You need to provide a name for the binary file!", "CIARE", MessageBoxButtons.OK,
  MessageBoxIcon.Warning);
             }
-            GlobalVariables.exeName = false;
         }
 
         /// <summary>
