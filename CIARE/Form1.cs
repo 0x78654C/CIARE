@@ -13,6 +13,7 @@ namespace CIARE
     {
         private string _versionName;
         private int _startPos = 0;
+        private static long s_openedFileLength = 0;
         public Form1()
         {
             InitializeComponent();
@@ -32,6 +33,8 @@ namespace CIARE
                 LoadParamFile(args[1], textEditorControl1);
                 GlobalVariables.openedFilePath = args[1];
                 this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
+                FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                s_openedFileLength = fileInfo.Length;
             }
             catch { }
         }
@@ -248,6 +251,8 @@ MessageBoxIcon.Warning);
             {
                 textEditorControl1.Clear();
                 textEditorControl1.Text = openedData;
+                FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                s_openedFileLength = fileInfo.Length;
                 this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
             }
         }
@@ -272,12 +277,16 @@ MessageBoxIcon.Warning);
                 if (GlobalVariables.openedFilePath.Length > 0)
                 {
                     File.WriteAllText(GlobalVariables.openedFilePath, textEditorControl1.Text);
+                    FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                    s_openedFileLength = fileInfo.Length;
                     this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
                     return;
                 }
                 FileManage.SaveFile(textEditorControl1.Text);
                 if (GlobalVariables.savedFile)
                 {
+                    FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                    s_openedFileLength = fileInfo.Length;
                     this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
                 }
             }
@@ -293,6 +302,8 @@ MessageBoxIcon.Warning);
         private void SaveAs()
         {
             FileManage.SaveFile(textEditorControl1.Text);
+            FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+            s_openedFileLength = fileInfo.Length;
             if (GlobalVariables.savedFile)
             {
                 this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
@@ -434,8 +445,50 @@ MessageBoxIcon.Warning);
     MessageBoxIcon.Warning);
             }
 
-             if (dr == DialogResult.Yes)
+            if (dr == DialogResult.Yes)
                 SaveToFile();
+        }
+
+
+        /// <summary>
+        /// Check edited opened files by external application when CIARE is on Top Most event handler.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Form1_Activated(object sender, EventArgs e)
+        {
+            CheckFileExternalEdited(GlobalVariables.openedFilePath, s_openedFileLength, textEditorControl1);
+        }
+
+        /// <summary>
+        /// Check if opened files is edited by an external application and ask if want to reaload the changed file.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="fileSize"></param>
+        /// <param name="textEditorControl"></param>
+        private void CheckFileExternalEdited(string filePath, long fileSize, TextEditorControl textEditorControl)
+        {
+            if (!File.Exists(filePath))
+                return;
+
+            FileInfo fileInfo = new FileInfo(filePath);
+            if (fileSize != fileInfo.Length)
+            {
+                DialogResult dr = MessageBox.Show("The opened file content was changed.\nDo you want to reload it?", "CIARE", MessageBoxButtons.YesNo,
+    MessageBoxIcon.Warning);
+                if (dr == DialogResult.Yes)
+                {
+                    using (var reader = new StreamReader(filePath))
+                    {
+                        textEditorControl.Clear();
+                        textEditorControl.Text = reader.ReadToEnd();
+                        this.Text = $"CIARE {_versionName} | {filePath}";
+                        s_openedFileLength = fileInfo.Length;
+                    }
+                    return;
+                }
+                s_openedFileLength = fileInfo.Length;
+            }
         }
     }
 }
