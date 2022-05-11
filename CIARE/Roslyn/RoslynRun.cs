@@ -18,7 +18,7 @@ namespace CIARE.Roslyn
         /* Class for compile and run C# code using Roslyn */
         private static Stopwatch s_stopWatch;
         private static TimeSpan s_timeSpan;
-        
+
         /// <summary>
         /// Compile and run C# using Roslyn.
         /// </summary>
@@ -79,7 +79,10 @@ namespace CIARE.Roslyn
                 myMethod.Invoke(null, new object[] { new string[0] });
                 s_stopWatch.Stop();
                 s_timeSpan = s_stopWatch.Elapsed;
-                richTextBox.Text += $"---------------------------------\nCompile and code execution time: {s_timeSpan.Milliseconds} milliseconds";
+                if (richTextBox.Text.EndsWith("\n"))
+                    richTextBox.Text += $"---------------------------------\nCompile and code execution time: {s_timeSpan.Milliseconds} milliseconds";
+                else
+                    richTextBox.Text += $"\n---------------------------------\nCompile and code execution time: {s_timeSpan.Milliseconds} milliseconds";
             }
             catch
             {
@@ -97,68 +100,75 @@ namespace CIARE.Roslyn
         /// <param name="richTextBox"></param>
         public static void BinaryCompile(string code, bool exeFile, string outPut, RichTextBox richTextBox)
         {
-            string roslynDir = Application.StartupPath+"\\bin\\Roslyn\\";
-            string pathOutput = Application.StartupPath + "\\binary\\";
-            string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
-            richTextBox.Clear();
-            if (!Directory.Exists(roslynDir))
+            try
             {
-                richTextBox.ForeColor = Color.Red;
-                richTextBox.Text = $"ERROR: Directory does not exist -> {roslynDir}";
-                return;
-            }
-            if (string.IsNullOrEmpty(code))
-            {
-                richTextBox.ForeColor = Color.Red;
-                richTextBox.Text = "ERROR: There is no code in the editor to compile!";
-                return;
-            }
-            if (string.IsNullOrEmpty(Utils.GlobalVariables.binaryName))
-                return;
-
-            if (string.IsNullOrEmpty(outPut))
-                return;
-            
-            richTextBox.ForeColor = Color.Black;
-            s_timeSpan = new TimeSpan();
-            s_stopWatch = new Stopwatch();
-            s_stopWatch.Start();
-            if (!Directory.Exists(pathOutput))
-                Directory.CreateDirectory(pathOutput);
-            if (exeFile)
-                richTextBox.Text = "Compile EXE binary file ...";
-            else
-                richTextBox.Text = "Compile DLL binary file ...";
-            string Output = pathOutput + outPut;
-            CodeDomProvider provider = new Microsoft.CodeDom.Providers.DotNetCompilerPlatform.CSharpCodeProvider();
-            CompilerParameters cp = new CompilerParameters();
-            cp.ReferencedAssemblies.Clear();
-            cp.ReferencedAssemblies.AddRange(Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
-        .Where(t => ManageCheck.IsManaged(t)).ToArray());
-            cp.GenerateExecutable = exeFile;
-            cp.GenerateInMemory = false;
-            cp.OutputAssembly = Output;
-            CompilerResults results = provider.CompileAssemblyFromSource(cp, code);
-            if (results.Errors.Count > 0)
-            {
-                richTextBox.ForeColor = Color.Red;
-                foreach (CompilerError CompErr in results.Errors)
+                string roslynDir = Application.StartupPath + "\\bin\\Roslyn\\";
+                string pathOutput = Application.StartupPath + "\\binary\\";
+                string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
+                richTextBox.Clear();
+                if (!Directory.Exists(roslynDir))
                 {
-                    richTextBox.Text =
-                                "ERROR: Line number " + CompErr.Line +
-                                ", ID: " + CompErr.ErrorNumber +
-                                " -> " + CompErr.ErrorText;
+                    richTextBox.ForeColor = Color.Red;
+                    richTextBox.Text = $"ERROR: Directory does not exist -> {roslynDir}";
+                    return;
                 }
+                if (string.IsNullOrEmpty(code))
+                {
+                    richTextBox.ForeColor = Color.Red;
+                    richTextBox.Text = "ERROR: There is no code in the editor to compile!";
+                    return;
+                }
+                if (string.IsNullOrEmpty(Utils.GlobalVariables.binaryName))
+                    return;
+
+                if (string.IsNullOrEmpty(outPut))
+                    return;
+
+                richTextBox.ForeColor = Color.Black;
+                s_timeSpan = new TimeSpan();
+                s_stopWatch = new Stopwatch();
+                s_stopWatch.Start();
+                if (!Directory.Exists(pathOutput))
+                    Directory.CreateDirectory(pathOutput);
+                if (exeFile)
+                    richTextBox.Text = "Compile EXE binary file ...";
+                else
+                    richTextBox.Text = "Compile DLL binary file ...";
+                string Output = pathOutput + outPut;
+                CodeDomProvider provider = new Microsoft.CodeDom.Providers.DotNetCompilerPlatform.CSharpCodeProvider();
+                CompilerParameters cp = new CompilerParameters();
+                cp.ReferencedAssemblies.Clear();
+                cp.ReferencedAssemblies.AddRange(Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
+            .Where(t => ManageCheck.IsManaged(t)).ToArray());
+                cp.GenerateExecutable = exeFile;
+                cp.GenerateInMemory = false;
+                cp.OutputAssembly = Output;
+                CompilerResults results = provider.CompileAssemblyFromSource(cp, code);
+                if (results.Errors.Count > 0)
+                {
+                    richTextBox.ForeColor = Color.Red;
+                    foreach (CompilerError CompErr in results.Errors)
+                    {
+                        richTextBox.Text =
+                                    "ERROR: Line number " + CompErr.Line +
+                                    ", ID: " + CompErr.ErrorNumber +
+                                    " -> " + CompErr.ErrorText;
+                    }
+                }
+                else
+                {
+                    //Successful Compile
+                    richTextBox.Text = $"Success!\nBinary saved in: {pathOutput + outPut}";
+                    s_stopWatch.Stop();
+                    s_timeSpan = s_stopWatch.Elapsed;
+                    richTextBox.Text += $"\n\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
+                }
+                Utils.GlobalVariables.binaryName = string.Empty;
             }
-            else
+            catch
             {
-                //Successful Compile
-                richTextBox.Text = $"Success!\nBinary saved in: {pathOutput + outPut}";
-                s_stopWatch.Stop();
-                s_timeSpan = s_stopWatch.Elapsed;
-                richTextBox.Text += $"\n\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
+                Utils.GlobalVariables.binaryName = string.Empty;
             }
-            Utils.GlobalVariables.binaryName = string.Empty;
         }
     }
 }
