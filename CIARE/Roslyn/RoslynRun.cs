@@ -142,6 +142,8 @@ namespace CIARE.Roslyn
             .Where(t => ManageCheck.IsManaged(t)).ToArray());
                 cp.GenerateExecutable = exeFile;
                 cp.GenerateInMemory = false;
+                cp.TreatWarningsAsErrors = false;
+                cp.CompilerOptions = "/optimize";
                 cp.OutputAssembly = Output;
                 CompilerResults results = provider.CompileAssemblyFromSource(cp, code);
                 if (results.Errors.Count > 0)
