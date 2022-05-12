@@ -13,7 +13,7 @@ namespace CIARE
     {
         private string _versionName;
         private int _startPos = 0;
-        private static long s_openedFileLength = 0;
+        private long _openedFileLength = 0;
         public Form1()
         {
             InitializeComponent();
@@ -34,7 +34,7 @@ namespace CIARE
                 GlobalVariables.openedFilePath = args[1];
                 this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
                 FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                s_openedFileLength = fileInfo.Length;
+                _openedFileLength = fileInfo.Length;
             }
             catch { }
         }
@@ -252,7 +252,7 @@ MessageBoxIcon.Warning);
                 textEditorControl1.Clear();
                 textEditorControl1.Text = openedData;
                 FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                s_openedFileLength = fileInfo.Length;
+                _openedFileLength = fileInfo.Length;
                 this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
             }
         }
@@ -278,7 +278,7 @@ MessageBoxIcon.Warning);
                 {
                     File.WriteAllText(GlobalVariables.openedFilePath, textEditorControl1.Text);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    s_openedFileLength = fileInfo.Length;
+                    _openedFileLength = fileInfo.Length;
                     this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
                     return;
                 }
@@ -286,7 +286,7 @@ MessageBoxIcon.Warning);
                 if (GlobalVariables.savedFile)
                 {
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    s_openedFileLength = fileInfo.Length;
+                    _openedFileLength = fileInfo.Length;
                     this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
                 }
             }
@@ -303,7 +303,7 @@ MessageBoxIcon.Warning);
         {
             FileManage.SaveFile(textEditorControl1.Text);
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-            s_openedFileLength = fileInfo.Length;
+            _openedFileLength = fileInfo.Length;
             if (GlobalVariables.savedFile)
             {
                 this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
@@ -457,7 +457,7 @@ MessageBoxIcon.Warning);
         /// <param name="e"></param>
         private void Form1_Activated(object sender, EventArgs e)
         {
-            CheckFileExternalEdited(GlobalVariables.openedFilePath, s_openedFileLength, textEditorControl1);
+            CheckFileExternalEdited(GlobalVariables.openedFilePath, _openedFileLength, textEditorControl1);
         }
 
         /// <summary>
@@ -483,11 +483,11 @@ MessageBoxIcon.Warning);
                         textEditorControl.Clear();
                         textEditorControl.Text = reader.ReadToEnd();
                         this.Text = $"CIARE {_versionName} | {filePath}";
-                        s_openedFileLength = fileInfo.Length;
+                        _openedFileLength = fileInfo.Length;
                     }
                     return;
                 }
-                s_openedFileLength = fileInfo.Length;
+                _openedFileLength = fileInfo.Length;
             }
         }
     }
