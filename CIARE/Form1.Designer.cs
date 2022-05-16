@@ -59,6 +59,16 @@ namespace CIARE
             this.label3 = new System.Windows.Forms.Label();
             this.searchBox = new System.Windows.Forms.TextBox();
             this.findButton = new System.Windows.Forms.Button();
+            this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.undoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.copyStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.cutStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.pasteStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            this.replaceStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.deleteStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.selectAllStripMenuItem3 = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -105,7 +115,7 @@ namespace CIARE
             // runCodePb
             // 
             this.runCodePb.Image = global::CIARE.Properties.Resources.runButton2;
-            this.runCodePb.Location = new System.Drawing.Point(347, 3);
+            this.runCodePb.Location = new System.Drawing.Point(388, 4);
             this.runCodePb.Name = "runCodePb";
             this.runCodePb.Size = new System.Drawing.Size(28, 21);
             this.runCodePb.TabIndex = 2;
@@ -118,6 +128,7 @@ namespace CIARE
             this.menuStrip1.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fIleToolStripMenuItem,
+            this.editToolStripMenuItem,
             this.compileToolStripMenuItem,
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
@@ -285,7 +296,7 @@ namespace CIARE
             "ASP/XHTML",
             "JavaScript",
             "Java"});
-            this.highlightCMB.Location = new System.Drawing.Point(238, 2);
+            this.highlightCMB.Location = new System.Drawing.Point(279, 3);
             this.highlightCMB.Name = "highlightCMB";
             this.highlightCMB.Size = new System.Drawing.Size(80, 21);
             this.highlightCMB.TabIndex = 7;
@@ -295,7 +306,7 @@ namespace CIARE
             // highlightLbl
             // 
             this.highlightLbl.AutoSize = true;
-            this.highlightLbl.Location = new System.Drawing.Point(167, 5);
+            this.highlightLbl.Location = new System.Drawing.Point(208, 6);
             this.highlightLbl.Name = "highlightLbl";
             this.highlightLbl.Size = new System.Drawing.Size(65, 13);
             this.highlightLbl.TabIndex = 8;
@@ -305,7 +316,7 @@ namespace CIARE
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(152, 1);
+            this.label1.Location = new System.Drawing.Point(192, 2);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(13, 18);
             this.label1.TabIndex = 9;
@@ -315,7 +326,7 @@ namespace CIARE
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(328, 1);
+            this.label2.Location = new System.Drawing.Point(369, 2);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(13, 18);
             this.label2.TabIndex = 10;
@@ -325,7 +336,7 @@ namespace CIARE
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(373, 1);
+            this.label3.Location = new System.Drawing.Point(414, 2);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(13, 18);
             this.label3.TabIndex = 11;
@@ -333,7 +344,7 @@ namespace CIARE
             // 
             // searchBox
             // 
-            this.searchBox.Location = new System.Drawing.Point(391, 2);
+            this.searchBox.Location = new System.Drawing.Point(432, 3);
             this.searchBox.Name = "searchBox";
             this.searchBox.Size = new System.Drawing.Size(114, 20);
             this.searchBox.TabIndex = 12;
@@ -341,13 +352,89 @@ namespace CIARE
             // 
             // findButton
             // 
-            this.findButton.Location = new System.Drawing.Point(517, 1);
+            this.findButton.Location = new System.Drawing.Point(558, 2);
             this.findButton.Name = "findButton";
             this.findButton.Size = new System.Drawing.Size(97, 23);
             this.findButton.TabIndex = 13;
             this.findButton.Text = "Find ( CTRL + F )";
             this.findButton.UseVisualStyleBackColor = true;
             this.findButton.Click += new System.EventHandler(this.findButton_Click);
+            // 
+            // editToolStripMenuItem
+            // 
+            this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.undoToolStripMenuItem,
+            this.toolStripSeparator3,
+            this.cutStripMenuItem,
+            this.copyStripMenuItem,
+            this.pasteStripMenuItem,
+            this.deleteStripMenuItem,
+            this.toolStripSeparator4,
+            this.replaceStripMenuItem,
+            this.selectAllStripMenuItem3});
+            this.editToolStripMenuItem.Name = "editToolStripMenuItem";
+            this.editToolStripMenuItem.ShowShortcutKeys = false;
+            this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
+            this.editToolStripMenuItem.Text = "Edit";
+            // 
+            // undoToolStripMenuItem
+            // 
+            this.undoToolStripMenuItem.Name = "undoToolStripMenuItem";
+            this.undoToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.undoToolStripMenuItem.Text = "Undo        ( CTRL + Z )";
+            this.undoToolStripMenuItem.Click += new System.EventHandler(this.undoToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(188, 6);
+            // 
+            // copyStripMenuItem
+            // 
+            this.copyStripMenuItem.Name = "copyStripMenuItem";
+            this.copyStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.copyStripMenuItem.Text = "Copy        ( CTRL + C )";
+            this.copyStripMenuItem.Click += new System.EventHandler(this.copyStripMenuItem_Click);
+            // 
+            // cutStripMenuItem
+            // 
+            this.cutStripMenuItem.Name = "cutStripMenuItem";
+            this.cutStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.cutStripMenuItem.Text = "Cut           ( CTRL + X )";
+            this.cutStripMenuItem.Click += new System.EventHandler(this.cutStripMenuItem_Click);
+            // 
+            // pasteStripMenuItem
+            // 
+            this.pasteStripMenuItem.Name = "pasteStripMenuItem";
+            this.pasteStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.pasteStripMenuItem.Text = "Paste        ( CTRL + V )";
+            this.pasteStripMenuItem.Click += new System.EventHandler(this.pasteStripMenuItem_Click);
+            // 
+            // toolStripSeparator4
+            // 
+            this.toolStripSeparator4.Name = "toolStripSeparator4";
+            this.toolStripSeparator4.Size = new System.Drawing.Size(188, 6);
+            // 
+            // replaceStripMenuItem
+            // 
+            this.replaceStripMenuItem.Name = "replaceStripMenuItem";
+            this.replaceStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.replaceStripMenuItem.Text = "Replace    ( CTRL + H )";
+            this.replaceStripMenuItem.Click += new System.EventHandler(this.replaceStripMenuItem_Click);
+            // 
+            // deleteStripMenuItem
+            // 
+            this.deleteStripMenuItem.Name = "deleteStripMenuItem";
+            this.deleteStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.deleteStripMenuItem.Text = "Delete                     Del";
+            this.deleteStripMenuItem.Click += new System.EventHandler(this.deleteStripMenuItem_Click);
+            // 
+            // selectAllStripMenuItem3
+            // 
+            this.selectAllStripMenuItem3.Name = "selectAllStripMenuItem3";
+            this.selectAllStripMenuItem3.Size = new System.Drawing.Size(191, 22);
+            this.selectAllStripMenuItem3.Text = "Select All  ( CTRL + A )";
+            this.selectAllStripMenuItem3.Click += new System.EventHandler(this.selectAllStripMenuItem3_Click);
             // 
             // Form1
             // 
@@ -389,7 +476,7 @@ namespace CIARE
 
         #endregion
 
-        private ICSharpCode.TextEditor.TextEditorControl textEditorControl1;
+        public ICSharpCode.TextEditor.TextEditorControl textEditorControl1;
         private System.Windows.Forms.PictureBox runCodePb;
         private System.Windows.Forms.RichTextBox outputRBT;
         private System.Windows.Forms.ToolTip toolTip1;
@@ -417,6 +504,16 @@ namespace CIARE
         private System.Windows.Forms.ToolStripMenuItem compileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem compileToexeCtrlShiftBToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem compileToDLLCtrlSfitBToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem editToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem undoToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+        private System.Windows.Forms.ToolStripMenuItem copyStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem cutStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem pasteStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem deleteStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
+        private System.Windows.Forms.ToolStripMenuItem replaceStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem selectAllStripMenuItem3;
     }
 }
 
