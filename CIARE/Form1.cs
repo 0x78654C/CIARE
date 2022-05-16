@@ -14,6 +14,7 @@ namespace CIARE
         private string _versionName;
         private int _startPos = 0;
         private long _openedFileLength = 0;
+        public static Form1 Instance { get; private set; }
         public Form1()
         {
             InitializeComponent();
@@ -27,6 +28,7 @@ namespace CIARE
             WaterMark.TextBoxWaterMark(searchBox, "Find text...");
             ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1, highlightCMB);
             Console.SetOut(new ControlWriter(outputRBT));
+            Instance = this;
             try
             {
                 var args = Environment.GetCommandLineArgs();
@@ -174,6 +176,10 @@ namespace CIARE
                 case Keys.N | Keys.Control:
                     NewFile();
                     return true;
+                case Keys.H | Keys.Control:
+                    FindAndReplace findAndReplace = new FindAndReplace();
+                    findAndReplace.Show();
+                    return true;
                 case Keys.S | Keys.Control:
                     SaveToFile();
                     return true;
@@ -217,23 +223,25 @@ namespace CIARE
 MessageBoxIcon.Warning);
                     return;
                 }
-
+                if (!editor.Text.ToLower().Contains(text.ToLower()))
+                {
+                    MessageBox.Show($"Cannot find: {text}", "CIARE", MessageBoxButtons.OK,
+   MessageBoxIcon.Information);
+                    return;
+                }
                 int pos = _startPos;
                 int leng = editor.Text.Length;
                 string searchText = editor.Text.Substring(pos).ToLower();
                 if (!searchText.Contains(text.ToLower()))
                     _startPos = 0;
                 var offset = searchText.IndexOf(text.ToLower()) + _startPos;
-                if (offset > 0)
-                {
-                    var endOffset = offset + text.Length;
-                    _startPos = endOffset;
-                    editor.ActiveTextAreaControl.TextArea.Caret.Position = editor.ActiveTextAreaControl.TextArea.Document.OffsetToPosition(endOffset);
-                    editor.ActiveTextAreaControl.TextArea.SelectionManager.ClearSelection();
-                    var document = editor.ActiveTextAreaControl.TextArea.Document;
-                    var selection = new DefaultSelection(document, document.OffsetToPosition(offset), document.OffsetToPosition(endOffset));
-                    editor.ActiveTextAreaControl.TextArea.SelectionManager.SetSelection(selection);
-                }
+                var endOffset = offset + text.Length;
+                _startPos = endOffset;
+                editor.ActiveTextAreaControl.TextArea.Caret.Position = editor.ActiveTextAreaControl.TextArea.Document.OffsetToPosition(endOffset);
+                editor.ActiveTextAreaControl.TextArea.SelectionManager.ClearSelection();
+                var document = editor.ActiveTextAreaControl.TextArea.Document;
+                var selection = new DefaultSelection(document, document.OffsetToPosition(offset), document.OffsetToPosition(endOffset));
+                editor.ActiveTextAreaControl.TextArea.SelectionManager.SetSelection(selection);
             }
             catch
             {
@@ -246,6 +254,7 @@ MessageBoxIcon.Warning);
         /// </summary>
         private void OpenFile()
         {
+            ManageUnsavedData(textEditorControl1);
             string openedData = FileManage.OpenFile();
             if (openedData.Length > 0)
             {
@@ -262,6 +271,7 @@ MessageBoxIcon.Warning);
         /// </summary>
         private void NewFile()
         {
+            ManageUnsavedData(textEditorControl1);
             textEditorControl1.Clear();
             GlobalVariables.openedFilePath = string.Empty;
             this.Text = $"CIARE {_versionName}";
@@ -339,6 +349,7 @@ MessageBoxIcon.Warning);
         /// </summary>
         private void LoadCSTemplate()
         {
+            ManageUnsavedData(textEditorControl1);
             DialogResult dr = MessageBox.Show("Do you really want to load C# code template?", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Information);
             if (dr == DialogResult.Yes)
@@ -490,5 +501,42 @@ MessageBoxIcon.Warning);
                 _openedFileLength = fileInfo.Length;
             }
         }
+
+        #region Hotkeys for Edit Menu
+        private void undoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^z");
+        }
+
+        private void cutStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^x");
+        }
+
+        private void copyStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^c");
+        }
+
+        private void pasteStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^v");
+        }
+
+        private void deleteStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("{DELETE}");
+        }
+
+        private void replaceStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^h");
+        }
+
+        private void selectAllStripMenuItem3_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^a");
+        }
+        #endregion
     }
 }
