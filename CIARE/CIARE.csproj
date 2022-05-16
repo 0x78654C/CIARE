@@ -158,6 +158,12 @@
     <Compile Include="BinaryName.Designer.cs">
       <DependentUpon>BinaryName.cs</DependentUpon>
     </Compile>
+    <Compile Include="FindAndReplace.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FindAndReplace.Designer.cs">
+      <DependentUpon>FindAndReplace.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -179,6 +185,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="BinaryName.resx">
       <DependentUpon>BinaryName.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FindAndReplace.resx">
+      <DependentUpon>FindAndReplace.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
