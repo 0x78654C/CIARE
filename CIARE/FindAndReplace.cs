@@ -28,7 +28,7 @@ namespace CIARE
         private void FindAndReplace_Load(object sender, EventArgs e)
         {
             WaterMark.TextBoxWaterMark(findTxt, "Find what...");
-            WaterMark.TextBoxWaterMark(repalceWithTxt, "Repalce with...");
+            WaterMark.TextBoxWaterMark(repalceWithTxt, "Replace with...");
         }
 
         private void multiReplaceBtn_Click(object sender, EventArgs e)
