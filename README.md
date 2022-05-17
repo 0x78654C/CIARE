@@ -20,6 +20,9 @@ Useful to run code on the fly and get instant result.
  - Hotkeys for mentioned above features. 
  - Display output result and errors (ID and message).
  - Highlight code fore various of programing languages.
+ - Find and replace text.
+ - Show/Hide output window.
+ - Split editor window.
 
 ## Requirements:
 
@@ -41,6 +44,7 @@ Useful to run code on the fly and get instant result.
  Install-Package ICSharpCode.TextEditor.Extended -Version 4.2.4
  ```
 # Sample pictures
+![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split.png?raw=true)
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_menu.png?raw=true)
 
