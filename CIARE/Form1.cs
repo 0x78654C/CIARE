@@ -28,6 +28,7 @@ namespace CIARE
             this.Text = $"CIARE {_versionName}";
             WaterMark.TextBoxWaterMark(searchBox, "Find text...");
             ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1, highlightCMB);
+            ReadOutputWindowState(GlobalVariables.registryPath);
             Console.SetOut(new ControlWriter(outputRBT));
             Instance = this;
             try
@@ -58,6 +59,30 @@ namespace CIARE
                 return;
             }
             RegistryManagement.RegKey_CreateKey(regKeyName, "highlight", "Default");
+        }
+
+        /// <summary>
+        /// Read output window state from registry.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        private void ReadOutputWindowState(string regKeyName)
+        {
+            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", "OutWState");
+            if (regHighlight.Length > 0)
+            {
+                if (regHighlight == "False")
+                {
+                    SplitContainerHideShow.ShowSplitContainer(splitContainer1);
+                    _visibleSplitContainer = false;
+                }
+                else
+                {
+                    SplitContainerHideShow.HideSplitContainer(splitContainer1);
+                    _visibleSplitContainer = true;
+                }
+                return;
+            }
+            RegistryManagement.RegKey_CreateKey(regKeyName, "OutWState", "False");
         }
 
         /// <summary>
@@ -210,16 +235,7 @@ namespace CIARE
                     SplitEditorWindow.SplitWindow(textEditorControl1);
                     return true;
                 case Keys.K | Keys.Control:
-                    if (_visibleSplitContainer)
-                    {
-                        SplitContainerHideShow.ShowSplitContainer(splitContainer1);
-                        _visibleSplitContainer = false;
-                    }
-                    else
-                    {
-                        SplitContainerHideShow.HideSplitContainer(splitContainer1);
-                        _visibleSplitContainer = true;
-                    }
+                    SetOutputWindowState();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -575,6 +591,25 @@ MessageBoxIcon.Warning);
         {
             SplitContainerHideShow.ShowSplitContainer(splitContainer1);
             _visibleSplitContainer = false;
+        }
+
+        /// <summary>
+        /// Set output window state.
+        /// </summary>
+        private void SetOutputWindowState()
+        {
+            if (_visibleSplitContainer)
+            {
+                SplitContainerHideShow.ShowSplitContainer(splitContainer1);
+                _visibleSplitContainer = false;
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "False");
+            }
+            else
+            {
+                SplitContainerHideShow.HideSplitContainer(splitContainer1);
+                _visibleSplitContainer = true;
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "True");
+            }
         }
     }
 }
