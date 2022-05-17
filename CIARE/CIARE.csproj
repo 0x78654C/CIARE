@@ -179,6 +179,8 @@
     <Compile Include="Utils\FileManage.cs" />
     <Compile Include="Utils\GlobalVariables.cs" />
     <Compile Include="Utils\RegistryManagement.cs" />
+    <Compile Include="Utils\SplitContainerHideShow.cs" />
+    <Compile Include="Utils\SplitEditorWindow.cs" />
     <Compile Include="Utils\WaterMark.cs" />
     <EmbeddedResource Include="AboutBox1.resx">
       <DependentUpon>AboutBox1.cs</DependentUpon>
