@@ -21,7 +21,7 @@ Useful to run code on the fly and get instant result.
  - Display output result and errors (ID and message).
  - Highlight code fore various of programing languages.
  - Find and replace text.
- - Show/Hide output window.
+ - Show/Hide output window with current state stored for next run.
  - Split editor window.
 
 ## Requirements:
