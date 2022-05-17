@@ -14,6 +14,7 @@ namespace CIARE
         private string _versionName;
         private int _startPos = 0;
         private long _openedFileLength = 0;
+        private bool _visibleSplitContainer = false;
         public static Form1 Instance { get; private set; }
         public Form1()
         {
@@ -74,6 +75,7 @@ namespace CIARE
         /// </summary>
         private void RunCode()
         {
+            ShowOutputOnCompileRun();
             findButton.Enabled = false;
             outputRBT.ForeColor = Color.Black;
             outputRBT.Clear();
@@ -203,6 +205,21 @@ namespace CIARE
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
                     CompileBinaryDll();
+                    return true;
+                case Keys.W | Keys.Control:
+                    SplitEditorWindow.SplitWindow(textEditorControl1);
+                    return true;
+                case Keys.K | Keys.Control:
+                    if (_visibleSplitContainer)
+                    {
+                        SplitContainerHideShow.ShowSplitContainer(splitContainer1);
+                        _visibleSplitContainer = false;
+                    }
+                    else
+                    {
+                        SplitContainerHideShow.HideSplitContainer(splitContainer1);
+                        _visibleSplitContainer = true;
+                    }
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -400,6 +417,7 @@ MessageBoxIcon.Information);
             BinaryName binaryName = new BinaryName();
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
+            ShowOutputOnCompileRun();
             Roslyn.RoslynRun.BinaryCompile(textEditorControl1.Text, true, GlobalVariables.binaryName, outputRBT);
             GC.Collect();
         }
@@ -413,6 +431,7 @@ MessageBoxIcon.Information);
             BinaryName binaryName = new BinaryName();
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
+            ShowOutputOnCompileRun();
             Roslyn.RoslynRun.BinaryCompile(textEditorControl1.Text, false, GlobalVariables.binaryName, outputRBT);
             GC.Collect();
         }
@@ -537,6 +556,25 @@ MessageBoxIcon.Warning);
         {
             SendKeys.Send("^a");
         }
+
+        private void splitEditorToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^w");
+        }
+
+        private void showHideSCToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^k");
+        }
         #endregion
+
+        /// <summary>
+        /// Pop up the output pane on compile or code run.
+        /// </summary>
+        private void ShowOutputOnCompileRun()
+        {
+            SplitContainerHideShow.ShowSplitContainer(splitContainer1);
+            _visibleSplitContainer = false;
+        }
     }
 }
