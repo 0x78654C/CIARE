@@ -34,7 +34,6 @@ namespace CIARE
             this.textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
             this.outputRBT = new System.Windows.Forms.RichTextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.runCodePb = new System.Windows.Forms.PictureBox();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fIleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
@@ -58,6 +57,9 @@ namespace CIARE
             this.compileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.compileToexeCtrlShiftBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.compileToDLLCtrlSfitBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.splitEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showHideSCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
@@ -69,16 +71,15 @@ namespace CIARE
             this.label3 = new System.Windows.Forms.Label();
             this.searchBox = new System.Windows.Forms.TextBox();
             this.findButton = new System.Windows.Forms.Button();
-            this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.splitEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.showHideSCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
+            this.runCodePb = new System.Windows.Forms.PictureBox();
+            this.goToLineStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.SuspendLayout();
             // 
             // textEditorControl1
@@ -114,17 +115,6 @@ namespace CIARE
             // toolTip1
             // 
             this.toolTip1.Tag = "Run Code";
-            // 
-            // runCodePb
-            // 
-            this.runCodePb.Image = global::CIARE.Properties.Resources.runButton2;
-            this.runCodePb.Location = new System.Drawing.Point(442, 4);
-            this.runCodePb.Name = "runCodePb";
-            this.runCodePb.Size = new System.Drawing.Size(28, 21);
-            this.runCodePb.TabIndex = 2;
-            this.runCodePb.TabStop = false;
-            this.toolTip1.SetToolTip(this.runCodePb, "Run code (CTRL + R)");
-            this.runCodePb.Click += new System.EventHandler(this.runCodePb_Click);
             // 
             // menuStrip1
             // 
@@ -220,6 +210,7 @@ namespace CIARE
             this.deleteStripMenuItem,
             this.toolStripSeparator4,
             this.replaceStripMenuItem,
+            this.goToLineStripMenuItem,
             this.selectAllStripMenuItem3});
             this.editToolStripMenuItem.Name = "editToolStripMenuItem";
             this.editToolStripMenuItem.ShowShortcutKeys = false;
@@ -308,6 +299,29 @@ namespace CIARE
             this.compileToDLLCtrlSfitBToolStripMenuItem.Text = "Compile to DLL ( Ctrl + Shift + B )";
             this.compileToDLLCtrlSfitBToolStripMenuItem.Click += new System.EventHandler(this.compileToDLLCtrlSfitBToolStripMenuItem_Click);
             // 
+            // viewToolStripMenuItem
+            // 
+            this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.splitEditorToolStripMenuItem,
+            this.showHideSCToolStripMenuItem});
+            this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
+            this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
+            this.viewToolStripMenuItem.Text = "View";
+            // 
+            // splitEditorToolStripMenuItem
+            // 
+            this.splitEditorToolStripMenuItem.Name = "splitEditorToolStripMenuItem";
+            this.splitEditorToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
+            this.splitEditorToolStripMenuItem.Text = "Split Editor                     ( CTRL + W )";
+            this.splitEditorToolStripMenuItem.Click += new System.EventHandler(this.splitEditorToolStripMenuItem_Click);
+            // 
+            // showHideSCToolStripMenuItem
+            // 
+            this.showHideSCToolStripMenuItem.Name = "showHideSCToolStripMenuItem";
+            this.showHideSCToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
+            this.showHideSCToolStripMenuItem.Text = "Show/Hide Output       ( CTRL + K )";
+            this.showHideSCToolStripMenuItem.Click += new System.EventHandler(this.showHideSCToolStripMenuItem_Click);
+            // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -319,7 +333,7 @@ namespace CIARE
             // aboutToolStripMenuItem
             // 
             this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
             this.aboutToolStripMenuItem.Text = "About";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
@@ -440,28 +454,23 @@ namespace CIARE
             this.findButton.UseVisualStyleBackColor = true;
             this.findButton.Click += new System.EventHandler(this.findButton_Click);
             // 
-            // viewToolStripMenuItem
+            // runCodePb
             // 
-            this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.splitEditorToolStripMenuItem,
-            this.showHideSCToolStripMenuItem});
-            this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
-            this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
-            this.viewToolStripMenuItem.Text = "View";
+            this.runCodePb.Image = global::CIARE.Properties.Resources.runButton2;
+            this.runCodePb.Location = new System.Drawing.Point(442, 4);
+            this.runCodePb.Name = "runCodePb";
+            this.runCodePb.Size = new System.Drawing.Size(28, 21);
+            this.runCodePb.TabIndex = 2;
+            this.runCodePb.TabStop = false;
+            this.toolTip1.SetToolTip(this.runCodePb, "Run code (CTRL + R)");
+            this.runCodePb.Click += new System.EventHandler(this.runCodePb_Click);
             // 
-            // splitEditorToolStripMenuItem
+            // goToLineStripMenuItem
             // 
-            this.splitEditorToolStripMenuItem.Name = "splitEditorToolStripMenuItem";
-            this.splitEditorToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.splitEditorToolStripMenuItem.Text = "Split Editor                     ( CTRL + W )";
-            this.splitEditorToolStripMenuItem.Click += new System.EventHandler(this.splitEditorToolStripMenuItem_Click);
-            // 
-            // showHideSCToolStripMenuItem
-            // 
-            this.showHideSCToolStripMenuItem.Name = "showHideSCToolStripMenuItem";
-            this.showHideSCToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.showHideSCToolStripMenuItem.Text = "Show/Hide Output       ( CTRL + K )";
-            this.showHideSCToolStripMenuItem.Click += new System.EventHandler(this.showHideSCToolStripMenuItem_Click);
+            this.goToLineStripMenuItem.Name = "goToLineStripMenuItem";
+            this.goToLineStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.goToLineStripMenuItem.Text = "Go To ..     ( CTRL + G )";
+            this.goToLineStripMenuItem.Click += new System.EventHandler(this.goToLineStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -488,7 +497,6 @@ namespace CIARE
             this.Activated += new System.EventHandler(this.Form1_Activated);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.groupBox1.ResumeLayout(false);
@@ -496,6 +504,7 @@ namespace CIARE
             this.splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -544,6 +553,7 @@ namespace CIARE
         private System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem splitEditorToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem showHideSCToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem goToLineStripMenuItem;
     }
 }
 

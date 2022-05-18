@@ -237,6 +237,10 @@ namespace CIARE
                 case Keys.K | Keys.Control:
                     SetOutputWindowState();
                     return true;
+                case Keys.G | Keys.Control:
+                    GoToLine goToLine = new GoToLine();
+                    goToLine.Show();
+                    return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
@@ -582,6 +586,11 @@ MessageBoxIcon.Warning);
         {
             SendKeys.Send("^k");
         }
+
+        private void goToLineStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^g");
+        }
         #endregion
 
         /// <summary>
@@ -611,5 +620,6 @@ MessageBoxIcon.Warning);
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "True");
             }
         }
+
     }
 }

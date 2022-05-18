@@ -170,6 +170,12 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="GoToLine.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GoToLine.Designer.cs">
+      <DependentUpon>GoToLine.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Roslyn\ManageCheck.cs" />
@@ -178,6 +184,7 @@
     <Compile Include="Utils\ExtensionMethods.cs" />
     <Compile Include="Utils\FileManage.cs" />
     <Compile Include="Utils\GlobalVariables.cs" />
+    <Compile Include="Utils\GoToLineNumber.cs" />
     <Compile Include="Utils\RegistryManagement.cs" />
     <Compile Include="Utils\SplitContainerHideShow.cs" />
     <Compile Include="Utils\SplitEditorWindow.cs" />
@@ -193,6 +200,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GoToLine.resx">
+      <DependentUpon>GoToLine.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
