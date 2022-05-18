@@ -23,6 +23,7 @@ Useful to run code on the fly and get instant result.
  - Find and replace text.
  - Show/Hide output window with current state stored for next run.
  - Split editor window.
+ - Go to line number.
 
 ## Requirements:
 
