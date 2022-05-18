@@ -64,7 +64,8 @@ namespace CIARE.Roslyn
                         {
                             richTextBox.Clear();
                             richTextBox.ForeColor = Color.Red;
-                            richTextBox.Text += $"Error: {diagnostic.Id} -> {diagnostic.GetMessage()}" + Environment.NewLine;
+                            var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
+                            ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
                         }
                     }
                     else
@@ -84,10 +85,12 @@ namespace CIARE.Roslyn
                 else
                     richTextBox.Text += $"\n---------------------------------\nCompile and code execution time: {s_timeSpan.Milliseconds} milliseconds";
             }
-            catch
+            catch (DivideByZeroException dbze)
             {
-                //TODO: maybe log it?
+
+                richTextBox.Text += dbze.StackTrace;
             }
+            catch { }
         }
 
         /// <summary>
@@ -151,10 +154,7 @@ namespace CIARE.Roslyn
                     richTextBox.ForeColor = Color.Red;
                     foreach (CompilerError CompErr in results.Errors)
                     {
-                        richTextBox.Text =
-                                    "ERROR: Line number " + CompErr.Line +
-                                    ", ID: " + CompErr.ErrorNumber +
-                                    " -> " + CompErr.ErrorText;
+                        ErrorDisplay(richTextBox, CompErr.ErrorNumber, CompErr.ErrorText, CompErr.Line);
                     }
                 }
                 else
@@ -171,6 +171,18 @@ namespace CIARE.Roslyn
             {
                 Utils.GlobalVariables.binaryName = string.Empty;
             }
+        }
+
+        /// <summary>
+        /// Output Error message to richtextbox.
+        /// </summary>
+        /// <param name="richTextBox"></param>
+        /// <param name="errorId"></param>
+        /// <param name="errorMessage"></param>
+        /// <param name="lineNumber"></param>
+        private static void ErrorDisplay(RichTextBox richTextBox, string errorId, string errorMessage, int lineNumber)
+        {
+            richTextBox.Text = $"ERROR: (Line {lineNumber}) | ID: {errorId} -> {errorMessage}";
         }
     }
 }
