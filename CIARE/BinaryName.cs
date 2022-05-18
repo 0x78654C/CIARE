@@ -22,31 +22,23 @@ namespace CIARE
             if (GlobalVariables.exeName)
             {
                 this.Text = "Set EXE binary name";
-                Utils.WaterMark.TextBoxWaterMark(binaryNameTxt, "binary_file_name.exe");
+                Utils.WaterMark.TextBoxWaterMark(binaryNameTxt, "Enter name of output file..");
                 return;
             }
             this.Text = "Set DLL binary name";
-            WaterMark.TextBoxWaterMark(binaryNameTxt, "binary_file_name.dll");
+            WaterMark.TextBoxWaterMark(binaryNameTxt, "Enter name of output file..");
         }
+
 
         private void ConfirmButton_Click(object sender, EventArgs e)
         {
             if (binaryNameTxt.Text.Length > 0)
             {
-                if (GlobalVariables.exeName && !binaryNameTxt.Text.ToLower().EndsWith(".exe"))
-                {
-                    MessageBox.Show("File name needs to end with '.exe' extension!", "CIARE", MessageBoxButtons.OK,
- MessageBoxIcon.Warning);
-                    return;
-                }
-                if (GlobalVariables.exeName == false && !binaryNameTxt.Text.ToLower().EndsWith(".dll"))
-                {
-                    MessageBox.Show("File name needs to end with '.dll' extension!", "CIARE", MessageBoxButtons.OK,
- MessageBoxIcon.Warning);
-                    GlobalVariables.exeName = false;
-                    return;
-                }
-                GlobalVariables.binaryName = binaryNameTxt.Text;
+                if(GlobalVariables.exeName)
+                    GlobalVariables.binaryName = binaryNameTxt.Text+".exe";
+                else
+                    GlobalVariables.binaryName = binaryNameTxt.Text + ".dll";
+
                 _checkConfirmationAction = true;
                 this.Close();
             }
