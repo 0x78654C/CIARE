@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
+using CIARE.Utils;
 
 namespace CIARE.Roslyn
 {
@@ -18,6 +19,7 @@ namespace CIARE.Roslyn
         /* Class for compile and run C# code using Roslyn */
         private static Stopwatch s_stopWatch;
         private static TimeSpan s_timeSpan;
+        private static string[] s_commandLineArguments = null;
 
         /// <summary>
         /// Compile and run C# using Roslyn.
@@ -35,6 +37,8 @@ namespace CIARE.Roslyn
                     richTextBox.Text = "ERROR: There is no code in the editor to run!";
                     return;
                 }
+                // s_commandLineArguments = GlobalVariables.commandLineArguments?.Split(' ').ToArray() ?? Array.Empty<string>();
+                s_commandLineArguments = SplitArguments.CommandLineToArgs(GlobalVariables.commandLineArguments) ?? Array.Empty<string>();
                 s_timeSpan = new TimeSpan();
                 s_stopWatch = new Stopwatch();
                 s_stopWatch.Start();
@@ -77,7 +81,7 @@ namespace CIARE.Roslyn
                     ms.Close();
                 }
                 MethodInfo myMethod = assembly.EntryPoint;
-                myMethod.Invoke(null, new object[] { new string[0] });
+                myMethod.Invoke(null, new object[] {  s_commandLineArguments });
                 s_stopWatch.Stop();
                 s_timeSpan = s_stopWatch.Elapsed;
                 if (richTextBox.Text.EndsWith("\n"))

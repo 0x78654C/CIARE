@@ -15,6 +15,7 @@ namespace CIARE
         private int _startPos = 0;
         private long _openedFileLength = 0;
         private bool _visibleSplitContainer = false;
+        private bool _visibleSplitContainerAutoHide = false;
         public static Form1 Instance { get; private set; }
         public Form1()
         {
@@ -42,6 +43,7 @@ namespace CIARE
             }
             catch { }
         }
+
 
         /// <summary>
         /// Read and apply highlight setting from registry.
@@ -100,7 +102,7 @@ namespace CIARE
         /// </summary>
         private void RunCode()
         {
-            ShowOutputOnCompileRun();
+            ShowOutputOnCompileRun(true);
             findButton.Enabled = false;
             outputRBT.ForeColor = Color.Black;
             outputRBT.Clear();
@@ -150,7 +152,7 @@ namespace CIARE
         /// </summary>
         /// <param name="data"></param>
         /// <param name="textEditorControl"></param>
-        private void LoadParamFile(string data, ICSharpCode.TextEditor.TextEditorControl textEditorControl)
+        private void LoadParamFile(string data, TextEditorControl textEditorControl)
         {
             data = FileManage.PathCheck(data);
             if (File.Exists(data))
@@ -240,6 +242,10 @@ namespace CIARE
                 case Keys.G | Keys.Control:
                     GoToLine goToLine = new GoToLine();
                     goToLine.Show();
+                    return true;
+                case Keys.L | Keys.Control:
+                    CmdLineArgs cmdLineArgs = new CmdLineArgs();
+                    cmdLineArgs.Show();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -437,7 +443,7 @@ MessageBoxIcon.Information);
             BinaryName binaryName = new BinaryName();
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
-            ShowOutputOnCompileRun();
+            ShowOutputOnCompileRun(false);
             Roslyn.RoslynRun.BinaryCompile(textEditorControl1.Text, true, GlobalVariables.binaryName, outputRBT);
             GC.Collect();
         }
@@ -451,7 +457,7 @@ MessageBoxIcon.Information);
             BinaryName binaryName = new BinaryName();
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
-            ShowOutputOnCompileRun();
+            ShowOutputOnCompileRun(false);
             Roslyn.RoslynRun.BinaryCompile(textEditorControl1.Text, false, GlobalVariables.binaryName, outputRBT);
             GC.Collect();
         }
@@ -591,15 +597,34 @@ MessageBoxIcon.Warning);
         {
             SendKeys.Send("^g");
         }
+
+        private void cmdLinesArgsStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^l");
+        }
         #endregion
 
         /// <summary>
         /// Pop up the output pane on compile or code run.
         /// </summary>
-        private void ShowOutputOnCompileRun()
+        private void ShowOutputOnCompileRun(bool runner)
         {
-            SplitContainerHideShow.ShowSplitContainer(splitContainer1);
-            _visibleSplitContainer = false;
+            if (runner)
+            {
+                SplitContainerHideShow.ShowSplitContainer(splitContainer1);
+                _visibleSplitContainer = false;
+                GlobalVariables.outPutDisplay = false;
+                outputRBT.Focus();
+                return;
+            }
+
+            if (GlobalVariables.outPutDisplay)
+            {
+                SplitContainerHideShow.ShowSplitContainer(splitContainer1);
+                _visibleSplitContainer = false;
+                GlobalVariables.outPutDisplay = false;
+                outputRBT.Focus();
+            }
         }
 
         /// <summary>
@@ -611,15 +636,31 @@ MessageBoxIcon.Warning);
             {
                 SplitContainerHideShow.ShowSplitContainer(splitContainer1);
                 _visibleSplitContainer = false;
+                _visibleSplitContainerAutoHide = true;
+                outputRBT.Focus();
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "False");
             }
             else
             {
                 SplitContainerHideShow.HideSplitContainer(splitContainer1);
                 _visibleSplitContainer = true;
+                _visibleSplitContainerAutoHide = false;
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "True");
             }
         }
 
+        /// <summary>
+        /// Hide output richtextbox on textEditorControl1 focus.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void textEditorControl1_Enter(object sender, EventArgs e)
+        {
+            if (!_visibleSplitContainerAutoHide)
+            {
+                SplitContainerHideShow.HideSplitContainer(splitContainer1);
+                _visibleSplitContainer = true;
+            }
+        }
     }
 }

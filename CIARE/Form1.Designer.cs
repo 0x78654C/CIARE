@@ -53,6 +53,7 @@ namespace CIARE
             this.deleteStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.replaceStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.goToLineStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.selectAllStripMenuItem3 = new System.Windows.Forms.ToolStripMenuItem();
             this.compileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.compileToexeCtrlShiftBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -72,7 +73,8 @@ namespace CIARE
             this.searchBox = new System.Windows.Forms.TextBox();
             this.findButton = new System.Windows.Forms.Button();
             this.runCodePb = new System.Windows.Forms.PictureBox();
-            this.goToLineStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.cmdLinesArgsStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -94,6 +96,7 @@ namespace CIARE
             this.textEditorControl1.Size = new System.Drawing.Size(1200, 589);
             this.textEditorControl1.TabIndex = 0;
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
+            this.textEditorControl1.Enter += new System.EventHandler(this.textEditorControl1_Enter);
             // 
             // outputRBT
             // 
@@ -269,6 +272,13 @@ namespace CIARE
             this.replaceStripMenuItem.Text = "Replace    ( CTRL + H )";
             this.replaceStripMenuItem.Click += new System.EventHandler(this.replaceStripMenuItem_Click);
             // 
+            // goToLineStripMenuItem
+            // 
+            this.goToLineStripMenuItem.Name = "goToLineStripMenuItem";
+            this.goToLineStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.goToLineStripMenuItem.Text = "Go To ..     ( CTRL + G )";
+            this.goToLineStripMenuItem.Click += new System.EventHandler(this.goToLineStripMenuItem_Click);
+            // 
             // selectAllStripMenuItem3
             // 
             this.selectAllStripMenuItem3.Name = "selectAllStripMenuItem3";
@@ -280,7 +290,9 @@ namespace CIARE
             // 
             this.compileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.compileToexeCtrlShiftBToolStripMenuItem,
-            this.compileToDLLCtrlSfitBToolStripMenuItem});
+            this.compileToDLLCtrlSfitBToolStripMenuItem,
+            this.toolStripSeparator5,
+            this.cmdLinesArgsStripMenuItem});
             this.compileToolStripMenuItem.Name = "compileToolStripMenuItem";
             this.compileToolStripMenuItem.Size = new System.Drawing.Size(64, 20);
             this.compileToolStripMenuItem.Text = "Compile";
@@ -288,15 +300,15 @@ namespace CIARE
             // compileToexeCtrlShiftBToolStripMenuItem
             // 
             this.compileToexeCtrlShiftBToolStripMenuItem.Name = "compileToexeCtrlShiftBToolStripMenuItem";
-            this.compileToexeCtrlShiftBToolStripMenuItem.Size = new System.Drawing.Size(251, 22);
-            this.compileToexeCtrlShiftBToolStripMenuItem.Text = "Compile to EXE ( Ctrl + B )";
+            this.compileToexeCtrlShiftBToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            this.compileToexeCtrlShiftBToolStripMenuItem.Text = "Compile to EXE              ( Ctrl + B )";
             this.compileToexeCtrlShiftBToolStripMenuItem.Click += new System.EventHandler(this.compileToexeCtrlShiftBToolStripMenuItem_Click);
             // 
             // compileToDLLCtrlSfitBToolStripMenuItem
             // 
             this.compileToDLLCtrlSfitBToolStripMenuItem.Name = "compileToDLLCtrlSfitBToolStripMenuItem";
-            this.compileToDLLCtrlSfitBToolStripMenuItem.Size = new System.Drawing.Size(251, 22);
-            this.compileToDLLCtrlSfitBToolStripMenuItem.Text = "Compile to DLL ( Ctrl + Shift + B )";
+            this.compileToDLLCtrlSfitBToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            this.compileToDLLCtrlSfitBToolStripMenuItem.Text = "Compile to DLL              ( Ctrl + Shift + B )";
             this.compileToDLLCtrlSfitBToolStripMenuItem.Click += new System.EventHandler(this.compileToDLLCtrlSfitBToolStripMenuItem_Click);
             // 
             // viewToolStripMenuItem
@@ -465,12 +477,17 @@ namespace CIARE
             this.toolTip1.SetToolTip(this.runCodePb, "Run code (CTRL + R)");
             this.runCodePb.Click += new System.EventHandler(this.runCodePb_Click);
             // 
-            // goToLineStripMenuItem
+            // toolStripSeparator5
             // 
-            this.goToLineStripMenuItem.Name = "goToLineStripMenuItem";
-            this.goToLineStripMenuItem.Size = new System.Drawing.Size(191, 22);
-            this.goToLineStripMenuItem.Text = "Go To ..     ( CTRL + G )";
-            this.goToLineStripMenuItem.Click += new System.EventHandler(this.goToLineStripMenuItem_Click);
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(287, 6);
+            // 
+            // cmdLinesArgsStripMenuItem
+            // 
+            this.cmdLinesArgsStripMenuItem.Name = "cmdLinesArgsStripMenuItem";
+            this.cmdLinesArgsStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            this.cmdLinesArgsStripMenuItem.Text = "Command Line Args...  ( Ctrl + L )";
+            this.cmdLinesArgsStripMenuItem.Click += new System.EventHandler(this.cmdLinesArgsStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -554,6 +571,8 @@ namespace CIARE
         private System.Windows.Forms.ToolStripMenuItem splitEditorToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem showHideSCToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem goToLineStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
+        private System.Windows.Forms.ToolStripMenuItem cmdLinesArgsStripMenuItem;
     }
 }
 
