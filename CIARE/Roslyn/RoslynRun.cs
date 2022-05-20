@@ -37,7 +37,6 @@ namespace CIARE.Roslyn
                     richTextBox.Text = "ERROR: There is no code in the editor to run!";
                     return;
                 }
-                // s_commandLineArguments = GlobalVariables.commandLineArguments?.Split(' ').ToArray() ?? Array.Empty<string>();
                 s_commandLineArguments = SplitArguments.CommandLineToArgs(GlobalVariables.commandLineArguments) ?? Array.Empty<string>();
                 s_timeSpan = new TimeSpan();
                 s_stopWatch = new Stopwatch();
