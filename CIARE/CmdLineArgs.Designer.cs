@@ -44,7 +44,7 @@ namespace CIARE
             this.groupBox1.Controls.Add(this.cmdLineArgTxtBox);
             this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(318, 163);
+            this.groupBox1.Size = new System.Drawing.Size(318, 151);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Set Command Line Arguments:";
@@ -86,7 +86,7 @@ namespace CIARE
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
             this.CancelButton = this.cancelBtn;
-            this.ClientSize = new System.Drawing.Size(344, 195);
+            this.ClientSize = new System.Drawing.Size(344, 179);
             this.Controls.Add(this.groupBox1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
