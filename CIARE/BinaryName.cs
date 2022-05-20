@@ -19,10 +19,11 @@ namespace CIARE
         private void BinaryName_Load(object sender, EventArgs e)
         {
             GlobalVariables.checkFormOpen = true;
+            binaryNameTxt.Text = GlobalVariables.binaryNameStore;
             if (GlobalVariables.exeName)
             {
                 this.Text = "Set EXE binary name";
-                Utils.WaterMark.TextBoxWaterMark(binaryNameTxt, "Enter name of output file..");
+                WaterMark.TextBoxWaterMark(binaryNameTxt, "Enter name of output file..");
                 return;
             }
             this.Text = "Set DLL binary name";
@@ -40,6 +41,8 @@ namespace CIARE
                     GlobalVariables.binaryName = binaryNameTxt.Text + ".dll";
 
                 _checkConfirmationAction = true;
+                GlobalVariables.outPutDisplay = true;
+                GlobalVariables.binaryNameStore = binaryNameTxt.Text;
                 this.Close();
             }
             else
