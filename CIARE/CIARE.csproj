@@ -158,6 +158,12 @@
     <Compile Include="BinaryName.Designer.cs">
       <DependentUpon>BinaryName.cs</DependentUpon>
     </Compile>
+    <Compile Include="CmdLineArgs.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CmdLineArgs.Designer.cs">
+      <DependentUpon>CmdLineArgs.cs</DependentUpon>
+    </Compile>
     <Compile Include="FindAndReplace.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -186,6 +192,7 @@
     <Compile Include="Utils\GlobalVariables.cs" />
     <Compile Include="Utils\GoToLineNumber.cs" />
     <Compile Include="Utils\RegistryManagement.cs" />
+    <Compile Include="Utils\SplitArguments.cs" />
     <Compile Include="Utils\SplitContainerHideShow.cs" />
     <Compile Include="Utils\SplitEditorWindow.cs" />
     <Compile Include="Utils\WaterMark.cs" />
@@ -194,6 +201,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="BinaryName.resx">
       <DependentUpon>BinaryName.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CmdLineArgs.resx">
+      <DependentUpon>CmdLineArgs.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FindAndReplace.resx">
       <DependentUpon>FindAndReplace.cs</DependentUpon>
