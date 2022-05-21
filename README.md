@@ -22,7 +22,9 @@ Useful to run code on the fly and get instant result.
  - Highlight code fore various of programing languages.
  - Find and replace text.
  - Show/Hide output window with current state stored for next run.
+ - Auto hide/show output window.
  - Split editor window.
+ - Set Command Line Parameters.
  - Go to line number.
 
 ## Requirements:
