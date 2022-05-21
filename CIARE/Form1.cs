@@ -76,11 +76,13 @@ namespace CIARE
                 {
                     SplitContainerHideShow.ShowSplitContainer(splitContainer1);
                     _visibleSplitContainer = false;
+                    _visibleSplitContainerAutoHide = true;
                 }
                 else
                 {
                     SplitContainerHideShow.HideSplitContainer(splitContainer1);
                     _visibleSplitContainer = true;
+                    _visibleSplitContainerAutoHide = false;
                 }
                 return;
             }
