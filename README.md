@@ -41,13 +41,12 @@ Useful to run code on the fly and get instant result.
  Install-Package Microsoft.CodeDom.Providers.DotNetCompilerPlatform -Version 4.1.0-preview1
  ```
 
- As code highlighter I use ICSharpCode.TextEditor.Extended (https://github.com/megakraken/ICSharpCode.TextEditor).
- For ICSharpCode.TextEditor.Extended use NuGet command in Commands project:
- ```
- Install-Package ICSharpCode.TextEditor.Extended -Version 4.2.4
- ```
+ As code highlighter I use ICSharpCode.TextEditor.Extended forked from https://github.com/megakraken/ICSharpCode.TextEditor
+
 # Sample pictures
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_
+
+.png?raw=true)
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_menu.png?raw=true)
 
