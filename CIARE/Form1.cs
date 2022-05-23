@@ -370,6 +370,8 @@ MessageBoxIcon.Warning);
         private void SaveAs()
         {
             FileManage.SaveFile(textEditorControl1.Text);
+            if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
+                return;
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
             _openedFileLength = fileInfo.Length;
             if (GlobalVariables.savedFile)
