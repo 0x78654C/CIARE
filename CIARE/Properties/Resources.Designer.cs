@@ -73,9 +73,9 @@ namespace CIARE.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap runButton2 {
+        internal static System.Drawing.Bitmap runButton21 {
             get {
-                object obj = ResourceManager.GetObject("runButton2", resourceCulture);
+                object obj = ResourceManager.GetObject("runButton21", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
