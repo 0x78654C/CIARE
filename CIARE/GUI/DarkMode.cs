@@ -42,6 +42,7 @@ namespace CIARE.GUI
             comboBox.ForeColor = Color.FromArgb(192, 215, 207);
             menuStrip.BackColor = Color.FromArgb(51, 51, 51);
             menuStrip.ForeColor = Color.FromArgb(192, 215, 207);
+            menuStrip.Renderer = new ColorTableSet();
             find.BackColor = Color.FromArgb(36, 36, 36);
             find.ForeColor = Color.FromArgb(192, 215, 207);
             findButton.BackColor = Color.FromArgb(36, 36, 36);
