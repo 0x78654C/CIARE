@@ -35,6 +35,7 @@ namespace CIARE.GUI
             comboBox.ForeColor = Color.Black;
             menuStrip.BackColor = SystemColors.Window;
             menuStrip.ForeColor = Color.Black;
+            menuStrip.Renderer = null;
             find.BackColor = SystemColors.Window;
             find.ForeColor = Color.Black;
             findButton.BackColor = SystemColors.Window;
