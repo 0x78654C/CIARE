@@ -27,7 +27,7 @@ namespace CIARE.Roslyn
         /// <param name="code"></param>
         /// <param name="param"></param>
         /// <param name="richTextBox"></param>
-        public static void CompileAndRun(string code, string param, RichTextBox richTextBox)
+        public static void CompileAndRun(string code, RichTextBox richTextBox)
         {
             try
             {
@@ -130,7 +130,10 @@ namespace CIARE.Roslyn
                 if (string.IsNullOrEmpty(outPut))
                     return;
 
-                richTextBox.ForeColor = Color.Black;
+                if (GlobalVariables.darkColor)
+                    richTextBox.ForeColor = Color.FromArgb(192, 215, 207);
+                else
+                    richTextBox.ForeColor = Color.Black;
                 s_timeSpan = new TimeSpan();
                 s_stopWatch = new Stopwatch();
                 s_stopWatch.Start();
