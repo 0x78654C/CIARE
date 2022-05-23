@@ -11,11 +11,11 @@ namespace CIARE.Utils
         /// Split text editor window.
         /// </summary>
         /// <param name="textEditor"></param>
-        public static void SplitWindow(TextEditorControl textEditor)
+        public static void SplitWindow(TextEditorControl textEditor, bool horizontal)
         {
             TextEditorControl editor = textEditor;
             if (editor != null)
-                editor.Split();
+                editor.Split(horizontal);
         }
     }
 }
