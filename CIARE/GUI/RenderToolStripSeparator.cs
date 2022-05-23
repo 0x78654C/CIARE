@@ -5,7 +5,7 @@ using System.Windows.Forms;
 namespace CIARE.GUI
 {
     /// <summary>
-    /// Render ToolStripSeparator backgound/foreground color used on toolstrip menu in main form..
+    /// Render ToolStripSeparator backgound/foreground color used on toolstrip menu in main form.
     /// </summary>
     public class RenderToolStripSeparator
     {
