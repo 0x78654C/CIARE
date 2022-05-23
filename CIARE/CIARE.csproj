@@ -195,7 +195,6 @@
     <Compile Include="Utils\SplitArguments.cs" />
     <Compile Include="Utils\SplitContainerHideShow.cs" />
     <Compile Include="Utils\SplitEditorWindow.cs" />
-    <Compile Include="Utils\ToolStripManage.cs" />
     <Compile Include="Utils\WaterMark.cs" />
     <EmbeddedResource Include="AboutBox1.resx">
       <DependentUpon>AboutBox1.cs</DependentUpon>
