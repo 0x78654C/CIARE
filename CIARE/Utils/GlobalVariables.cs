@@ -1,4 +1,8 @@
-﻿namespace CIARE.Utils
+﻿using System.Drawing;
+using System.Windows.Forms;
+using CIARE.GUI;
+
+namespace CIARE.Utils
 {
     public class GlobalVariables
     {
