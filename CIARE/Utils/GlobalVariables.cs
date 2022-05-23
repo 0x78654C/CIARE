@@ -9,6 +9,7 @@
         public static bool exeName = false;
         public static bool checkFormOpen = false;
         public static bool outPutDisplay = false;
+        public static bool darkColor = false;
         public static string binaryName = string.Empty; 
         public static string binaryNameStore = string.Empty; 
         public static readonly string registryPath = "SOFTWARE\\CIARE";
