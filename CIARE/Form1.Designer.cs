@@ -31,9 +31,9 @@ namespace CIARE
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            this.textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
             this.outputRBT = new System.Windows.Forms.RichTextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.runCodePb = new System.Windows.Forms.PictureBox();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fIleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
@@ -58,13 +58,17 @@ namespace CIARE
             this.compileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.compileToexeCtrlShiftBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.compileToDLLCtrlSfitBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.cmdLinesArgsStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.showHideSCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.splitVEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showHideHSCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
             this.highlightCMB = new System.Windows.Forms.ComboBox();
             this.highlightLbl = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
@@ -72,31 +76,14 @@ namespace CIARE
             this.label3 = new System.Windows.Forms.Label();
             this.searchBox = new System.Windows.Forms.TextBox();
             this.findButton = new System.Windows.Forms.Button();
-            this.runCodePb = new System.Windows.Forms.PictureBox();
-            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
-            this.cmdLinesArgsStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.SuspendLayout();
-            // 
-            // textEditorControl1
-            // 
-            this.textEditorControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.textEditorControl1.Highlighting = null;
-            this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
-            this.textEditorControl1.Name = "textEditorControl1";
-            this.textEditorControl1.Size = new System.Drawing.Size(1200, 589);
-            this.textEditorControl1.TabIndex = 0;
-            this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
-            this.textEditorControl1.Enter += new System.EventHandler(this.textEditorControl1_Enter);
             // 
             // outputRBT
             // 
@@ -119,9 +106,20 @@ namespace CIARE
             // 
             this.toolTip1.Tag = "Run Code";
             // 
+            // runCodePb
+            // 
+            this.runCodePb.Image = global::CIARE.Properties.Resources.runButton21;
+            this.runCodePb.Location = new System.Drawing.Point(442, 4);
+            this.runCodePb.Name = "runCodePb";
+            this.runCodePb.Size = new System.Drawing.Size(28, 21);
+            this.runCodePb.TabIndex = 2;
+            this.runCodePb.TabStop = false;
+            this.toolTip1.SetToolTip(this.runCodePb, "Run code (CTRL + R)");
+            this.runCodePb.Click += new System.EventHandler(this.runCodePb_Click);
+            // 
             // menuStrip1
             // 
-            this.menuStrip1.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.menuStrip1.BackColor = System.Drawing.SystemColors.Window;
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fIleToolStripMenuItem,
             this.editToolStripMenuItem,
@@ -229,6 +227,8 @@ namespace CIARE
             // 
             // toolStripSeparator3
             // 
+            this.toolStripSeparator3.BackColor = System.Drawing.SystemColors.ActiveCaptionText;
+            this.toolStripSeparator3.ForeColor = System.Drawing.SystemColors.AppWorkspace;
             this.toolStripSeparator3.Name = "toolStripSeparator3";
             this.toolStripSeparator3.Size = new System.Drawing.Size(188, 6);
             // 
@@ -311,11 +311,24 @@ namespace CIARE
             this.compileToDLLCtrlSfitBToolStripMenuItem.Text = "Compile to DLL              ( Ctrl + Shift + B )";
             this.compileToDLLCtrlSfitBToolStripMenuItem.Click += new System.EventHandler(this.compileToDLLCtrlSfitBToolStripMenuItem_Click);
             // 
+            // toolStripSeparator5
+            // 
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(287, 6);
+            // 
+            // cmdLinesArgsStripMenuItem
+            // 
+            this.cmdLinesArgsStripMenuItem.Name = "cmdLinesArgsStripMenuItem";
+            this.cmdLinesArgsStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            this.cmdLinesArgsStripMenuItem.Text = "Command Line Args...  ( Ctrl + L )";
+            this.cmdLinesArgsStripMenuItem.Click += new System.EventHandler(this.cmdLinesArgsStripMenuItem_Click);
+            // 
             // viewToolStripMenuItem
             // 
             this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.splitEditorToolStripMenuItem,
-            this.showHideSCToolStripMenuItem});
+            this.splitVEditorToolStripMenuItem,
+            this.showHideHSCToolStripMenuItem});
             this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             this.viewToolStripMenuItem.Text = "View";
@@ -323,16 +336,23 @@ namespace CIARE
             // splitEditorToolStripMenuItem
             // 
             this.splitEditorToolStripMenuItem.Name = "splitEditorToolStripMenuItem";
-            this.splitEditorToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.splitEditorToolStripMenuItem.Text = "Split Editor                     ( CTRL + W )";
+            this.splitEditorToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
+            this.splitEditorToolStripMenuItem.Text = "Split Editor  V                  ( CTRL + W )";
             this.splitEditorToolStripMenuItem.Click += new System.EventHandler(this.splitEditorToolStripMenuItem_Click);
             // 
-            // showHideSCToolStripMenuItem
+            // splitVEditorToolStripMenuItem
             // 
-            this.showHideSCToolStripMenuItem.Name = "showHideSCToolStripMenuItem";
-            this.showHideSCToolStripMenuItem.Size = new System.Drawing.Size(260, 22);
-            this.showHideSCToolStripMenuItem.Text = "Show/Hide Output       ( CTRL + K )";
-            this.showHideSCToolStripMenuItem.Click += new System.EventHandler(this.showHideSCToolStripMenuItem_Click);
+            this.splitVEditorToolStripMenuItem.Name = "splitVEditorToolStripMenuItem";
+            this.splitVEditorToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
+            this.splitVEditorToolStripMenuItem.Text = "Split Editor  H     ( CTRL + Shfit + W )";
+            this.splitVEditorToolStripMenuItem.Click += new System.EventHandler(this.splitVEditorToolStripMenuItem_Click);
+            // 
+            // showHideHSCToolStripMenuItem
+            // 
+            this.showHideHSCToolStripMenuItem.Name = "showHideHSCToolStripMenuItem";
+            this.showHideHSCToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
+            this.showHideHSCToolStripMenuItem.Text = "Show/Hide Output          ( CTRL + K )";
+            this.showHideHSCToolStripMenuItem.Click += new System.EventHandler(this.showHideSCToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 
@@ -381,8 +401,25 @@ namespace CIARE
             this.splitContainer1.SplitterDistance = 595;
             this.splitContainer1.TabIndex = 6;
             // 
+            // textEditorControl1
+            // 
+            this.textEditorControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.textEditorControl1.BackColor = System.Drawing.SystemColors.Window;
+            this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textEditorControl1.Highlighting = null;
+            this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
+            this.textEditorControl1.Name = "textEditorControl1";
+            this.textEditorControl1.Size = new System.Drawing.Size(1200, 589);
+            this.textEditorControl1.TabIndex = 0;
+            this.textEditorControl1.VRulerRow = 0;
+            this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
+            this.textEditorControl1.Enter += new System.EventHandler(this.textEditorControl1_Enter);
+            // 
             // highlightCMB
             // 
+            this.highlightCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.highlightCMB.FormattingEnabled = true;
             this.highlightCMB.Items.AddRange(new object[] {
             "Default",
@@ -394,7 +431,8 @@ namespace CIARE
             "Python",
             "PHP",
             "SQL",
-            "C#",
+            "C#-Light",
+            "C#-Dark",
             "Batch",
             "Boo",
             "VBNET",
@@ -458,6 +496,7 @@ namespace CIARE
             // 
             // findButton
             // 
+            this.findButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.findButton.Location = new System.Drawing.Point(612, 1);
             this.findButton.Name = "findButton";
             this.findButton.Size = new System.Drawing.Size(97, 23);
@@ -465,29 +504,6 @@ namespace CIARE
             this.findButton.Text = "Find ( CTRL + F )";
             this.findButton.UseVisualStyleBackColor = true;
             this.findButton.Click += new System.EventHandler(this.findButton_Click);
-            // 
-            // runCodePb
-            // 
-            this.runCodePb.Image = global::CIARE.Properties.Resources.runButton2;
-            this.runCodePb.Location = new System.Drawing.Point(442, 4);
-            this.runCodePb.Name = "runCodePb";
-            this.runCodePb.Size = new System.Drawing.Size(28, 21);
-            this.runCodePb.TabIndex = 2;
-            this.runCodePb.TabStop = false;
-            this.toolTip1.SetToolTip(this.runCodePb, "Run code (CTRL + R)");
-            this.runCodePb.Click += new System.EventHandler(this.runCodePb_Click);
-            // 
-            // toolStripSeparator5
-            // 
-            this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(287, 6);
-            // 
-            // cmdLinesArgsStripMenuItem
-            // 
-            this.cmdLinesArgsStripMenuItem.Name = "cmdLinesArgsStripMenuItem";
-            this.cmdLinesArgsStripMenuItem.Size = new System.Drawing.Size(290, 22);
-            this.cmdLinesArgsStripMenuItem.Text = "Command Line Args...  ( Ctrl + L )";
-            this.cmdLinesArgsStripMenuItem.Click += new System.EventHandler(this.cmdLinesArgsStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -514,6 +530,7 @@ namespace CIARE
             this.Activated += new System.EventHandler(this.Form1_Activated);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
+            ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.groupBox1.ResumeLayout(false);
@@ -521,7 +538,6 @@ namespace CIARE
             this.splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -569,10 +585,11 @@ namespace CIARE
         private System.Windows.Forms.ToolStripMenuItem selectAllStripMenuItem3;
         private System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem splitEditorToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem showHideSCToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem showHideHSCToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem goToLineStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
         private System.Windows.Forms.ToolStripMenuItem cmdLinesArgsStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem splitVEditorToolStripMenuItem;
     }
 }
 

@@ -1,11 +1,15 @@
 ﻿using CIARE.Utils;
+using CIARE.GUI;
 using ICSharpCode.TextEditor;
+using ICSharpCode.TextEditor.Gui.CompletionWindow;
 using ICSharpCode.TextEditor.Document;
 using System;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace CIARE
 {
@@ -37,13 +41,13 @@ namespace CIARE
                 var args = Environment.GetCommandLineArgs();
                 LoadParamFile(args[1], textEditorControl1);
                 GlobalVariables.openedFilePath = args[1];
+               // CodeCompletionWindow.ShowCompletionWindow(this, textEditorControl1, args[1], null, ' ');
                 this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
                 FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                 _openedFileLength = fileInfo.Length;
             }
             catch { }
         }
-
 
         /// <summary>
         /// Read and apply highlight setting from registry.
@@ -56,6 +60,8 @@ namespace CIARE
             string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", "highlight");
             if (regHighlight.Length > 0)
             {
+                if (regHighlight == "C#-Dark")
+                    GlobalVariables.darkColor = true;
                 textEditor.SetHighlighting(regHighlight);
                 comboBox.Text = regHighlight;
                 return;
@@ -106,13 +112,17 @@ namespace CIARE
         {
             ShowOutputOnCompileRun(true);
             findButton.Enabled = false;
-            outputRBT.ForeColor = Color.Black;
+            if (GlobalVariables.darkColor)
+                outputRBT.ForeColor = Color.FromArgb(192, 215, 207);
+            else
+                outputRBT.ForeColor = Color.Black;
+
             outputRBT.Clear();
             outputRBT.Text = "Compile and Runing..\n";
             runCodePb.Image = Properties.Resources.runButton_gray;
             runCodePb.Enabled = false;
-            Roslyn.RoslynRun.CompileAndRun(textEditorControl1.Text, "", outputRBT);
-            runCodePb.Image = Properties.Resources.runButton2;
+            Roslyn.RoslynRun.CompileAndRun(textEditorControl1.Text, outputRBT);
+            runCodePb.Image = Properties.Resources.runButton21;
             runCodePb.Enabled = true;
             findButton.Enabled = true;
             GC.Collect();
@@ -234,9 +244,12 @@ namespace CIARE
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
                     CompileBinaryDll();
-                    return true;
+                    return true;    
                 case Keys.W | Keys.Control:
-                    SplitEditorWindow.SplitWindow(textEditorControl1);
+                    SplitEditorWindow.SplitWindow(textEditorControl1,true);
+                    return true;
+                case Keys.W | Keys.Control | Keys.Shift:
+                    SplitEditorWindow.SplitWindow(textEditorControl1,false);
                     return true;
                 case Keys.K | Keys.Control:
                     SetOutputWindowState();
@@ -377,6 +390,68 @@ MessageBoxIcon.Warning);
                 textEditorControl1.SetHighlighting(highlightCMB.Text);
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlightCMB.Text);
             }
+            if(highlightCMB.Text == "C#-Dark")
+            {
+                GlobalVariables.darkColor = true;
+                DarkMode.SetDarkModeMain(this, outputRBT, groupBox1, label1, label2, label3, highlightLbl, 
+                    highlightCMB, menuStrip1,searchBox, ListToolStripMenu(), ListToolStripSeparator(),findButton);
+                return;
+            }
+            GlobalVariables.darkColor = false;
+            LightMode.SetLightModeMain(this, outputRBT, groupBox1, highlightLbl,
+                highlightCMB, menuStrip1, searchBox, ListToolStripMenu(), ListToolStripSeparator(), findButton);
+        }
+
+        /// <summary>
+        /// List of toolstripmenu from menu bar.
+        /// </summary>
+        /// <returns></returns>
+        private List<ToolStripMenuItem> ListToolStripMenu()
+        {
+            List<ToolStripMenuItem> listToosStripM = new List<ToolStripMenuItem>();
+            listToosStripM.Add(fIleToolStripMenuItem);
+            listToosStripM.Add(openToolStripMenuItem);
+            listToosStripM.Add(saveToolStripMenuItem);
+            listToosStripM.Add(exitToolStripMenuItem);
+            listToosStripM.Add(saveAsStripMenuItem);
+            listToosStripM.Add(toolStripMenuItem1);
+            listToosStripM.Add(LoadCStripMenuItem);
+            listToosStripM.Add(helpToolStripMenuItem);
+            listToosStripM.Add(aboutToolStripMenuItem);
+            listToosStripM.Add(compileToolStripMenuItem);
+            listToosStripM.Add(compileToexeCtrlShiftBToolStripMenuItem);
+            listToosStripM.Add(compileToDLLCtrlSfitBToolStripMenuItem);
+            listToosStripM.Add(editToolStripMenuItem);
+            listToosStripM.Add(undoToolStripMenuItem);
+            listToosStripM.Add(copyStripMenuItem);
+            listToosStripM.Add(cutStripMenuItem);
+            listToosStripM.Add(pasteStripMenuItem);
+            listToosStripM.Add(deleteStripMenuItem);
+            listToosStripM.Add(replaceStripMenuItem);
+            listToosStripM.Add(selectAllStripMenuItem3);
+            listToosStripM.Add(viewToolStripMenuItem);
+            listToosStripM.Add(splitEditorToolStripMenuItem);
+            listToosStripM.Add(showHideHSCToolStripMenuItem);
+            listToosStripM.Add(goToLineStripMenuItem);
+            listToosStripM.Add(cmdLinesArgsStripMenuItem);
+            listToosStripM.Add(splitVEditorToolStripMenuItem);
+            return listToosStripM;
+        }
+
+        /// <summary>
+        /// List of ToolStripSeparators from menu bar.
+        /// </summary>
+        /// <returns></returns>
+        private List<ToolStripSeparator> ListToolStripSeparator()
+        {
+            List<ToolStripSeparator> listToosStripS = new List<ToolStripSeparator>();
+            listToosStripS.Add(toolStripSeparator1);
+            listToosStripS.Add(toolStripSeparator2);
+            listToosStripS.Add(toolStripSeparator3);
+            listToosStripS.Add(toolStripSeparator4);
+            listToosStripS.Add(toolStripSeparator5);
+    
+            return listToosStripS;
         }
 
         /// <summary>
@@ -586,6 +661,11 @@ MessageBoxIcon.Warning);
         }
 
         private void splitEditorToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SplitEditorWindow.SplitWindow(textEditorControl1, true);
+        }
+
+        private void splitVEditorToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^w");
         }
