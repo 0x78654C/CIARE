@@ -68,7 +68,6 @@ namespace CIARE
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
             this.highlightCMB = new System.Windows.Forms.ComboBox();
             this.highlightLbl = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
@@ -76,6 +75,7 @@ namespace CIARE
             this.label3 = new System.Windows.Forms.Label();
             this.searchBox = new System.Windows.Forms.TextBox();
             this.findButton = new System.Windows.Forms.Button();
+            this.textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -401,22 +401,6 @@ namespace CIARE
             this.splitContainer1.SplitterDistance = 595;
             this.splitContainer1.TabIndex = 6;
             // 
-            // textEditorControl1
-            // 
-            this.textEditorControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textEditorControl1.BackColor = System.Drawing.SystemColors.Window;
-            this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.textEditorControl1.Highlighting = null;
-            this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
-            this.textEditorControl1.Name = "textEditorControl1";
-            this.textEditorControl1.Size = new System.Drawing.Size(1200, 589);
-            this.textEditorControl1.TabIndex = 0;
-            this.textEditorControl1.VRulerRow = 0;
-            this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
-            this.textEditorControl1.Enter += new System.EventHandler(this.textEditorControl1_Enter);
-            // 
             // highlightCMB
             // 
             this.highlightCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -504,6 +488,22 @@ namespace CIARE
             this.findButton.Text = "Find ( CTRL + F )";
             this.findButton.UseVisualStyleBackColor = true;
             this.findButton.Click += new System.EventHandler(this.findButton_Click);
+            // 
+            // textEditorControl1
+            // 
+            this.textEditorControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.textEditorControl1.BackColor = System.Drawing.SystemColors.Window;
+            this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textEditorControl1.Highlighting = null;
+            this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
+            this.textEditorControl1.Name = "textEditorControl1";
+            this.textEditorControl1.Size = new System.Drawing.Size(1200, 589);
+            this.textEditorControl1.TabIndex = 0;
+            this.textEditorControl1.VRulerRow = 0;
+            this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
+            this.textEditorControl1.Enter += new System.EventHandler(this.textEditorControl1_Enter);
             // 
             // Form1
             // 
