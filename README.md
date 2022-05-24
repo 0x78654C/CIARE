@@ -44,9 +44,9 @@ Useful to run code on the fly and get instant result.
  As code highlighter I use ICSharpCode.TextEditor.Extended forked from https://github.com/megakraken/ICSharpCode.TextEditor
 
 # Sample pictures
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_
+![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split2.png?raw=true)
 
-.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split.png?raw=true)
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_menu.png?raw=true)
 
