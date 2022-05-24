@@ -322,9 +322,11 @@ namespace ICSharpCode.TextEditor.Document
 								return delimiterSegment;
 							}
 						}
-						#if DATACONSISTENCYTEST
+						// TODO : removed for use on binery files. Work in progress
+					/*	#if DATACONSISTENCYTEST
 						Debug.Assert(false, "Found lone \\r, data consistency problems?");
-						#endif
+						#endif 
+					*/
 						goto case '\n';
 					case '\n':
 						delimiterSegment.Offset = i;
