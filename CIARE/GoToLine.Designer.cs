@@ -31,10 +31,10 @@ namespace CIARE
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(GoToLine));
             this.goToLineGB = new System.Windows.Forms.GroupBox();
+            this.cancelBtn = new System.Windows.Forms.Button();
+            this.goToLineBtn = new System.Windows.Forms.Button();
             this.goToLineNumberTxt = new System.Windows.Forms.TextBox();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.goToLineBtn = new System.Windows.Forms.Button();
-            this.cancelBtn = new System.Windows.Forms.Button();
             this.goToLineGB.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -49,17 +49,21 @@ namespace CIARE
             this.goToLineGB.TabIndex = 0;
             this.goToLineGB.TabStop = false;
             // 
-            // goToLineNumberTxt
+            // cancelBtn
             // 
-            this.goToLineNumberTxt.Location = new System.Drawing.Point(6, 19);
-            this.goToLineNumberTxt.Name = "goToLineNumberTxt";
-            this.goToLineNumberTxt.Size = new System.Drawing.Size(220, 20);
-            this.goToLineNumberTxt.TabIndex = 0;
-            this.goToLineNumberTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.goToLineNumberTxt.TextChanged += new System.EventHandler(this.goToLineNumberTxt_TextChanged);
+            this.cancelBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.cancelBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.cancelBtn.Location = new System.Drawing.Point(151, 61);
+            this.cancelBtn.Name = "cancelBtn";
+            this.cancelBtn.Size = new System.Drawing.Size(75, 23);
+            this.cancelBtn.TabIndex = 2;
+            this.cancelBtn.Text = "Cancel";
+            this.cancelBtn.UseVisualStyleBackColor = true;
+            this.cancelBtn.Click += new System.EventHandler(this.cancelBtn_Click);
             // 
             // goToLineBtn
             // 
+            this.goToLineBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.goToLineBtn.Location = new System.Drawing.Point(6, 61);
             this.goToLineBtn.Name = "goToLineBtn";
             this.goToLineBtn.Size = new System.Drawing.Size(75, 23);
@@ -68,16 +72,14 @@ namespace CIARE
             this.goToLineBtn.UseVisualStyleBackColor = true;
             this.goToLineBtn.Click += new System.EventHandler(this.goToLineBtn_Click);
             // 
-            // cancelBtn
+            // goToLineNumberTxt
             // 
-            this.cancelBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelBtn.Location = new System.Drawing.Point(151, 61);
-            this.cancelBtn.Name = "cancelBtn";
-            this.cancelBtn.Size = new System.Drawing.Size(75, 23);
-            this.cancelBtn.TabIndex = 2;
-            this.cancelBtn.Text = "Cancel";
-            this.cancelBtn.UseVisualStyleBackColor = true;
-            this.cancelBtn.Click += new System.EventHandler(this.cancelBtn_Click);
+            this.goToLineNumberTxt.Location = new System.Drawing.Point(6, 19);
+            this.goToLineNumberTxt.Name = "goToLineNumberTxt";
+            this.goToLineNumberTxt.Size = new System.Drawing.Size(220, 20);
+            this.goToLineNumberTxt.TabIndex = 0;
+            this.goToLineNumberTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.goToLineNumberTxt.TextChanged += new System.EventHandler(this.goToLineNumberTxt_TextChanged);
             // 
             // GoToLine
             // 

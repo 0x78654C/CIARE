@@ -1,4 +1,5 @@
 ﻿using CIARE.Utils;
+using CIARE.GUI;
 using System;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -18,6 +19,8 @@ namespace CIARE
         private void GoToLine_Load(object sender, EventArgs e)
         {
             WaterMark.TextBoxWaterMark(goToLineNumberTxt, "Enter line number...");
+            if (GlobalVariables.darkColor)
+                DarkMode.CMDLineArgsDarkMode(this, goToLineBtn, cancelBtn, goToLineNumberTxt, goToLineGB);
         }
 
         /// <summary>
