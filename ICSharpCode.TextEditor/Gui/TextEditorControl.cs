@@ -153,7 +153,7 @@ namespace ICSharpCode.TextEditor
 				secondaryTextArea = new TextAreaControl(this);
 				if (horizontal)
 				{
-					secondaryTextArea.Dock = DockStyle.Left;
+					secondaryTextArea.Dock = DockStyle.Right;
 					secondaryTextArea.Width = Width / 2;
                 }
                 else
@@ -171,7 +171,7 @@ namespace ICSharpCode.TextEditor
 				if (horizontal)
 				{
 					textAreaSplitter.Width = 4;
-					textAreaSplitter.Dock = DockStyle.Left;
+					textAreaSplitter.Dock = DockStyle.Right;
                 }
                 else
                 {
