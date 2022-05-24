@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Reflection;
 using System.Windows.Forms;
+using CIARE.Utils;
+using CIARE.GUI;
 
 namespace CIARE
 {
@@ -16,6 +18,8 @@ namespace CIARE
             this.labelCopyright.Text = AssemblyCopyright;
             this.labelCompanyName.Text = AssemblyCompany;
             this.textBoxDescription.Text = AssemblyDescription;
+            if (GlobalVariables.darkColor)
+                DarkMode.AboutFormDarkMode(this, okButton,textBoxDescription,logoPictureBox);
         }
 
         #region Assembly Attribute Accessors
@@ -97,10 +101,5 @@ namespace CIARE
             }
         }
         #endregion
-
-        private void okButton_Click(object sender, EventArgs e)
-        {
-
-        }
     }
 }

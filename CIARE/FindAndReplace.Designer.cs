@@ -31,11 +31,11 @@ namespace CIARE
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FindAndReplace));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.ignoreCaseCheckBox = new System.Windows.Forms.CheckBox();
             this.multiReplaceBtn = new System.Windows.Forms.Button();
             this.singleReplaceBtn = new System.Windows.Forms.Button();
             this.repalceWithTxt = new System.Windows.Forms.TextBox();
             this.findTxt = new System.Windows.Forms.TextBox();
-            this.ignoreCaseCheckBox = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -52,8 +52,20 @@ namespace CIARE
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             // 
+            // ignoreCaseCheckBox
+            // 
+            this.ignoreCaseCheckBox.AutoSize = true;
+            this.ignoreCaseCheckBox.Location = new System.Drawing.Point(22, 98);
+            this.ignoreCaseCheckBox.Name = "ignoreCaseCheckBox";
+            this.ignoreCaseCheckBox.Size = new System.Drawing.Size(129, 17);
+            this.ignoreCaseCheckBox.TabIndex = 4;
+            this.ignoreCaseCheckBox.Text = "Ignore Case Sensitive";
+            this.ignoreCaseCheckBox.UseVisualStyleBackColor = true;
+            this.ignoreCaseCheckBox.CheckedChanged += new System.EventHandler(this.ignoreCaseCheckBox_CheckedChanged);
+            // 
             // multiReplaceBtn
             // 
+            this.multiReplaceBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.multiReplaceBtn.Location = new System.Drawing.Point(245, 56);
             this.multiReplaceBtn.Name = "multiReplaceBtn";
             this.multiReplaceBtn.Size = new System.Drawing.Size(75, 23);
@@ -64,6 +76,7 @@ namespace CIARE
             // 
             // singleReplaceBtn
             // 
+            this.singleReplaceBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.singleReplaceBtn.Location = new System.Drawing.Point(245, 26);
             this.singleReplaceBtn.Name = "singleReplaceBtn";
             this.singleReplaceBtn.Size = new System.Drawing.Size(75, 23);
@@ -87,17 +100,6 @@ namespace CIARE
             this.findTxt.Size = new System.Drawing.Size(183, 20);
             this.findTxt.TabIndex = 0;
             this.findTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            // 
-            // ignoreCaseCheckBox
-            // 
-            this.ignoreCaseCheckBox.AutoSize = true;
-            this.ignoreCaseCheckBox.Location = new System.Drawing.Point(22, 98);
-            this.ignoreCaseCheckBox.Name = "ignoreCaseCheckBox";
-            this.ignoreCaseCheckBox.Size = new System.Drawing.Size(129, 17);
-            this.ignoreCaseCheckBox.TabIndex = 4;
-            this.ignoreCaseCheckBox.Text = "Ignore Case Sensitive";
-            this.ignoreCaseCheckBox.UseVisualStyleBackColor = true;
-            this.ignoreCaseCheckBox.CheckedChanged += new System.EventHandler(this.ignoreCaseCheckBox_CheckedChanged);
             // 
             // FindAndReplace
             // 

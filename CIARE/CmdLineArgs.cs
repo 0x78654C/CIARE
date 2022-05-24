@@ -1,6 +1,7 @@
 ﻿using System;
 using CIARE.Utils;
 using System.Windows.Forms;
+using CIARE.GUI;
 
 namespace CIARE
 {
@@ -17,6 +18,8 @@ namespace CIARE
         private void CmdLineArgs_Load(object sender, EventArgs e)
         {
             cmdLineArgTxtBox.Text= GlobalVariables.commandLineArguments;
+            if (GlobalVariables.darkColor)
+                DarkMode.CMDLineArgsDarkMode(this, confirmBtn, cancelBtn, cmdLineArgTxtBox, groupBox1);
         }
 
         private void cancelBtn_Click(object sender, EventArgs e)

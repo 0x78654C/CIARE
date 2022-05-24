@@ -1,5 +1,6 @@
 ﻿using System;
 using CIARE.Utils;
+using CIARE.GUI;
 using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 using System.Text.RegularExpressions;
@@ -29,6 +30,8 @@ namespace CIARE
         {
             WaterMark.TextBoxWaterMark(findTxt, "Find what...");
             WaterMark.TextBoxWaterMark(repalceWithTxt, "Replace with...");
+            if (GlobalVariables.darkColor)
+                DarkMode.FinAndReplaceDarkMode(this, singleReplaceBtn, multiReplaceBtn, findTxt, repalceWithTxt, groupBox1, ignoreCaseCheckBox);
         }
 
         private void multiReplaceBtn_Click(object sender, EventArgs e)

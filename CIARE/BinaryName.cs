@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 using CIARE.Utils;
+using CIARE.GUI;
 
 namespace CIARE
 {
@@ -20,6 +21,8 @@ namespace CIARE
         {
             GlobalVariables.checkFormOpen = true;
             binaryNameTxt.Text = GlobalVariables.binaryNameStore;
+            if (GlobalVariables.darkColor)
+                DarkMode.CMDLineArgsDarkMode(this, ConfirmButton, cancelButton, binaryNameTxt, groupBox1);
             if (GlobalVariables.exeName)
             {
                 this.Text = "Set EXE binary name";
