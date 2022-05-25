@@ -26,6 +26,8 @@ Useful to run code on the fly and get instant result.
  - Split editor window.
  - Set Command Line Parameters.
  - Go to line number.
+ - Display total lines for editor data.
+ - Display caret position (Line, Column)
 
 ## Requirements:
 
