@@ -1,14 +1,12 @@
 ﻿using CIARE.Utils;
 using CIARE.GUI;
 using ICSharpCode.TextEditor;
-using ICSharpCode.TextEditor.Gui.CompletionWindow;
 using ICSharpCode.TextEditor.Document;
 using System;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
-using System.Linq;
 using System.Collections.Generic;
 
 namespace CIARE
@@ -36,12 +34,14 @@ namespace CIARE
             ReadOutputWindowState(GlobalVariables.registryPath);
             Console.SetOut(new ControlWriter(outputRBT));
             Instance = this;
+            linesCountLbl.Text = string.Empty;
+            linesPositionLbl.Text = string.Empty;
+            textEditorControl1.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
             try
             {
                 var args = Environment.GetCommandLineArgs();
                 LoadParamFile(args[1], textEditorControl1);
                 GlobalVariables.openedFilePath = args[1];
-               // CodeCompletionWindow.ShowCompletionWindow(this, textEditorControl1, args[1], null, ' ');
                 this.Text = $"CIARE {_versionName} | {GlobalVariables.openedFilePath}";
                 FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                 _openedFileLength = fileInfo.Length;
@@ -190,6 +190,7 @@ namespace CIARE
         {
             if (GlobalVariables.openedFilePath.Length > 0)
                 this.Text = $"CIARE {_versionName} | *{GlobalVariables.openedFilePath}";
+            LinesManage.GetTotalLinesCount(textEditorControl1, linesCountLbl);
         }
 
         /// <summary>
@@ -452,6 +453,7 @@ MessageBoxIcon.Warning);
             listToosStripS.Add(toolStripSeparator3);
             listToosStripS.Add(toolStripSeparator4);
             listToosStripS.Add(toolStripSeparator5);
+            listToosStripS.Add(compileStripSeparator1);
     
             return listToosStripS;
         }
@@ -664,12 +666,12 @@ MessageBoxIcon.Warning);
 
         private void splitEditorToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SplitEditorWindow.SplitWindow(textEditorControl1, true);
+            SendKeys.Send("^w");
         }
 
         private void splitVEditorToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SendKeys.Send("^w");
+            SplitEditorWindow.SplitWindow(textEditorControl1, false);
         }
 
         private void showHideSCToolStripMenuItem_Click(object sender, EventArgs e)
