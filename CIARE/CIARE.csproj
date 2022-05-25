@@ -230,6 +230,7 @@
     <Compile Include="Utils\FileManage.cs" />
     <Compile Include="Utils\GlobalVariables.cs" />
     <Compile Include="Utils\GoToLineNumber.cs" />
+    <Compile Include="Utils\LinesManage.cs" />
     <Compile Include="Utils\RegistryManagement.cs" />
     <Compile Include="Utils\SplitArguments.cs" />
     <Compile Include="Utils\SplitContainerHideShow.cs" />
