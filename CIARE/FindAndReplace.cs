@@ -66,12 +66,6 @@ namespace CIARE
                     return editor.Text;
                 }
 
-                if (string.IsNullOrEmpty(replaceWith))
-                {
-                    MessageBox.Show("'Replace with...' field is emtpy!", "CIARE", MessageBoxButtons.OK,
-    MessageBoxIcon.Warning);
-                    return editor.Text;
-                }
                 if (!editor.Text.ToLower().Contains(findWhat.ToLower()))
                 {
                     MessageBox.Show($"Cannot find: {findWhat}", "CIARE", MessageBoxButtons.OK,
@@ -138,13 +132,6 @@ namespace CIARE
             if (string.IsNullOrEmpty(findWhat))
             {
                 MessageBox.Show("'Find what...' field is emtpy!", "CIARE", MessageBoxButtons.OK,
-MessageBoxIcon.Warning);
-                return data;
-            }
-
-            if (string.IsNullOrEmpty(replaceWith))
-            {
-                MessageBox.Show("'Replace with...' field is emtpy!", "CIARE", MessageBoxButtons.OK,
 MessageBoxIcon.Warning);
                 return data;
             }
