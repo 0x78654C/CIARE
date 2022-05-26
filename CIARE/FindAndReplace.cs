@@ -5,6 +5,8 @@ using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 using System.Text.RegularExpressions;
 using ICSharpCode.TextEditor.Document;
+using System.Drawing;
+using System.Collections.Generic;
 
 namespace CIARE
 {
@@ -14,30 +16,39 @@ namespace CIARE
     public partial class FindAndReplace : Form
     {
         private bool _ignoreCase = false;
+        private bool _matchCase = false;
         private int _startPos = 0;
         public FindAndReplace()
         {
             InitializeComponent();
+    
         }
 
         private void singleReplaceBtn_Click(object sender, EventArgs e)
         {
             if (Form1.Instance != null)
-                ReplaceSingle(Form1.Instance.textEditorControl1, findTxt.Text, repalceWithTxt.Text, _ignoreCase);
+                ReplaceSingle(Form1.Instance.textEditorControl1, findTxt.Text, repalceWithTxt.Text, _ignoreCase,_matchCase);
         }
 
         private void FindAndReplace_Load(object sender, EventArgs e)
         {
             WaterMark.TextBoxWaterMark(findTxt, "Find what...");
             WaterMark.TextBoxWaterMark(repalceWithTxt, "Replace with...");
+            WaterMark.TextBoxWaterMark(findTxtBox, "Find text...");
+
+            if (GlobalVariables.findTabOpen)
+                findNReplaceTab.SelectTab(0);
+            else
+                findNReplaceTab.SelectTab(1);
             if (GlobalVariables.darkColor)
-                DarkMode.FinAndReplaceDarkMode(this, singleReplaceBtn, multiReplaceBtn, findTxt, repalceWithTxt, groupBox1, ignoreCaseCheckBox);
+                DarkMode.FinAndReplaceDarkMode(this, singleReplaceBtn, multiReplaceBtn, findTxt, repalceWithTxt, groupBox1,
+                    ignoreCaseCheckBox,findNReplaceTab.TabPages[0], findNReplaceTab.TabPages[1],findBtn,findTxtBox);
         }
 
         private void multiReplaceBtn_Click(object sender, EventArgs e)
         {
             if (Form1.Instance != null)
-                Form1.Instance.textEditorControl1.Text = ReplaceAll(Form1.Instance.textEditorControl1.Text, findTxt.Text, repalceWithTxt.Text, _ignoreCase);
+                Form1.Instance.textEditorControl1.Text = ReplaceAll(Form1.Instance.textEditorControl1.Text, findTxt.Text, repalceWithTxt.Text, _ignoreCase,_matchCase);
         }
 
         /// <summary>
@@ -48,7 +59,7 @@ namespace CIARE
         /// <param name="replaceWith"></param>
         /// <param name="ignoreCase"></param>
         /// <returns></returns>
-        private string ReplaceSingle(TextEditorControl editor, string findWhat, string replaceWith, bool ignoreCase)
+        private string ReplaceSingle(TextEditorControl editor, string findWhat, string replaceWith, bool ignoreCase, bool matchCase)
         {
             try
             {
@@ -80,16 +91,34 @@ namespace CIARE
                 if (ignoreCase)
                 {
                     searchText = editor.Text.Substring(pos).ToLower();
-                    if (!searchText.Contains(findWhat.ToLower()))
-                        _startPos = 0;
-                    offset = searchText.IndexOf(findWhat.ToLower()) + _startPos;
+                    if (matchCase)
+                    {
+                        if (searchText != findWhat.ToLower())
+                            _startPos = 0;
+                        offset = searchText.IndexOf(findWhat.ToLower()) + _startPos;
+                    }
+                    else
+                    {
+                        if (!searchText.Contains(findWhat.ToLower()))
+                            _startPos = 0;
+                        offset = searchText.IndexOf(findWhat.ToLower()) + _startPos;
+                    }
                 }
                 else
                 {
                     searchText = editor.Text.Substring(pos);
-                    if (!searchText.Contains(findWhat))
-                        _startPos = 0;
-                    offset = searchText.IndexOf(findWhat) + _startPos;
+                    if (matchCase)
+                    {
+                        if ( searchText != findWhat)
+                            _startPos = 0;
+                        offset = searchText.IndexOf(findWhat) + _startPos;
+                    }
+                    else
+                    {
+                        if (!searchText.Contains(findWhat))
+                            _startPos = 0;
+                        offset = searchText.IndexOf(findWhat) + _startPos;
+                    }
                 }
                 var endOffset = offset + findWhat.Length;
                 _startPos = endOffset;
@@ -120,7 +149,7 @@ namespace CIARE
         /// <param name="replaceWith"></param>
         /// <param name="ignoreCase"></param>
         /// <returns></returns>
-        private string ReplaceAll(string data, string findWhat, string replaceWith, bool ignoreCase)
+        private string ReplaceAll(string data, string findWhat, string replaceWith, bool ignoreCase, bool matchCase)
         {
             if (string.IsNullOrEmpty(data))
             {
@@ -135,12 +164,23 @@ namespace CIARE
 MessageBoxIcon.Warning);
                 return data;
             }
-
-            if (!data.ToLower().Contains(findWhat.ToLower()))
+            if (matchCase)
             {
-                MessageBox.Show($"Cannot find: {findWhat}", "CIARE", MessageBoxButtons.OK,
-MessageBoxIcon.Information);
-                return data;
+                if (data.ToLower() != findWhat.ToLower())
+                {
+                    MessageBox.Show($"Cannot find: {findWhat}", "CIARE", MessageBoxButtons.OK,
+    MessageBoxIcon.Information);
+                    return data;
+                }
+            }
+            else
+            {
+                if (!data.ToLower().Contains(findWhat.ToLower()))
+                {
+                    MessageBox.Show($"Cannot find: {findWhat}", "CIARE", MessageBoxButtons.OK,
+    MessageBoxIcon.Information);
+                    return data;
+                }
             }
             if (ignoreCase)
                 return Regex.Replace(data, findWhat, replaceWith, RegexOptions.IgnoreCase);
@@ -159,6 +199,19 @@ MessageBoxIcon.Information);
                 _ignoreCase = true;
             else
                 _ignoreCase = false;
+        }
+
+        /// <summary>
+        /// Set the flag for match case
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void matchCaseCkb_CheckedChanged(object sender, EventArgs e)
+        {
+            if (matchCaseCkb.Checked)
+                _matchCase = true;
+            else
+                _matchCase = false;
         }
     }
 }
