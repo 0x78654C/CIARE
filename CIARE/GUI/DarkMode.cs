@@ -26,14 +26,14 @@ namespace CIARE.GUI
         /// <param name="toolStripSeparatorList"></param>
         /// <param name="findButton"></param>
         public static void SetDarkModeMain(Form form, RichTextBox richTextBox, GroupBox groupBox, Label separator1,
-            Label separator2, Label separator3, Label highlight, ComboBox comboBox, MenuStrip menuStrip, TextBox find, 
+            Label separator2, Label separator3, Label highlight, ComboBox comboBox, MenuStrip menuStrip, TextBox find,
             List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList, Button findButton)
         {
-            form.BackColor = Color.FromArgb(51,51,51);
+            form.BackColor = Color.FromArgb(51, 51, 51);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             richTextBox.BackColor = Color.FromArgb(30, 30, 30);
             richTextBox.ForeColor = Color.FromArgb(192, 215, 207);
-            groupBox.ForeColor= Color.FromArgb(192, 215, 207);
+            groupBox.ForeColor = Color.FromArgb(192, 215, 207);
             separator1.ForeColor = Color.FromArgb(192, 215, 207);
             separator2.ForeColor = Color.FromArgb(192, 215, 207);
             separator3.ForeColor = Color.FromArgb(192, 215, 207);
@@ -104,7 +104,8 @@ namespace CIARE.GUI
         /// <param name="replaceWithTxt"></param>
         /// <param name="groupBox"></param>
         /// <param name="ignoreCaseCkb"></param>
-        public static void FinAndReplaceDarkMode(Form form, Button replaceBtn, Button replaceAllBtn, TextBox findWhatTxt, TextBox replaceWithTxt, GroupBox groupBox,CheckBox ignoreCaseCkb)
+        public static void FinAndReplaceDarkMode(Form form, Button replaceBtn, Button replaceAllBtn, TextBox findWhatTxt,
+            TextBox replaceWithTxt, GroupBox groupBox, CheckBox ignoreCaseCkb, TabPage findTab, TabPage replaceTab, Button find,TextBox findTxt)
         {
             form.BackColor = Color.FromArgb(51, 51, 51);
             form.ForeColor = Color.FromArgb(192, 215, 207);
@@ -118,6 +119,14 @@ namespace CIARE.GUI
             replaceWithTxt.ForeColor = Color.FromArgb(192, 215, 207);
             ignoreCaseCkb.ForeColor = Color.FromArgb(192, 215, 207);
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
+            findTab.BackColor = Color.FromArgb(51, 51, 51);
+            findTab.ForeColor = Color.FromArgb(192, 215, 207);
+            replaceTab.BackColor = Color.FromArgb(51, 51, 51);
+            replaceTab.ForeColor = Color.FromArgb(192, 215, 207);
+            findTxt.BackColor = Color.FromArgb(30, 30, 30);
+            findTxt.ForeColor = Color.FromArgb(192, 215, 207);
+            find.BackColor = Color.FromArgb(30, 30, 30);
+            find.ForeColor = Color.FromArgb(192, 215, 207);
         }
     }
 }
