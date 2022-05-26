@@ -1,7 +1,4 @@
-﻿using System.Drawing;
-using System.Windows.Forms;
-using CIARE.GUI;
-
+﻿
 namespace CIARE.Utils
 {
     public class GlobalVariables
@@ -13,6 +10,7 @@ namespace CIARE.Utils
         public static bool exeName = false;
         public static bool checkFormOpen = false;
         public static bool outPutDisplay = false;
+        public static bool findTabOpen = false;
         public static bool darkColor = false;
         public static string binaryName = string.Empty; 
         public static string binaryNameStore = string.Empty; 
