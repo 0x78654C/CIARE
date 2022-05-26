@@ -191,6 +191,8 @@ namespace CIARE
             if (GlobalVariables.openedFilePath.Length > 0)
                 this.Text = $"CIARE {_versionName} | *{GlobalVariables.openedFilePath}";
             LinesManage.GetTotalLinesCount(textEditorControl1, linesCountLbl);
+            textEditorControl1.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
+            textEditorControl1.Document.FoldingManager.UpdateFoldings(null, null);
         }
 
         /// <summary>
@@ -219,6 +221,7 @@ namespace CIARE
                     NewFile();
                     return true;
                 case Keys.H | Keys.Control:
+                    GlobalVariables.findTabOpen = false;
                     FindAndReplace findAndReplace = new FindAndReplace();
                     findAndReplace.Show();
                     return true;
@@ -232,7 +235,10 @@ namespace CIARE
                     OpenFile();
                     return true;
                 case Keys.F | Keys.Control:
-                    Find(textEditorControl1, searchBox.Text);
+                    //Find(textEditorControl1, searchBox.Text);
+                    GlobalVariables.findTabOpen = true;
+                    FindAndReplace find = new FindAndReplace();
+                    find.ShowDialog();
                     return true;
                 case Keys.R | Keys.Control:
                     RunCode();
@@ -245,12 +251,12 @@ namespace CIARE
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
                     CompileBinaryDll();
-                    return true;    
+                    return true;
                 case Keys.W | Keys.Control:
-                    SplitEditorWindow.SplitWindow(textEditorControl1,true);
+                    SplitEditorWindow.SplitWindow(textEditorControl1, true);
                     return true;
                 case Keys.W | Keys.Control | Keys.Shift:
-                    SplitEditorWindow.SplitWindow(textEditorControl1,false);
+                    SplitEditorWindow.SplitWindow(textEditorControl1, false);
                     return true;
                 case Keys.K | Keys.Control:
                     SetOutputWindowState();
@@ -393,11 +399,11 @@ MessageBoxIcon.Warning);
                 textEditorControl1.SetHighlighting(highlightCMB.Text);
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlightCMB.Text);
             }
-            if(highlightCMB.Text == "C#-Dark")
+            if (highlightCMB.Text == "C#-Dark")
             {
                 GlobalVariables.darkColor = true;
-                DarkMode.SetDarkModeMain(this, outputRBT, groupBox1, label1, label2, label3, highlightLbl, 
-                    highlightCMB, menuStrip1,searchBox, ListToolStripMenu(), ListToolStripSeparator(),findButton);
+                DarkMode.SetDarkModeMain(this, outputRBT, groupBox1, label1, label2, label3, highlightLbl,
+                    highlightCMB, menuStrip1, searchBox, ListToolStripMenu(), ListToolStripSeparator(), findButton);
                 return;
             }
             GlobalVariables.darkColor = false;
@@ -454,7 +460,7 @@ MessageBoxIcon.Warning);
             listToosStripS.Add(toolStripSeparator4);
             listToosStripS.Add(toolStripSeparator5);
             listToosStripS.Add(compileStripSeparator1);
-    
+
             return listToosStripS;
         }
 
