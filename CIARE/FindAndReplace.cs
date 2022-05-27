@@ -15,19 +15,14 @@ namespace CIARE
      */
     public partial class FindAndReplace : Form
     {
-        private bool _ignoreCase = false;
+        private bool _ignoreCaseFR = false;
+        private bool _ignoreCaseF = false;
         private bool _matchCase = false;
         private int _startPos = 0;
         public FindAndReplace()
         {
             InitializeComponent();
-    
-        }
 
-        private void singleReplaceBtn_Click(object sender, EventArgs e)
-        {
-            if (Form1.Instance != null)
-                ReplaceSingle(Form1.Instance.textEditorControl1, findTxt.Text, repalceWithTxt.Text, _ignoreCase,_matchCase);
         }
 
         private void FindAndReplace_Load(object sender, EventArgs e)
@@ -37,18 +32,29 @@ namespace CIARE
             WaterMark.TextBoxWaterMark(findTxtBox, "Find text...");
 
             if (GlobalVariables.findTabOpen)
+            {
                 findNReplaceTab.SelectTab(0);
+                findTxtBox.Focus();
+            }
             else
                 findNReplaceTab.SelectTab(1);
+            
             if (GlobalVariables.darkColor)
                 DarkMode.FinAndReplaceDarkMode(this, singleReplaceBtn, multiReplaceBtn, findTxt, repalceWithTxt, groupBox1,
-                    ignoreCaseCheckBox,findNReplaceTab.TabPages[0], findNReplaceTab.TabPages[1],findBtn,findTxtBox);
+                    ignoreCaseCheckBox, findNReplaceTab.TabPages[0], findNReplaceTab.TabPages[1], findBtn, findTxtBox);
         }
+
+        private void singleReplaceBtn_Click(object sender, EventArgs e)
+        {
+            if (Form1.Instance != null)
+                ReplaceSingle(Form1.Instance.textEditorControl1, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
+        }
+
 
         private void multiReplaceBtn_Click(object sender, EventArgs e)
         {
             if (Form1.Instance != null)
-                Form1.Instance.textEditorControl1.Text = ReplaceAll(Form1.Instance.textEditorControl1.Text, findTxt.Text, repalceWithTxt.Text, _ignoreCase,_matchCase);
+                Form1.Instance.textEditorControl1.Text = ReplaceAll(Form1.Instance.textEditorControl1.Text, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
         }
 
         /// <summary>
@@ -91,34 +97,16 @@ namespace CIARE
                 if (ignoreCase)
                 {
                     searchText = editor.Text.Substring(pos).ToLower();
-                    if (matchCase)
-                    {
-                        if (searchText != findWhat.ToLower())
-                            _startPos = 0;
-                        offset = searchText.IndexOf(findWhat.ToLower()) + _startPos;
-                    }
-                    else
-                    {
-                        if (!searchText.Contains(findWhat.ToLower()))
-                            _startPos = 0;
-                        offset = searchText.IndexOf(findWhat.ToLower()) + _startPos;
-                    }
+                    if (!searchText.Contains(findWhat.ToLower()))
+                        _startPos = 0;
+                    offset = searchText.IndexOf(findWhat.ToLower()) + _startPos;
                 }
                 else
                 {
                     searchText = editor.Text.Substring(pos);
-                    if (matchCase)
-                    {
-                        if ( searchText != findWhat)
-                            _startPos = 0;
-                        offset = searchText.IndexOf(findWhat) + _startPos;
-                    }
-                    else
-                    {
-                        if (!searchText.Contains(findWhat))
-                            _startPos = 0;
-                        offset = searchText.IndexOf(findWhat) + _startPos;
-                    }
+                    if (!searchText.Contains(findWhat))
+                        _startPos = 0;
+                    offset = searchText.IndexOf(findWhat) + _startPos;
                 }
                 var endOffset = offset + findWhat.Length;
                 _startPos = endOffset;
@@ -164,28 +152,71 @@ namespace CIARE
 MessageBoxIcon.Warning);
                 return data;
             }
-            if (matchCase)
+            if (!data.ToLower().Contains(findWhat.ToLower()))
             {
-                if (data.ToLower() != findWhat.ToLower())
-                {
-                    MessageBox.Show($"Cannot find: {findWhat}", "CIARE", MessageBoxButtons.OK,
-    MessageBoxIcon.Information);
-                    return data;
-                }
-            }
-            else
-            {
-                if (!data.ToLower().Contains(findWhat.ToLower()))
-                {
-                    MessageBox.Show($"Cannot find: {findWhat}", "CIARE", MessageBoxButtons.OK,
-    MessageBoxIcon.Information);
-                    return data;
-                }
+                MessageBox.Show($"Cannot find: {findWhat}", "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Information);
+                return data;
             }
             if (ignoreCase)
                 return Regex.Replace(data, findWhat, replaceWith, RegexOptions.IgnoreCase);
             else
                 return Regex.Replace(data, findWhat, replaceWith, RegexOptions.None);
+        }
+
+        /// <summary>
+        /// Search next engine for text in text editor.
+        /// </summary>
+        /// <param name="editor"></param>
+        /// <param name="text"></param>
+        private void Find(TextEditorControl editor, string text)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(text))
+                {
+                    MessageBox.Show("You need to provide a text to search!", "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Warning);
+                    return;
+                }
+                
+                if (!editor.Text.ToLower().Contains(text.ToLower()))
+                {
+                    MessageBox.Show($"Cannot find: {text}", "CIARE", MessageBoxButtons.OK,
+   MessageBoxIcon.Information);
+                    return;
+                }
+
+                int pos = _startPos;
+                int leng = editor.Text.Length;
+                string searchText=string.Empty;
+                int offset=0;
+                if (!_ignoreCaseF)
+                {
+                    searchText = editor.Text.Substring(pos);
+                    if (!searchText.Contains(text))
+                        _startPos = 0;
+                    offset = searchText.IndexOf(text) + _startPos;
+                }
+                else
+                {
+                    searchText = editor.Text.Substring(pos).ToLower();
+                    if (!searchText.Contains(text.ToLower()))
+                        _startPos = 0;
+                    offset = searchText.IndexOf(text.ToLower()) + _startPos;
+                }
+                var endOffset = offset + text.Length;
+                _startPos = endOffset;
+                editor.ActiveTextAreaControl.TextArea.Caret.Position = editor.ActiveTextAreaControl.TextArea.Document.OffsetToPosition(endOffset);
+                editor.ActiveTextAreaControl.TextArea.SelectionManager.ClearSelection();
+                var document = editor.ActiveTextAreaControl.TextArea.Document;
+                var selection = new DefaultSelection(document, document.OffsetToPosition(offset), document.OffsetToPosition(endOffset));
+                editor.ActiveTextAreaControl.TextArea.SelectionManager.SetSelection(selection);
+            }
+            catch
+            {
+                _startPos = 0;
+            }
         }
 
         /// <summary>
@@ -196,22 +227,32 @@ MessageBoxIcon.Warning);
         private void ignoreCaseCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             if (ignoreCaseCheckBox.Checked)
-                _ignoreCase = true;
+                _ignoreCaseFR = true;
             else
-                _ignoreCase = false;
+                _ignoreCaseFR = false;
         }
 
         /// <summary>
-        /// Set the flag for match case
+        /// Set the flag for ignore case sensitive in find.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void matchCaseCkb_CheckedChanged(object sender, EventArgs e)
+        private void ignCaseSensFindCkb_CheckedChanged(object sender, EventArgs e)
         {
-            if (matchCaseCkb.Checked)
-                _matchCase = true;
+            if (ignCaseSensFindCkb.Checked)
+                _ignoreCaseF = true;
             else
-                _matchCase = false;
+                _ignoreCaseF = false;
+        }
+
+        /// <summary>
+        /// Button for search in texteditor.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void findBtn_Click(object sender, EventArgs e)
+        {
+            Find(Form1.Instance.textEditorControl1, findTxtBox.Text);
         }
     }
 }

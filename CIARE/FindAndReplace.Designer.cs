@@ -31,7 +31,6 @@ namespace CIARE
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FindAndReplace));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.matchCaseCkb = new System.Windows.Forms.CheckBox();
             this.ignoreCaseCheckBox = new System.Windows.Forms.CheckBox();
             this.multiReplaceBtn = new System.Windows.Forms.Button();
             this.singleReplaceBtn = new System.Windows.Forms.Button();
@@ -40,7 +39,7 @@ namespace CIARE
             this.findNReplaceTab = new System.Windows.Forms.TabControl();
             this.findTab = new System.Windows.Forms.TabPage();
             this.findGroupBox = new System.Windows.Forms.GroupBox();
-            this.matchCaseFindCkb = new System.Windows.Forms.CheckBox();
+            this.ignCaseSensFindCkb = new System.Windows.Forms.CheckBox();
             this.findBtn = new System.Windows.Forms.Button();
             this.findTxtBox = new System.Windows.Forms.TextBox();
             this.repalceTab = new System.Windows.Forms.TabPage();
@@ -53,7 +52,6 @@ namespace CIARE
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.matchCaseCkb);
             this.groupBox1.Controls.Add(this.ignoreCaseCheckBox);
             this.groupBox1.Controls.Add(this.multiReplaceBtn);
             this.groupBox1.Controls.Add(this.singleReplaceBtn);
@@ -65,21 +63,10 @@ namespace CIARE
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             // 
-            // matchCaseCkb
-            // 
-            this.matchCaseCkb.AutoSize = true;
-            this.matchCaseCkb.Location = new System.Drawing.Point(22, 107);
-            this.matchCaseCkb.Name = "matchCaseCkb";
-            this.matchCaseCkb.Size = new System.Drawing.Size(83, 17);
-            this.matchCaseCkb.TabIndex = 5;
-            this.matchCaseCkb.Text = "Match Case";
-            this.matchCaseCkb.UseVisualStyleBackColor = true;
-            this.matchCaseCkb.CheckedChanged += new System.EventHandler(this.matchCaseCkb_CheckedChanged);
-            // 
             // ignoreCaseCheckBox
             // 
             this.ignoreCaseCheckBox.AutoSize = true;
-            this.ignoreCaseCheckBox.Location = new System.Drawing.Point(22, 84);
+            this.ignoreCaseCheckBox.Location = new System.Drawing.Point(22, 98);
             this.ignoreCaseCheckBox.Name = "ignoreCaseCheckBox";
             this.ignoreCaseCheckBox.Size = new System.Drawing.Size(129, 17);
             this.ignoreCaseCheckBox.TabIndex = 4;
@@ -90,9 +77,9 @@ namespace CIARE
             // multiReplaceBtn
             // 
             this.multiReplaceBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.multiReplaceBtn.Location = new System.Drawing.Point(245, 56);
+            this.multiReplaceBtn.Location = new System.Drawing.Point(245, 59);
             this.multiReplaceBtn.Name = "multiReplaceBtn";
-            this.multiReplaceBtn.Size = new System.Drawing.Size(75, 23);
+            this.multiReplaceBtn.Size = new System.Drawing.Size(75, 22);
             this.multiReplaceBtn.TabIndex = 3;
             this.multiReplaceBtn.Text = "Replace All";
             this.multiReplaceBtn.UseVisualStyleBackColor = true;
@@ -101,9 +88,9 @@ namespace CIARE
             // singleReplaceBtn
             // 
             this.singleReplaceBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.singleReplaceBtn.Location = new System.Drawing.Point(245, 26);
+            this.singleReplaceBtn.Location = new System.Drawing.Point(245, 27);
             this.singleReplaceBtn.Name = "singleReplaceBtn";
-            this.singleReplaceBtn.Size = new System.Drawing.Size(75, 23);
+            this.singleReplaceBtn.Size = new System.Drawing.Size(75, 22);
             this.singleReplaceBtn.TabIndex = 2;
             this.singleReplaceBtn.Text = "Replace";
             this.singleReplaceBtn.UseVisualStyleBackColor = true;
@@ -111,17 +98,19 @@ namespace CIARE
             // 
             // repalceWithTxt
             // 
-            this.repalceWithTxt.Location = new System.Drawing.Point(22, 58);
+            this.repalceWithTxt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.repalceWithTxt.Location = new System.Drawing.Point(22, 59);
             this.repalceWithTxt.Name = "repalceWithTxt";
-            this.repalceWithTxt.Size = new System.Drawing.Size(183, 20);
+            this.repalceWithTxt.Size = new System.Drawing.Size(183, 22);
             this.repalceWithTxt.TabIndex = 1;
             this.repalceWithTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // findTxt
             // 
-            this.findTxt.Location = new System.Drawing.Point(22, 28);
+            this.findTxt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.findTxt.Location = new System.Drawing.Point(22, 27);
             this.findTxt.Name = "findTxt";
-            this.findTxt.Size = new System.Drawing.Size(183, 20);
+            this.findTxt.Size = new System.Drawing.Size(183, 22);
             this.findTxt.TabIndex = 0;
             this.findTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
@@ -148,7 +137,7 @@ namespace CIARE
             // 
             // findGroupBox
             // 
-            this.findGroupBox.Controls.Add(this.matchCaseFindCkb);
+            this.findGroupBox.Controls.Add(this.ignCaseSensFindCkb);
             this.findGroupBox.Controls.Add(this.findBtn);
             this.findGroupBox.Controls.Add(this.findTxtBox);
             this.findGroupBox.Location = new System.Drawing.Point(6, 6);
@@ -157,31 +146,34 @@ namespace CIARE
             this.findGroupBox.TabIndex = 0;
             this.findGroupBox.TabStop = false;
             // 
-            // matchCaseFindCkb
+            // ignCaseSensFindCkb
             // 
-            this.matchCaseFindCkb.AutoSize = true;
-            this.matchCaseFindCkb.Location = new System.Drawing.Point(17, 91);
-            this.matchCaseFindCkb.Name = "matchCaseFindCkb";
-            this.matchCaseFindCkb.Size = new System.Drawing.Size(83, 17);
-            this.matchCaseFindCkb.TabIndex = 2;
-            this.matchCaseFindCkb.Text = "Match Case";
-            this.matchCaseFindCkb.UseVisualStyleBackColor = true;
+            this.ignCaseSensFindCkb.AutoSize = true;
+            this.ignCaseSensFindCkb.Location = new System.Drawing.Point(24, 88);
+            this.ignCaseSensFindCkb.Name = "ignCaseSensFindCkb";
+            this.ignCaseSensFindCkb.Size = new System.Drawing.Size(129, 17);
+            this.ignCaseSensFindCkb.TabIndex = 5;
+            this.ignCaseSensFindCkb.Text = "Ignore Case Sensitive";
+            this.ignCaseSensFindCkb.UseVisualStyleBackColor = true;
+            this.ignCaseSensFindCkb.CheckedChanged += new System.EventHandler(this.ignCaseSensFindCkb_CheckedChanged);
             // 
             // findBtn
             // 
             this.findBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.findBtn.Location = new System.Drawing.Point(252, 34);
+            this.findBtn.Location = new System.Drawing.Point(249, 37);
             this.findBtn.Name = "findBtn";
-            this.findBtn.Size = new System.Drawing.Size(75, 23);
+            this.findBtn.Size = new System.Drawing.Size(75, 22);
             this.findBtn.TabIndex = 1;
             this.findBtn.Text = "Find";
             this.findBtn.UseVisualStyleBackColor = true;
+            this.findBtn.Click += new System.EventHandler(this.findBtn_Click);
             // 
             // findTxtBox
             // 
-            this.findTxtBox.Location = new System.Drawing.Point(17, 36);
+            this.findTxtBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.findTxtBox.Location = new System.Drawing.Point(24, 37);
             this.findTxtBox.Name = "findTxtBox";
-            this.findTxtBox.Size = new System.Drawing.Size(229, 20);
+            this.findTxtBox.Size = new System.Drawing.Size(183, 22);
             this.findTxtBox.TabIndex = 0;
             this.findTxtBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
@@ -234,10 +226,9 @@ namespace CIARE
         private System.Windows.Forms.TabControl findNReplaceTab;
         private System.Windows.Forms.TabPage findTab;
         private System.Windows.Forms.TabPage repalceTab;
-        private System.Windows.Forms.CheckBox matchCaseCkb;
         private System.Windows.Forms.GroupBox findGroupBox;
         private System.Windows.Forms.Button findBtn;
         private System.Windows.Forms.TextBox findTxtBox;
-        private System.Windows.Forms.CheckBox matchCaseFindCkb;
+        private System.Windows.Forms.CheckBox ignCaseSensFindCkb;
     }
 }
