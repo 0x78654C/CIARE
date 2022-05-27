@@ -29,7 +29,6 @@ namespace CIARE
             _versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             _versionName = _versionName.Substring(0, _versionName.Length - 2);
             this.Text = $"CIARE {_versionName}";
-            WaterMark.TextBoxWaterMark(searchBox, "Find text...");
             ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1, highlightCMB);
             ReadOutputWindowState(GlobalVariables.registryPath);
             Console.SetOut(new ControlWriter(outputRBT));
@@ -111,7 +110,6 @@ namespace CIARE
         private void RunCode()
         {
             ShowOutputOnCompileRun(true);
-            findButton.Enabled = false;
             if (GlobalVariables.darkColor)
                 outputRBT.ForeColor = Color.FromArgb(192, 215, 207);
             else
@@ -124,7 +122,6 @@ namespace CIARE
             Roslyn.RoslynRun.CompileAndRun(textEditorControl1.Text, outputRBT);
             runCodePb.Image = Properties.Resources.runButton21;
             runCodePb.Enabled = true;
-            findButton.Enabled = true;
             GC.Collect();
         }
 
@@ -274,47 +271,6 @@ namespace CIARE
         }
 
         /// <summary>
-        /// Search next engine for text in text editor.
-        /// </summary>
-        /// <param name="editor"></param>
-        /// <param name="text"></param>
-        private void Find(TextEditorControl editor, string text)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(text))
-                {
-                    MessageBox.Show("You need to provide a text to search!", "CIARE", MessageBoxButtons.OK,
-MessageBoxIcon.Warning);
-                    return;
-                }
-                if (!editor.Text.ToLower().Contains(text.ToLower()))
-                {
-                    MessageBox.Show($"Cannot find: {text}", "CIARE", MessageBoxButtons.OK,
-   MessageBoxIcon.Information);
-                    return;
-                }
-                int pos = _startPos;
-                int leng = editor.Text.Length;
-                string searchText = editor.Text.Substring(pos).ToLower();
-                if (!searchText.Contains(text.ToLower()))
-                    _startPos = 0;
-                var offset = searchText.IndexOf(text.ToLower()) + _startPos;
-                var endOffset = offset + text.Length;
-                _startPos = endOffset;
-                editor.ActiveTextAreaControl.TextArea.Caret.Position = editor.ActiveTextAreaControl.TextArea.Document.OffsetToPosition(endOffset);
-                editor.ActiveTextAreaControl.TextArea.SelectionManager.ClearSelection();
-                var document = editor.ActiveTextAreaControl.TextArea.Document;
-                var selection = new DefaultSelection(document, document.OffsetToPosition(offset), document.OffsetToPosition(endOffset));
-                editor.ActiveTextAreaControl.TextArea.SelectionManager.SetSelection(selection);
-            }
-            catch
-            {
-                _startPos = 0;
-            }
-        }
-
-        /// <summary>
         /// Open file and set title with path.
         /// </summary>
         private void OpenFile()
@@ -403,12 +359,12 @@ MessageBoxIcon.Warning);
             {
                 GlobalVariables.darkColor = true;
                 DarkMode.SetDarkModeMain(this, outputRBT, groupBox1, label1, label2, label3, highlightLbl,
-                    highlightCMB, menuStrip1, searchBox, ListToolStripMenu(), ListToolStripSeparator(), findButton);
+                    highlightCMB, menuStrip1, ListToolStripMenu(), ListToolStripSeparator());
                 return;
             }
             GlobalVariables.darkColor = false;
             LightMode.SetLightModeMain(this, outputRBT, groupBox1, highlightLbl,
-                highlightCMB, menuStrip1, searchBox, ListToolStripMenu(), ListToolStripSeparator(), findButton);
+                highlightCMB, menuStrip1, ListToolStripMenu(), ListToolStripSeparator());
         }
 
         /// <summary>
@@ -444,6 +400,7 @@ MessageBoxIcon.Warning);
             listToosStripM.Add(goToLineStripMenuItem);
             listToosStripM.Add(cmdLinesArgsStripMenuItem);
             listToosStripM.Add(splitVEditorToolStripMenuItem);
+            listToosStripM.Add(fIleToolStripMenuItem);
             return listToosStripM;
         }
 
@@ -508,7 +465,6 @@ MessageBoxIcon.Information);
         /// <param name="e"></param>
         private void findButton_Click(object sender, EventArgs e)
         {
-            Find(textEditorControl1, searchBox.Text);
         }
 
         /// <summary>
@@ -693,6 +649,12 @@ MessageBoxIcon.Warning);
         private void cmdLinesArgsStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^l");
+        }
+
+
+        private void finStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^f");
         }
         #endregion
 

@@ -63,6 +63,7 @@ namespace CIARE
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitVEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.compileStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.showHideHSCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -74,11 +75,9 @@ namespace CIARE
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
-            this.searchBox = new System.Windows.Forms.TextBox();
-            this.findButton = new System.Windows.Forms.Button();
             this.linesCountLbl = new System.Windows.Forms.Label();
             this.linesPositionLbl = new System.Windows.Forms.Label();
-            this.compileStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.finStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -213,6 +212,7 @@ namespace CIARE
             this.pasteStripMenuItem,
             this.deleteStripMenuItem,
             this.toolStripSeparator4,
+            this.finStripMenuItem,
             this.replaceStripMenuItem,
             this.goToLineStripMenuItem,
             this.selectAllStripMenuItem3});
@@ -351,6 +351,11 @@ namespace CIARE
             this.splitVEditorToolStripMenuItem.Text = "Split Editor  H     ( CTRL + Shfit + W )";
             this.splitVEditorToolStripMenuItem.Click += new System.EventHandler(this.splitVEditorToolStripMenuItem_Click);
             // 
+            // compileStripSeparator1
+            // 
+            this.compileStripSeparator1.Name = "compileStripSeparator1";
+            this.compileStripSeparator1.Size = new System.Drawing.Size(263, 6);
+            // 
             // showHideHSCToolStripMenuItem
             // 
             this.showHideHSCToolStripMenuItem.Name = "showHideHSCToolStripMenuItem";
@@ -369,7 +374,7 @@ namespace CIARE
             // aboutToolStripMenuItem
             // 
             this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
             this.aboutToolStripMenuItem.Text = "About";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
@@ -490,25 +495,6 @@ namespace CIARE
             this.label3.TabIndex = 11;
             this.label3.Text = "|";
             // 
-            // searchBox
-            // 
-            this.searchBox.Location = new System.Drawing.Point(486, 3);
-            this.searchBox.Name = "searchBox";
-            this.searchBox.Size = new System.Drawing.Size(114, 20);
-            this.searchBox.TabIndex = 12;
-            this.searchBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            // 
-            // findButton
-            // 
-            this.findButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.findButton.Location = new System.Drawing.Point(612, 1);
-            this.findButton.Name = "findButton";
-            this.findButton.Size = new System.Drawing.Size(102, 23);
-            this.findButton.TabIndex = 13;
-            this.findButton.Text = "Find ( CTRL + F )";
-            this.findButton.UseVisualStyleBackColor = true;
-            this.findButton.Click += new System.EventHandler(this.findButton_Click);
-            // 
             // linesCountLbl
             // 
             this.linesCountLbl.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -529,10 +515,12 @@ namespace CIARE
             this.linesPositionLbl.TabIndex = 15;
             this.linesPositionLbl.Text = "linesPosition";
             // 
-            // compileStripSeparator1
+            // finStripMenuItem
             // 
-            this.compileStripSeparator1.Name = "compileStripSeparator1";
-            this.compileStripSeparator1.Size = new System.Drawing.Size(263, 6);
+            this.finStripMenuItem.Name = "finStripMenuItem";
+            this.finStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.finStripMenuItem.Text = "Find          ( CTRL + F  )";
+            this.finStripMenuItem.Click += new System.EventHandler(this.finStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -542,8 +530,6 @@ namespace CIARE
             this.ClientSize = new System.Drawing.Size(1209, 747);
             this.Controls.Add(this.linesPositionLbl);
             this.Controls.Add(this.linesCountLbl);
-            this.Controls.Add(this.findButton);
-            this.Controls.Add(this.searchBox);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
@@ -599,8 +585,6 @@ namespace CIARE
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.TextBox searchBox;
-        private System.Windows.Forms.Button findButton;
         private System.Windows.Forms.ToolStripMenuItem compileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem compileToexeCtrlShiftBToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem compileToDLLCtrlSfitBToolStripMenuItem;
@@ -624,6 +608,7 @@ namespace CIARE
         public System.Windows.Forms.Label linesCountLbl;
         public System.Windows.Forms.Label linesPositionLbl;
         private System.Windows.Forms.ToolStripSeparator compileStripSeparator1;
+        private System.Windows.Forms.ToolStripMenuItem finStripMenuItem;
     }
 }
 
