@@ -22,8 +22,8 @@ namespace CIARE.GUI
         /// <param name="toolStripMenuList"></param>
         /// <param name="toolStripSeparatorList"></param>
         /// <param name="findButton"></param>
-        public static void SetLightModeMain(Form form, RichTextBox richTextBox, GroupBox groupBox, Label highlight, ComboBox comboBox, MenuStrip menuStrip, TextBox find,
-           List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList, Button findButton)
+        public static void SetLightModeMain(Form form, RichTextBox richTextBox, GroupBox groupBox, Label highlight, ComboBox comboBox, MenuStrip menuStrip,
+           List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList)
         {
             form.BackColor = SystemColors.Window;
             form.ForeColor = Color.Black;
@@ -36,10 +36,6 @@ namespace CIARE.GUI
             menuStrip.BackColor = SystemColors.Window;
             menuStrip.ForeColor = Color.Black;
             menuStrip.Renderer = null;
-            find.BackColor = SystemColors.Window;
-            find.ForeColor = Color.Black;
-            findButton.BackColor = SystemColors.Window;
-            findButton.ForeColor = Color.Black;
             foreach (var toolStripMenu in toolStripMenuList)
             {
                 toolStripMenu.BackColor = SystemColors.Window;
