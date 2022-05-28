@@ -14,7 +14,6 @@ namespace CIARE
     public partial class Form1 : Form
     {
         private string _versionName;
-        private int _startPos = 0;
         private long _openedFileLength = 0;
         private bool _visibleSplitContainer = false;
         private bool _visibleSplitContainerAutoHide = false;
