@@ -5,8 +5,6 @@ using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 using System.Text.RegularExpressions;
 using ICSharpCode.TextEditor.Document;
-using System.Drawing;
-using System.Collections.Generic;
 
 namespace CIARE
 {
@@ -22,7 +20,6 @@ namespace CIARE
         public FindAndReplace()
         {
             InitializeComponent();
-
         }
 
         private void FindAndReplace_Load(object sender, EventArgs e)
@@ -34,7 +31,7 @@ namespace CIARE
             if (GlobalVariables.findTabOpen)
             {
                 findNReplaceTab.SelectTab(0);
-                findTxtBox.Focus();
+                ActiveControl = findTxtBox;
             }
             else
                 findNReplaceTab.SelectTab(1);

@@ -185,7 +185,7 @@ namespace CIARE
             this.repalceTab.Padding = new System.Windows.Forms.Padding(3);
             this.repalceTab.Size = new System.Drawing.Size(358, 150);
             this.repalceTab.TabIndex = 1;
-            this.repalceTab.Text = "Find and Replace";
+            this.repalceTab.Text = "Replace";
             this.repalceTab.UseVisualStyleBackColor = true;
             // 
             // FindAndReplace
