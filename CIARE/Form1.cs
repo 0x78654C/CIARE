@@ -1,7 +1,6 @@
 ﻿using CIARE.Utils;
 using CIARE.GUI;
 using ICSharpCode.TextEditor;
-using ICSharpCode.TextEditor.Document;
 using System;
 using System.Drawing;
 using System.IO;
