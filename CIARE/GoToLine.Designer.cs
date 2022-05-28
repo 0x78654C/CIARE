@@ -74,9 +74,10 @@ namespace CIARE
             // 
             // goToLineNumberTxt
             // 
+            this.goToLineNumberTxt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.goToLineNumberTxt.Location = new System.Drawing.Point(6, 19);
             this.goToLineNumberTxt.Name = "goToLineNumberTxt";
-            this.goToLineNumberTxt.Size = new System.Drawing.Size(220, 20);
+            this.goToLineNumberTxt.Size = new System.Drawing.Size(220, 22);
             this.goToLineNumberTxt.TabIndex = 0;
             this.goToLineNumberTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.goToLineNumberTxt.TextChanged += new System.EventHandler(this.goToLineNumberTxt_TextChanged);
