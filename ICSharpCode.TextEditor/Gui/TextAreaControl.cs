@@ -9,8 +9,8 @@ using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
-
 using ICSharpCode.TextEditor.Document;
+using Microsoft.Win32;
 
 namespace ICSharpCode.TextEditor
 {
@@ -30,7 +30,8 @@ namespace ICSharpCode.TextEditor
 		bool       doHandleMousewheel = true;
 		bool       disposed;
         bool autoHideScrollbars = true;
-		
+		private readonly string _editFontSizeName = "editorFontSizeZoom";
+
 		public TextArea TextArea {
 			get {
 				return textArea;
@@ -331,6 +332,33 @@ namespace ICSharpCode.TextEditor
 			textArea.VirtualTop = new Point(hScrollBar.Value * textArea.TextView.WideSpaceWidth, textArea.VirtualTop.Y);
 			textArea.Invalidate();
 		}
+
+		/// <summary>
+		/// Registry key wirte
+		/// </summary>
+		/// <param name="keyPath"></param>
+		/// <param name="keyName"></param>
+		/// <param name="keyValue"></param>
+		public static void RegKey_WriteSubkey(string keyName, string subKeyName, string subKeyValue)
+		{
+			RegistryKey rk = Registry.CurrentUser.OpenSubKey
+			(keyName, true);
+			rk.SetValue(subKeyName, subKeyValue);
+		}
+
+		/// <summary>
+		/// Store zoom size.
+		/// </summary>
+		/// <param name=""></param>
+		void StoreMouseWheel(bool store, string regPath)
+        {
+			if (store)
+			{
+				float fontSizeF = motherTextEditorControl.Font.Size;
+				string fontSizeS = string.Format("{0:N2}", fontSizeF);
+				RegKey_WriteSubkey(regPath, _editFontSizeName, fontSizeS);
+			}
+		}
 		
 		Util.MouseWheelHandler mouseWheelHandler = new Util.MouseWheelHandler();
 		
@@ -343,9 +371,11 @@ namespace ICSharpCode.TextEditor
 				if (scrollDistance > 0) {
 					motherTextEditorControl.Font = new Font(motherTextEditorControl.Font.Name,
 					                                        motherTextEditorControl.Font.Size + 1);
+					StoreMouseWheel(TextEditorProperties.StoreZoomSize, TextEditorProperties.RegPath);
 				} else {
 					motherTextEditorControl.Font = new Font(motherTextEditorControl.Font.Name,
 					                                        Math.Max(6, motherTextEditorControl.Font.Size - 1));
+					StoreMouseWheel(TextEditorProperties.StoreZoomSize, TextEditorProperties.RegPath);
 				}
 			} else {
 				if (TextEditorProperties.MouseWheelScrollDown)
