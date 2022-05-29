@@ -432,6 +432,7 @@ namespace CIARE
             this.textEditorControl1.TabIndex = 0;
             this.textEditorControl1.VRulerRow = 0;
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
+            this.textEditorControl1.Enter += new System.EventHandler(this.textEditorControl1_Enter);
             // 
             // highlightCMB
             // 

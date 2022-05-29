@@ -223,6 +223,7 @@ namespace CIARE
             this.Text = $"CIARE {_versionName}";
         }
 
+        #region HotKeys Actions
         /// <summary>
         /// Override the key combination listener for file management events.
         /// </summary>
@@ -289,6 +290,7 @@ namespace CIARE
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
+        #endregion
         /// <summary>
         /// Open file and set title with path.
         /// </summary>
