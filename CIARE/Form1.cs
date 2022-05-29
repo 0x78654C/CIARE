@@ -16,6 +16,7 @@ namespace CIARE
         private long _openedFileLength = 0;
         private bool _visibleSplitContainer = false;
         private bool _visibleSplitContainerAutoHide = false;
+        private string _editFontSize = "editorFontSizeZoom";
         public static Form1 Instance { get; private set; }
         public Form1()
         {
@@ -24,10 +25,13 @@ namespace CIARE
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            textEditorControl1.TextEditorProperties.StoreZoomSize = true;
+            textEditorControl1.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             _versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             _versionName = _versionName.Substring(0, _versionName.Length - 2);
             this.Text = $"CIARE {_versionName}";
             ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1, highlightCMB);
+            ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
             ReadOutputWindowState(GlobalVariables.registryPath);
             Console.SetOut(new ControlWriter(outputRBT));
             Instance = this;
@@ -52,7 +56,7 @@ namespace CIARE
         /// <param name="regKeyName"></param>
         /// <param name="textEditor"></param>
         /// <param name="comboBox"></param>
-        private void ReadEditorHighlight(string regKeyName, ICSharpCode.TextEditor.TextEditorControl textEditor, ComboBox comboBox)
+        private void ReadEditorHighlight(string regKeyName, TextEditorControl textEditor, ComboBox comboBox)
         {
             string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", "highlight");
             if (regHighlight.Length > 0)
@@ -64,6 +68,23 @@ namespace CIARE
                 return;
             }
             RegistryManagement.RegKey_CreateKey(regKeyName, "highlight", "Default");
+        }
+
+        /// <summary>
+        /// Read and apply last editor zoom size.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="regSubKey"></param>
+        /// <param name="textEditor"></param>
+        private void ReadEditorFontSize(string regKeyName, string regSubKey, TextEditorControl textEditor)
+        {
+            string sizeFont = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regSubKey);
+            if (sizeFont.Length > 0)
+            {
+                textEditor.Font = new Font("Consolas", float.Parse(sizeFont), FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+                return;
+            }
+            RegistryManagement.RegKey_CreateKey(GlobalVariables.registryPath, regSubKey, "9.75");
         }
 
         /// <summary>
@@ -399,6 +420,7 @@ namespace CIARE
             listToosStripM.Add(cmdLinesArgsStripMenuItem);
             listToosStripM.Add(splitVEditorToolStripMenuItem);
             listToosStripM.Add(fIleToolStripMenuItem);
+            listToosStripM.Add(finStripMenuItem);
             return listToosStripM;
         }
 

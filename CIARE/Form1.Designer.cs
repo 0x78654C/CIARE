@@ -52,6 +52,7 @@ namespace CIARE
             this.pasteStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            this.finStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.replaceStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.goToLineStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.selectAllStripMenuItem3 = new System.Windows.Forms.ToolStripMenuItem();
@@ -77,7 +78,6 @@ namespace CIARE
             this.label3 = new System.Windows.Forms.Label();
             this.linesCountLbl = new System.Windows.Forms.Label();
             this.linesPositionLbl = new System.Windows.Forms.Label();
-            this.finStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -268,6 +268,13 @@ namespace CIARE
             this.toolStripSeparator4.Name = "toolStripSeparator4";
             this.toolStripSeparator4.Size = new System.Drawing.Size(188, 6);
             // 
+            // finStripMenuItem
+            // 
+            this.finStripMenuItem.Name = "finStripMenuItem";
+            this.finStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.finStripMenuItem.Text = "Find          ( CTRL + F  )";
+            this.finStripMenuItem.Click += new System.EventHandler(this.finStripMenuItem_Click);
+            // 
             // replaceStripMenuItem
             // 
             this.replaceStripMenuItem.Name = "replaceStripMenuItem";
@@ -417,6 +424,7 @@ namespace CIARE
             | System.Windows.Forms.AnchorStyles.Right)));
             this.textEditorControl1.BackColor = System.Drawing.SystemColors.Window;
             this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textEditorControl1.Highlighting = null;
             this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
             this.textEditorControl1.Name = "textEditorControl1";
@@ -424,7 +432,6 @@ namespace CIARE
             this.textEditorControl1.TabIndex = 0;
             this.textEditorControl1.VRulerRow = 0;
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
-            this.textEditorControl1.Enter += new System.EventHandler(this.textEditorControl1_Enter);
             // 
             // highlightCMB
             // 
@@ -514,13 +521,6 @@ namespace CIARE
             this.linesPositionLbl.Size = new System.Drawing.Size(65, 13);
             this.linesPositionLbl.TabIndex = 15;
             this.linesPositionLbl.Text = "linesPosition";
-            // 
-            // finStripMenuItem
-            // 
-            this.finStripMenuItem.Name = "finStripMenuItem";
-            this.finStripMenuItem.Size = new System.Drawing.Size(191, 22);
-            this.finStripMenuItem.Text = "Find          ( CTRL + F  )";
-            this.finStripMenuItem.Click += new System.EventHandler(this.finStripMenuItem_Click);
             // 
             // Form1
             // 
