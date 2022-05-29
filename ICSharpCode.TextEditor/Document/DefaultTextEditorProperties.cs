@@ -65,7 +65,10 @@ namespace ICSharpCode.TextEditor.Document
 		string      lineTerminator = "\r\n";
 		bool        autoInsertCurlyBracket = true;
 		bool        supportReadOnlySegments = false;
-		
+		bool        storeZoomSize = false;
+		float       zoomFontSize = 9.75F;
+		string      regPath = string.Empty;
+
 		public int TabIndent {
 			get {
 				return tabIndent;
@@ -317,5 +320,41 @@ namespace ICSharpCode.TextEditor.Document
 				supportReadOnlySegments = value;
 			}
 		}
+
+		public bool StoreZoomSize
+		{
+			get
+			{
+				return storeZoomSize;
+			}
+			set
+			{
+				storeZoomSize = value;
+			}
+		}
+
+		public float ZoomFontSize
+		{
+			get
+			{
+				return zoomFontSize;
+			}
+			set
+			{
+				zoomFontSize = value;
+			}
+		}
+
+		public string RegPath
+        {
+            get
+            {
+				return regPath;
+            }
+            set
+            {
+				regPath = value;
+            }
+        }
 	}
 }

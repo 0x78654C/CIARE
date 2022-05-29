@@ -173,5 +173,22 @@ namespace ICSharpCode.TextEditor.Document
 			get;
 			set;
 		}
+		bool StoreZoomSize
+		{
+			get;
+			set;
+		}
+
+		float ZoomFontSize
+		{
+			get;
+			set;
+		}
+
+		string RegPath
+		{
+			get;
+			set;
+		}
 	}
 }
