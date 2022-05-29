@@ -28,6 +28,8 @@ Useful to run code on the fly and get instant result.
  - Go to line number.
  - Display total lines for editor data.
  - Display caret position (Line, Column)
+ - Folding by curly brackets, region and others.
+ - Autosave font size on editor zoom.
 
 ## Requirements:
 
