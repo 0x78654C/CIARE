@@ -108,7 +108,7 @@ namespace CIARE.Roslyn
         {
             try
             {
-                string roslynDir = Application.StartupPath + "\\bin\\Roslyn\\";
+                string roslynDir = Application.StartupPath + "\\roslyn\\";
                 string pathOutput = Application.StartupPath + "\\binary\\";
                 string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
                 richTextBox.Clear();
