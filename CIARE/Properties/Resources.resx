@@ -117,19 +117,11 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <data name="runButton_gray" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-    <value>
-        iVBORw0KGgoAAAANSUhEUgAAABQAAAASCAYAAABb0P4QAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAO
-        wgAADsIBFShKgAAAAN5JREFUOE+t0EsOgjAQBmC2XoO443I+EumUljYxxHACLuFj5R3ceARXHsCFB6hT
-        ZIiBVKBlkj8zacKXYSKtdcwyOGBf2TkKKGPM0oIWMjaphFsI3AMpLIeHzOUO50mwE6RAzl8g+B7nUVsP
-        gr9hkl+x/4UngZRUsrtSaoNzD/YCKXjnJ94ZcG7hIJCSKfFOBStxjmcBKWu+Pc4GguQn7OEb8i9kv6/v
-        6A02G7UQ1WSwu1G3RoMInbE7IapB0PVrrnKCCF2a91EQVQ/0hahqsKqqRGlVFkXB7IyPC/+Y5APvSmBX
-        jCOrBAAAAABJRU5ErkJggg==
-</value>
-  </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="runButton21" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\runButton21.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="runButton_gray" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\runButton_gray.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>
