@@ -11,6 +11,8 @@ using Microsoft.CodeAnalysis.Emit;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
 using CIARE.Utils;
+using CIARE.GUI;
+using ICSharpCode.TextEditor;
 
 namespace CIARE.Roslyn
 {
@@ -171,11 +173,11 @@ namespace CIARE.Roslyn
                     s_timeSpan = s_stopWatch.Elapsed;
                     richTextBox.Text += $"\n\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
                 }
-                Utils.GlobalVariables.binaryName = string.Empty;
+                GlobalVariables.binaryName = string.Empty;
             }
             catch
             {
-                Utils.GlobalVariables.binaryName = string.Empty;
+                GlobalVariables.binaryName = string.Empty;
             }
         }
 
@@ -189,6 +191,56 @@ namespace CIARE.Roslyn
         private static void ErrorDisplay(RichTextBox richTextBox, string errorId, string errorMessage, int lineNumber)
         {
             richTextBox.Text = $"ERROR: (Line {lineNumber}) | ID: {errorId} -> {errorMessage}";
+        }
+
+
+        /// <summary>
+        /// Compile and run C# code and controlers handle.
+        /// </summary>
+        public static void RunCode(RichTextBox outLogRtb,PictureBox runCodePb, TextEditorControl textEditor,SplitContainer splitContainer, bool runner)
+        {
+            OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer,outLogRtb);
+            if (GlobalVariables.darkColor)
+                outLogRtb.ForeColor = Color.FromArgb(192, 215, 207);
+            else
+                outLogRtb.ForeColor = Color.Black;
+
+            outLogRtb.Clear();
+            outLogRtb.Text = "Compile and Runing..\n";
+            runCodePb.Image = Properties.Resources.runButton_gray;
+            runCodePb.Enabled = false;
+            CompileAndRun(textEditor.Text, outLogRtb);
+            runCodePb.Image = Properties.Resources.runButton21;
+            runCodePb.Enabled = true;
+            GC.Collect();
+        }
+
+        /// <summary>
+        /// Compile code to EXE binary file method.
+        /// </summary>
+        public static void CompileBinaryExe(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb,bool runner)
+        {
+            GlobalVariables.exeName = true;
+            BinaryName binaryName = new BinaryName();
+            if (!GlobalVariables.checkFormOpen)
+                binaryName.ShowDialog();
+            GUI.OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
+            BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb);
+            GC.Collect();
+        }
+
+        /// <summary>
+        /// Compile code to DLL binary file method.
+        /// </summary>
+        public static void CompileBinaryDll(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb, bool runner)
+        {
+            GlobalVariables.exeName = false;
+            BinaryName binaryName = new BinaryName();
+            if (!GlobalVariables.checkFormOpen)
+                binaryName.ShowDialog();
+            OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
+            BinaryCompile(textEditor.Text, false, GlobalVariables.binaryName, outLogRtb);
+            GC.Collect();
         }
     }
 }
