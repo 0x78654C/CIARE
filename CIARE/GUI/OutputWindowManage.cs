@@ -19,7 +19,7 @@ namespace CIARE.GUI
             if (runner)
             {
                 SplitContainerHideShow.ShowSplitContainer(splitContainer);
-                Form1.Instance._visibleSplitContainer = false;
+                Form1.Instance.visibleSplitContainer = false;
                 GlobalVariables.outPutDisplay = false;
                 outLogRtb.Focus();
                 return;
@@ -28,7 +28,7 @@ namespace CIARE.GUI
             if (GlobalVariables.outPutDisplay)
             {
                 SplitContainerHideShow.ShowSplitContainer(splitContainer);
-                Form1.Instance._visibleSplitContainer = false;
+                Form1.Instance.visibleSplitContainer = false;
                 GlobalVariables.outPutDisplay = false;
                 outLogRtb.Focus();
             }
@@ -41,19 +41,19 @@ namespace CIARE.GUI
         /// <param name="splitContainer"></param>
         public static void SetOutputWindowState(RichTextBox outputRtb,SplitContainer splitContainer)
         {
-            if (Form1.Instance._visibleSplitContainer)
+            if (Form1.Instance.visibleSplitContainer)
             {
                 SplitContainerHideShow.ShowSplitContainer(splitContainer);
-                Form1.Instance._visibleSplitContainer = false;
-                Form1.Instance._visibleSplitContainerAutoHide = true;
+                Form1.Instance.visibleSplitContainer = false;
+                Form1.Instance.visibleSplitContainerAutoHide = true;
                 outputRtb.Focus();
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "False");
             }
             else
             {
                 SplitContainerHideShow.HideSplitContainer(splitContainer);
-                Form1.Instance._visibleSplitContainer = true;
-                Form1.Instance._visibleSplitContainerAutoHide = false;
+                Form1.Instance.visibleSplitContainer = true;
+                Form1.Instance.visibleSplitContainerAutoHide = false;
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "True");
             }
         }

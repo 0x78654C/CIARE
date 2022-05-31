@@ -56,14 +56,14 @@ namespace CIARE.GUI
                 if (regHighlight == "False")
                 {
                     SplitContainerHideShow.ShowSplitContainer(splitContainer);
-                    Form1.Instance._visibleSplitContainer = false;
-                    Form1.Instance._visibleSplitContainerAutoHide = true;
+                    Form1.Instance.visibleSplitContainer = false;
+                    Form1.Instance.visibleSplitContainerAutoHide = true;
                 }
                 else
                 {
                     SplitContainerHideShow.HideSplitContainer(splitContainer);
-                    Form1.Instance._visibleSplitContainer = true;
-                    Form1.Instance._visibleSplitContainerAutoHide = false;
+                    Form1.Instance.visibleSplitContainer = true;
+                    Form1.Instance.visibleSplitContainerAutoHide = false;
                 }
                 return;
             }

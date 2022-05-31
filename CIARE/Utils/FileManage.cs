@@ -115,8 +115,8 @@ MessageBoxIcon.Warning);
                 textEditor.Clear();
                 textEditor.Text = openedData;
                 FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                Form1.Instance._openedFileLength = fileInfo.Length;
-                Form1.Instance.Text = $"CIARE { Form1.Instance._versionName} | {GlobalVariables.openedFilePath}";
+                Form1.Instance.openedFileLength = fileInfo.Length;
+                Form1.Instance.Text = $"CIARE { Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
             }
         }
 
@@ -132,16 +132,16 @@ MessageBoxIcon.Warning);
                 {
                     File.WriteAllText(GlobalVariables.openedFilePath, textEditor.Text);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    Form1.Instance._openedFileLength = fileInfo.Length;
-                    Form1.Instance.Text = $"CIARE { Form1.Instance._versionName} | {GlobalVariables.openedFilePath}";
+                    Form1.Instance.openedFileLength = fileInfo.Length;
+                    Form1.Instance.Text = $"CIARE { Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
                     return;
                 }
                 SaveFile(textEditor.Text);
                 if (GlobalVariables.savedFile)
                 {
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    Form1.Instance._openedFileLength = fileInfo.Length;
-                    Form1.Instance.Text = $"CIARE {Form1.Instance._versionName} | {GlobalVariables.openedFilePath}";
+                    Form1.Instance.openedFileLength = fileInfo.Length;
+                    Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
                 }
             }
             catch (Exception ex)
@@ -160,10 +160,10 @@ MessageBoxIcon.Warning);
             if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
                 return;
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-            Form1.Instance._openedFileLength = fileInfo.Length;
+            Form1.Instance.openedFileLength = fileInfo.Length;
             if (GlobalVariables.savedFile)
             {
-                Form1.Instance.Text = $"CIARE {Form1.Instance._versionName} | {GlobalVariables.openedFilePath}";
+                Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
             }
         }
 
@@ -178,7 +178,7 @@ MessageBoxIcon.Warning);
                 return;
             textEditor.Clear();
             GlobalVariables.openedFilePath = string.Empty;
-            Form1.Instance.Text = $"CIARE { Form1.Instance._versionName}";
+            Form1.Instance.Text = $"CIARE { Form1.Instance.versionName}";
         }
 
         /// <summary>
@@ -203,12 +203,12 @@ MessageBoxIcon.Warning);
                     {
                         textEditorControl.Clear();
                         textEditorControl.Text = reader.ReadToEnd();
-                        Form1.Instance.Text = $"CIARE {Form1.Instance._versionName} | {filePath}";
-                        Form1.Instance._openedFileLength = fileInfo.Length;
+                        Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | {filePath}";
+                        Form1.Instance.openedFileLength = fileInfo.Length;
                     }
                     return;
                 }
-                Form1.Instance._openedFileLength = fileInfo.Length;
+                Form1.Instance.openedFileLength = fileInfo.Length;
             }
         }
 
@@ -224,7 +224,7 @@ MessageBoxIcon.Information);
             if (dr == DialogResult.Yes)
             {
                 GlobalVariables.openedFilePath = string.Empty;
-                Form1.Instance.Text = $"CIARE {Form1.Instance._versionName}";
+                Form1.Instance.Text = $"CIARE {Form1.Instance.versionName}";
                 textEditor.Text = GlobalVariables.roslynTemplate;
             }
         }
