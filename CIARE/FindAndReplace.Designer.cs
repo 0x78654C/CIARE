@@ -142,7 +142,7 @@ namespace CIARE
             this.findGroupBox.Controls.Add(this.findTxtBox);
             this.findGroupBox.Location = new System.Drawing.Point(6, 6);
             this.findGroupBox.Name = "findGroupBox";
-            this.findGroupBox.Size = new System.Drawing.Size(346, 138);
+            this.findGroupBox.Size = new System.Drawing.Size(345, 135);
             this.findGroupBox.TabIndex = 0;
             this.findGroupBox.TabStop = false;
             // 

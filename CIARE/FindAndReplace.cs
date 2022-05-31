@@ -251,5 +251,22 @@ MessageBoxIcon.Warning);
         {
             Find(Form1.Instance.textEditorControl1, findTxtBox.Text);
         }
+
+        /// <summary>
+        /// Overwirde escape key to close current form.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            switch (keyData)
+            {
+                case Keys.Escape:
+                    this.Close();
+                    return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
     }
 }
