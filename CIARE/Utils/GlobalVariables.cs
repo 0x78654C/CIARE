@@ -12,6 +12,7 @@ namespace CIARE.Utils
         public static bool outPutDisplay = false;
         public static bool findTabOpen = false;
         public static bool darkColor = false;
+        public static bool noClear = false;
         public static string binaryName = string.Empty; 
         public static string binaryNameStore = string.Empty; 
         public static readonly string registryPath = "SOFTWARE\\CIARE";
