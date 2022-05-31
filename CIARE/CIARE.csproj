@@ -219,7 +219,10 @@
     </Compile>
     <Compile Include="GUI\ColorTableSet.cs" />
     <Compile Include="GUI\DarkMode.cs" />
+    <Compile Include="GUI\InitializeEditor.cs" />
     <Compile Include="GUI\LightMode.cs" />
+    <Compile Include="GUI\ListMenuStripItems.cs" />
+    <Compile Include="GUI\OutputWindowManage.cs" />
     <Compile Include="GUI\RegionFoldingStrategy.cs" />
     <Compile Include="GUI\RenderToolStripSeparator.cs" />
     <Compile Include="Program.cs" />
@@ -289,10 +292,8 @@
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\runButton_gray.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="ciare.ico" />
+    <None Include="Resources\runButton_gray.png" />
     <None Include="Resources\runButton21.png" />
   </ItemGroup>
   <ItemGroup>
