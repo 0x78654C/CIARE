@@ -3,7 +3,7 @@
 </p>
 
 # CIARE
-Simple text editor with C# runtime compiler and code execution using Roslyn.
+Simple text editor for Windows with C# runtime compiler and code execution using Roslyn.
 Useful to run code on the fly and get instant result.
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_1.0.2.png?raw=true)
