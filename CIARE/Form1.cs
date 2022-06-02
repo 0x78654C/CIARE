@@ -168,12 +168,11 @@ namespace CIARE
                     FileManage.OpenFileDialog(textEditorControl1);
                     return true;
                 case Keys.F | Keys.Control:
-                    //Find(textEditorControl1, searchBox.Text);
                     GlobalVariables.findTabOpen = true;
                     FindAndReplace find = new FindAndReplace();
                     find.ShowDialog();
                     return true;
-                case Keys.R | Keys.Control:
+                case Keys.F5:
                     Roslyn.RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
                     return true;
                 case Keys.T | Keys.Control:
@@ -196,16 +195,15 @@ namespace CIARE
                     return true;
                 case Keys.G | Keys.Control:
                     GoToLine goToLine = new GoToLine();
-                    goToLine.Show();
+                    goToLine.ShowDialog();
                     return true;
                 case Keys.L | Keys.Control:
                     CmdLineArgs cmdLineArgs = new CmdLineArgs();
-                    cmdLineArgs.Show();
+                    cmdLineArgs.ShowDialog();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
-
         #endregion
 
 
