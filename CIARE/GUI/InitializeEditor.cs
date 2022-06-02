@@ -67,7 +67,7 @@ namespace CIARE.GUI
                 }
                 return;
             }
-            RegistryManagement.RegKey_CreateKey(regKeyName, "OutWState", "False");
+            RegistryManagement.RegKey_CreateKey(regKeyName, "OutWState", "True");
         }
     }
 }
