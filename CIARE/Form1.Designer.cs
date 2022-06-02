@@ -94,7 +94,7 @@ namespace CIARE
             | System.Windows.Forms.AnchorStyles.Right)));
             this.outputRBT.BackColor = System.Drawing.SystemColors.Window;
             this.outputRBT.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.outputRBT.Font = new System.Drawing.Font("Bahnschrift", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.outputRBT.Font = new System.Drawing.Font("Consolas", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.outputRBT.ForeColor = System.Drawing.SystemColors.MenuText;
             this.outputRBT.Location = new System.Drawing.Point(6, 16);
             this.outputRBT.Name = "outputRBT";
@@ -116,7 +116,7 @@ namespace CIARE
             this.runCodePb.Size = new System.Drawing.Size(28, 21);
             this.runCodePb.TabIndex = 2;
             this.runCodePb.TabStop = false;
-            this.toolTip1.SetToolTip(this.runCodePb, "Run code (CTRL + R)");
+            this.toolTip1.SetToolTip(this.runCodePb, "Run code ( F5 )");
             this.runCodePb.Click += new System.EventHandler(this.runCodePb_Click);
             // 
             // menuStrip1
