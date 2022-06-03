@@ -120,6 +120,8 @@ namespace ICSharpCode.SharpDevelop.Dom
 		void SaveCacheIndex(Dictionary<string, string> cacheIndex)
 		{
 			string indexFile = GetIndexFileName();
+
+		
 			using (FileStream fs = new FileStream(indexFile, FileMode.Create, FileAccess.Write)) {
 				using (BinaryWriter writer = new BinaryWriter(fs)) {
 					writer.Write(IndexFileMagic);

@@ -24,7 +24,54 @@ namespace ICSharpCode.SharpDevelop.Dom
 	{
 		internal DomPersistence persistence;
 		Dictionary<string, IProjectContent> contents = new Dictionary<string, IProjectContent>(StringComparer.OrdinalIgnoreCase);
-		
+
+
+
+
+
+
+		static (bool isManaged, Assembly assembly, string name) IsManaged(string name)
+		{
+			try
+			{
+				var b = AssemblyName.GetAssemblyName(name);
+				return (true, Assembly.Load(b), b.Name);
+			}
+			catch
+			{
+			}
+
+			return (false, null, null);
+		}
+
+
+		private static Dictionary<string, Assembly> _assemblies = Directory.GetFiles(Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location))
+	.Select(e => IsManaged(e))
+	.Where(e => e.isManaged)
+	.Select(e => new { e.name, e.assembly })
+	.GroupBy(e => e.name)
+	.ToDictionary(e => e.Key, e => e.First().assembly);
+
+		public IProjectContent[] LoadAll()
+		{
+
+			return _assemblies.Select(e => e.Value).Select(e => load(e)).Where(e => e != null).ToArray();
+
+		}
+
+		public IProjectContent load(Assembly assembly)
+        {
+            try
+            {
+			return	new ReflectionProjectContent(assembly, this);
+
+			}
+			catch(Exception e)
+            {
+				return null;
+            }
+        }
+
 		/// <summary>
 		/// Disposes all project contents stored in this registry.
 		/// </summary>
@@ -61,17 +108,7 @@ namespace ICSharpCode.SharpDevelop.Dom
 		
 		ReflectionProjectContent mscorlibContent;
 		
-		/// <summary>
-		/// Runs the method inside the lock of the registry.
-		/// Use this method if you want to call multiple methods on the ProjectContentRegistry and ensure
-		/// that no other thread accesses the registry while your method runs.
-		/// </summary>
-		public void RunLocked(ThreadStart method)
-		{
-			lock (contents) {
-				method();
-			}
-		}
+
 		
 		public virtual IProjectContent Mscorlib {
 			get {
@@ -114,36 +151,7 @@ namespace ICSharpCode.SharpDevelop.Dom
 			}
 		}
 		
-		public virtual ICollection<IProjectContent> GetLoadedProjectContents()
-		{
-			lock (contents) { // we need to return a copy because we have to lock
-				return new List<IProjectContent>(contents.Values);
-			}
-		}
-		
-		/// <summary>
-		/// Unloads the specified project content, causing it to be reloaded when
-		/// GetProjectContentForReference is called the next time.
-		/// Warning: do not unload project contents that are still in use! Doing so will result
-		/// in an ObjectDisposedException when the unloaded project content is used the next time!
-		/// </summary>
-		public void UnloadProjectContent(IProjectContent pc)
-		{
-			if (pc == null)
-				throw new ArgumentNullException("pc");
-			LoggingService.Debug("ProjectContentRegistry.UnloadProjectContent: " + pc);
-			lock (contents) {
-				// find all keys used for the project content - might be the short name/full name/file name
-				List<string> keys = new List<string>();
-				foreach (KeyValuePair<string, IProjectContent> pair in contents) {
-					if (pair.Value == pc) keys.Add(pair.Key);
-				}
-				foreach (string key in keys) {
-					contents.Remove(key);
-				}
-			}
-			pc.Dispose();
-		}
+
 		
 		public IProjectContent GetExistingProjectContent(DomAssemblyName assembly)
 		{
@@ -177,117 +185,8 @@ namespace ICSharpCode.SharpDevelop.Dom
 			return null;
 		}
 		
-		public virtual IProjectContent GetProjectContentForReference(string itemInclude, string itemFileName)
-		{
-			lock (contents) {
-				IProjectContent pc = GetExistingProjectContent(itemFileName);
-				if (pc != null) {
-					return pc;
-				}
-				
-				LoggingService.Debug("Loading PC for " + itemInclude);
-				
-				string shortName = itemInclude;
-				int pos = shortName.IndexOf(',');
-				if (pos > 0)
-					shortName = shortName.Substring(0, pos);
-				
-				#if DEBUG
-				int time = Environment.TickCount;
-				#endif
-				
-				try {
-					pc = LoadProjectContent(itemInclude, itemFileName);
-				} catch (Exception ex) {
-					HostCallback.ShowAssemblyLoadErrorInternal(itemFileName, itemInclude, "Error loading assembly:\n" + ex.ToString());
-				} finally {
-					#if DEBUG
-					LoggingService.Debug(string.Format("Loaded {0} in {1}ms", itemInclude, Environment.TickCount - time));
-					#endif
-				}
-				
-				if (pc != null) {
-					ReflectionProjectContent reflectionProjectContent = pc as ReflectionProjectContent;
-					if (reflectionProjectContent != null) {
-						reflectionProjectContent.InitializeReferences();
-						if (reflectionProjectContent.AssemblyFullName != null) {
-							contents[reflectionProjectContent.AssemblyFullName] = pc;
-						}
-					}
-					contents[itemInclude] = pc;
-					contents[itemFileName] = pc;
-				}
-				return pc;
-			}
-		}
-		
-		protected virtual IProjectContent LoadProjectContent(string itemInclude, string itemFileName)
-		{
-			string shortName = itemInclude;
-			int pos = shortName.IndexOf(',');
-			if (pos > 0)
-				shortName = shortName.Substring(0, pos);
-			
-			Assembly assembly = GetDefaultAssembly(shortName);
-			ReflectionProjectContent pc = null;
-			if (assembly != null) {
-				if (persistence != null) {
-					pc = persistence.LoadProjectContentByAssemblyName(assembly.FullName);
-				}
-				if (pc == null) {
-					pc = new ReflectionProjectContent(assembly, this);
-					if (persistence != null) {
-						persistence.SaveProjectContent(pc);
-					}
-				}
-			} else {
-				// find real file name for cecil:
-				if (File.Exists(itemFileName)) {
-					if (persistence != null) {
-						pc = persistence.LoadProjectContentByAssemblyName(itemFileName);
-					}
-					if (pc == null) {
-						pc = CecilReader.LoadAssembly(itemFileName, this);
-						
-						if (persistence != null) {
-							persistence.SaveProjectContent(pc);
-						}
-					}
-				} else {
-					DomAssemblyName asmName = GacInterop.FindBestMatchingAssemblyName(itemInclude);
-					if (persistence != null && asmName != null) {
-						//LoggingService.Debug("Looking up in DOM cache: " + asmName.FullName);
-						pc = persistence.LoadProjectContentByAssemblyName(asmName.FullName);
-					}
-					if (pc == null && asmName != null) {
-						string subPath = Path.Combine(asmName.ShortName, GetVersion__Token(asmName));
-						subPath = Path.Combine(subPath, asmName.ShortName + ".dll");
-						foreach (string dir in Directory.GetDirectories(GacInterop.GacRootPath, "GAC*")) {
-							itemFileName = Path.Combine(dir, subPath);
-							if (File.Exists(itemFileName)) {
-								pc = CecilReader.LoadAssembly(itemFileName, this);
-								if (persistence != null) {
-									persistence.SaveProjectContent(pc);
-								}
-								break;
-							}
-						}
-					}
-					if (pc == null) {
-						HostCallback.ShowAssemblyLoadErrorInternal(itemFileName, itemInclude, "Could not find assembly file.");
-					}
-				}
-			}
-			return pc;
-		}
-		
-		static string GetVersion__Token(DomAssemblyName asmName)
-		{
-			StringBuilder b = new StringBuilder(asmName.Version.ToString());
-			b.Append("__");
-			b.Append(asmName.PublicKeyToken);
-			return b.ToString();
-		}
+	
+
 		
 		public static Assembly MscorlibAssembly {
 			get {
@@ -301,17 +200,7 @@ namespace ICSharpCode.SharpDevelop.Dom
 			}
 		}
 		//work
-		public static bool IsManaged(string path)
-		{
-			try
-			{
-				var b = AssemblyName.GetAssemblyName(path);
-				return true;
-			}
-			catch
-			{ }
-			return false;
-		}
+
 
 		protected virtual Assembly GetDefaultAssembly(string shortName)
 		{
