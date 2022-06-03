@@ -499,6 +499,5 @@ namespace CIARE
             cu.AcceptVisitor(converter, null);
             return converter.Cu;
         }
-
     }
 }

@@ -310,7 +310,7 @@
       <Project>{2d18be89-d210-49eb-a9dd-2246fbb3df6d}</Project>
       <Name>ICSharpCode.TextEditor</Name>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\mrx\Downloads\SharpDevelop_3.2.1.6466_Source\src\Libraries\NRefactory\Project\NRefactory.csproj">
+    <ProjectReference Include="..\NRefactory\Project\NRefactory.csproj">
       <Project>{3a9ae6aa-bc07-4a2f-972c-581e3ae2f195}</Project>
       <Name>NRefactory</Name>
     </ProjectReference>

@@ -201,7 +201,7 @@
       <Project>{35cef10f-2d4c-45f2-9dd1-161e0fec583c}</Project>
       <Name>ICSharpCode.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\mrx\Downloads\SharpDevelop_3.2.1.6466_Source\src\Libraries\NRefactory\Project\NRefactory.csproj">
+    <ProjectReference Include="..\..\NRefactory\Project\NRefactory.csproj">
       <Project>{3a9ae6aa-bc07-4a2f-972c-581e3ae2f195}</Project>
       <Name>NRefactory</Name>
     </ProjectReference>
