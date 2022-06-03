@@ -5,6 +5,12 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using NRefactory = ICSharpCode.NRefactory;
+using Dom = ICSharpCode.SharpDevelop.Dom;
+using System.Threading;
+using System.Linq;
+using CIARE.Roslyn;
+using Microsoft.CodeAnalysis;
 
 namespace CIARE
 {
@@ -16,6 +22,13 @@ namespace CIARE
         public bool visibleSplitContainerAutoHide = false;
         private string _editFontSize = "editorFontSizeZoom";
         public static Form1 Instance { get; private set; }
+        internal static Dom.ProjectContentRegistry pcRegistry;
+        internal static Dom.DefaultProjectContent myProjectContent;
+        internal static Dom.ParseInformation parseInformation = new Dom.ParseInformation();
+        public static bool IsVisualBasic = false;
+        Dom.ICompilationUnit lastCompilationUnit;
+        public const string DummyFileName = "edited.cs";
+        static readonly Dom.LanguageProperties CurrentLanguageProperties = IsVisualBasic ? Dom.LanguageProperties.VBNet : Dom.LanguageProperties.CSharp;
         public Form1()
         {
             InitializeComponent();
@@ -31,8 +44,23 @@ namespace CIARE
             this.Text = $"CIARE {versionName}";
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1, highlightCMB);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
-            InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath,splitContainer1);
+            InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
             Console.SetOut(new ControlWriter(outputRBT));
+            HostCallbackImplementation.Register(this);
+            CodeCompletionKeyHandler.Attach(this, textEditorControl1);
+            ToolTipProvider.Attach(this, textEditorControl1);
+
+            pcRegistry = new Dom.ProjectContentRegistry(); // Default .NET 2.0 registry
+
+            // Persistence lets SharpDevelop.Dom create a cache file on disk so that
+            // future starts are faster.
+            // It also caches XML documentation files in an on-disk hash table, thus
+            // reducing memory usage.
+            pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(),
+                                                        "CSharpCodeCompletion"));
+
+            myProjectContent = new Dom.DefaultProjectContent();
+            myProjectContent.Language = CurrentLanguageProperties;
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             textEditorControl1.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
@@ -57,7 +85,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
-            Roslyn.RoslynRun.RunCode(outputRBT,runCodePb,textEditorControl1,splitContainer1,true);
+            Roslyn.RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
         }
 
         /// <summary>
@@ -191,7 +219,7 @@ namespace CIARE
                     SplitEditorWindow.SplitWindow(textEditorControl1, false);
                     return true;
                 case Keys.K | Keys.Control:
-                    OutputWindowManage.SetOutputWindowState(outputRBT,splitContainer1);
+                    OutputWindowManage.SetOutputWindowState(outputRBT, splitContainer1);
                     return true;
                 case Keys.G | Keys.Control:
                     GoToLine goToLine = new GoToLine();
@@ -239,7 +267,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void LoadCStripMenuItem_Click(object sender, EventArgs e)
         {
-           FileManage.LoadCSTemplate(textEditorControl1);
+            FileManage.LoadCSTemplate(textEditorControl1);
         }
 
 
@@ -253,7 +281,7 @@ namespace CIARE
             AboutBox aboutBox = new AboutBox();
             aboutBox.ShowDialog();
         }
-    
+
 
         /// <summary>
         /// Compile code to binary exe file.
@@ -262,7 +290,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Roslyn.RoslynRun.CompileBinaryExe(textEditorControl1,splitContainer1,outputRBT, false);
+            Roslyn.RoslynRun.CompileBinaryExe(textEditorControl1, splitContainer1, outputRBT, false);
         }
 
         /// <summary>
@@ -298,7 +326,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void Form1_Activated(object sender, EventArgs e)
         {
-           FileManage.CheckFileExternalEdited(GlobalVariables.openedFilePath, openedFileLength, textEditorControl1);
+            FileManage.CheckFileExternalEdited(GlobalVariables.openedFilePath, openedFileLength, textEditorControl1);
         }
 
 
@@ -383,5 +411,94 @@ namespace CIARE
                 visibleSplitContainer = true;
             }
         }
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+
+            parserThread = new Thread(ParserThread);
+            parserThread.IsBackground = true;
+            parserThread.Start();
+        }
+        Thread parserThread;
+        void ParserThread()
+        {
+            myProjectContent.AddReferencedContent(pcRegistry.Mscorlib);
+
+            // do one initial parser step to enable code-completion while other
+            // references are loading
+            ParseStep();
+            //            string assemblyName1 = Path.GetRandomFileName();
+            //            string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
+            //            var references = Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
+            //.Where(t => ManageCheck.IsManaged(t));
+            string[] referencedAssemblies = {
+                "System", "System.Data", "System.Drawing", "System.Xml","System.Security", "System.Windows.Forms", "Microsoft.VisualBasic"
+            };
+            foreach (var assemblyName in referencedAssemblies)
+            {
+                // int splitCount = assemblyName.Split('\\').Count();
+                // string assemblyNameCopy = assemblyName.Split('\\').Last();
+                Dom.IProjectContent referenceProjectContent = pcRegistry.GetProjectContentForReference(assemblyName, assemblyName);
+                myProjectContent.AddReferencedContent(referenceProjectContent);
+                if (referenceProjectContent is Dom.ReflectionProjectContent)
+                {
+                    (referenceProjectContent as Dom.ReflectionProjectContent).InitializeReferences();
+                }
+            }
+            if (IsVisualBasic)
+            {
+                myProjectContent.DefaultImports = new Dom.DefaultUsing(myProjectContent);
+                myProjectContent.DefaultImports.Usings.Add("System");
+                myProjectContent.DefaultImports.Usings.Add("System.Text");
+                myProjectContent.DefaultImports.Usings.Add("Microsoft.VisualBasic");
+            }
+
+            // Parse the current file every 2 seconds
+            while (!IsDisposed)
+            {
+                ParseStep();
+
+                Thread.Sleep(2000);
+            }
+        }
+
+        void ParseStep()
+        {
+            string code = null;
+            Invoke(new MethodInvoker(delegate
+            {
+                code = textEditorControl1.Text;
+            }));
+            TextReader textReader = new StringReader(code);
+            Dom.ICompilationUnit newCompilationUnit;
+            NRefactory.SupportedLanguage supportedLanguage;
+            if (IsVisualBasic)
+                supportedLanguage = NRefactory.SupportedLanguage.VBNet;
+            else
+                supportedLanguage = NRefactory.SupportedLanguage.CSharp;
+            using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(supportedLanguage, textReader))
+            {
+                // we only need to parse types and method definitions, no method bodies
+                // so speed up the parser and make it more resistent to syntax
+                // errors in methods
+                p.ParseMethodBodies = false;
+
+                p.Parse();
+                newCompilationUnit = ConvertCompilationUnit(p.CompilationUnit);
+            }
+            // Remove information from lastCompilationUnit and add information from newCompilationUnit.
+            myProjectContent.UpdateCompilationUnit(lastCompilationUnit, newCompilationUnit, DummyFileName);
+            lastCompilationUnit = newCompilationUnit;
+            parseInformation.SetCompilationUnit(newCompilationUnit);
+        }
+
+        Dom.ICompilationUnit ConvertCompilationUnit(NRefactory.Ast.CompilationUnit cu)
+        {
+            Dom.NRefactoryResolver.NRefactoryASTConvertVisitor converter;
+            converter = new Dom.NRefactoryResolver.NRefactoryASTConvertVisitor(myProjectContent);
+            cu.AcceptVisitor(converter, null);
+            return converter.Cu;
+        }
+
     }
 }

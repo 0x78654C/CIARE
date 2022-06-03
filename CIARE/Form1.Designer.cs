@@ -78,6 +78,7 @@ namespace CIARE
             this.label3 = new System.Windows.Forms.Label();
             this.linesCountLbl = new System.Windows.Forms.Label();
             this.linesPositionLbl = new System.Windows.Forms.Label();
+            this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -523,6 +524,62 @@ namespace CIARE
             this.linesPositionLbl.TabIndex = 15;
             this.linesPositionLbl.Text = "linesPosition";
             // 
+            // imageList1
+            // 
+            this.imageList1.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList1.ImageStream")));
+            this.imageList1.TransparentColor = System.Drawing.Color.Transparent;
+            this.imageList1.Images.SetKeyName(0, "Icons.16x16.Class.png");
+            this.imageList1.Images.SetKeyName(1, "Icons.16x16.Delegate.png");
+            this.imageList1.Images.SetKeyName(2, "Icons.16x16.Enum.png");
+            this.imageList1.Images.SetKeyName(3, "Icons.16x16.Event.png");
+            this.imageList1.Images.SetKeyName(4, "Icons.16x16.ExtensionMethod.png");
+            this.imageList1.Images.SetKeyName(5, "Icons.16x16.Field.png");
+            this.imageList1.Images.SetKeyName(6, "Icons.16x16.Indexer.png");
+            this.imageList1.Images.SetKeyName(7, "Icons.16x16.Interface.png");
+            this.imageList1.Images.SetKeyName(8, "Icons.16x16.InternalClass.png");
+            this.imageList1.Images.SetKeyName(9, "Icons.16x16.InternalDelegate.png");
+            this.imageList1.Images.SetKeyName(10, "Icons.16x16.InternalEnum.png");
+            this.imageList1.Images.SetKeyName(11, "Icons.16x16.InternalEvent.png");
+            this.imageList1.Images.SetKeyName(12, "Icons.16x16.InternalExtensionMethod.png");
+            this.imageList1.Images.SetKeyName(13, "Icons.16x16.InternalField.png");
+            this.imageList1.Images.SetKeyName(14, "Icons.16x16.InternalIndexer.png");
+            this.imageList1.Images.SetKeyName(15, "Icons.16x16.InternalInterface.png");
+            this.imageList1.Images.SetKeyName(16, "Icons.16x16.InternalMethod.png");
+            this.imageList1.Images.SetKeyName(17, "Icons.16x16.InternalProperty.png");
+            this.imageList1.Images.SetKeyName(18, "Icons.16x16.InternalStruct.png");
+            this.imageList1.Images.SetKeyName(19, "Icons.16x16.Keyword.png");
+            this.imageList1.Images.SetKeyName(20, "Icons.16x16.Literal.png");
+            this.imageList1.Images.SetKeyName(21, "Icons.16x16.Local.png");
+            this.imageList1.Images.SetKeyName(22, "Icons.16x16.Method.png");
+            this.imageList1.Images.SetKeyName(23, "Icons.16x16.NameSpace.png");
+            this.imageList1.Images.SetKeyName(24, "Icons.16x16.Operator.png");
+            this.imageList1.Images.SetKeyName(25, "Icons.16x16.Parameter.png");
+            this.imageList1.Images.SetKeyName(26, "Icons.16x16.PrivateClass.png");
+            this.imageList1.Images.SetKeyName(27, "Icons.16x16.PrivateDelegate.png");
+            this.imageList1.Images.SetKeyName(28, "Icons.16x16.PrivateEnum.png");
+            this.imageList1.Images.SetKeyName(29, "Icons.16x16.PrivateEvent.png");
+            this.imageList1.Images.SetKeyName(30, "Icons.16x16.PrivateExtensionMethod.png");
+            this.imageList1.Images.SetKeyName(31, "Icons.16x16.PrivateField.png");
+            this.imageList1.Images.SetKeyName(32, "Icons.16x16.PrivateIndexer.png");
+            this.imageList1.Images.SetKeyName(33, "Icons.16x16.PrivateInterface.png");
+            this.imageList1.Images.SetKeyName(34, "Icons.16x16.PrivateMethod.png");
+            this.imageList1.Images.SetKeyName(35, "Icons.16x16.PrivateProperty.png");
+            this.imageList1.Images.SetKeyName(36, "Icons.16x16.PrivateStruct.png");
+            this.imageList1.Images.SetKeyName(37, "Icons.16x16.Property.png");
+            this.imageList1.Images.SetKeyName(38, "Icons.16x16.ProtectedClass.png");
+            this.imageList1.Images.SetKeyName(39, "Icons.16x16.ProtectedDelegate.png");
+            this.imageList1.Images.SetKeyName(40, "Icons.16x16.ProtectedEnum.png");
+            this.imageList1.Images.SetKeyName(41, "Icons.16x16.ProtectedEvent.png");
+            this.imageList1.Images.SetKeyName(42, "Icons.16x16.ProtectedExtensionMethod.png");
+            this.imageList1.Images.SetKeyName(43, "Icons.16x16.ProtectedField.png");
+            this.imageList1.Images.SetKeyName(44, "Icons.16x16.ProtectedIndexer.png");
+            this.imageList1.Images.SetKeyName(45, "Icons.16x16.ProtectedInterface.png");
+            this.imageList1.Images.SetKeyName(46, "Icons.16x16.ProtectedMethod.png");
+            this.imageList1.Images.SetKeyName(47, "Icons.16x16.ProtectedProperty.png");
+            this.imageList1.Images.SetKeyName(48, "Icons.16x16.ProtectedStruct.png");
+            this.imageList1.Images.SetKeyName(49, "Icons.16x16.Reference.png");
+            this.imageList1.Images.SetKeyName(50, "Icons.16x16.Struct.png");
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -610,6 +667,7 @@ namespace CIARE
         public System.Windows.Forms.ToolStripSeparator compileStripSeparator1;
         public System.Windows.Forms.ToolStripMenuItem finStripMenuItem;
         public System.Windows.Forms.MenuStrip menuStrip1;
+        internal System.Windows.Forms.ImageList imageList1;
     }
 }
 
