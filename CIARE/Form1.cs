@@ -431,20 +431,17 @@ namespace CIARE
             //            string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
             //            var references = Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
             //.Where(t => ManageCheck.IsManaged(t));
-            string[] referencedAssemblies = {
-                "System", "System.Data", "System.Drawing", "System.Xml","System.Security", "System.Windows.Forms", "Microsoft.VisualBasic"
-            };
-            foreach (var assemblyName in referencedAssemblies)
+            var total = pcRegistry.LoadAll();
+            foreach (var item in total)
             {
-                // int splitCount = assemblyName.Split('\\').Count();
-                // string assemblyNameCopy = assemblyName.Split('\\').Last();
-                Dom.IProjectContent referenceProjectContent = pcRegistry.GetProjectContentForReference(assemblyName, assemblyName);
-                myProjectContent.AddReferencedContent(referenceProjectContent);
-                if (referenceProjectContent is Dom.ReflectionProjectContent)
+                myProjectContent.AddReferencedContent(item);
+                if (myProjectContent is Dom.ReflectionProjectContent)
                 {
-                    (referenceProjectContent as Dom.ReflectionProjectContent).InitializeReferences();
+                    (myProjectContent as Dom.ReflectionProjectContent).InitializeReferences();
                 }
             }
+
+
             if (IsVisualBasic)
             {
                 myProjectContent.DefaultImports = new Dom.DefaultUsing(myProjectContent);
