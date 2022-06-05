@@ -8,9 +8,7 @@ using System.Windows.Forms;
 using NRefactory = ICSharpCode.NRefactory;
 using Dom = ICSharpCode.SharpDevelop.Dom;
 using System.Threading;
-using System.Linq;
 using CIARE.Roslyn;
-using Microsoft.CodeAnalysis;
 
 namespace CIARE
 {
@@ -29,6 +27,8 @@ namespace CIARE
         Dom.ICompilationUnit lastCompilationUnit;
         public const string DummyFileName = "edited.cs";
         static readonly Dom.LanguageProperties CurrentLanguageProperties = IsVisualBasic ? Dom.LanguageProperties.VBNet : Dom.LanguageProperties.CSharp;
+        Thread parserThread;
+
         public Form1()
         {
             InitializeComponent();
@@ -46,19 +46,19 @@ namespace CIARE
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
             Console.SetOut(new ControlWriter(outputRBT));
+            
+            
+            //Code completion initialize.
             HostCallbackImplementation.Register(this);
             CodeCompletionKeyHandler.Attach(this, textEditorControl1);
             ToolTipProvider.Attach(this, textEditorControl1);
 
-            pcRegistry = new Dom.ProjectContentRegistry(); // Default .NET 2.0 registry
+            pcRegistry = new Dom.ProjectContentRegistry();
+            if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
+                Directory.CreateDirectory((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion")));
 
-            // Persistence lets SharpDevelop.Dom create a cache file on disk so that
-            // future starts are faster.
-            // It also caches XML documentation files in an on-disk hash table, thus
-            // reducing memory usage.
-            pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(),
-                                                        "CSharpCodeCompletion"));
-
+            pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"));
+            //-------------------------------
             myProjectContent = new Dom.DefaultProjectContent();
             myProjectContent.Language = CurrentLanguageProperties;
             linesCountLbl.Text = string.Empty;
@@ -250,11 +250,13 @@ namespace CIARE
             if (highlightCMB.Text == "C#-Dark")
             {
                 GlobalVariables.darkColor = true;
+                ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = true;
                 DarkMode.SetDarkModeMain(this, outputRBT, groupBox1, label1, label2, label3, highlightLbl,
                     highlightCMB, menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
                 return;
             }
             GlobalVariables.darkColor = false;
+            ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = false;
             LightMode.SetLightModeMain(this, outputRBT, groupBox1, highlightLbl,
                 highlightCMB, menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
         }
@@ -290,7 +292,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Roslyn.RoslynRun.CompileBinaryExe(textEditorControl1, splitContainer1, outputRBT, false);
+            RoslynRun.CompileBinaryExe(textEditorControl1, splitContainer1, outputRBT, false);
         }
 
         /// <summary>
@@ -300,7 +302,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToDLLCtrlSfitBToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Roslyn.RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
+            RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
         }
 
         /// <summary>
@@ -316,7 +318,6 @@ namespace CIARE
             else
                 e.Cancel = false;
         }
-
 
 
         /// <summary>
@@ -411,26 +412,19 @@ namespace CIARE
                 visibleSplitContainer = true;
             }
         }
+
+        #region Code Completion settup.
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-
             parserThread = new Thread(ParserThread);
             parserThread.IsBackground = true;
             parserThread.Start();
         }
-        Thread parserThread;
         void ParserThread()
         {
             myProjectContent.AddReferencedContent(pcRegistry.Mscorlib);
-
-            // do one initial parser step to enable code-completion while other
-            // references are loading
             ParseStep();
-            //            string assemblyName1 = Path.GetRandomFileName();
-            //            string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
-            //            var references = Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
-            //.Where(t => ManageCheck.IsManaged(t));
             var total = pcRegistry.LoadAll();
             foreach (var item in total)
             {
@@ -441,20 +435,9 @@ namespace CIARE
                 }
             }
 
-
-            if (IsVisualBasic)
-            {
-                myProjectContent.DefaultImports = new Dom.DefaultUsing(myProjectContent);
-                myProjectContent.DefaultImports.Usings.Add("System");
-                myProjectContent.DefaultImports.Usings.Add("System.Text");
-                myProjectContent.DefaultImports.Usings.Add("Microsoft.VisualBasic");
-            }
-
-            // Parse the current file every 2 seconds
             while (!IsDisposed)
             {
                 ParseStep();
-
                 Thread.Sleep(2000);
             }
         }
@@ -475,15 +458,10 @@ namespace CIARE
                 supportedLanguage = NRefactory.SupportedLanguage.CSharp;
             using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(supportedLanguage, textReader))
             {
-                // we only need to parse types and method definitions, no method bodies
-                // so speed up the parser and make it more resistent to syntax
-                // errors in methods
                 p.ParseMethodBodies = false;
-
                 p.Parse();
                 newCompilationUnit = ConvertCompilationUnit(p.CompilationUnit);
             }
-            // Remove information from lastCompilationUnit and add information from newCompilationUnit.
             myProjectContent.UpdateCompilationUnit(lastCompilationUnit, newCompilationUnit, DummyFileName);
             lastCompilationUnit = newCompilationUnit;
             parseInformation.SetCompilationUnit(newCompilationUnit);
@@ -496,5 +474,6 @@ namespace CIARE
             cu.AcceptVisitor(converter, null);
             return converter.Cu;
         }
+        #endregion
     }
 }
