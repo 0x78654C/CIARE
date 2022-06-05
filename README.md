@@ -61,6 +61,8 @@ Useful to run code on the fly and get instant result.
  from https://sourceforge.net/projects/sharpdevelop/files/SharpDevelop%203.x/3.2/ version.
 
 # Sample pictures
+![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_inteli.png?raw=true)
+
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split2.png?raw=true)
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split.png?raw=true)
