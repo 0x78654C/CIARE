@@ -330,7 +330,7 @@ namespace ICSharpCode.SharpDevelop.Dom
 		
 		static bool IsEqualFileName(string fileName1, string fileName2)
 		{
-			return ICSharpCode.Core.FileUtility.IsEqualFileName(fileName1, fileName2);
+			return Core.FileUtility.IsEqualFileName(fileName1, fileName2);
 		}
 		
 		protected void AddClassToNamespaceListInternal(IClass addClass)
