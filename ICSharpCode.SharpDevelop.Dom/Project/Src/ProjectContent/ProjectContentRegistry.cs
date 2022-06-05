@@ -56,7 +56,7 @@ namespace ICSharpCode.SharpDevelop.Dom
                 return new ReflectionProjectContent(assembly, this);
 
             }
-            catch (Exception e)
+            catch
             {
                 return null;
             }
