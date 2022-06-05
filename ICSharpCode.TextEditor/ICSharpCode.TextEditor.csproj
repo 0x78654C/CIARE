@@ -220,6 +220,9 @@
     <Compile Include="Util\TipSplitter.cs" />
     <Compile Include="Util\TipText.cs" />
     <Compile Include="Util\WeakCollection.cs" />
+    <EmbeddedResource Include="Gui\CompletionWindow\CodeCompletionListView.resx">
+      <DependentUpon>CodeCompletionListView.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Gui\CompletionWindow\DeclarationViewWindow.resx">
       <DependentUpon>DeclarationViewWindow.cs</DependentUpon>
     </EmbeddedResource>
