@@ -21,7 +21,7 @@ namespace ICSharpCode.SharpDevelop.Dom.Refactoring
 			PrettyPrintOptions pOpt = v.Options;
 			
 			BraceStyle braceStyle;
-			if (this.Options.BracesOnSameLine) {
+			if (this.Options.BracesOnSameLine) { 
 				braceStyle = BraceStyle.EndOfLine;
 			} else {
 				braceStyle = BraceStyle.NextLine;
