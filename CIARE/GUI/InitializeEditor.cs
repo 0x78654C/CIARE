@@ -24,8 +24,33 @@ namespace CIARE.GUI
                 comboBox.Text = regHighlight;
                 return;
             }
-            RegistryManagement.RegKey_CreateKey(regKeyName, "highlight", "Default");
+            RegistryManagement.RegKey_CreateKey(regKeyName, "highlight", "C#-Dark");
+            GlobalVariables.darkColor = true;
         }
+
+        /// <summary>
+        /// Read and apply highlight setting from registry.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="textEditor"></param>
+        /// <param name="comboBox"></param>
+        public static void ReadEditorHighlight(string regKeyName, TextEditorControl textEditor)
+        {
+            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", "highlight");
+            if (regHighlight.Length > 0)
+            {
+                if (regHighlight == "C#-Dark")
+                {
+                    GlobalVariables.darkColor = true;
+                    Form1.Instance.SetHighLighter(regHighlight);
+                }
+                textEditor.SetHighlighting(regHighlight);
+                return;
+            }
+            RegistryManagement.RegKey_CreateKey(regKeyName, "highlight", "C#-Dark");
+            GlobalVariables.darkColor = true;
+        }
+
 
         /// <summary>
         /// Read and apply last editor zoom size.
