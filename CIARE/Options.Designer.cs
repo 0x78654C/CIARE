@@ -82,9 +82,9 @@ namespace CIARE
             this.codeCompletionCkb.AutoSize = true;
             this.codeCompletionCkb.Location = new System.Drawing.Point(14, 65);
             this.codeCompletionCkb.Name = "codeCompletionCkb";
-            this.codeCompletionCkb.Size = new System.Drawing.Size(273, 19);
+            this.codeCompletionCkb.Size = new System.Drawing.Size(277, 19);
             this.codeCompletionCkb.TabIndex = 11;
-            this.codeCompletionCkb.Text = "Code Completion (requires apllication restart)";
+            this.codeCompletionCkb.Text = "Code Completion (requires application restart)";
             this.codeCompletionCkb.UseVisualStyleBackColor = true;
             this.codeCompletionCkb.CheckedChanged += new System.EventHandler(this.codeCompletionCkb_CheckedChanged);
             // 
