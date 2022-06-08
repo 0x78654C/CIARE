@@ -1,5 +1,6 @@
 ﻿using CIARE.Utils;
 using CIARE.GUI;
+using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using System;
 using System.IO;
@@ -42,22 +43,26 @@ namespace CIARE
             versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             versionName = versionName.Substring(0, versionName.Length - 2);
             this.Text = $"CIARE {versionName}";
-            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1, highlightCMB);
+            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
             Console.SetOut(new ControlWriter(outputRBT));
-            
-            
+            FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
+            CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
+            LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
             //Code completion initialize.
-            HostCallbackImplementation.Register(this);
-            CodeCompletionKeyHandler.Attach(this, textEditorControl1);
-            ToolTipProvider.Attach(this, textEditorControl1);
+            if (GlobalVariables.OCodeCompletion)
+            {
+                HostCallbackImplementation.Register(this);
+                CodeCompletionKeyHandler.Attach(this, textEditorControl1);
+                ToolTipProvider.Attach(this, textEditorControl1);
 
-            pcRegistry = new Dom.ProjectContentRegistry();
-            if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
-                Directory.CreateDirectory((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion")));
+                pcRegistry = new Dom.ProjectContentRegistry();
+                if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
+                    Directory.CreateDirectory((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion")));
 
-            pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"));
+                pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"));
+            }
             //-------------------------------
             myProjectContent = new Dom.DefaultProjectContent();
             myProjectContent.Language = CurrentLanguageProperties;
@@ -235,32 +240,26 @@ namespace CIARE
         #endregion
 
 
-        /// <summary>
-        /// Change Highlight of text via combobox
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void highlightCMB_SelectedIndexChanged(object sender, EventArgs e)
+        public void SetHighLighter(string highlight)
         {
-            if (highlightCMB.Text.Length > 0)
+            if (highlight.Length > 0)
             {
-                textEditorControl1.SetHighlighting(highlightCMB.Text);
-                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlightCMB.Text);
+                textEditorControl1.SetHighlighting(highlight);
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlight);
             }
-            if (highlightCMB.Text == "C#-Dark")
+            if (highlight == "C#-Dark")
             {
                 GlobalVariables.darkColor = true;
                 ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = true;
-                DarkMode.SetDarkModeMain(this, outputRBT, groupBox1, label1, label2, label3, highlightLbl,
-                    highlightCMB, menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
+                DarkMode.SetDarkModeMain(this, outputRBT, groupBox1, label2, label3,
+                    menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
                 return;
             }
             GlobalVariables.darkColor = false;
             ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = false;
-            LightMode.SetLightModeMain(this, outputRBT, groupBox1, highlightLbl,
-                highlightCMB, menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
+            LightMode.SetLightModeMain(this, outputRBT, groupBox1,
+                menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
         }
-
 
         /// <summary>
         /// Load predefined C# code sample for run with Roslyn!
@@ -397,6 +396,12 @@ namespace CIARE
         {
             SendKeys.Send("^f");
         }
+
+        private void optionsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Options options = new Options();
+            options.ShowDialog();
+        }
         #endregion
 
         /// <summary>
@@ -417,9 +422,12 @@ namespace CIARE
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            parserThread = new Thread(ParserThread);
-            parserThread.IsBackground = true;
-            parserThread.Start();
+            if (GlobalVariables.OCodeCompletion)
+            {
+                parserThread = new Thread(ParserThread);
+                parserThread.IsBackground = true;
+                parserThread.Start();
+            }
         }
         void ParserThread()
         {
@@ -475,5 +483,6 @@ namespace CIARE
             return converter.Cu;
         }
         #endregion
+
     }
 }
