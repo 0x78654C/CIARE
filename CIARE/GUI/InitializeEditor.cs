@@ -7,6 +7,8 @@ namespace CIARE.GUI
 {
     public class InitializeEditor
     {
+        private const string _defaultHighLight = "C#-Dark";
+        private const string _regName = "highlight";
         /// <summary>
         /// Read and apply highlight setting from registry.
         /// </summary>
@@ -15,16 +17,16 @@ namespace CIARE.GUI
         /// <param name="comboBox"></param>
         public static void ReadEditorHighlight(string regKeyName, TextEditorControl textEditor, ComboBox comboBox)
         {
-            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", "highlight");
+            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _regName);
             if (regHighlight.Length > 0)
             {
-                if (regHighlight == "C#-Dark")
+                if (regHighlight == _defaultHighLight)
                     GlobalVariables.darkColor = true;
                 textEditor.SetHighlighting(regHighlight);
                 comboBox.Text = regHighlight;
                 return;
             }
-            RegistryManagement.RegKey_CreateKey(regKeyName, "highlight", "C#-Dark");
+            RegistryManagement.RegKey_CreateKey(regKeyName, _regName, _defaultHighLight);
             GlobalVariables.darkColor = true;
         }
 
@@ -36,10 +38,10 @@ namespace CIARE.GUI
         /// <param name="comboBox"></param>
         public static void ReadEditorHighlight(string regKeyName, TextEditorControl textEditor)
         {
-            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", "highlight");
+            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _regName);
             if (regHighlight.Length > 0)
             {
-                if (regHighlight == "C#-Dark")
+                if (regHighlight == _defaultHighLight)
                 {
                     GlobalVariables.darkColor = true;
                     Form1.Instance.SetHighLighter(regHighlight);
@@ -47,8 +49,9 @@ namespace CIARE.GUI
                 textEditor.SetHighlighting(regHighlight);
                 return;
             }
-            RegistryManagement.RegKey_CreateKey(regKeyName, "highlight", "C#-Dark");
+            RegistryManagement.RegKey_CreateKey(regKeyName, _regName, _defaultHighLight);
             GlobalVariables.darkColor = true;
+            Form1.Instance.SetHighLighter(_defaultHighLight);
         }
 
 
