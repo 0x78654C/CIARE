@@ -36,12 +36,14 @@ namespace CIARE
             this.lineNumberCkb = new System.Windows.Forms.CheckBox();
             this.codeFoldingCkb = new System.Windows.Forms.CheckBox();
             this.closeBtn = new System.Windows.Forms.Button();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // highlightLbl
             // 
             this.highlightLbl.AutoSize = true;
-            this.highlightLbl.Location = new System.Drawing.Point(10, 25);
+            this.highlightLbl.Location = new System.Drawing.Point(12, 26);
             this.highlightLbl.Name = "highlightLbl";
             this.highlightLbl.Size = new System.Drawing.Size(94, 15);
             this.highlightLbl.TabIndex = 9;
@@ -70,7 +72,7 @@ namespace CIARE
             "ASP/XHTML",
             "JavaScript",
             "Java"});
-            this.highlightCMB.Location = new System.Drawing.Point(115, 22);
+            this.highlightCMB.Location = new System.Drawing.Point(116, 23);
             this.highlightCMB.Name = "highlightCMB";
             this.highlightCMB.Size = new System.Drawing.Size(93, 23);
             this.highlightCMB.TabIndex = 10;
@@ -80,7 +82,7 @@ namespace CIARE
             // codeCompletionCkb
             // 
             this.codeCompletionCkb.AutoSize = true;
-            this.codeCompletionCkb.Location = new System.Drawing.Point(14, 65);
+            this.codeCompletionCkb.Location = new System.Drawing.Point(15, 66);
             this.codeCompletionCkb.Name = "codeCompletionCkb";
             this.codeCompletionCkb.Size = new System.Drawing.Size(277, 19);
             this.codeCompletionCkb.TabIndex = 11;
@@ -91,7 +93,7 @@ namespace CIARE
             // lineNumberCkb
             // 
             this.lineNumberCkb.AutoSize = true;
-            this.lineNumberCkb.Location = new System.Drawing.Point(14, 102);
+            this.lineNumberCkb.Location = new System.Drawing.Point(15, 103);
             this.lineNumberCkb.Name = "lineNumberCkb";
             this.lineNumberCkb.Size = new System.Drawing.Size(98, 19);
             this.lineNumberCkb.TabIndex = 12;
@@ -102,7 +104,7 @@ namespace CIARE
             // codeFoldingCkb
             // 
             this.codeFoldingCkb.AutoSize = true;
-            this.codeFoldingCkb.Location = new System.Drawing.Point(14, 138);
+            this.codeFoldingCkb.Location = new System.Drawing.Point(15, 139);
             this.codeFoldingCkb.Name = "codeFoldingCkb";
             this.codeFoldingCkb.Size = new System.Drawing.Size(99, 19);
             this.codeFoldingCkb.TabIndex = 13;
@@ -112,9 +114,10 @@ namespace CIARE
             // 
             // closeBtn
             // 
+            this.closeBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.closeBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.closeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.closeBtn.Location = new System.Drawing.Point(230, 175);
+            this.closeBtn.Location = new System.Drawing.Point(267, 212);
             this.closeBtn.Name = "closeBtn";
             this.closeBtn.Size = new System.Drawing.Size(75, 23);
             this.closeBtn.TabIndex = 14;
@@ -122,18 +125,28 @@ namespace CIARE
             this.closeBtn.UseVisualStyleBackColor = true;
             this.closeBtn.Click += new System.EventHandler(this.closeBtn_Click);
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.highlightLbl);
+            this.groupBox1.Controls.Add(this.highlightCMB);
+            this.groupBox1.Controls.Add(this.codeFoldingCkb);
+            this.groupBox1.Controls.Add(this.codeCompletionCkb);
+            this.groupBox1.Controls.Add(this.lineNumberCkb);
+            this.groupBox1.Location = new System.Drawing.Point(12, 12);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(330, 187);
+            this.groupBox1.TabIndex = 15;
+            this.groupBox1.TabStop = false;
+            // 
             // Options
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
-            this.ClientSize = new System.Drawing.Size(317, 210);
+            this.CancelButton = this.closeBtn;
+            this.ClientSize = new System.Drawing.Size(354, 250);
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.closeBtn);
-            this.Controls.Add(this.codeFoldingCkb);
-            this.Controls.Add(this.lineNumberCkb);
-            this.Controls.Add(this.codeCompletionCkb);
-            this.Controls.Add(this.highlightCMB);
-            this.Controls.Add(this.highlightLbl);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -142,8 +155,9 @@ namespace CIARE
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Options";
             this.Load += new System.EventHandler(this.Options_Load);
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
@@ -155,5 +169,6 @@ namespace CIARE
         private System.Windows.Forms.CheckBox lineNumberCkb;
         private System.Windows.Forms.CheckBox codeFoldingCkb;
         private System.Windows.Forms.Button closeBtn;
+        private System.Windows.Forms.GroupBox groupBox1;
     }
 }
