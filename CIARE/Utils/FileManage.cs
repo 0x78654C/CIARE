@@ -16,7 +16,7 @@ namespace CIARE.Utils
         /// <returns></returns>
         public static string OpenFile()
         {
-            s_openFileDialog.Filter = "All Files (*.*)|*.*|C# Files (*.cs)|*.cs";
+            s_openFileDialog.Filter = "All Files (*.*)|*.*|C# Files (*.cs)|*.cs|Text Files (*.txt)|*.txt";
             s_openFileDialog.Title = "Select file top open:";
             s_openFileDialog.CheckFileExists = true;
             s_openFileDialog.CheckPathExists = true;
@@ -38,7 +38,7 @@ namespace CIARE.Utils
         /// <param name="data"></param>
         public static void SaveFile(string data)
         {
-            s_saveFileDialog.Filter = "All Files (*.*)|*.*|C# Files (*.cs)|*.cs";
+            s_saveFileDialog.Filter = "All Files (*.*)|*.*|C# Files (*.cs)|*.cs|Text Files (*.txt)|*.txt";
             s_saveFileDialog.Title = $"Save As... :";
             DialogResult dr = s_saveFileDialog.ShowDialog();
             if (dr == DialogResult.OK)
