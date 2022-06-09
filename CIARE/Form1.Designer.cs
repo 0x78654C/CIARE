@@ -66,18 +66,18 @@ namespace CIARE
             this.splitVEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.compileStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.showHideHSCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
-            this.highlightCMB = new System.Windows.Forms.ComboBox();
-            this.highlightLbl = new System.Windows.Forms.Label();
-            this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.linesCountLbl = new System.Windows.Forms.Label();
             this.linesPositionLbl = new System.Windows.Forms.Label();
+            this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -111,7 +111,7 @@ namespace CIARE
             // runCodePb
             // 
             this.runCodePb.Image = global::CIARE.Properties.Resources.runButton21;
-            this.runCodePb.Location = new System.Drawing.Point(442, 4);
+            this.runCodePb.Location = new System.Drawing.Point(319, 4);
             this.runCodePb.Name = "runCodePb";
             this.runCodePb.Size = new System.Drawing.Size(28, 21);
             this.runCodePb.TabIndex = 2;
@@ -127,6 +127,7 @@ namespace CIARE
             this.editToolStripMenuItem,
             this.compileToolStripMenuItem,
             this.viewToolStripMenuItem,
+            this.settingsToolStripMenuItem,
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
@@ -370,6 +371,21 @@ namespace CIARE
             this.showHideHSCToolStripMenuItem.Text = "Show/Hide Output          ( CTRL + K )";
             this.showHideHSCToolStripMenuItem.Click += new System.EventHandler(this.showHideSCToolStripMenuItem_Click);
             // 
+            // settingsToolStripMenuItem
+            // 
+            this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.optionsToolStripMenuItem});
+            this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
+            this.settingsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
+            this.settingsToolStripMenuItem.Text = "Settings";
+            // 
+            // optionsToolStripMenuItem
+            // 
+            this.optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
+            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.optionsToolStripMenuItem.Text = "Options";
+            this.optionsToolStripMenuItem.Click += new System.EventHandler(this.optionsToolStripMenuItem_Click);
+            // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -426,68 +442,19 @@ namespace CIARE
             this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textEditorControl1.Highlighting = null;
-            this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
+            this.textEditorControl1.Location = new System.Drawing.Point(3, 3);
             this.textEditorControl1.Name = "textEditorControl1";
-            this.textEditorControl1.Size = new System.Drawing.Size(1200, 589);
+            this.textEditorControl1.Size = new System.Drawing.Size(1203, 589);
             this.textEditorControl1.TabIndex = 0;
             this.textEditorControl1.VRulerRow = 0;
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
             this.textEditorControl1.Enter += new System.EventHandler(this.textEditorControl1_Enter);
             // 
-            // highlightCMB
-            // 
-            this.highlightCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.highlightCMB.FormattingEnabled = true;
-            this.highlightCMB.Items.AddRange(new object[] {
-            "Default",
-            "XML",
-            "HTML",
-            "C++.NET",
-            "BAT",
-            "Coco",
-            "Python",
-            "PHP",
-            "SQL",
-            "C#-Light",
-            "C#-Dark",
-            "Batch",
-            "Boo",
-            "VBNET",
-            "TeX",
-            "ASP/XHTML",
-            "JavaScript",
-            "Java"});
-            this.highlightCMB.Location = new System.Drawing.Point(333, 3);
-            this.highlightCMB.Name = "highlightCMB";
-            this.highlightCMB.Size = new System.Drawing.Size(80, 21);
-            this.highlightCMB.TabIndex = 7;
-            this.highlightCMB.Text = "Default";
-            this.highlightCMB.SelectedIndexChanged += new System.EventHandler(this.highlightCMB_SelectedIndexChanged);
-            // 
-            // highlightLbl
-            // 
-            this.highlightLbl.AutoSize = true;
-            this.highlightLbl.Location = new System.Drawing.Point(262, 5);
-            this.highlightLbl.Name = "highlightLbl";
-            this.highlightLbl.Size = new System.Drawing.Size(65, 13);
-            this.highlightLbl.TabIndex = 8;
-            this.highlightLbl.Text = "Highlighting:";
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(246, 2);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(13, 18);
-            this.label1.TabIndex = 9;
-            this.label1.Text = "|";
-            // 
             // label2
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(423, 2);
+            this.label2.Location = new System.Drawing.Point(300, 2);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(13, 18);
             this.label2.TabIndex = 10;
@@ -497,7 +464,7 @@ namespace CIARE
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(468, 2);
+            this.label3.Location = new System.Drawing.Point(345, 2);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(13, 18);
             this.label3.TabIndex = 11;
@@ -523,6 +490,62 @@ namespace CIARE
             this.linesPositionLbl.TabIndex = 15;
             this.linesPositionLbl.Text = "linesPosition";
             // 
+            // imageList1
+            // 
+            this.imageList1.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList1.ImageStream")));
+            this.imageList1.TransparentColor = System.Drawing.Color.Transparent;
+            this.imageList1.Images.SetKeyName(0, "Icons.16x16.Class.png");
+            this.imageList1.Images.SetKeyName(1, "Icons.16x16.Delegate.png");
+            this.imageList1.Images.SetKeyName(2, "Icons.16x16.Enum.png");
+            this.imageList1.Images.SetKeyName(3, "Icons.16x16.Event.png");
+            this.imageList1.Images.SetKeyName(4, "Icons.16x16.ExtensionMethod.png");
+            this.imageList1.Images.SetKeyName(5, "Icons.16x16.Field.png");
+            this.imageList1.Images.SetKeyName(6, "Icons.16x16.Indexer.png");
+            this.imageList1.Images.SetKeyName(7, "Icons.16x16.Interface.png");
+            this.imageList1.Images.SetKeyName(8, "Icons.16x16.InternalClass.png");
+            this.imageList1.Images.SetKeyName(9, "Icons.16x16.InternalDelegate.png");
+            this.imageList1.Images.SetKeyName(10, "Icons.16x16.InternalEnum.png");
+            this.imageList1.Images.SetKeyName(11, "Icons.16x16.InternalEvent.png");
+            this.imageList1.Images.SetKeyName(12, "Icons.16x16.InternalExtensionMethod.png");
+            this.imageList1.Images.SetKeyName(13, "Icons.16x16.InternalField.png");
+            this.imageList1.Images.SetKeyName(14, "Icons.16x16.InternalIndexer.png");
+            this.imageList1.Images.SetKeyName(15, "Icons.16x16.InternalInterface.png");
+            this.imageList1.Images.SetKeyName(16, "Icons.16x16.InternalMethod.png");
+            this.imageList1.Images.SetKeyName(17, "Icons.16x16.InternalProperty.png");
+            this.imageList1.Images.SetKeyName(18, "Icons.16x16.InternalStruct.png");
+            this.imageList1.Images.SetKeyName(19, "Icons.16x16.Keyword.png");
+            this.imageList1.Images.SetKeyName(20, "Icons.16x16.Literal.png");
+            this.imageList1.Images.SetKeyName(21, "Icons.16x16.Local.png");
+            this.imageList1.Images.SetKeyName(22, "Icons.16x16.Method.png");
+            this.imageList1.Images.SetKeyName(23, "Icons.16x16.NameSpace.png");
+            this.imageList1.Images.SetKeyName(24, "Icons.16x16.Operator.png");
+            this.imageList1.Images.SetKeyName(25, "Icons.16x16.Parameter.png");
+            this.imageList1.Images.SetKeyName(26, "Icons.16x16.PrivateClass.png");
+            this.imageList1.Images.SetKeyName(27, "Icons.16x16.PrivateDelegate.png");
+            this.imageList1.Images.SetKeyName(28, "Icons.16x16.PrivateEnum.png");
+            this.imageList1.Images.SetKeyName(29, "Icons.16x16.PrivateEvent.png");
+            this.imageList1.Images.SetKeyName(30, "Icons.16x16.PrivateExtensionMethod.png");
+            this.imageList1.Images.SetKeyName(31, "Icons.16x16.PrivateField.png");
+            this.imageList1.Images.SetKeyName(32, "Icons.16x16.PrivateIndexer.png");
+            this.imageList1.Images.SetKeyName(33, "Icons.16x16.PrivateInterface.png");
+            this.imageList1.Images.SetKeyName(34, "Icons.16x16.PrivateMethod.png");
+            this.imageList1.Images.SetKeyName(35, "Icons.16x16.PrivateProperty.png");
+            this.imageList1.Images.SetKeyName(36, "Icons.16x16.PrivateStruct.png");
+            this.imageList1.Images.SetKeyName(37, "Icons.16x16.Property.png");
+            this.imageList1.Images.SetKeyName(38, "Icons.16x16.ProtectedClass.png");
+            this.imageList1.Images.SetKeyName(39, "Icons.16x16.ProtectedDelegate.png");
+            this.imageList1.Images.SetKeyName(40, "Icons.16x16.ProtectedEnum.png");
+            this.imageList1.Images.SetKeyName(41, "Icons.16x16.ProtectedEvent.png");
+            this.imageList1.Images.SetKeyName(42, "Icons.16x16.ProtectedExtensionMethod.png");
+            this.imageList1.Images.SetKeyName(43, "Icons.16x16.ProtectedField.png");
+            this.imageList1.Images.SetKeyName(44, "Icons.16x16.ProtectedIndexer.png");
+            this.imageList1.Images.SetKeyName(45, "Icons.16x16.ProtectedInterface.png");
+            this.imageList1.Images.SetKeyName(46, "Icons.16x16.ProtectedMethod.png");
+            this.imageList1.Images.SetKeyName(47, "Icons.16x16.ProtectedProperty.png");
+            this.imageList1.Images.SetKeyName(48, "Icons.16x16.ProtectedStruct.png");
+            this.imageList1.Images.SetKeyName(49, "Icons.16x16.Reference.png");
+            this.imageList1.Images.SetKeyName(50, "Icons.16x16.Struct.png");
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -533,9 +556,6 @@ namespace CIARE
             this.Controls.Add(this.linesCountLbl);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.highlightLbl);
-            this.Controls.Add(this.highlightCMB);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.runCodePb);
             this.Controls.Add(this.menuStrip1);
@@ -575,12 +595,9 @@ namespace CIARE
         private System.Windows.Forms.SplitContainer splitContainer1;
         public System.Windows.Forms.ToolStripMenuItem saveAsStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
-        private System.Windows.Forms.ComboBox highlightCMB;
-        private System.Windows.Forms.Label highlightLbl;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         public System.Windows.Forms.ToolStripMenuItem LoadCStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
-        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         public System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
@@ -610,6 +627,9 @@ namespace CIARE
         public System.Windows.Forms.ToolStripSeparator compileStripSeparator1;
         public System.Windows.Forms.ToolStripMenuItem finStripMenuItem;
         public System.Windows.Forms.MenuStrip menuStrip1;
+        internal System.Windows.Forms.ImageList imageList1;
+        private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
+        public System.Windows.Forms.ToolStripMenuItem optionsToolStripMenuItem;
     }
 }
 

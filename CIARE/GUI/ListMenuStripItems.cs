@@ -40,6 +40,7 @@ namespace CIARE.GUI
             listToosStripM.Add(Form1.Instance.splitVEditorToolStripMenuItem);
             listToosStripM.Add(Form1.Instance.fIleToolStripMenuItem);
             listToosStripM.Add(Form1.Instance.finStripMenuItem);
+            listToosStripM.Add(Form1.Instance.optionsToolStripMenuItem);
             return listToosStripM;
         }
 

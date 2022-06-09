@@ -22,7 +22,7 @@ namespace CIARE.GUI
         /// <param name="toolStripMenuList"></param>
         /// <param name="toolStripSeparatorList"></param>
         /// <param name="findButton"></param>
-        public static void SetLightModeMain(Form form, RichTextBox richTextBox, GroupBox groupBox, Label highlight, ComboBox comboBox, MenuStrip menuStrip,
+        public static void SetLightModeMain(Form form, RichTextBox richTextBox, GroupBox groupBox, MenuStrip menuStrip,
            List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList)
         {
             form.BackColor = SystemColors.Window;
@@ -30,9 +30,6 @@ namespace CIARE.GUI
             richTextBox.BackColor = SystemColors.Window;
             richTextBox.ForeColor = Color.Black;
             groupBox.ForeColor = Color.Black;
-            highlight.ForeColor = Color.Black;
-            comboBox.BackColor = SystemColors.Window;
-            comboBox.ForeColor = Color.Black;
             menuStrip.BackColor = SystemColors.Window;
             menuStrip.ForeColor = Color.Black;
             menuStrip.Renderer = null;
@@ -45,6 +42,21 @@ namespace CIARE.GUI
             {
                 toolStripSeparator.Paint += RenderToolStripSeparator.RenderToolStripSeparator_PaintLight;
             }
+        }
+
+        public static void OptionsLightMode(Form form, Button cancelBtn, Label highlightLbl, ComboBox highLightName,
+          CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding)
+        {
+            form.BackColor = SystemColors.Window;
+            form.ForeColor = Color.Black;
+            cancelBtn.BackColor = SystemColors.Window;
+            cancelBtn.ForeColor = Color.Black;
+            highlightLbl.ForeColor = Color.Black;
+            highLightName.BackColor = SystemColors.Window;
+            highLightName.ForeColor = Color.Black;
+            codeCompletion.ForeColor = Color.Black;
+            lineNumber.ForeColor = Color.Black;
+            codeFolding.ForeColor = Color.Black;
         }
     }
 }

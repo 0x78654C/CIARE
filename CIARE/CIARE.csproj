@@ -217,14 +217,25 @@
     <Compile Include="GoToLine.Designer.cs">
       <DependentUpon>GoToLine.cs</DependentUpon>
     </Compile>
+    <Compile Include="GUI\CodeCompletionData.cs" />
+    <Compile Include="GUI\CodeCompletionKeyHandler.cs" />
+    <Compile Include="GUI\CodeCompletionProvider.cs" />
     <Compile Include="GUI\ColorTableSet.cs" />
     <Compile Include="GUI\DarkMode.cs" />
+    <Compile Include="GUI\HostCallbackImplementation.cs" />
     <Compile Include="GUI\InitializeEditor.cs" />
     <Compile Include="GUI\LightMode.cs" />
     <Compile Include="GUI\ListMenuStripItems.cs" />
     <Compile Include="GUI\OutputWindowManage.cs" />
     <Compile Include="GUI\RegionFoldingStrategy.cs" />
     <Compile Include="GUI\RenderToolStripSeparator.cs" />
+    <Compile Include="GUI\ToolTipProvider.cs" />
+    <Compile Include="Options.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Options.Designer.cs">
+      <DependentUpon>Options.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Roslyn\ManageCheck.cs" />
@@ -235,6 +246,9 @@
     <Compile Include="Utils\GlobalVariables.cs" />
     <Compile Include="Utils\GoToLineNumber.cs" />
     <Compile Include="Utils\LinesManage.cs" />
+    <Compile Include="Utils\Options\CodeCompletion.cs" />
+    <Compile Include="Utils\Options\FoldingCode.cs" />
+    <Compile Include="Utils\Options\LineNumber.cs" />
     <Compile Include="Utils\RegistryManagement.cs" />
     <Compile Include="Utils\SplitArguments.cs" />
     <Compile Include="Utils\SplitContainerHideShow.cs" />
@@ -258,6 +272,9 @@
     <EmbeddedResource Include="GoToLine.resx">
       <DependentUpon>GoToLine.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Options.resx">
+      <DependentUpon>Options.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -268,7 +285,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <None Include="CIARE_TemporaryKey.pfx" />
     <None Include="packages.config" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
@@ -297,9 +313,17 @@
     <None Include="Resources\runButton21.png" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ICSharpCode.SharpDevelop.Dom\Project\ICSharpCode.SharpDevelop.Dom.csproj">
+      <Project>{924ee450-603d-49c1-a8e5-4afaa31ce6f3}</Project>
+      <Name>ICSharpCode.SharpDevelop.Dom</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ICSharpCode.TextEditor\ICSharpCode.TextEditor.csproj">
       <Project>{2d18be89-d210-49eb-a9dd-2246fbb3df6d}</Project>
       <Name>ICSharpCode.TextEditor</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NRefactory\Project\NRefactory.csproj">
+      <Project>{3a9ae6aa-bc07-4a2f-972c-581e3ae2f195}</Project>
+      <Name>NRefactory</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

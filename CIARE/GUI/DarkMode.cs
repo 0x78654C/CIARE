@@ -25,8 +25,8 @@ namespace CIARE.GUI
         /// <param name="toolStripMenuList"></param>
         /// <param name="toolStripSeparatorList"></param>
         /// <param name="findButton"></param>
-        public static void SetDarkModeMain(Form form, RichTextBox richTextBox, GroupBox groupBox, Label separator1,
-            Label separator2, Label separator3, Label highlight, ComboBox comboBox, MenuStrip menuStrip,
+        public static void SetDarkModeMain(Form form, RichTextBox richTextBox, GroupBox groupBox,
+            Label separator2, Label separator3, MenuStrip menuStrip,
             List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList)
         {
             form.BackColor = Color.FromArgb(51, 51, 51);
@@ -34,12 +34,8 @@ namespace CIARE.GUI
             richTextBox.BackColor = Color.FromArgb(30, 30, 30);
             richTextBox.ForeColor = Color.FromArgb(192, 215, 207);
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
-            separator1.ForeColor = Color.FromArgb(192, 215, 207);
             separator2.ForeColor = Color.FromArgb(192, 215, 207);
             separator3.ForeColor = Color.FromArgb(192, 215, 207);
-            highlight.ForeColor = Color.FromArgb(192, 215, 207);
-            comboBox.BackColor = Color.FromArgb(30, 30, 30);
-            comboBox.ForeColor = Color.FromArgb(192, 215, 207);
             menuStrip.BackColor = Color.FromArgb(51, 51, 51);
             menuStrip.ForeColor = Color.FromArgb(192, 215, 207);
             menuStrip.Renderer = new ColorTableSet();
@@ -123,6 +119,21 @@ namespace CIARE.GUI
             findTxt.ForeColor = Color.FromArgb(192, 215, 207);
             find.BackColor = Color.FromArgb(30, 30, 30);
             find.ForeColor = Color.FromArgb(192, 215, 207);
+        }
+
+        public static void OptionsDarkMode(Form form, Button cancelBtn, Label highlightLbl, ComboBox highLightName,
+            CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding)
+        {
+            form.BackColor = Color.FromArgb(51, 51, 51);
+            form.ForeColor = Color.FromArgb(192, 215, 207);
+            cancelBtn.BackColor = Color.FromArgb(30, 30, 30);
+            cancelBtn.ForeColor = Color.FromArgb(192, 215, 207);
+            highlightLbl.ForeColor = Color.FromArgb(192, 215, 207);
+            highLightName.BackColor = Color.FromArgb(30, 30, 30);
+            highLightName.ForeColor = Color.FromArgb(192, 215, 207);
+            codeCompletion.ForeColor = Color.FromArgb(192, 215, 207);
+            lineNumber.ForeColor = Color.FromArgb(192, 215, 207);
+            codeFolding.ForeColor = Color.FromArgb(192, 215, 207);
         }
     }
 }

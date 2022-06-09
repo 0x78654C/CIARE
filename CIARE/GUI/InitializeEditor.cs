@@ -7,6 +7,8 @@ namespace CIARE.GUI
 {
     public class InitializeEditor
     {
+        private const string _defaultHighLight = "C#-Dark";
+        private const string _regName = "highlight";
         /// <summary>
         /// Read and apply highlight setting from registry.
         /// </summary>
@@ -15,17 +17,43 @@ namespace CIARE.GUI
         /// <param name="comboBox"></param>
         public static void ReadEditorHighlight(string regKeyName, TextEditorControl textEditor, ComboBox comboBox)
         {
-            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", "highlight");
+            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _regName);
             if (regHighlight.Length > 0)
             {
-                if (regHighlight == "C#-Dark")
+                if (regHighlight == _defaultHighLight)
                     GlobalVariables.darkColor = true;
                 textEditor.SetHighlighting(regHighlight);
                 comboBox.Text = regHighlight;
                 return;
             }
-            RegistryManagement.RegKey_CreateKey(regKeyName, "highlight", "Default");
+            RegistryManagement.RegKey_CreateKey(regKeyName, _regName, _defaultHighLight);
+            GlobalVariables.darkColor = true;
         }
+
+        /// <summary>
+        /// Read and apply highlight setting from registry.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="textEditor"></param>
+        /// <param name="comboBox"></param>
+        public static void ReadEditorHighlight(string regKeyName, TextEditorControl textEditor)
+        {
+            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _regName);
+            if (regHighlight.Length > 0)
+            {
+                if (regHighlight == _defaultHighLight)
+                {
+                    GlobalVariables.darkColor = true;
+                    Form1.Instance.SetHighLighter(regHighlight);
+                }
+                textEditor.SetHighlighting(regHighlight);
+                return;
+            }
+            RegistryManagement.RegKey_CreateKey(regKeyName, _regName, _defaultHighLight);
+            GlobalVariables.darkColor = true;
+            Form1.Instance.SetHighLighter(_defaultHighLight);
+        }
+
 
         /// <summary>
         /// Read and apply last editor zoom size.

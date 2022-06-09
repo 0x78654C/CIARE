@@ -30,6 +30,7 @@ Useful to run code on the fly and get instant result.
  - Display caret position (Line, Column)
  - Folding by curly brackets, region and others.
  - Autosave font size on editor zoom.
+ - Code completion (intellisense)
 
 ## Requirements:
 
@@ -45,13 +46,27 @@ Useful to run code on the fly and get instant result.
  Install-Package Microsoft.CodeDom.Providers.DotNetCompilerPlatform -Version 4.1.0-preview1
  ```
 
+ Mono.Cecil library.(Used in current project is an older version. Can be found on 'Lib' directory.)
+ ```
+ Install-Package Mono.Cecil -Version 0.9.5.4
+ ```
+
+ log4net library.
+ ```
+ Install-Package log4net -Version 2.0.14
+ ```
+
  As code highlighter I use ICSharpCode.TextEditor.Extended forked from https://github.com/megakraken/ICSharpCode.TextEditor
+ For code completion I use the libraries(ICSharpCode.SharpDevelop.Dom,ICSharpCode,Core and NRefactory)
+ from https://sourceforge.net/projects/sharpdevelop/files/SharpDevelop%203.x/3.2/ version.
 
 # Sample pictures
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split2.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/TestCodeCompletion/Media/ciare_inteli.png?raw=true)
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/TestCodeCompletion/Media/ciare_split2.png?raw=true)
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_menu.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/TestCodeCompletion/Media/ciare_split.png?raw=true)
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_recursion.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/TestCodeCompletion/Media/ciare_menu.png?raw=true)
+
+![alt text](https://github.com/0x78654C/CIARE/blob/TestCodeCompletion/Media/ciare_recursion.png?raw=true)

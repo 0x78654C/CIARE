@@ -1,10 +1,15 @@
 ﻿using CIARE.Utils;
 using CIARE.GUI;
+using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using System;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using NRefactory = ICSharpCode.NRefactory;
+using Dom = ICSharpCode.SharpDevelop.Dom;
+using System.Threading;
+using CIARE.Roslyn;
 
 namespace CIARE
 {
@@ -16,6 +21,15 @@ namespace CIARE
         public bool visibleSplitContainerAutoHide = false;
         private string _editFontSize = "editorFontSizeZoom";
         public static Form1 Instance { get; private set; }
+        internal static Dom.ProjectContentRegistry pcRegistry;
+        internal static Dom.DefaultProjectContent myProjectContent;
+        internal static Dom.ParseInformation parseInformation = new Dom.ParseInformation();
+        public static bool IsVisualBasic = false;
+        Dom.ICompilationUnit lastCompilationUnit;
+        public const string DummyFileName = "edited.cs";
+        static readonly Dom.LanguageProperties CurrentLanguageProperties = IsVisualBasic ? Dom.LanguageProperties.VBNet : Dom.LanguageProperties.CSharp;
+        Thread parserThread;
+
         public Form1()
         {
             InitializeComponent();
@@ -29,10 +43,29 @@ namespace CIARE
             versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             versionName = versionName.Substring(0, versionName.Length - 2);
             this.Text = $"CIARE {versionName}";
-            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1, highlightCMB);
+            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
-            InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath,splitContainer1);
+            InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
             Console.SetOut(new ControlWriter(outputRBT));
+            FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
+            CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
+            LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
+            //Code completion initialize.
+            if (GlobalVariables.OCodeCompletion)
+            {
+                HostCallbackImplementation.Register(this);
+                CodeCompletionKeyHandler.Attach(this, textEditorControl1);
+                ToolTipProvider.Attach(this, textEditorControl1);
+
+                pcRegistry = new Dom.ProjectContentRegistry();
+                if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
+                    Directory.CreateDirectory((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion")));
+
+                pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"));
+            }
+            //-------------------------------
+            myProjectContent = new Dom.DefaultProjectContent();
+            myProjectContent.Language = CurrentLanguageProperties;
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             textEditorControl1.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
@@ -57,7 +90,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
-            Roslyn.RoslynRun.RunCode(outputRBT,runCodePb,textEditorControl1,splitContainer1,true);
+            Roslyn.RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
         }
 
         /// <summary>
@@ -191,7 +224,7 @@ namespace CIARE
                     SplitEditorWindow.SplitWindow(textEditorControl1, false);
                     return true;
                 case Keys.K | Keys.Control:
-                    OutputWindowManage.SetOutputWindowState(outputRBT,splitContainer1);
+                    OutputWindowManage.SetOutputWindowState(outputRBT, splitContainer1);
                     return true;
                 case Keys.G | Keys.Control:
                     GoToLine goToLine = new GoToLine();
@@ -207,30 +240,26 @@ namespace CIARE
         #endregion
 
 
-        /// <summary>
-        /// Change Highlight of text via combobox
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void highlightCMB_SelectedIndexChanged(object sender, EventArgs e)
+        public void SetHighLighter(string highlight)
         {
-            if (highlightCMB.Text.Length > 0)
+            if (highlight.Length > 0)
             {
-                textEditorControl1.SetHighlighting(highlightCMB.Text);
-                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlightCMB.Text);
+                textEditorControl1.SetHighlighting(highlight);
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlight);
             }
-            if (highlightCMB.Text == "C#-Dark")
+            if (highlight == "C#-Dark")
             {
                 GlobalVariables.darkColor = true;
-                DarkMode.SetDarkModeMain(this, outputRBT, groupBox1, label1, label2, label3, highlightLbl,
-                    highlightCMB, menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
+                ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = true;
+                DarkMode.SetDarkModeMain(this, outputRBT, groupBox1, label2, label3,
+                    menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
                 return;
             }
             GlobalVariables.darkColor = false;
-            LightMode.SetLightModeMain(this, outputRBT, groupBox1, highlightLbl,
-                highlightCMB, menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
+            ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = false;
+            LightMode.SetLightModeMain(this, outputRBT, groupBox1,
+                menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
         }
-
 
         /// <summary>
         /// Load predefined C# code sample for run with Roslyn!
@@ -239,7 +268,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void LoadCStripMenuItem_Click(object sender, EventArgs e)
         {
-           FileManage.LoadCSTemplate(textEditorControl1);
+            FileManage.LoadCSTemplate(textEditorControl1);
         }
 
 
@@ -253,7 +282,7 @@ namespace CIARE
             AboutBox aboutBox = new AboutBox();
             aboutBox.ShowDialog();
         }
-    
+
 
         /// <summary>
         /// Compile code to binary exe file.
@@ -262,7 +291,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Roslyn.RoslynRun.CompileBinaryExe(textEditorControl1,splitContainer1,outputRBT, false);
+            RoslynRun.CompileBinaryExe(textEditorControl1, splitContainer1, outputRBT, false);
         }
 
         /// <summary>
@@ -272,7 +301,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToDLLCtrlSfitBToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Roslyn.RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
+            RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
         }
 
         /// <summary>
@@ -290,7 +319,6 @@ namespace CIARE
         }
 
 
-
         /// <summary>
         /// Check edited opened files by external application when CIARE is on Top Most event handler.
         /// </summary>
@@ -298,7 +326,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void Form1_Activated(object sender, EventArgs e)
         {
-           FileManage.CheckFileExternalEdited(GlobalVariables.openedFilePath, openedFileLength, textEditorControl1);
+            FileManage.CheckFileExternalEdited(GlobalVariables.openedFilePath, openedFileLength, textEditorControl1);
         }
 
 
@@ -368,6 +396,12 @@ namespace CIARE
         {
             SendKeys.Send("^f");
         }
+
+        private void optionsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Options options = new Options();
+            options.ShowDialog();
+        }
         #endregion
 
         /// <summary>
@@ -383,5 +417,72 @@ namespace CIARE
                 visibleSplitContainer = true;
             }
         }
+
+        #region Code Completion settup.
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            if (GlobalVariables.OCodeCompletion)
+            {
+                parserThread = new Thread(ParserThread);
+                parserThread.IsBackground = true;
+                parserThread.Start();
+            }
+        }
+        void ParserThread()
+        {
+            myProjectContent.AddReferencedContent(pcRegistry.Mscorlib);
+            ParseStep();
+            var total = pcRegistry.LoadAll();
+            foreach (var item in total)
+            {
+                myProjectContent.AddReferencedContent(item);
+                if (myProjectContent is Dom.ReflectionProjectContent)
+                {
+                    (myProjectContent as Dom.ReflectionProjectContent).InitializeReferences();
+                }
+            }
+
+            while (!IsDisposed)
+            {
+                ParseStep();
+                Thread.Sleep(2000);
+            }
+        }
+
+        void ParseStep()
+        {
+            string code = null;
+            Invoke(new MethodInvoker(delegate
+            {
+                code = textEditorControl1.Text;
+            }));
+            TextReader textReader = new StringReader(code);
+            Dom.ICompilationUnit newCompilationUnit;
+            NRefactory.SupportedLanguage supportedLanguage;
+            if (IsVisualBasic)
+                supportedLanguage = NRefactory.SupportedLanguage.VBNet;
+            else
+                supportedLanguage = NRefactory.SupportedLanguage.CSharp;
+            using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(supportedLanguage, textReader))
+            {
+                p.ParseMethodBodies = false;
+                p.Parse();
+                newCompilationUnit = ConvertCompilationUnit(p.CompilationUnit);
+            }
+            myProjectContent.UpdateCompilationUnit(lastCompilationUnit, newCompilationUnit, DummyFileName);
+            lastCompilationUnit = newCompilationUnit;
+            parseInformation.SetCompilationUnit(newCompilationUnit);
+        }
+
+        Dom.ICompilationUnit ConvertCompilationUnit(NRefactory.Ast.CompilationUnit cu)
+        {
+            Dom.NRefactoryResolver.NRefactoryASTConvertVisitor converter;
+            converter = new Dom.NRefactoryResolver.NRefactoryASTConvertVisitor(myProjectContent);
+            cu.AcceptVisitor(converter, null);
+            return converter.Cu;
+        }
+        #endregion
+
     }
 }
