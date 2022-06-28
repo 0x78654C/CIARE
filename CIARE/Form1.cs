@@ -69,16 +69,27 @@ namespace CIARE
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             textEditorControl1.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
+
+            //File open via parameters(Open with option..)
             try
             {
                 var args = Environment.GetCommandLineArgs();
-                LoadParamFile(args[1], textEditorControl1);
-                GlobalVariables.openedFilePath = args[1];
+                string arg = string.Empty;
+                int count = 0;
+                foreach (var a in args)
+                {
+                    count++;
+                    if (count > 1)
+                        arg += $"{a} ";
+                }
+                LoadParamFile(arg, textEditorControl1);
+                GlobalVariables.openedFilePath = arg;
                 this.Text = $"CIARE {versionName} | {GlobalVariables.openedFilePath}";
                 FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                 openedFileLength = fileInfo.Length;
             }
             catch { }
+            //----------------------------------
         }
 
 
