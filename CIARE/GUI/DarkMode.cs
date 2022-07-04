@@ -48,6 +48,7 @@ namespace CIARE.GUI
             {
                 toolStripSeparator.Paint += RenderToolStripSeparator.RenderToolStripSeparator_PaintDark;
             }
+            TitleBar.UseImmersiveDarkMode(Form1.Instance.Handle, true);
         }
 
         /// <summary>
