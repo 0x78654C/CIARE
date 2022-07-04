@@ -229,6 +229,7 @@
     <Compile Include="GUI\OutputWindowManage.cs" />
     <Compile Include="GUI\RegionFoldingStrategy.cs" />
     <Compile Include="GUI\RenderToolStripSeparator.cs" />
+    <Compile Include="GUI\TitleBar.cs" />
     <Compile Include="GUI\ToolTipProvider.cs" />
     <Compile Include="Options.cs">
       <SubType>Form</SubType>
