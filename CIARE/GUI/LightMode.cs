@@ -42,6 +42,7 @@ namespace CIARE.GUI
             {
                 toolStripSeparator.Paint += RenderToolStripSeparator.RenderToolStripSeparator_PaintLight;
             }
+            TitleBar.UseImmersiveDarkMode(Form1.Instance.Handle, false);
         }
 
         public static void OptionsLightMode(Form form, Button cancelBtn, Label highlightLbl, ComboBox highLightName,
