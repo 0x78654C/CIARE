@@ -67,7 +67,11 @@ namespace CIARE.Utils
         public static string PathCheck(string data)
         {
             if (data.Contains(":\\"))
+            {
+                if (!File.Exists(data))
+                    return ManageCommandFileParam(Form1.Instance.textEditorControl1, data);
                 return data;
+            }
             else
             {
                 return ManageCommandFileParam(Form1.Instance.textEditorControl1, data);
@@ -92,7 +96,10 @@ namespace CIARE.Utils
                 Environment.Exit(1);
             if (dr == DialogResult.Yes)
             {
-                GlobalVariables.openedFilePath = $"{userProfileFolder}\\{fileName}";
+                if (fileName.Contains(":\\"))
+                    GlobalVariables.openedFilePath = $"{userProfileFolder}\\{fileName}";
+                else
+                    GlobalVariables.openedFilePath = fileName;
                 returnPathFile = GlobalVariables.openedFilePath;
                 GlobalVariables.noPath = true;
                 GlobalVariables.savedFile = true;
