@@ -87,7 +87,8 @@ namespace CIARE
                 if (!GlobalVariables.noPath)
                 {
                     GlobalVariables.openedFilePath = arg;
-                    this.Text = $"CIARE {versionName} | {GlobalVariables.openedFilePath}";
+                    if (arg.Length > 1)
+                        this.Text = $"CIARE {versionName} | {GlobalVariables.openedFilePath}";
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     openedFileLength = fileInfo.Length;
                 }
