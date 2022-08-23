@@ -11,6 +11,7 @@ namespace CIARE.Utils
         public static bool checkFormOpen = false;
         public static bool outPutDisplay = false;
         public static bool findTabOpen = false;
+        public static bool noPath = false;
         public static bool darkColor = false;
         public static bool OCodeCompletion = true;
         public static bool OLineNumber = true;
