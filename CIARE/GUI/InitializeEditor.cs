@@ -1,5 +1,6 @@
 ﻿using CIARE.Utils;
 using ICSharpCode.TextEditor;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -9,6 +10,9 @@ namespace CIARE.GUI
     {
         private const string _defaultHighLight = "C#-Dark";
         private const string _regName = "highlight";
+        private const string _windowSize = "windowSize";
+        private const string _windowSizeMax = "windowSizeMax";
+
         /// <summary>
         /// Read and apply highlight setting from registry.
         /// </summary>
@@ -30,6 +34,61 @@ namespace CIARE.GUI
             GlobalVariables.darkColor = true;
         }
 
+
+        /// <summary>
+        /// Read and apply/create Windows size in registry.
+        /// </summary>
+        /// <param name="form"></param>
+        /// <param name="regKeyName"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        public static void ReadEditorWindowSize(Form form, string regKeyName)
+        {
+            string regWindowSize = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _windowSize);
+            string regWindowSizemax = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _windowSizeMax);
+            if (regWindowSizemax.Length == 0)
+                RegistryManagement.RegKey_CreateKey(regKeyName, _windowSize, "False");
+            if (regWindowSize.Length > 0)
+            {
+                string[] splitValue = regWindowSize.Split('|');
+                int regWidth = Int32.Parse(splitValue[0]);
+                int regHeight = Int32.Parse(splitValue[1]);
+                if (regWindowSizemax == "True")
+                {
+                    form.WindowState = FormWindowState.Maximized;
+                }
+                else
+                {
+                    form.Width = regWidth;
+                    form.Height = regHeight;
+                }
+                return;
+            }
+
+            //Predefined value on first run.
+            RegistryManagement.RegKey_CreateKey(regKeyName, _windowSize, "1225|786");
+        }
+
+        /// <summary>
+        /// Store Window size in regsitry.
+        /// </summary>
+        /// <param name="form"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        public static void SetEditorWindowSize(string regKeyName, int width, int height)
+        {
+            RegistryManagement.RegKey_WriteSubkey(regKeyName, _windowSize, $"{width}|{height}");
+        }
+
+        /// <summary>
+        /// Set flag for window maximized state in registry used for load on application open.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="flagMaximized"></param>
+        public static void SetMaximizedWindowState(string regKeyName, bool flagMaximized)
+        {
+            RegistryManagement.RegKey_WriteSubkey(regKeyName, _windowSizeMax, flagMaximized.ToString());
+        }
         /// <summary>
         /// Read and apply highlight setting from registry.
         /// </summary>
