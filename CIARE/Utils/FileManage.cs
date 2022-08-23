@@ -86,7 +86,7 @@ namespace CIARE.Utils
             string returnPathFile = string.Empty;
             if (string.IsNullOrEmpty(fileName))
                 return returnPathFile;
-            dr = MessageBox.Show($"File dose {fileName} not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+            dr = MessageBox.Show($"File does '{fileName}' not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
             string userProfileFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             if (dr == DialogResult.Cancel)
                 Environment.Exit(1);
