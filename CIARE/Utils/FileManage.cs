@@ -69,9 +69,39 @@ namespace CIARE.Utils
             if (data.Contains(":\\"))
                 return data;
             else
-                return Application.StartupPath + $"\\{data}";
+            {
+                return ManageCommandFileParam(Form1.Instance.textEditorControl1, data);
+            }
         }
 
+        /// <summary>
+        /// Open file with no path event.
+        /// </summary>
+        /// <param name="textEditorControl"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static string ManageCommandFileParam(TextEditorControl textEditorControl, string fileName)
+        {
+            DialogResult dr;
+            string returnPathFile = string.Empty;
+            if (string.IsNullOrEmpty(fileName))
+                return returnPathFile;
+            dr = MessageBox.Show($"File dose {fileName} not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+            string userProfileFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (dr == DialogResult.Cancel)
+                Environment.Exit(1);
+            if (dr == DialogResult.Yes)
+            {
+                GlobalVariables.openedFilePath = $"{userProfileFolder}\\{fileName}";
+                returnPathFile = GlobalVariables.openedFilePath;
+                GlobalVariables.noPath = true;
+                GlobalVariables.savedFile = true;
+                SaveAsDialog(textEditorControl);
+            }
+            if (dr == DialogResult.No)
+                GlobalVariables.noPath = true;
+            return returnPathFile;
+        }
 
         /// <summary>
         /// Handle unsaved data from editor on from closing event.
@@ -116,7 +146,7 @@ MessageBoxIcon.Warning);
                 textEditor.Text = openedData;
                 FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                 Form1.Instance.openedFileLength = fileInfo.Length;
-                Form1.Instance.Text = $"CIARE { Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
+                Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
             }
         }
 
@@ -133,7 +163,7 @@ MessageBoxIcon.Warning);
                     File.WriteAllText(GlobalVariables.openedFilePath, textEditor.Text);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     Form1.Instance.openedFileLength = fileInfo.Length;
-                    Form1.Instance.Text = $"CIARE { Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
+                    Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
                     return;
                 }
                 SaveFile(textEditor.Text);
@@ -156,7 +186,7 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void SaveAsDialog(TextEditorControl textEditor)
         {
-            FileManage.SaveFile(textEditor.Text);
+            SaveFile(textEditor.Text);
             if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
                 return;
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
@@ -178,7 +208,7 @@ MessageBoxIcon.Warning);
                 return;
             textEditor.Clear();
             GlobalVariables.openedFilePath = string.Empty;
-            Form1.Instance.Text = $"CIARE { Form1.Instance.versionName}";
+            Form1.Instance.Text = $"CIARE {Form1.Instance.versionName}";
         }
 
         /// <summary>
