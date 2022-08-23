@@ -43,6 +43,7 @@ namespace CIARE
             versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             versionName = versionName.Substring(0, versionName.Length - 2);
             this.Text = $"CIARE {versionName}";
+            InitializeEditor.ReadEditorWindowSize(this, GlobalVariables.registryPath);
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
@@ -83,10 +84,13 @@ namespace CIARE
                         arg += $"{a} ";
                 }
                 LoadParamFile(arg, textEditorControl1);
-                GlobalVariables.openedFilePath = arg;
-                this.Text = $"CIARE {versionName} | {GlobalVariables.openedFilePath}";
-                FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                openedFileLength = fileInfo.Length;
+                if (!GlobalVariables.noPath)
+                {
+                    GlobalVariables.openedFilePath = arg;
+                    this.Text = $"CIARE {versionName} | {GlobalVariables.openedFilePath}";
+                    FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                    openedFileLength = fileInfo.Length;
+                }
             }
             catch { }
             //----------------------------------
@@ -101,7 +105,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
-            Roslyn.RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
+            RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
         }
 
         /// <summary>
@@ -144,7 +148,10 @@ namespace CIARE
         {
             data = FileManage.PathCheck(data);
             if (File.Exists(data))
-                textEditorControl1.Clear(); textEditorControl.Text = File.ReadAllText(data);
+            {
+                textEditorControl1.Clear();
+                textEditorControl.Text = File.ReadAllText(data);
+            }
         }
 
         /// <summary>
@@ -495,5 +502,23 @@ namespace CIARE
         }
         #endregion
 
+
+        /// <summary>
+        /// Form resize event used to store window size in registry.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Form1_Resize(object sender, EventArgs e)
+        {
+            if (this.WindowState != FormWindowState.Maximized)
+            {
+                InitializeEditor.SetEditorWindowSize(GlobalVariables.registryPath, this.Width, this.Height);
+                InitializeEditor.SetMaximizedWindowState(GlobalVariables.registryPath, false);
+            }
+            else
+            {
+                InitializeEditor.SetMaximizedWindowState(GlobalVariables.registryPath, true);
+            }
+        }
     }
 }
