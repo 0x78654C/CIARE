@@ -94,13 +94,14 @@ namespace CIARE
             | System.Windows.Forms.AnchorStyles.Right)));
             this.outputRBT.BackColor = System.Drawing.SystemColors.Window;
             this.outputRBT.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.outputRBT.Font = new System.Drawing.Font("Consolas", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.outputRBT.Font = new System.Drawing.Font("Consolas", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.outputRBT.ForeColor = System.Drawing.SystemColors.MenuText;
-            this.outputRBT.Location = new System.Drawing.Point(6, 16);
+            this.outputRBT.Location = new System.Drawing.Point(7, 18);
+            this.outputRBT.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1185, 96);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 112);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             // 
@@ -111,9 +112,10 @@ namespace CIARE
             // runCodePb
             // 
             this.runCodePb.Image = global::CIARE.Properties.Resources.runButton21;
-            this.runCodePb.Location = new System.Drawing.Point(319, 4);
+            this.runCodePb.Location = new System.Drawing.Point(372, 5);
+            this.runCodePb.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.runCodePb.Name = "runCodePb";
-            this.runCodePb.Size = new System.Drawing.Size(28, 21);
+            this.runCodePb.Size = new System.Drawing.Size(33, 24);
             this.runCodePb.TabIndex = 2;
             this.runCodePb.TabStop = false;
             this.toolTip1.SetToolTip(this.runCodePb, "Run code ( F5 )");
@@ -131,7 +133,8 @@ namespace CIARE
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1209, 24);
+            this.menuStrip1.Padding = new System.Windows.Forms.Padding(7, 2, 0, 2);
+            this.menuStrip1.Size = new System.Drawing.Size(1410, 24);
             this.menuStrip1.TabIndex = 4;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -407,10 +410,12 @@ namespace CIARE
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox1.Controls.Add(this.outputRBT);
-            this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.groupBox1.Location = new System.Drawing.Point(6, 3);
+            this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.groupBox1.Location = new System.Drawing.Point(7, 3);
+            this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(1197, 118);
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 137);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -419,6 +424,7 @@ namespace CIARE
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.Location = new System.Drawing.Point(0, 24);
+            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -429,8 +435,9 @@ namespace CIARE
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.groupBox1);
-            this.splitContainer1.Size = new System.Drawing.Size(1209, 723);
-            this.splitContainer1.SplitterDistance = 595;
+            this.splitContainer1.Size = new System.Drawing.Size(1410, 838);
+            this.splitContainer1.SplitterDistance = 689;
+            this.splitContainer1.SplitterWidth = 5;
             this.splitContainer1.TabIndex = 6;
             // 
             // textEditorControl1
@@ -440,11 +447,12 @@ namespace CIARE
             | System.Windows.Forms.AnchorStyles.Right)));
             this.textEditorControl1.BackColor = System.Drawing.SystemColors.Window;
             this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.textEditorControl1.Highlighting = null;
-            this.textEditorControl1.Location = new System.Drawing.Point(3, 3);
+            this.textEditorControl1.Location = new System.Drawing.Point(4, 3);
+            this.textEditorControl1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.textEditorControl1.Name = "textEditorControl1";
-            this.textEditorControl1.Size = new System.Drawing.Size(1203, 589);
+            this.textEditorControl1.Size = new System.Drawing.Size(1402, 681);
             this.textEditorControl1.TabIndex = 0;
             this.textEditorControl1.VRulerRow = 0;
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
@@ -453,8 +461,9 @@ namespace CIARE
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(300, 2);
+            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.label2.Location = new System.Drawing.Point(350, 2);
+            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(13, 18);
             this.label2.TabIndex = 10;
@@ -463,8 +472,9 @@ namespace CIARE
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(345, 2);
+            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.label3.Location = new System.Drawing.Point(402, 2);
+            this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(13, 18);
             this.label3.TabIndex = 11;
@@ -474,9 +484,10 @@ namespace CIARE
             // 
             this.linesCountLbl.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.linesCountLbl.AutoSize = true;
-            this.linesCountLbl.Location = new System.Drawing.Point(1045, 6);
+            this.linesCountLbl.Location = new System.Drawing.Point(1219, 7);
+            this.linesCountLbl.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.linesCountLbl.Name = "linesCountLbl";
-            this.linesCountLbl.Size = new System.Drawing.Size(56, 13);
+            this.linesCountLbl.Size = new System.Drawing.Size(64, 15);
             this.linesCountLbl.TabIndex = 14;
             this.linesCountLbl.Text = "linesCount";
             // 
@@ -484,14 +495,16 @@ namespace CIARE
             // 
             this.linesPositionLbl.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.linesPositionLbl.AutoSize = true;
-            this.linesPositionLbl.Location = new System.Drawing.Point(858, 6);
+            this.linesPositionLbl.Location = new System.Drawing.Point(1001, 7);
+            this.linesPositionLbl.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.linesPositionLbl.Name = "linesPositionLbl";
-            this.linesPositionLbl.Size = new System.Drawing.Size(65, 13);
+            this.linesPositionLbl.Size = new System.Drawing.Size(74, 15);
             this.linesPositionLbl.TabIndex = 15;
             this.linesPositionLbl.Text = "linesPosition";
             // 
             // imageList1
             // 
+            this.imageList1.ColorDepth = System.Windows.Forms.ColorDepth.Depth8Bit;
             this.imageList1.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList1.ImageStream")));
             this.imageList1.TransparentColor = System.Drawing.Color.Transparent;
             this.imageList1.Images.SetKeyName(0, "Icons.16x16.Class.png");
@@ -548,10 +561,10 @@ namespace CIARE
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
-            this.ClientSize = new System.Drawing.Size(1209, 747);
+            this.ClientSize = new System.Drawing.Size(1410, 862);
             this.Controls.Add(this.linesPositionLbl);
             this.Controls.Add(this.linesCountLbl);
             this.Controls.Add(this.label3);
@@ -562,6 +575,7 @@ namespace CIARE
             this.ForeColor = System.Drawing.SystemColors.ControlText;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
+            this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "CIARE";

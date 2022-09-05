@@ -13,9 +13,16 @@ using System.Diagnostics;
 using CIARE.Utils;
 using CIARE.GUI;
 using ICSharpCode.TextEditor;
+using Microsoft.CSharp;
+using System.Runtime.Versioning;
+using System.Runtime.Loader;
+using System.Collections;
+using System.Windows.Shapes;
+using Path = System.IO.Path;
 
 namespace CIARE.Roslyn
 {
+    [SupportedOSPlatform("windows")]
     public class RoslynRun
     {
         /* Class for compile and run C# code using Roslyn */
@@ -146,7 +153,7 @@ namespace CIARE.Roslyn
                 else
                     richTextBox.Text = "Compile DLL binary file ...";
                 string Output = pathOutput + outPut;
-                CodeDomProvider provider = new Microsoft.CodeDom.Providers.DotNetCompilerPlatform.CSharpCodeProvider();
+                CodeDomProvider provider = new CSharpCodeProvider();
                 CompilerParameters cp = new CompilerParameters();
                 cp.ReferencedAssemblies.Clear();
                 cp.ReferencedAssemblies.AddRange(Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
@@ -156,24 +163,51 @@ namespace CIARE.Roslyn
                 cp.TreatWarningsAsErrors = false;
                 cp.CompilerOptions = "/optimize";
                 cp.OutputAssembly = Output;
-                CompilerResults results = provider.CompileAssemblyFromSource(cp, code);
-                if (results.Errors.Count > 0)
+                using (var ms = new MemoryStream())
                 {
-                    richTextBox.ForeColor = Color.Red;
-                    foreach (CompilerError CompErr in results.Errors)
+                    EmitResult result = cp.Emit(ms);
+
+                    if (!result.Success)
                     {
-                        ErrorDisplay(richTextBox, CompErr.ErrorNumber, CompErr.ErrorText, CompErr.Line);
+                        IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+                            diagnostic.IsWarningAsError ||
+                            diagnostic.Severity == DiagnosticSeverity.Error);
+                        foreach (Diagnostic diagnostic in failures)
+                        {
+                            richTextBox.Clear();
+                            richTextBox.ForeColor = Color.Red;
+                            var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
+                            ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
+                        }
                     }
+                    else
+                    {
+                        //    //Successful Compile
+                        //    richTextBox.Text = $"Success!\nBinary saved in: {pathOutput + outPut}";
+                        //    s_stopWatch.Stop();
+                        //    s_timeSpan = s_stopWatch.Elapsed;
+                        //    richTextBox.Text += $"\n\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";;
+                    }
+
+                    //CompilerResults results = provider.CompileAssemblyFromSource(cp, code);
+                    //if (results.Errors.Count > 0)
+                    //{
+                    //    richTextBox.ForeColor = Color.Red;
+                    //    foreach (CompilerError CompErr in results.Errors)
+                    //    {
+                    //        ErrorDisplay(richTextBox, CompErr.ErrorNumber, CompErr.ErrorText, CompErr.Line);
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    //Successful Compile
+                    //    richTextBox.Text = $"Success!\nBinary saved in: {pathOutput + outPut}";
+                    //    s_stopWatch.Stop();
+                    //    s_timeSpan = s_stopWatch.Elapsed;
+                    //    richTextBox.Text += $"\n\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
+                    //}
+                    GlobalVariables.binaryName = string.Empty;
                 }
-                else
-                {
-                    //Successful Compile
-                    richTextBox.Text = $"Success!\nBinary saved in: {pathOutput + outPut}";
-                    s_stopWatch.Stop();
-                    s_timeSpan = s_stopWatch.Elapsed;
-                    richTextBox.Text += $"\n\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
-                }
-                GlobalVariables.binaryName = string.Empty;
             }
             catch
             {
