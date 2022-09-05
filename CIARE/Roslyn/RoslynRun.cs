@@ -19,6 +19,7 @@ using System.Runtime.Loader;
 using System.Collections;
 using System.Windows.Shapes;
 using Path = System.IO.Path;
+using System.Windows.Documents;
 
 namespace CIARE.Roslyn
 {
@@ -89,7 +90,7 @@ namespace CIARE.Roslyn
                     ms.Close();
                 }
                 MethodInfo myMethod = assembly.EntryPoint;
-                myMethod.Invoke(null, new object[] {  s_commandLineArguments });
+                myMethod.Invoke(null, new object[] { s_commandLineArguments });
                 s_stopWatch.Stop();
                 s_timeSpan = s_stopWatch.Elapsed;
                 if (richTextBox.Text.EndsWith("\n"))
@@ -115,12 +116,10 @@ namespace CIARE.Roslyn
         /// <param name="richTextBox"></param>
         public static void BinaryCompile(string code, bool exeFile, string outPut, RichTextBox richTextBox)
         {
+            string pathOutput = Application.StartupPath + "binary\\";
+            string roslynDir = Application.StartupPath + "roslyn\\";
             try
             {
-                string roslynDir = Application.StartupPath + "\\roslyn\\";
-                string pathOutput = Application.StartupPath + "\\binary\\";
-                string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
-                richTextBox.Clear();
                 if (!Directory.Exists(roslynDir))
                 {
                     richTextBox.ForeColor = Color.Red;
@@ -153,66 +152,74 @@ namespace CIARE.Roslyn
                 else
                     richTextBox.Text = "Compile DLL binary file ...";
                 string Output = pathOutput + outPut;
-                CodeDomProvider provider = new CSharpCodeProvider();
-                CompilerParameters cp = new CompilerParameters();
-                cp.ReferencedAssemblies.Clear();
-                cp.ReferencedAssemblies.AddRange(Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
-            .Where(t => ManageCheck.IsManaged(t)).ToArray());
-                cp.GenerateExecutable = exeFile;
-                cp.GenerateInMemory = false;
-                cp.TreatWarningsAsErrors = false;
-                cp.CompilerOptions = "/optimize";
-                cp.OutputAssembly = Output;
-                using (var ms = new MemoryStream())
+                s_timeSpan = new TimeSpan();
+                s_stopWatch = new Stopwatch();
+                s_stopWatch.Start();
+                //Assembly assembly = null;
+                SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
+                //string assemblyName = Path.GetRandomFileName();
+                //string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
+                //var references = Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
+                //.Where(t => ManageCheck.IsManaged(t))
+                //.Select(t => MetadataReference.CreateFromFile(t)).ToArray();
+                List<MetadataReference> references = new List<MetadataReference>();
+                foreach (var refs in ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator))
                 {
-                    EmitResult result = cp.Emit(ms);
-
-                    if (!result.Success)
-                    {
-                        IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
-                            diagnostic.IsWarningAsError ||
-                            diagnostic.Severity == DiagnosticSeverity.Error);
-                        foreach (Diagnostic diagnostic in failures)
-                        {
-                            richTextBox.Clear();
-                            richTextBox.ForeColor = Color.Red;
-                            var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
-                            ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
-                        }
-                    }
-                    else
-                    {
-                        //    //Successful Compile
-                        //    richTextBox.Text = $"Success!\nBinary saved in: {pathOutput + outPut}";
-                        //    s_stopWatch.Stop();
-                        //    s_timeSpan = s_stopWatch.Elapsed;
-                        //    richTextBox.Text += $"\n\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";;
-                    }
-
-                    //CompilerResults results = provider.CompileAssemblyFromSource(cp, code);
-                    //if (results.Errors.Count > 0)
-                    //{
-                    //    richTextBox.ForeColor = Color.Red;
-                    //    foreach (CompilerError CompErr in results.Errors)
-                    //    {
-                    //        ErrorDisplay(richTextBox, CompErr.ErrorNumber, CompErr.ErrorText, CompErr.Line);
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    //Successful Compile
-                    //    richTextBox.Text = $"Success!\nBinary saved in: {pathOutput + outPut}";
-                    //    s_stopWatch.Stop();
-                    //    s_timeSpan = s_stopWatch.Elapsed;
-                    //    richTextBox.Text += $"\n\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
-                    //}
-                    GlobalVariables.binaryName = string.Empty;
+                    references.Add(MetadataReference.CreateFromFile(refs));
                 }
-            }
-            catch
-            {
+                CSharpCompilation compilation;
+                if (exeFile)
+                {
+                    compilation = CSharpCompilation.Create(
+                      outPut,
+                      syntaxTrees: new[] { syntaxTree },
+                      references: references,
+                      options: new CSharpCompilationOptions(OutputKind.ConsoleApplication));
+                }
+                else
+                {
+                    compilation = CSharpCompilation.Create(
+                    outPut,
+                    syntaxTrees: new[] { syntaxTree },
+                    references: references,
+                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                }
+
+                EmitResult result = compilation.Emit(pathOutput + outPut);
+                if (!result.Success)
+                {
+                    IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+                        diagnostic.IsWarningAsError ||
+                        diagnostic.Severity == DiagnosticSeverity.Error);
+                    foreach (Diagnostic diagnostic in failures)
+                    {
+                        richTextBox.Clear();
+                        richTextBox.ForeColor = Color.Red;
+                        var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
+                        ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
+                    }
+                }
+                else
+                {
+                    richTextBox.Clear();
+                    //Successful Compile
+                    richTextBox.Text = $"Success!\nBinary saved in: {pathOutput + outPut}";
+                    s_stopWatch.Stop();
+                    s_timeSpan = s_stopWatch.Elapsed;
+                    richTextBox.Text += $"\n\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
+                }
+                s_stopWatch.Stop();
+                s_timeSpan = s_stopWatch.Elapsed;
+
                 GlobalVariables.binaryName = string.Empty;
             }
+            catch (DivideByZeroException dbze)
+            {
+
+                richTextBox.Text += dbze.StackTrace;
+                GlobalVariables.binaryName = string.Empty;
+            }
+            catch { GlobalVariables.binaryName = string.Empty; }
         }
 
         /// <summary>
@@ -231,9 +238,9 @@ namespace CIARE.Roslyn
         /// <summary>
         /// Compile and run C# code and controlers handle.
         /// </summary>
-        public static void RunCode(RichTextBox outLogRtb,PictureBox runCodePb, TextEditorControl textEditor,SplitContainer splitContainer, bool runner)
+        public static void RunCode(RichTextBox outLogRtb, PictureBox runCodePb, TextEditorControl textEditor, SplitContainer splitContainer, bool runner)
         {
-            OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer,outLogRtb);
+            OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
             if (GlobalVariables.darkColor)
                 outLogRtb.ForeColor = Color.FromArgb(192, 215, 207);
             else
@@ -252,7 +259,7 @@ namespace CIARE.Roslyn
         /// <summary>
         /// Compile code to EXE binary file method.
         /// </summary>
-        public static void CompileBinaryExe(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb,bool runner)
+        public static void CompileBinaryExe(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb, bool runner)
         {
             GlobalVariables.exeName = true;
             BinaryName binaryName = new BinaryName();
