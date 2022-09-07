@@ -8,18 +8,16 @@ using System.Windows.Forms;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
-using System.CodeDom.Compiler;
 using System.Diagnostics;
 using CIARE.Utils;
 using CIARE.GUI;
 using ICSharpCode.TextEditor;
-using Microsoft.CSharp;
 using System.Runtime.Versioning;
-using System.Runtime.Loader;
-using System.Collections;
-using System.Windows.Shapes;
 using Path = System.IO.Path;
-using System.Windows.Documents;
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text;
 
 namespace CIARE.Roslyn
 {
@@ -55,14 +53,14 @@ namespace CIARE.Roslyn
                 SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
                 string assemblyName = Path.GetRandomFileName();
                 string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
-                var references = Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
-        .Where(t => ManageCheck.IsManaged(t))
-        .Select(t => MetadataReference.CreateFromFile(t)).ToArray();
+                //        var references = Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
+                //.Where(t => ManageCheck.IsManaged(t))
+                //.Select(t => MetadataReference.CreateFromFile(t)).ToArray();
 
                 CSharpCompilation compilation = CSharpCompilation.Create(
                     assemblyName,
                     syntaxTrees: new[] { syntaxTree },
-                    references: references,
+                    references: References(),
                     options: new CSharpCompilationOptions(OutputKind.ConsoleApplication));
 
                 using (var ms = new MemoryStream())
@@ -162,27 +160,29 @@ namespace CIARE.Roslyn
                 //var references = Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
                 //.Where(t => ManageCheck.IsManaged(t))
                 //.Select(t => MetadataReference.CreateFromFile(t)).ToArray();
-                List<MetadataReference> references = new List<MetadataReference>();
-                foreach (var refs in ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator))
-                {
-                    references.Add(MetadataReference.CreateFromFile(refs));
-                }
+
                 CSharpCompilation compilation;
                 if (exeFile)
                 {
                     compilation = CSharpCompilation.Create(
                       outPut,
                       syntaxTrees: new[] { syntaxTree },
-                      references: references,
-                      options: new CSharpCompilationOptions(OutputKind.ConsoleApplication));
+                      references: References(),
+                      options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
+                      null, null, OptimizationLevel.Release, false, false, null, null,
+                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.X64));
+                    string noExe = Output.Substring(0,Output.Length - 3);
+                    File.WriteAllText($"{noExe}.runtimeconfig.json",GenerateRuntimeConfig());
                 }
                 else
                 {
                     compilation = CSharpCompilation.Create(
                     outPut,
                     syntaxTrees: new[] { syntaxTree },
-                    references: references,
-                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                    references: References(),
+                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, true, null, null, null, null, OptimizationLevel.Release,
+                    false, false, null, null,
+                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
                 }
 
                 EmitResult result = compilation.Emit(pathOutput + outPut);
@@ -282,6 +282,40 @@ namespace CIARE.Roslyn
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
             BinaryCompile(textEditor.Text, false, GlobalVariables.binaryName, outLogRtb);
             GC.Collect();
+        }
+
+        private static List<MetadataReference> References()
+        {
+            List<MetadataReference> references = new List<MetadataReference>();
+            foreach (var refs in ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator))
+                references.Add(MetadataReference.CreateFromFile(refs));
+            return references;
+        }
+
+        private static string GenerateRuntimeConfig()
+        {
+            using (var stream = new MemoryStream())
+            {
+                using (var writer = new Utf8JsonWriter(
+                    stream,
+                    new JsonWriterOptions() { Indented = true }
+                ))
+                {
+                    writer.WriteStartObject();
+                    writer.WriteStartObject("runtimeOptions");
+                    writer.WriteStartObject("framework");
+                    writer.WriteString("name", "Microsoft.NETCore.App");
+                    writer.WriteString(
+                        "version",
+                        RuntimeInformation.FrameworkDescription.Replace(".NET Core ", "")
+                    );
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                }
+
+                return Encoding.UTF8.GetString(stream.ToArray());
+            }
         }
     }
 }
