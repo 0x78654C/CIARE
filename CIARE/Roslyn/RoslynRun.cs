@@ -18,6 +18,8 @@ using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text;
+using System.Text.Json.Nodes;
+using ICSharpCode.NRefactory.Ast;
 
 namespace CIARE.Roslyn
 {
@@ -171,8 +173,8 @@ namespace CIARE.Roslyn
                       options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
                       null, null, OptimizationLevel.Release, false, false, null, null,
                       ImmutableArray.Create<byte>(new byte[] { }), false, Platform.X64));
-                    string noExe = Output.Substring(0,Output.Length - 3);
-                    File.WriteAllText($"{noExe}.runtimeconfig.json",GenerateRuntimeConfig());
+                    string noExe = Output.Substring(0, Output.Length - 3);
+                    File.WriteAllText($"{noExe}runtimeconfig.json", GenerateRuntimeConfig());
                 }
                 else
                 {
@@ -284,6 +286,10 @@ namespace CIARE.Roslyn
             GC.Collect();
         }
 
+        /// <summary>
+        /// Get binary reference list.
+        /// </summary>
+        /// <returns></returns>
         private static List<MetadataReference> References()
         {
             List<MetadataReference> references = new List<MetadataReference>();
@@ -292,30 +298,29 @@ namespace CIARE.Roslyn
             return references;
         }
 
+        /// <summary>
+        /// Generate {exeName}.rutimeOptions.json file.
+        /// </summary>
+        /// <returns></returns>
         private static string GenerateRuntimeConfig()
         {
-            using (var stream = new MemoryStream())
-            {
-                using (var writer = new Utf8JsonWriter(
-                    stream,
-                    new JsonWriterOptions() { Indented = true }
-                ))
-                {
-                    writer.WriteStartObject();
-                    writer.WriteStartObject("runtimeOptions");
-                    writer.WriteStartObject("framework");
-                    writer.WriteString("name", "Microsoft.NETCore.App");
-                    writer.WriteString(
-                        "version",
-                        RuntimeInformation.FrameworkDescription.Replace(".NET Core ", "")
-                    );
-                    writer.WriteEndObject();
-                    writer.WriteEndObject();
-                    writer.WriteEndObject();
-                }
-
-                return Encoding.UTF8.GetString(stream.ToArray());
-            }
+            string net6runtimeJson = $@"{{
+  ""runtimeOptions"": {{
+    ""tfm"": ""net6.0"",
+    ""frameworks"": [
+      {{
+        ""name"": ""Microsoft.NETCore.App"",
+        ""version"": ""6.0.0""
+      }},
+      {{
+        ""name"": ""Microsoft.WindowsDesktop.App"",
+        ""version"": ""6.0.0""
+      }}
+    ]
+  }}
+}}
+";
+            return net6runtimeJson;
         }
     }
 }
