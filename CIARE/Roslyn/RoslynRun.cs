@@ -142,9 +142,7 @@ namespace CIARE.Roslyn
                     richTextBox.ForeColor = Color.FromArgb(192, 215, 207);
                 else
                     richTextBox.ForeColor = Color.Black;
-                s_timeSpan = new TimeSpan();
-                s_stopWatch = new Stopwatch();
-                s_stopWatch.Start();
+
                 if (!Directory.Exists(pathOutput))
                     Directory.CreateDirectory(pathOutput);
                 if (exeFile)
@@ -157,67 +155,50 @@ namespace CIARE.Roslyn
                 s_stopWatch.Start();
                 //Assembly assembly = null;
                 SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
-                //string assemblyName = Path.GetRandomFileName();
-                //string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
-                //var references = Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
-                //.Where(t => ManageCheck.IsManaged(t))
-                //.Select(t => MetadataReference.CreateFromFile(t)).ToArray();
-
+                string assemblyName = Path.GetRandomFileName();
                 CSharpCompilation compilation;
-                if (exeFile)
-                {
-                    compilation = CSharpCompilation.Create(
-                      outPut,
-                      syntaxTrees: new[] { syntaxTree },
-                      references: References(),
-                      options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
-                      null, null, OptimizationLevel.Release, false, false, null, null,
-                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.X64));
-                    string noExe = Output.Substring(0, Output.Length - 3);
-                    File.WriteAllText($"{noExe}runtimeconfig.json", GenerateRuntimeConfig());
-                }
-                else
-                {
-                    compilation = CSharpCompilation.Create(
-                    outPut,
-                    syntaxTrees: new[] { syntaxTree },
-                    references: References(),
-                    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, true, null, null, null, null, OptimizationLevel.Release,
-                    false, false, null, null,
-                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
-                }
+                compilation = CSharpCompilation.Create(
+                  assemblyName,
+                  syntaxTrees: new[] { syntaxTree },
+                  references: References(),
+                  options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
+                  null, null, OptimizationLevel.Debug, false, false, null, null,
+                  ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
 
-                EmitResult result = compilation.Emit(pathOutput + outPut);
-                if (!result.Success)
+
+                using (var ms = new MemoryStream())
                 {
-                    IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
-                        diagnostic.IsWarningAsError ||
-                        diagnostic.Severity == DiagnosticSeverity.Error);
-                    foreach (Diagnostic diagnostic in failures)
+                    EmitResult result = compilation.Emit(ms);
+
+                    if (!result.Success)
+                    {
+                        IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+                            diagnostic.IsWarningAsError ||
+                            diagnostic.Severity == DiagnosticSeverity.Error);
+                        foreach (Diagnostic diagnostic in failures)
+                        {
+                            richTextBox.Clear();
+                            richTextBox.ForeColor = Color.Red;
+                            var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
+                            ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
+                        }
+                    }
+                    else
                     {
                         richTextBox.Clear();
-                        richTextBox.ForeColor = Color.Red;
-                        var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
-                        ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
+                        CsProjCompile projCompile = new CsProjCompile(outPut, pathOutput, code, !exeFile);
+                        projCompile.Build(richTextBox);
+                        s_stopWatch.Stop();
+                        s_timeSpan = s_stopWatch.Elapsed;
+                        richTextBox.Text += $"\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
                     }
-                }
-                else
-                {
-                    richTextBox.Clear();
-                    //Successful Compile
-                    richTextBox.Text = $"Success!\nBinary saved in: {pathOutput + outPut}";
                     s_stopWatch.Stop();
-                    s_timeSpan = s_stopWatch.Elapsed;
-                    richTextBox.Text += $"\n\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
+                    ms.Close();
                 }
-                s_stopWatch.Stop();
-                s_timeSpan = s_stopWatch.Elapsed;
-
                 GlobalVariables.binaryName = string.Empty;
             }
             catch (DivideByZeroException dbze)
             {
-
                 richTextBox.Text += dbze.StackTrace;
                 GlobalVariables.binaryName = string.Empty;
             }
@@ -296,31 +277,6 @@ namespace CIARE.Roslyn
             foreach (var refs in ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator))
                 references.Add(MetadataReference.CreateFromFile(refs));
             return references;
-        }
-
-        /// <summary>
-        /// Generate {exeName}.rutimeOptions.json file.
-        /// </summary>
-        /// <returns></returns>
-        private static string GenerateRuntimeConfig()
-        {
-            string net6runtimeJson = $@"{{
-  ""runtimeOptions"": {{
-    ""tfm"": ""net6.0"",
-    ""frameworks"": [
-      {{
-        ""name"": ""Microsoft.NETCore.App"",
-        ""version"": ""6.0.0""
-      }},
-      {{
-        ""name"": ""Microsoft.WindowsDesktop.App"",
-        ""version"": ""6.0.0""
-      }}
-    ]
-  }}
-}}
-";
-            return net6runtimeJson;
         }
     }
 }
