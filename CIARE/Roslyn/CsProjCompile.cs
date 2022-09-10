@@ -1,27 +1,39 @@
 ﻿using CIARE.Utils;
-using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CIARE.Roslyn
 {
+    //TODO: implement /clp:ErrorsOnly as GUI option
     public class CsProjCompile
     {
         private string FileName { get; set; }
         private string BinaryPath { get; set; }
         private string Code { get; set; }
+        private bool Library { get; set; } = false;
 
-        private string CsProjTemplate = @"<Project Sdk=""Microsoft.NET.Sdk"">
+        private string CsProjTemplateExe = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
 	  <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <WarningLevel>0</WarningLevel>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='Debug|AnyCPU'"">
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+</Project>
+";
+        private string CsProjTemplateDll = @"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+	  <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='Debug|AnyCPU'"">
@@ -35,11 +47,12 @@ namespace CIARE.Roslyn
         /// <param name="binaryName">Binary file name</param>
         /// <param name="binaryPath">CIARE binary path</param>
         /// <param name="code">Provided code for compile.</param>
-        public CsProjCompile(string binaryName, string binaryPath, string code)
+        public CsProjCompile(string binaryName, string binaryPath, string code, bool library)
         {
             FileName = binaryName;
             BinaryPath = binaryPath;
             Code = code;
+            Library = library;
         }
 
         /// <summary>
@@ -57,7 +70,10 @@ namespace CIARE.Roslyn
                 Directory.Delete(projectDir, true);
 
             Directory.CreateDirectory(projectDir);
-            File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplate);
+            if (Library)
+                File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateDll);
+            else
+                File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateExe);
             File.WriteAllText($"{projectDir}\\{exeName}.cs", Code);
             ProcessRun processRun = new ProcessRun("dotnet", "build", projectDir);
             string build = processRun.Run();
@@ -65,8 +81,7 @@ namespace CIARE.Roslyn
                 logOutput.Text = build;
             else
             {
-                logOutput.Text = build;
-                logOutput.Text += $"pro -> {projectDir}\\bin\\Debug\\net6.0-windows\\{FileName}";
+                logOutput.Text = $"Build succeeded.\n\n{exeName} -> {projectDir}\\bin\\Debug\\net6.0-windows\\{FileName}";
             }
             logOutput.SelectionStart = logOutput.Text.Length;
             logOutput.ScrollToCaret();
