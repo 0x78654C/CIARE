@@ -35,12 +35,24 @@ namespace CIARE.Utils
             startInfo.UseShellExecute = false;
             startInfo.Arguments = Arguments;
             startInfo.WorkingDirectory = WorkingDirectory;
-            startInfo.StandardOutputEncoding = true;
-            startInfo.StandardInputEncoding = true;
+            startInfo.CreateNoWindow = true;
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
             startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            Process.Start(startInfo);
-            outData += startInfo.StandardErrorEncoding;
-            outData += startInfo.StandardOutputEncoding;
+            Process process = new Process();
+            process.OutputDataReceived += (sender2, args) =>
+            {
+                outData +=args.Data + " \n";
+            };
+            process.ErrorDataReceived += (sender2, args) =>
+            {
+                outData += args.Data + " \n";
+            };
+            process.StartInfo = startInfo;
+            process.Start();
+            process.BeginErrorReadLine();
+            process.BeginOutputReadLine();
+            process.WaitForExit();
             return outData;
         }
     }
