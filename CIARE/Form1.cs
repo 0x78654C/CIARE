@@ -51,6 +51,8 @@ namespace CIARE
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
             LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
+            Warnings.CheckWarnings(GlobalVariables.registryPath);
+
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
             {
