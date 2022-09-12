@@ -6,12 +6,17 @@ using System.Windows.Forms;
 namespace CIARE.Roslyn
 {
     //TODO: implement /clp:ErrorsOnly as GUI option
+    //TODO1: implement param /p:Platform=
     public class CsProjCompile
     {
         private string FileName { get; set; }
         private string BinaryPath { get; set; }
         private string Code { get; set; }
         private bool Library { get; set; } = false;
+        private readonly string AnyCPUParam = "/p:Platform=\"Any CPU\"";
+        private readonly string x64Param = "/p:Platform=\"x64\"";
+        private readonly string Debug = "/p:configuration=Debug";
+        private readonly string Release = "/p:configuration=Release";
 
         private string CsProjTemplateExe = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
@@ -81,7 +86,9 @@ namespace CIARE.Roslyn
                 logOutput.Text = build;
             else
             {
-                logOutput.Text = $"Build succeeded.\n\n{exeName} -> {projectDir}\\bin\\Debug\\net6.0-windows\\{FileName}";
+                if(GlobalVariables.OWarnings)
+                    logOutput.Text = build;
+                logOutput.Text += $"Build succeeded.\n\n{exeName} -> {projectDir}\\bin\\Debug\\net6.0-windows\\{FileName}";
             }
             logOutput.SelectionStart = logOutput.Text.Length;
             logOutput.ScrollToCaret();
