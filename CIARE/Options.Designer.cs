@@ -38,10 +38,10 @@ namespace CIARE
             this.closeBtn = new System.Windows.Forms.Button();
             this.displayGroup = new System.Windows.Forms.GroupBox();
             this.buildGroup = new System.Windows.Forms.GroupBox();
+            this.warningsCkb = new System.Windows.Forms.CheckBox();
             this.platformBox = new System.Windows.Forms.ComboBox();
             this.configurationBox = new System.Windows.Forms.ComboBox();
             this.platformLbl = new System.Windows.Forms.Label();
-            this.warningsCkb = new System.Windows.Forms.CheckBox();
             this.displayGroup.SuspendLayout();
             this.buildGroup.SuspendLayout();
             this.SuspendLayout();
@@ -158,19 +158,30 @@ namespace CIARE
             this.buildGroup.TabStop = false;
             this.buildGroup.Text = "Build";
             // 
+            // warningsCkb
+            // 
+            this.warningsCkb.AutoSize = true;
+            this.warningsCkb.Location = new System.Drawing.Point(15, 66);
+            this.warningsCkb.Name = "warningsCkb";
+            this.warningsCkb.Size = new System.Drawing.Size(165, 19);
+            this.warningsCkb.TabIndex = 14;
+            this.warningsCkb.Text = "Enable compile warnings";
+            this.warningsCkb.UseVisualStyleBackColor = true;
+            this.warningsCkb.CheckedChanged += new System.EventHandler(this.warningsCkb_CheckedChanged);
+            // 
             // platformBox
             // 
             this.platformBox.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.platformBox.FormattingEnabled = true;
             this.platformBox.Items.AddRange(new object[] {
             "Any CPU",
-            "x64",
-            "x86"});
+            "x64"});
             this.platformBox.Location = new System.Drawing.Point(169, 23);
             this.platformBox.Name = "platformBox";
             this.platformBox.Size = new System.Drawing.Size(93, 23);
             this.platformBox.TabIndex = 15;
             this.platformBox.Text = "Any CPU";
+            this.platformBox.SelectedIndexChanged += new System.EventHandler(this.platformBox_SelectedIndexChanged);
             // 
             // configurationBox
             // 
@@ -184,6 +195,7 @@ namespace CIARE
             this.configurationBox.Size = new System.Drawing.Size(93, 23);
             this.configurationBox.TabIndex = 14;
             this.configurationBox.Text = "Debug";
+            this.configurationBox.SelectedIndexChanged += new System.EventHandler(this.configurationBox_SelectedIndexChanged);
             // 
             // platformLbl
             // 
@@ -193,17 +205,6 @@ namespace CIARE
             this.platformLbl.Size = new System.Drawing.Size(53, 15);
             this.platformLbl.TabIndex = 0;
             this.platformLbl.Text = "Params:";
-            // 
-            // warningsCkb
-            // 
-            this.warningsCkb.AutoSize = true;
-            this.warningsCkb.Location = new System.Drawing.Point(15, 66);
-            this.warningsCkb.Name = "warningsCkb";
-            this.warningsCkb.Size = new System.Drawing.Size(165, 19);
-            this.warningsCkb.TabIndex = 14;
-            this.warningsCkb.Text = "Enable compile warnings";
-            this.warningsCkb.UseVisualStyleBackColor = true;
-            this.warningsCkb.CheckedChanged += new System.EventHandler(this.warningsCkb_CheckedChanged);
             // 
             // Options
             // 

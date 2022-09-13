@@ -36,6 +36,8 @@ namespace CIARE
             lineNumberCkb.Checked = GlobalVariables.OLineNumber;
             codeFoldingCkb.Checked = GlobalVariables.OFoldingCode;
             warningsCkb.Checked = GlobalVariables.OWarnings;
+            BuildConfig.SetConfigControl(configurationBox);
+            BuildConfig.SetPlatformControl(platformBox);
         }
 
         private void highlightCMB_SelectedIndexChanged(object sender, EventArgs e)
@@ -71,6 +73,24 @@ namespace CIARE
         private void warningsCkb_CheckedChanged(object sender, EventArgs e)
         {
             Warnings.SetWarnings(warningsCkb, GlobalVariables.warnings);
+        }
+
+        private void configurationBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (configurationBox.Text == "Release")
+                GlobalVariables.configParam = "/p:configuration=Release";
+            else
+                GlobalVariables.configParam = "/p:configuration=Debug";
+            BuildConfig.StoreConfig(GlobalVariables.OConfigParam, GlobalVariables.configParam);
+        }
+
+        private void platformBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (platformBox.Text == "Any CPU")
+                GlobalVariables.platformParam = "/p:Platform=\"Any CPU\"";
+            else
+                GlobalVariables.platformParam = "/p:Platform=\"x64\"";
+            BuildConfig.StorePlatform(GlobalVariables.OPlatformParam, GlobalVariables.platformParam);
         }
     }
 }
