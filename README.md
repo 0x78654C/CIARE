@@ -31,10 +31,12 @@ Useful to run code on the fly and get instant result.
  - Folding by curly brackets, region and others.
  - Autosave font size on editor zoom.
  - Code completion (intellisense)
+ - Build options(Debug/Release - Any CPU/x64)
+ - Enable/disable warnings messages on compile.
 
 ## Requirements:
 
-.NET Framework 4.7.2
+.NET 6 SDK
 
  For Roslyn C# code runner use NuGet command in Commands project:
  ```
