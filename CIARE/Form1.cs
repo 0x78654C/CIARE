@@ -10,6 +10,7 @@ using NRefactory = ICSharpCode.NRefactory;
 using Dom = ICSharpCode.SharpDevelop.Dom;
 using System.Threading;
 using CIARE.Roslyn;
+using System.Drawing;
 
 namespace CIARE
 {
@@ -52,6 +53,8 @@ namespace CIARE
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
             LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
             Warnings.CheckWarnings(GlobalVariables.registryPath);
+            BuildConfig.CheckConfig(GlobalVariables.registryPath);
+            BuildConfig.CheckPlatform(GlobalVariables.registryPath);
 
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
@@ -522,6 +525,19 @@ namespace CIARE
             {
                 InitializeEditor.SetMaximizedWindowState(GlobalVariables.registryPath, true);
             }
+        }
+
+        /// <summary>
+        /// Events on text change.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void outputRBT_TextChanged(object sender, EventArgs e)
+        {
+            // Color warning messages.
+            RichExtColor.HighlightText(outputRBT, "warning", Color.Orange);
+            outputRBT.SelectionStart = outputRBT.Text.Length;
+            outputRBT.ScrollToCaret();
         }
     }
 }
