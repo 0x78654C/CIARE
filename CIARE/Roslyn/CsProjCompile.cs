@@ -1,4 +1,5 @@
-﻿using CIARE.Utils;
+﻿using CIARE.GUI;
+using CIARE.Utils;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -13,11 +14,7 @@ namespace CIARE.Roslyn
         private string BinaryPath { get; set; }
         private string Code { get; set; }
         private bool Library { get; set; } = false;
-        private readonly string AnyCPUParam = "/p:Platform=\"Any CPU\"";
-        private readonly string x64Param = "/p:Platform=\"x64\"";
-        private readonly string Debug = "/p:configuration=Debug";
-        private readonly string Release = "/p:configuration=Release";
-
+        private string _exeFilePath;
         private string CsProjTemplateExe = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -67,7 +64,7 @@ namespace CIARE.Roslyn
         public void Build(RichTextBox logOutput)
         {
             if (!Directory.Exists(BinaryPath))
-                ErrorDisplay(logOutput, $"ERROR: Directory does not exist -> {BinaryPath}");
+               RichExtColor.ErrorDisplay(logOutput, $"ERROR: Directory does not exist -> {BinaryPath}");
 
             string exeName = FileName.Substring(0, FileName.Length - 4);
             string projectDir = BinaryPath + exeName;
@@ -80,30 +77,46 @@ namespace CIARE.Roslyn
             else
                 File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateExe);
             File.WriteAllText($"{projectDir}\\{exeName}.cs", Code);
-            ProcessRun processRun = new ProcessRun("dotnet", "build", projectDir);
+            string param = $"build {GlobalVariables.configParam} {GlobalVariables.platformParam}";
+            ProcessRun processRun = new ProcessRun("dotnet", param, projectDir);
             string build = processRun.Run();
             if (build.Contains("error"))
                 logOutput.Text = build;
             else
             {
-                if(GlobalVariables.OWarnings)
+                if (GlobalVariables.OWarnings)
                     logOutput.Text = build;
-                logOutput.Text += $"Build succeeded.\n\n{exeName} -> {projectDir}\\bin\\Debug\\net6.0-windows\\{FileName}";
+
+                PathExe(projectDir, exeName);
+                if (!string.IsNullOrEmpty(_exeFilePath))
+                    logOutput.Text += $"Build succeeded.\n\n  {exeName} -> {_exeFilePath}";
             }
             logOutput.SelectionStart = logOutput.Text.Length;
             logOutput.ScrollToCaret();
         }
 
         /// <summary>
-        /// Display error messages with red color.
+        /// Get compiled exe file path from project directory.
         /// </summary>
-        /// <param name="logOutput"></param>
-        /// <param name="message"></param>
-        private void ErrorDisplay(RichTextBox logOutput, string message)
+        /// <param name="pathProject"></param>
+        /// <param name="projectName"></param>
+        private void PathExe(string pathProject, string projectName)
         {
-            logOutput.ForeColor = Color.Red;
-            logOutput.Text = message;
-            logOutput.ForeColor = Color.White;
+            var directories = Directory.GetDirectories(pathProject);
+            foreach (var dir in directories)
+            {
+                if (!dir.EndsWith("obj"))
+                {
+                    var files = Directory.GetFiles(dir);
+                    foreach (var file in files)
+                    {
+                        var fileInfo = new FileInfo(file);
+                        if (fileInfo.FullName.EndsWith($"{projectName}.exe"))
+                            _exeFilePath = fileInfo.FullName;
+                    }
+                    PathExe(dir, projectName);
+                }
+            }
         }
     }
 }
