@@ -36,8 +36,14 @@ namespace CIARE
             this.lineNumberCkb = new System.Windows.Forms.CheckBox();
             this.codeFoldingCkb = new System.Windows.Forms.CheckBox();
             this.closeBtn = new System.Windows.Forms.Button();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.groupBox1.SuspendLayout();
+            this.displayGroup = new System.Windows.Forms.GroupBox();
+            this.buildGroup = new System.Windows.Forms.GroupBox();
+            this.warningsCkb = new System.Windows.Forms.CheckBox();
+            this.platformBox = new System.Windows.Forms.ComboBox();
+            this.configurationBox = new System.Windows.Forms.ComboBox();
+            this.platformLbl = new System.Windows.Forms.Label();
+            this.displayGroup.SuspendLayout();
+            this.buildGroup.SuspendLayout();
             this.SuspendLayout();
             // 
             // highlightLbl
@@ -116,8 +122,8 @@ namespace CIARE
             // 
             this.closeBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.closeBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.closeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.closeBtn.Location = new System.Drawing.Point(267, 212);
+            this.closeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.closeBtn.Location = new System.Drawing.Point(603, 212);
             this.closeBtn.Name = "closeBtn";
             this.closeBtn.Size = new System.Drawing.Size(75, 23);
             this.closeBtn.TabIndex = 14;
@@ -125,18 +131,80 @@ namespace CIARE
             this.closeBtn.UseVisualStyleBackColor = true;
             this.closeBtn.Click += new System.EventHandler(this.closeBtn_Click);
             // 
-            // groupBox1
+            // displayGroup
             // 
-            this.groupBox1.Controls.Add(this.highlightLbl);
-            this.groupBox1.Controls.Add(this.highlightCMB);
-            this.groupBox1.Controls.Add(this.codeFoldingCkb);
-            this.groupBox1.Controls.Add(this.codeCompletionCkb);
-            this.groupBox1.Controls.Add(this.lineNumberCkb);
-            this.groupBox1.Location = new System.Drawing.Point(12, 12);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(330, 187);
-            this.groupBox1.TabIndex = 15;
-            this.groupBox1.TabStop = false;
+            this.displayGroup.Controls.Add(this.highlightLbl);
+            this.displayGroup.Controls.Add(this.highlightCMB);
+            this.displayGroup.Controls.Add(this.codeFoldingCkb);
+            this.displayGroup.Controls.Add(this.codeCompletionCkb);
+            this.displayGroup.Controls.Add(this.lineNumberCkb);
+            this.displayGroup.Location = new System.Drawing.Point(12, 12);
+            this.displayGroup.Name = "displayGroup";
+            this.displayGroup.Size = new System.Drawing.Size(330, 187);
+            this.displayGroup.TabIndex = 15;
+            this.displayGroup.TabStop = false;
+            this.displayGroup.Text = "Display";
+            // 
+            // buildGroup
+            // 
+            this.buildGroup.Controls.Add(this.warningsCkb);
+            this.buildGroup.Controls.Add(this.platformBox);
+            this.buildGroup.Controls.Add(this.configurationBox);
+            this.buildGroup.Controls.Add(this.platformLbl);
+            this.buildGroup.Location = new System.Drawing.Point(348, 12);
+            this.buildGroup.Name = "buildGroup";
+            this.buildGroup.Size = new System.Drawing.Size(330, 187);
+            this.buildGroup.TabIndex = 16;
+            this.buildGroup.TabStop = false;
+            this.buildGroup.Text = "Build";
+            // 
+            // warningsCkb
+            // 
+            this.warningsCkb.AutoSize = true;
+            this.warningsCkb.Location = new System.Drawing.Point(15, 66);
+            this.warningsCkb.Name = "warningsCkb";
+            this.warningsCkb.Size = new System.Drawing.Size(165, 19);
+            this.warningsCkb.TabIndex = 14;
+            this.warningsCkb.Text = "Enable compile warnings";
+            this.warningsCkb.UseVisualStyleBackColor = true;
+            this.warningsCkb.CheckedChanged += new System.EventHandler(this.warningsCkb_CheckedChanged);
+            // 
+            // platformBox
+            // 
+            this.platformBox.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.platformBox.FormattingEnabled = true;
+            this.platformBox.Items.AddRange(new object[] {
+            "Any CPU",
+            "x64"});
+            this.platformBox.Location = new System.Drawing.Point(169, 23);
+            this.platformBox.Name = "platformBox";
+            this.platformBox.Size = new System.Drawing.Size(93, 23);
+            this.platformBox.TabIndex = 15;
+            this.platformBox.Text = "Any CPU";
+            this.platformBox.SelectedIndexChanged += new System.EventHandler(this.platformBox_SelectedIndexChanged);
+            // 
+            // configurationBox
+            // 
+            this.configurationBox.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.configurationBox.FormattingEnabled = true;
+            this.configurationBox.Items.AddRange(new object[] {
+            "Debug",
+            "Release"});
+            this.configurationBox.Location = new System.Drawing.Point(70, 23);
+            this.configurationBox.Name = "configurationBox";
+            this.configurationBox.Size = new System.Drawing.Size(93, 23);
+            this.configurationBox.TabIndex = 14;
+            this.configurationBox.Text = "Debug";
+            this.configurationBox.SelectedIndexChanged += new System.EventHandler(this.configurationBox_SelectedIndexChanged);
+            // 
+            // platformLbl
+            // 
+            this.platformLbl.AutoSize = true;
+            this.platformLbl.Location = new System.Drawing.Point(12, 26);
+            this.platformLbl.Name = "platformLbl";
+            this.platformLbl.Size = new System.Drawing.Size(53, 15);
+            this.platformLbl.TabIndex = 0;
+            this.platformLbl.Text = "Params:";
             // 
             // Options
             // 
@@ -144,10 +212,11 @@ namespace CIARE
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
             this.CancelButton = this.closeBtn;
-            this.ClientSize = new System.Drawing.Size(354, 250);
-            this.Controls.Add(this.groupBox1);
+            this.ClientSize = new System.Drawing.Size(690, 250);
+            this.Controls.Add(this.buildGroup);
+            this.Controls.Add(this.displayGroup);
             this.Controls.Add(this.closeBtn);
-            this.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
@@ -155,8 +224,10 @@ namespace CIARE
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Options";
             this.Load += new System.EventHandler(this.Options_Load);
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
+            this.displayGroup.ResumeLayout(false);
+            this.displayGroup.PerformLayout();
+            this.buildGroup.ResumeLayout(false);
+            this.buildGroup.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -169,6 +240,11 @@ namespace CIARE
         private System.Windows.Forms.CheckBox lineNumberCkb;
         private System.Windows.Forms.CheckBox codeFoldingCkb;
         private System.Windows.Forms.Button closeBtn;
-        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.GroupBox displayGroup;
+        private System.Windows.Forms.GroupBox buildGroup;
+        private System.Windows.Forms.ComboBox platformBox;
+        private System.Windows.Forms.ComboBox configurationBox;
+        private System.Windows.Forms.Label platformLbl;
+        private System.Windows.Forms.CheckBox warningsCkb;
     }
 }

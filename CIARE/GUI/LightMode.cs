@@ -45,7 +45,7 @@ namespace CIARE.GUI
         }
 
         public static void OptionsLightMode(Form form, Button cancelBtn, Label highlightLbl, ComboBox highLightName,
-          CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding)
+          CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayGroup, GroupBox buildGroup)
         {
             form.BackColor = SystemColors.Window;
             form.ForeColor = Color.Black;
@@ -57,6 +57,8 @@ namespace CIARE.GUI
             codeCompletion.ForeColor = Color.Black;
             lineNumber.ForeColor = Color.Black;
             codeFolding.ForeColor = Color.Black;
+            displayGroup.ForeColor = Color.Black;
+            buildGroup.ForeColor = Color.Black;
         }
     }
 }
