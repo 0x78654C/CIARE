@@ -260,8 +260,11 @@ MessageBoxIcon.Warning);
 MessageBoxIcon.Information);
             if (dr == DialogResult.Yes)
             {
-                GlobalVariables.openedFilePath = string.Empty;
-                Form1.Instance.Text = $"CIARE {Form1.Instance.versionName}";
+                string path = GlobalVariables.openedFilePath;
+                if (!string.IsNullOrEmpty(path))
+                    Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | *{path}";
+                else
+                    Form1.Instance.Text = $"CIARE {Form1.Instance.versionName}";
                 textEditor.Text = GlobalVariables.roslynTemplate;
             }
         }
