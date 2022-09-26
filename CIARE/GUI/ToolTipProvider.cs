@@ -28,44 +28,40 @@ namespace CIARE.GUI
 
         void OnToolTipRequest(object sender, TextEditor.ToolTipRequestEventArgs e)
         {
-            try
+            if (e.InDocument && !e.ToolTipShown)
             {
-                if (e.InDocument && !e.ToolTipShown)
+                IExpressionFinder expressionFinder;
+                if (Form1.IsVisualBasic)
                 {
-                    IExpressionFinder expressionFinder;
-                    if (Form1.IsVisualBasic)
-                    {
-                        expressionFinder = new VBExpressionFinder();
-                    }
-                    else
-                    {
-                        expressionFinder = new CSharpExpressionFinder(Form1.parseInformation);
-                    }
-                    ExpressionResult expression = expressionFinder.FindFullExpression(
-                        editor.Text,
-                        editor.Document.PositionToOffset(e.LogicalPosition));
-                    if (expression.Region.IsEmpty)
-                    {
-                        expression.Region = new DomRegion(e.LogicalPosition.Line + 1, e.LogicalPosition.Column + 1);
-                    }
-
-                    TextEditor.TextArea textArea = editor.ActiveTextAreaControl.TextArea;
-                    NRefactoryResolver resolver = new NRefactoryResolver(Form1.myProjectContent.Language);
-                    ResolveResult rr = resolver.Resolve(expression,
-                                                        Form1.parseInformation,
-                                                        textArea.MotherTextEditorControl.Text);
-                    try
-                    {
-                        string toolTipText = GetText(rr);
-                        if (toolTipText != null)
-                        {
-                            e.ShowToolTip(toolTipText);
-                        }
-                    }
-                    catch { }
+                    expressionFinder = new VBExpressionFinder();
                 }
+                else
+                {
+                    expressionFinder = new CSharpExpressionFinder(Form1.parseInformation);
+                }
+                ExpressionResult expression = expressionFinder.FindFullExpression(
+                    editor.Text,
+                    editor.Document.PositionToOffset(e.LogicalPosition));
+                if (expression.Region.IsEmpty)
+                {
+                    expression.Region = new DomRegion(e.LogicalPosition.Line + 1, e.LogicalPosition.Column + 1);
+                }
+
+                TextEditor.TextArea textArea = editor.ActiveTextAreaControl.TextArea;
+                NRefactoryResolver resolver = new NRefactoryResolver(Form1.myProjectContent.Language);
+                ResolveResult rr = resolver.Resolve(expression,
+                                                    Form1.parseInformation,
+                                                    textArea.MotherTextEditorControl.Text);
+                try
+                {
+                    string toolTipText = GetText(rr);
+                    if (toolTipText != null)
+                    {
+                        e.ShowToolTip(toolTipText);
+                    }
+                }
+                catch { }
             }
-            catch { }
         }
 
         static string GetText(ResolveResult result)
