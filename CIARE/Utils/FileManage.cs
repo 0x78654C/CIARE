@@ -2,6 +2,9 @@
 using System.IO;
 using System.Windows.Forms;
 using ICSharpCode.TextEditor;
+using Application = System.Windows.Forms.Application;
+using MessageBox = System.Windows.Forms.MessageBox;
+using Path = System.IO.Path;
 
 namespace CIARE.Utils
 {
@@ -26,6 +29,8 @@ namespace CIARE.Utils
                 using (StreamReader reader = new StreamReader(s_openFileDialog.FileName))
                 {
                     GlobalVariables.openedFilePath = s_openFileDialog.FileName;
+                    var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                    GlobalVariables.openedFileName = fileInfo.Name;
                     return reader.ReadToEnd();
                 }
             }
@@ -49,6 +54,8 @@ namespace CIARE.Utils
                     if (File.Exists(s_saveFileDialog.FileName))
                     {
                         GlobalVariables.openedFilePath = s_saveFileDialog.FileName;
+                        FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                        GlobalVariables.openedFileName = fileInfo.Name;
                         GlobalVariables.savedFile = true;
                     }
                 }
@@ -86,28 +93,42 @@ namespace CIARE.Utils
         /// <returns></returns>
         public static string ManageCommandFileParam(TextEditorControl textEditorControl, string fileName)
         {
-            DialogResult dr;
-            string returnPathFile = string.Empty;
             if (string.IsNullOrEmpty(fileName))
-                return returnPathFile;
-            dr = MessageBox.Show($"File '{fileName}' does not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
-            string userProfileFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            if (dr == DialogResult.Cancel)
-                Environment.Exit(1);
-            if (dr == DialogResult.Yes)
+                return string.Empty;
+
+            fileName = GetCiarePath(fileName);
+            if (!File.Exists(fileName))
             {
-                if (fileName.Contains(":\\"))
-                    GlobalVariables.openedFilePath = $"{userProfileFolder}\\{fileName}";
-                else
+                DialogResult dr = MessageBox.Show($"File '{fileName}' does not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+                if (dr == DialogResult.Cancel)
+                    Environment.Exit(1);
+                if (dr == DialogResult.Yes)
+                {
                     GlobalVariables.openedFilePath = fileName;
-                returnPathFile = GlobalVariables.openedFilePath;
-                GlobalVariables.noPath = true;
-                GlobalVariables.savedFile = true;
-                SaveAsDialog(textEditorControl);
+                    var fileInfo1 = new FileInfo(GlobalVariables.openedFilePath);
+                    GlobalVariables.openedFileName = fileInfo1.Name;
+                    GlobalVariables.noPath = true;
+                    GlobalVariables.savedFile = true;
+                    SaveAsDialog(textEditorControl);
+                }
+                if (dr == DialogResult.No)
+                    GlobalVariables.noPath = true;
+                return fileName;
             }
-            if (dr == DialogResult.No)
-                GlobalVariables.noPath = true;
-            return returnPathFile;
+            GlobalVariables.openedFilePath = fileName;
+            var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+            GlobalVariables.openedFileName = fileInfo.Name;
+            return fileName;
+        }
+
+        /// <summary>
+        /// Sanitize fileName path with CIARE applicatin
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        private static string GetCiarePath(string fileName)
+        {
+            return fileName.Contains(@":\") ? fileName : Path.Combine(Application.StartupPath, fileName);
         }
 
         /// <summary>
@@ -117,12 +138,12 @@ namespace CIARE.Utils
         public static void ManageUnsavedData(TextEditorControl textEditorControl)
         {
             DialogResult dr = DialogResult.No;
-            if (Form1.Instance.Text.Contains("| *"))
+            if (Form1.Instance.Text.StartsWith("*"))
             {
                 dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
 MessageBoxIcon.Warning);
             }
-            else if (!Form1.Instance.Text.Contains("|"))
+            else if (!Form1.Instance.Text.Contains("-"))
             {
                 if (!string.IsNullOrEmpty(textEditorControl.Text))
                     dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
@@ -152,8 +173,9 @@ MessageBoxIcon.Warning);
                 textEditor.Clear();
                 textEditor.Text = openedData;
                 FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                GlobalVariables.openedFileName = fileInfo.Name;
                 Form1.Instance.openedFileLength = fileInfo.Length;
-                Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
+                Form1.Instance.Text = $"{GlobalVariables.openedFileName} - CIARE {Form1.Instance.versionName}";
             }
         }
 
@@ -170,7 +192,7 @@ MessageBoxIcon.Warning);
                     File.WriteAllText(GlobalVariables.openedFilePath, textEditor.Text);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     Form1.Instance.openedFileLength = fileInfo.Length;
-                    Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
+                    Form1.Instance.Text = $"{GlobalVariables.openedFileName} - CIARE {Form1.Instance.versionName}";
                     return;
                 }
                 SaveFile(textEditor.Text);
@@ -178,7 +200,7 @@ MessageBoxIcon.Warning);
                 {
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     Form1.Instance.openedFileLength = fileInfo.Length;
-                    Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
+                    Form1.Instance.Text = $"{GlobalVariables.openedFileName} - CIARE {Form1.Instance.versionName}";
                 }
             }
             catch (Exception ex)
@@ -200,7 +222,7 @@ MessageBoxIcon.Warning);
             Form1.Instance.openedFileLength = fileInfo.Length;
             if (GlobalVariables.savedFile)
             {
-                Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | {GlobalVariables.openedFilePath}";
+                Form1.Instance.Text = $"{GlobalVariables.openedFileName} - CIARE {Form1.Instance.versionName}";
             }
         }
 
@@ -240,7 +262,7 @@ MessageBoxIcon.Warning);
                     {
                         textEditorControl.Clear();
                         textEditorControl.Text = reader.ReadToEnd();
-                        Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | {filePath}";
+                        Form1.Instance.Text = $"{fileInfo.Name} - CIARE {Form1.Instance.versionName}";
                         Form1.Instance.openedFileLength = fileInfo.Length;
                     }
                     return;
@@ -262,7 +284,7 @@ MessageBoxIcon.Information);
             {
                 string path = GlobalVariables.openedFilePath;
                 if (!string.IsNullOrEmpty(path))
-                    Form1.Instance.Text = $"CIARE {Form1.Instance.versionName} | *{path}";
+                    Form1.Instance.Text = $"*{GlobalVariables.openedFileName} - CIARE {Form1.Instance.versionName}";
                 else
                     Form1.Instance.Text = $"CIARE {Form1.Instance.versionName}";
                 textEditor.Text = GlobalVariables.roslynTemplate;

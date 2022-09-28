@@ -92,9 +92,10 @@ namespace CIARE
                 if (!GlobalVariables.noPath)
                 {
                     GlobalVariables.openedFilePath = arg;
-                    if (arg.Length > 1)
-                        this.Text = $"CIARE {versionName} | {GlobalVariables.openedFilePath}";
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                    GlobalVariables.openedFileName = fileInfo.Name;
+                    if (arg.Length > 1)
+                        this.Text = $"{fileInfo.Name} - CIARE {versionName}";
                     openedFileLength = fileInfo.Length;
                 }
             }
@@ -178,7 +179,7 @@ namespace CIARE
         private void textEditorControl1_TextChanged(object sender, EventArgs e)
         {
             if (GlobalVariables.openedFilePath.Length > 0)
-                this.Text = $"CIARE {versionName} | *{GlobalVariables.openedFilePath}";
+                this.Text = $"*{GlobalVariables.openedFileName} - CIARE {versionName}";
             LinesManage.GetTotalLinesCount(textEditorControl1, linesCountLbl);
             textEditorControl1.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
             textEditorControl1.Document.FoldingManager.UpdateFoldings(null, null);

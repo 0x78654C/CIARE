@@ -5,6 +5,7 @@ namespace CIARE.Utils
     {
         public static string paramData = string.Empty;
         public static string openedFilePath = string.Empty;
+        public static string openedFileName = string.Empty;
         public static string commandLineArguments = string.Empty;
         public static bool savedFile = false;
         public static bool exeName = false;
