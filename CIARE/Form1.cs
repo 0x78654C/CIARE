@@ -86,7 +86,7 @@ namespace CIARE
                 {
                     count++;
                     if (count > 1)
-                        arg += $"{a} ";
+                        arg += $"{a}";
                 }
                 LoadParamFile(arg, textEditorControl1);
                 if (!GlobalVariables.noPath)
@@ -95,7 +95,7 @@ namespace CIARE
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     GlobalVariables.openedFileName = fileInfo.Name;
                     if (arg.Length > 1)
-                        this.Text = $"{fileInfo.Name} - CIARE {versionName}";
+                        this.Text = $"{fileInfo.Name} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
                     openedFileLength = fileInfo.Length;
                 }
             }
@@ -179,7 +179,7 @@ namespace CIARE
         private void textEditorControl1_TextChanged(object sender, EventArgs e)
         {
             if (GlobalVariables.openedFilePath.Length > 0)
-                this.Text = $"*{GlobalVariables.openedFileName} - CIARE {versionName}";
+                this.Text = $"*{GlobalVariables.openedFileName} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
             LinesManage.GetTotalLinesCount(textEditorControl1, linesCountLbl);
             textEditorControl1.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
             textEditorControl1.Document.FoldingManager.UpdateFoldings(null, null);

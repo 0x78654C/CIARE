@@ -132,6 +132,23 @@ namespace CIARE.Utils
         }
 
         /// <summary>
+        /// Get path from file name.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static string GetFilePath(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName))
+                return "";
+
+            if (!File.Exists(fileName))
+                return "";
+
+            var fileInfo = new FileInfo(fileName);
+            return fileInfo.DirectoryName;
+        }
+
+        /// <summary>
         /// Handle unsaved data from editor on from closing event.
         /// </summary>
         /// <param name="textEditorControl"></param>
@@ -175,7 +192,7 @@ MessageBoxIcon.Warning);
                 FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                 GlobalVariables.openedFileName = fileInfo.Name;
                 Form1.Instance.openedFileLength = fileInfo.Length;
-                Form1.Instance.Text = $"{GlobalVariables.openedFileName} - CIARE {Form1.Instance.versionName}";
+                Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
             }
         }
 
@@ -192,7 +209,7 @@ MessageBoxIcon.Warning);
                     File.WriteAllText(GlobalVariables.openedFilePath, textEditor.Text);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     Form1.Instance.openedFileLength = fileInfo.Length;
-                    Form1.Instance.Text = $"{GlobalVariables.openedFileName} - CIARE {Form1.Instance.versionName}";
+                    Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
                     return;
                 }
                 SaveFile(textEditor.Text);
@@ -200,7 +217,7 @@ MessageBoxIcon.Warning);
                 {
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     Form1.Instance.openedFileLength = fileInfo.Length;
-                    Form1.Instance.Text = $"{GlobalVariables.openedFileName} - CIARE {Form1.Instance.versionName}";
+                    Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
                 }
             }
             catch (Exception ex)
@@ -222,7 +239,7 @@ MessageBoxIcon.Warning);
             Form1.Instance.openedFileLength = fileInfo.Length;
             if (GlobalVariables.savedFile)
             {
-                Form1.Instance.Text = $"{GlobalVariables.openedFileName} - CIARE {Form1.Instance.versionName}";
+                Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
             }
         }
 
@@ -262,7 +279,7 @@ MessageBoxIcon.Warning);
                     {
                         textEditorControl.Clear();
                         textEditorControl.Text = reader.ReadToEnd();
-                        Form1.Instance.Text = $"{fileInfo.Name} - CIARE {Form1.Instance.versionName}";
+                        Form1.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
                         Form1.Instance.openedFileLength = fileInfo.Length;
                     }
                     return;
@@ -284,7 +301,7 @@ MessageBoxIcon.Information);
             {
                 string path = GlobalVariables.openedFilePath;
                 if (!string.IsNullOrEmpty(path))
-                    Form1.Instance.Text = $"*{GlobalVariables.openedFileName} - CIARE {Form1.Instance.versionName}";
+                    Form1.Instance.Text = $"*{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
                 else
                     Form1.Instance.Text = $"CIARE {Form1.Instance.versionName}";
                 textEditor.Text = GlobalVariables.roslynTemplate;
