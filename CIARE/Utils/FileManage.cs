@@ -1,6 +1,8 @@
 ﻿using System;
+using System.DirectoryServices.ActiveDirectory;
 using System.IO;
 using System.Windows.Forms;
+using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
 using Application = System.Windows.Forms.Application;
 using MessageBox = System.Windows.Forms.MessageBox;
@@ -193,6 +195,8 @@ MessageBoxIcon.Warning);
                 GlobalVariables.openedFileName = fileInfo.Name;
                 Form1.Instance.openedFileLength = fileInfo.Length;
                 Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
+                AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath,GlobalVariables.markFile,GlobalVariables.openedFilePath);
+                autoStartFile.CheckFilePath();
             }
         }
 
