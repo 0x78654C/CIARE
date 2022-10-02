@@ -122,7 +122,7 @@ namespace CIARE.GUI
         }
 
         public static void OptionsDarkMode(Form form, Button cancelBtn, Label highlightLbl, ComboBox highLightName,
-            CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayBox, GroupBox buildBox)
+            CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayBox, GroupBox buildBox, Label displaySetting ,Label behaveSetting, CheckBox startFile)
         {
             form.BackColor = Color.FromArgb(51, 51, 51);
             form.ForeColor = Color.FromArgb(192, 215, 207);
@@ -136,6 +136,9 @@ namespace CIARE.GUI
             codeFolding.ForeColor = Color.FromArgb(192, 215, 207);
             displayBox.ForeColor = Color.FromArgb(192, 215, 207);
             buildBox.ForeColor = Color.FromArgb(192, 215, 207);
+            displaySetting.ForeColor = Color.FromArgb(192, 215, 207);
+            behaveSetting.ForeColor = Color.FromArgb(192, 215, 207);
+            startFile.ForeColor = Color.FromArgb(192, 215, 207);
         }
     }
 }
