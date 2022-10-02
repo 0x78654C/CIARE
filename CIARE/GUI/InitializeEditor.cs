@@ -2,6 +2,7 @@
 using ICSharpCode.TextEditor;
 using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
@@ -155,6 +156,16 @@ namespace CIARE.GUI
                 return;
             }
             RegistryManagement.RegKey_CreateKey(regKeyName, "OutWState", "True");
+        }
+
+        /// <summary>
+        /// Check/Create user data directory on CIARE start up.
+        /// </summary>
+        /// <param name="directoryPath"></param>
+        public static void CreateUserDataDirectory(string directoryPath)
+        {
+            if (!Directory.Exists(directoryPath))
+                Directory.CreateDirectory(directoryPath);
         }
     }
 }
