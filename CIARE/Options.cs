@@ -31,11 +31,12 @@ namespace CIARE
         {
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, Form1.Instance.textEditorControl1, highlightCMB);
             if (GlobalVariables.darkColor)
-                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup);
+                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb);
             codeCompletionCkb.Checked = GlobalVariables.OCodeCompletion;
             lineNumberCkb.Checked = GlobalVariables.OLineNumber;
             codeFoldingCkb.Checked = GlobalVariables.OFoldingCode;
             warningsCkb.Checked = GlobalVariables.OWarnings;
+            startBehaveCkb.Checked = GlobalVariables.OStartUp;
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
         }
@@ -44,9 +45,9 @@ namespace CIARE
         {
             Form1.Instance.SetHighLighter(highlightCMB.Text);
             if (GlobalVariables.darkColor)
-                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup);
+                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb);
             else
-                LightMode.OptionsLightMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup);
+                LightMode.OptionsLightMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb);
         }
 
         private void codeCompletionCkb_CheckedChanged(object sender, EventArgs e)
@@ -91,6 +92,11 @@ namespace CIARE
             else
                 GlobalVariables.platformParam = "/p:Platform=\"x64\"";
             BuildConfig.StorePlatform(GlobalVariables.OPlatformParam, GlobalVariables.platformParam);
+        }
+
+        private void startBehaveCkb_CheckedChanged(object sender, EventArgs e)
+        {
+            StartFilesOS.SetOSStartStatus(startBehaveCkb, GlobalVariables.startUp);
         }
     }
 }
