@@ -11,6 +11,7 @@ using Dom = ICSharpCode.SharpDevelop.Dom;
 using System.Threading;
 using CIARE.Roslyn;
 using System.Drawing;
+using CIARE.Utils.FilesOpenOS;
 
 namespace CIARE
 {
@@ -48,11 +49,13 @@ namespace CIARE
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
+            InitializeEditor.CreateUserDataDirectory(GlobalVariables.userProfileDirectory);
             Console.SetOut(new ControlWriter(outputRBT));
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
             LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
             Warnings.CheckWarnings(GlobalVariables.registryPath);
+            StartFilesOS.CheckOSStartFile(GlobalVariables.registryPath);
             BuildConfig.CheckConfig(GlobalVariables.registryPath);
             BuildConfig.CheckPlatform(GlobalVariables.registryPath);
 
@@ -539,6 +542,17 @@ namespace CIARE
             RichExtColor.HighlightText(outputRBT, "warning", Color.Orange);
             outputRBT.SelectionStart = outputRBT.Text.Length;
             outputRBT.ScrollToCaret();
+        }
+
+        /// <summary>
+        /// Mark file for auto start event on Windows reboot.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void markStartFileChk_CheckedChanged(object sender, EventArgs e)
+        {
+            AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.openedFilePath);
+            autoStartFile.SetFilePath(markStartFileChk);
         }
     }
 }
