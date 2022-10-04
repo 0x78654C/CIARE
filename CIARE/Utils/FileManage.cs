@@ -259,6 +259,7 @@ MessageBoxIcon.Warning);
             textEditor.Clear();
             GlobalVariables.openedFilePath = string.Empty;
             Form1.Instance.Text = $"CIARE {Form1.Instance.versionName}";
+            Form1.Instance.markStartFileChk.Checked = false;
         }
 
         /// <summary>
