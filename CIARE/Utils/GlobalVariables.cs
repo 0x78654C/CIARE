@@ -31,7 +31,7 @@ namespace CIARE.Utils
         public static string binaryName = string.Empty;
         public static string binaryNameStore = string.Empty;
         public static readonly string registryPath = "SOFTWARE\\CIARE";
-        public static readonly string regUserRunPath = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+        public static readonly string regUserRunPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
         public static readonly string codeCompletionKey = "OCodeCompletion";
         public static readonly string foldingCodeKey = "OFoldingCode";
         public static readonly string lineNumberKey = "OLineNumber";
@@ -39,6 +39,7 @@ namespace CIARE.Utils
         public static readonly string startUp = "OStartUp";
         public static readonly string OConfigParam = "OConfigParam";
         public static readonly string OPlatformParam = "OPlatformParam";
+        public static readonly string SMarkStart = "SMarkStart";
         public static readonly string roslynTemplate = @"/*
  * Simple C# code sample for run with Roslyn runtime code compiler and execution.
  */
