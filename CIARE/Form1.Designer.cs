@@ -102,7 +102,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 107);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 105);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -114,7 +114,7 @@ namespace CIARE
             // runCodePb
             // 
             this.runCodePb.Image = global::CIARE.Properties.Resources.runButton21;
-            this.runCodePb.Location = new System.Drawing.Point(372, 5);
+            this.runCodePb.Location = new System.Drawing.Point(324, 5);
             this.runCodePb.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.runCodePb.Name = "runCodePb";
             this.runCodePb.Size = new System.Drawing.Size(33, 24);
@@ -417,7 +417,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 132);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 130);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -464,7 +464,7 @@ namespace CIARE
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.label2.Location = new System.Drawing.Point(350, 2);
+            this.label2.Location = new System.Drawing.Point(302, 2);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(13, 18);
@@ -475,7 +475,7 @@ namespace CIARE
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.label3.Location = new System.Drawing.Point(402, 2);
+            this.label3.Location = new System.Drawing.Point(354, 2);
             this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(13, 18);
@@ -564,11 +564,11 @@ namespace CIARE
             // markStartFileChk
             // 
             this.markStartFileChk.AutoSize = true;
-            this.markStartFileChk.Location = new System.Drawing.Point(424, 4);
+            this.markStartFileChk.Location = new System.Drawing.Point(378, 4);
             this.markStartFileChk.Name = "markStartFileChk";
-            this.markStartFileChk.Size = new System.Drawing.Size(143, 19);
+            this.markStartFileChk.Size = new System.Drawing.Size(147, 19);
             this.markStartFileChk.TabIndex = 16;
-            this.markStartFileChk.Text = "Mark file for auto start";
+            this.markStartFileChk.Text = "Mark file for auto open";
             this.markStartFileChk.UseVisualStyleBackColor = true;
             this.markStartFileChk.Visible = false;
             this.markStartFileChk.CheckedChanged += new System.EventHandler(this.markStartFileChk_CheckedChanged);
