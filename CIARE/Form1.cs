@@ -34,6 +34,8 @@ namespace CIARE
 
         public Form1()
         {
+            AutoStartFile autoStartFile = new AutoStartFile("",GlobalVariables.markFile , GlobalVariables.markFileTemp,"");
+            autoStartFile.OpenFilesOnLongOn();
             InitializeComponent();
         }
 
@@ -100,6 +102,8 @@ namespace CIARE
                     if (arg.Length > 1)
                         this.Text = $"{fileInfo.Name} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
                     openedFileLength = fileInfo.Length;
+                    AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
+                    autoStartFile.CheckFilePath();
                 }
             }
             catch { }
@@ -344,6 +348,10 @@ namespace CIARE
                 e.Cancel = true;
             else
                 e.Cancel = false;
+
+            //Delete temp mark file.
+            AutoStartFile autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, "");
+            autoStartFile.DelTempFile();
         }
 
 
@@ -551,8 +559,10 @@ namespace CIARE
         /// <param name="e"></param>
         private void markStartFileChk_CheckedChanged(object sender, EventArgs e)
         {
-            AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.openedFilePath);
+            AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFileTemp, GlobalVariables.openedFilePath);
             autoStartFile.SetFilePath(markStartFileChk);
         }
+
+        
     }
 }
