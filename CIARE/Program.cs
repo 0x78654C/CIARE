@@ -1,5 +1,4 @@
-﻿using CIARE.Utils.FilesOpenOS;
-using System;
+﻿using System;
 using System.Windows.Forms;
 
 namespace CIARE
@@ -12,13 +11,9 @@ namespace CIARE
         [STAThread]
         static void Main()
         {
-            AutoStartFile autoStartFile = new AutoStartFile("", "", "");
-            if (autoStartFile.CheckFlag() == "0")
-            {
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new Form1());
-            }
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form1());
         }
     }
 }
