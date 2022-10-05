@@ -10,6 +10,7 @@ namespace CIARE.Utils
         private static readonly string s_accountName = Environment.UserName;
         public static readonly string userProfileDirectory = $"{s_rootPath}Users\\{s_accountName}\\AppData\\Local\\CIARE\\";
         public static readonly string markFile = $"{userProfileDirectory}\\markedFiles.cDat";
+        public static readonly string markFileTemp = $"{userProfileDirectory}\\markedFiles_tmp.cDat";
         public static string openedFilePath = string.Empty;
         public static string openedFileName = string.Empty;
         public static string commandLineArguments = string.Empty;
@@ -39,7 +40,6 @@ namespace CIARE.Utils
         public static readonly string startUp = "OStartUp";
         public static readonly string OConfigParam = "OConfigParam";
         public static readonly string OPlatformParam = "OPlatformParam";
-        public static readonly string SMarkStart = "SMarkStart";
         public static readonly string roslynTemplate = @"/*
  * Simple C# code sample for run with Roslyn runtime code compiler and execution.
  */
