@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace CIARE.Utils.FilesOpenOS
 {
@@ -18,17 +14,16 @@ namespace CIARE.Utils.FilesOpenOS
 
         public string UserRunRegistryPath { get; set; }
         public string UserAppdataFile { get; set; }
+        public string UserAppdataFileTemp { get; set; }
         public string OpenedFilePath { get; set; }
         private string _ciarePath = $"{Application.StartupPath}CIARE.exe";
         private string _runCiareReg = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.regUserRunPath}", "CIARE");
-        private string _flatStart = GlobalVariables.SMarkStart;
-        private string _markFileTemp;
-        public AutoStartFile(string userRunRegistryPath, string userAppdataFile, string openedFilePath)
+        public AutoStartFile(string userRunRegistryPath, string userAppdataFile, string userAppdataFileTemp, string openedFilePath)
         {
             UserRunRegistryPath = userRunRegistryPath;
             UserAppdataFile = userAppdataFile;
             OpenedFilePath = openedFilePath;
-            _markFileTemp = $"tmp_{userAppdataFile}";
+            UserAppdataFileTemp = userAppdataFileTemp;
         }
 
         /// <summary>
@@ -111,17 +106,11 @@ namespace CIARE.Utils.FilesOpenOS
             if (CheckFileContent(UserAppdataFile))
             {
                 if (_runCiareReg.Length == 0)
-                {
                     RegistryManagement.RegKey_WriteSubkey(GlobalVariables.regUserRunPath, "CIARE", _ciarePath);
-                    SetFlag();
-                }
                 return;
             }
             if (_runCiareReg.Length > 0)
-            {
                 RegistryManagement.RegKey_Delete(GlobalVariables.regUserRunPath, "CIARE");
-                ClearFlag();
-            }
         }
 
         /// <summary>
@@ -129,57 +118,63 @@ namespace CIARE.Utils.FilesOpenOS
         /// </summary>
         public void OpenFilesOnLongOn()
         {
-            if (!File.Exists(_markFileTemp))
-                File.WriteAllText(_markFileTemp, string.Empty);
+            if (!CheckFlag())
+                return;
 
+            if (File.Exists(UserAppdataFileTemp))
+                return;
+
+            File.WriteAllText(UserAppdataFileTemp, string.Empty);
+
+            if (!CheckFileContent(UserAppdataFile))
+                return;
             ProcessRun processRun;
-            string userDataMarkFile = GlobalVariables.markFile;
-            if (CheckFileContent(userDataMarkFile))
+
+            var fileLines = File.ReadAllLines(UserAppdataFile);
+            foreach (var line in fileLines)
             {
-                var fileLines = File.ReadAllLines(userDataMarkFile);
-                foreach (var line in fileLines)
+                if (line.Length > 0)
                 {
-                    if (line.Length > 0)
+                    string dataReadTemp = File.ReadAllText(UserAppdataFileTemp);
+                    if (!dataReadTemp.Contains(line))
                     {
-                        string dataReadTemp = File.ReadAllText(_markFileTemp);
-                        if (!dataReadTemp.Contains(line))
+                        processRun = new ProcessRun(_ciarePath, line, Application.StartupPath);
+                        if (!CheckListFiles())
                         {
-                            processRun = new ProcessRun(_ciarePath, line, Application.StartupPath);
                             processRun.RunVisible();
-                            File.AppendAllText(_markFileTemp, line + Environment.NewLine);
+                            File.AppendAllText(UserAppdataFileTemp, line + Environment.NewLine);
                         }
                     }
                 }
             }
+            if (string.IsNullOrEmpty(Form1.Instance.textEditorControl1.Text))
+                Application.Exit();
 
-            if (File.Exists(_markFileTemp) && CheckListFiles())
-                File.Delete(_markFileTemp);
+            if (File.Exists(UserAppdataFileTemp) && CheckListFiles())
+            {
+                File.Delete(UserAppdataFileTemp);
+            }
         }
 
-        /// <summary>
-        /// Set registry flag for CIARE startup check.
-        /// </summary>
-        private void SetFlag()
-        {
-            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, _flatStart, "1");
-        }
 
         /// <summary>
         /// Clear registry flag for CIARE startup check.
         /// </summary>
-        private void ClearFlag()
+        public void DelTempFile()
         {
-            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, _flatStart, "0");
+            if (File.Exists(UserAppdataFileTemp))
+            {
+                File.Delete(UserAppdataFileTemp);
+            }
         }
 
         /// <summary>
         /// Check if flag is set for startup.
         /// </summary>
         /// <returns></returns>
-        public string CheckFlag()
+        public bool CheckFlag()
         {
-            string flagReg = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", _flatStart);
-            return flagReg.Length > 0 ? flagReg : string.Empty;
+            return _runCiareReg.Length > 0 ? true : false;
         }
 
         /// <summary>
@@ -188,10 +183,10 @@ namespace CIARE.Utils.FilesOpenOS
         /// <returns></returns>
         public bool CheckListFiles()
         {
-            if (!File.Exists(_markFileTemp) || !File.Exists(UserAppdataFile))
+            if (!File.Exists(UserAppdataFileTemp) || !File.Exists(UserAppdataFile))
                 return false;
 
-            string dataMarkTemp = File.ReadAllText(_markFileTemp);
+            string dataMarkTemp = File.ReadAllText(UserAppdataFileTemp);
             string dataMarkFile = File.ReadAllText(UserAppdataFile);
 
             return dataMarkFile == dataMarkTemp;
