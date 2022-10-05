@@ -195,7 +195,7 @@ MessageBoxIcon.Warning);
                 GlobalVariables.openedFileName = fileInfo.Name;
                 Form1.Instance.openedFileLength = fileInfo.Length;
                 Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
-                AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath,GlobalVariables.markFile,GlobalVariables.openedFilePath);
+                AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath,GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
                 autoStartFile.CheckFilePath();
             }
         }
