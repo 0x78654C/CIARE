@@ -174,7 +174,8 @@ namespace CIARE.Utils.FilesOpenOS
         /// <returns></returns>
         public bool CheckFlag()
         {
-            return _runCiareReg.Length > 0 ? true : false;
+            var regStartUpFlag = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", "OStartUp");
+            return regStartUpFlag == "True" ? true : false;
         }
 
         /// <summary>
