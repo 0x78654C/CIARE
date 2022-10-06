@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 using ICSharpCode.SharpDevelop.Dom;
 
 namespace CIARE.GUI
 {
-	static class HostCallbackImplementation
+    [SupportedOSPlatform("windows")]
+    static class HostCallbackImplementation
 	{
 		public static void Register(Form1 mainForm)
 		{
