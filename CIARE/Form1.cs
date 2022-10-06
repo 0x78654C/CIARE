@@ -548,10 +548,20 @@ namespace CIARE
         /// <param name="e"></param>
         private void outputRBT_TextChanged(object sender, EventArgs e)
         {
-            // Color warning messages.
-            RichExtColor.HighlightText(outputRBT, "warning", Color.Orange);
-            outputRBT.SelectionStart = outputRBT.Text.Length;
-            outputRBT.ScrollToCaret();
+            if (outputRBT.Text.Contains("warning"))
+            {
+                // Color warning messages.
+                RichExtColor.HighlightText(outputRBT, "warning", Color.Orange);
+                outputRBT.SelectionStart = outputRBT.Text.Length;
+                outputRBT.ScrollToCaret();
+            }
+            else
+            {
+                // Color error messages.
+                RichExtColor.HighlightText(outputRBT, "error", Color.Red);
+                outputRBT.SelectionStart = outputRBT.Text.Length;
+                outputRBT.ScrollToCaret();
+            }
         }
 
         /// <summary>
