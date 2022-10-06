@@ -15,11 +15,7 @@ using ICSharpCode.TextEditor;
 using System.Runtime.Versioning;
 using Path = System.IO.Path;
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
-using System.Text.Json;
-using System.Text;
-using System.Text.Json.Nodes;
-using ICSharpCode.NRefactory.Ast;
+
 
 namespace CIARE.Roslyn
 {
