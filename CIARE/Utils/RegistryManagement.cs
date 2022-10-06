@@ -1,8 +1,10 @@
 ﻿using Microsoft.Win32;
 using System.Collections.Generic;
+using System.Runtime.Versioning;
 
 namespace CIARE.Utils
 {
+    [SupportedOSPlatform("windows")]
     public static class RegistryManagement
     {
         /// <summary>

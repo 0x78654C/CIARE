@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -8,6 +9,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace CIARE.Utils.Options
 {
+    [SupportedOSPlatform("windows")]
     public class StartFilesOS
     {
         /// <summary>

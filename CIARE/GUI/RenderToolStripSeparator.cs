@@ -1,8 +1,10 @@
 ﻿using System.Drawing;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
 {
+    [SupportedOSPlatform("windows")]
     /// <summary>
     /// Render ToolStripSeparator backgound/foreground color used on toolstrip menu in main form.
     /// </summary>

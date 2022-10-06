@@ -3,10 +3,12 @@ using ICSharpCode.TextEditor;
 using System;
 using System.Drawing;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
 {
+    [SupportedOSPlatform("windows")]
     public class InitializeEditor
     {
         private const string _defaultHighLight = "C#-Dark";

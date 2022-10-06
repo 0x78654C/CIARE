@@ -12,9 +12,11 @@ using System.Threading;
 using CIARE.Roslyn;
 using System.Drawing;
 using CIARE.Utils.FilesOpenOS;
+using System.Runtime.Versioning;
 
 namespace CIARE
 {
+    [SupportedOSPlatform("windows")]
     public partial class Form1 : Form
     {
         public string versionName;

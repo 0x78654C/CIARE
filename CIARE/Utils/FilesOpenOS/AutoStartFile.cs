@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.Utils.FilesOpenOS
 {
+    [SupportedOSPlatform("windows")]
     public class AutoStartFile
     {
         //TODO:
@@ -128,8 +129,8 @@ namespace CIARE.Utils.FilesOpenOS
 
             if (!CheckFileContent(UserAppdataFile))
                 return;
-            ProcessRun processRun;
 
+            ProcessRun processRun;
             var fileLines = File.ReadAllLines(UserAppdataFile);
             foreach (var line in fileLines)
             {

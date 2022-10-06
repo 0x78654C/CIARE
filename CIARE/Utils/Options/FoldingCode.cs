@@ -1,7 +1,9 @@
-﻿using System.Windows.Forms;
+﻿using System.Runtime.Versioning;
+using System.Windows.Forms;
 
 namespace CIARE.Utils.Options
 {
+    [SupportedOSPlatform("windows")]
     public class FoldingCode
     {
         /// <summary>

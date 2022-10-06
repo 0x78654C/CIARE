@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using System.Drawing;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
 {
+    [SupportedOSPlatform("windows")]
     /// <summary>
     /// Dark mode theme class.
     /// </summary>

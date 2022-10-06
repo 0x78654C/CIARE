@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Utils;
@@ -6,6 +7,7 @@ using CIARE.Utils.Options;
 
 namespace CIARE
 {
+    [SupportedOSPlatform("windows")]
     public partial class Options : Form
     {
         /// <summary>
