@@ -36,6 +36,7 @@ namespace CIARE
 
         public Form1()
         {
+            InitializeEditor.CreateUserDataDirectory(GlobalVariables.userProfileDirectory, GlobalVariables.markFile);
             AutoStartFile autoStartFile = new AutoStartFile("",GlobalVariables.markFile , GlobalVariables.markFileTemp,"");
             autoStartFile.OpenFilesOnLongOn();
             InitializeComponent();
@@ -53,7 +54,6 @@ namespace CIARE
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
-            InitializeEditor.CreateUserDataDirectory(GlobalVariables.userProfileDirectory);
             Console.SetOut(new ControlWriter(outputRBT));
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
@@ -574,7 +574,5 @@ namespace CIARE
             AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFileTemp, GlobalVariables.openedFilePath);
             autoStartFile.SetFilePath(markStartFileChk);
         }
-
-        
     }
 }
