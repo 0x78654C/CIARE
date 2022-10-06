@@ -164,9 +164,7 @@ namespace CIARE.Utils.FilesOpenOS
         public void DelTempFile()
         {
             if (File.Exists(UserAppdataFileTemp))
-            {
                 File.Delete(UserAppdataFileTemp);
-            }
         }
 
         /// <summary>
