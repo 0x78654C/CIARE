@@ -164,10 +164,12 @@ namespace CIARE.GUI
         /// Check/Create user data directory on CIARE start up.
         /// </summary>
         /// <param name="directoryPath"></param>
-        public static void CreateUserDataDirectory(string directoryPath)
+        public static void CreateUserDataDirectory(string directoryPath, string userAppDatafile)
         {
             if (!Directory.Exists(directoryPath))
                 Directory.CreateDirectory(directoryPath);
+            if (!File.Exists(userAppDatafile))
+                File.WriteAllText(userAppDatafile, string.Empty);
         }
     }
 }
