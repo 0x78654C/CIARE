@@ -37,7 +37,8 @@ namespace CIARE
         public Form1()
         {
             InitializeEditor.CreateUserDataDirectory(GlobalVariables.userProfileDirectory, GlobalVariables.markFile);
-            AutoStartFile autoStartFile = new AutoStartFile("",GlobalVariables.markFile , GlobalVariables.markFileTemp,"");
+            AutoStartFile autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, "");
+            autoStartFile.CheckSetAtiveFormState();
             autoStartFile.OpenFilesOnLongOn();
             InitializeComponent();
         }
@@ -54,6 +55,7 @@ namespace CIARE
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
+            InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
             Console.SetOut(new ControlWriter(outputRBT));
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
@@ -104,7 +106,7 @@ namespace CIARE
                     if (arg.Length > 1)
                         this.Text = $"{fileInfo.Name} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
                     openedFileLength = fileInfo.Length;
-                    AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
+                    var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
                     autoStartFile.CheckFilePath();
                 }
             }
@@ -354,6 +356,9 @@ namespace CIARE
             //Delete temp mark file.
             AutoStartFile autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, "");
             autoStartFile.DelTempFile();
+
+            CrashCheck crashCheck = new CrashCheck(GlobalVariables.registryPath, GlobalVariables.activeForm);
+            crashCheck.SetClosedFormState();
         }
 
 
@@ -573,6 +578,8 @@ namespace CIARE
         {
             AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFileTemp, GlobalVariables.openedFilePath);
             autoStartFile.SetFilePath(markStartFileChk);
+            if (GlobalVariables.OWinLoginState)
+                autoStartFile.SetRegistryRunApp();
         }
     }
 }
