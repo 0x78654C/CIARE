@@ -10,8 +10,7 @@ namespace CIARE.Utils.FilesOpenOS
     {
         //TODO:
         // - check if option for makr is active and just then run other events for marked files.
-        // - fix clear marked files on empty path
-        // - set unmark on ctrl+n for new file
+        // - check if file path exist from mark file 
 
         public string UserRunRegistryPath { get; set; }
         public string UserAppdataFile { get; set; }
@@ -52,8 +51,6 @@ namespace CIARE.Utils.FilesOpenOS
                 if (OpenedFilePath.Length > 0)
                     File.WriteAllText(UserAppdataFile, RemoveLine());
             }
-
-            SetRegistryRunApp();
         }
 
         /// <summary>
@@ -71,6 +68,22 @@ namespace CIARE.Utils.FilesOpenOS
             }
             return data;
         }
+
+        /// <summary>
+        /// Remove files that does not exist anymore on main mark file.
+        /// </summary>
+        private void RemoveLineUnexistingPath()
+        {
+            string data = string.Empty;
+            var fileLines = File.ReadAllLines(UserAppdataFile);
+            foreach (var line in fileLines)
+            {
+                if (File.Exists(line))
+                    data += line + Environment.NewLine;
+            }
+            File.WriteAllText(UserAppdataFile, data);
+        }
+
 
         /// <summary>
         /// Check if marked file equals to opened file path
@@ -102,17 +115,44 @@ namespace CIARE.Utils.FilesOpenOS
         /// <summary>
         /// Set CIARE to start on windows login if there are marked files for open.
         /// </summary>
-        private void SetRegistryRunApp()
+        public void SetRegistryRunApp(out bool setCheckBoxState)
         {
+            bool state = false;
             if (CheckFileContent(UserAppdataFile))
             {
-                if (_runCiareReg.Length == 0)
-                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.regUserRunPath, "CIARE", _ciarePath);
-                return;
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.regUserRunPath, "CIARE", _ciarePath);
+                state = true;
             }
-            if (_runCiareReg.Length > 0)
-                RegistryManagement.RegKey_Delete(GlobalVariables.regUserRunPath, "CIARE");
+            else
+            {
+                if (_runCiareReg.Length > 0)
+                    RegistryManagement.RegKey_Delete(GlobalVariables.regUserRunPath, "CIARE");
+                state = false;
+            }
+            GlobalVariables.OWinLoginState = state;
+            setCheckBoxState = state;
         }
+
+        /// <summary>
+        /// Set CIARE to start on windows login if there are marked files for open.
+        /// </summary>
+        public void SetRegistryRunApp()
+        {
+            bool state;
+            if (CheckFileContent(UserAppdataFile))
+            {
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.regUserRunPath, "CIARE", _ciarePath);
+                state = true;
+            }
+            else
+            {
+                if (_runCiareReg.Length > 0)
+                    RegistryManagement.RegKey_Delete(GlobalVariables.regUserRunPath, "CIARE");
+                state = false;
+            }
+            GlobalVariables.OWinLoginState = state;
+        }
+
 
         /// <summary>
         /// Open marked files on windows log in.
@@ -129,7 +169,7 @@ namespace CIARE.Utils.FilesOpenOS
 
             if (!CheckFileContent(UserAppdataFile))
                 return;
-
+            RemoveLineUnexistingPath();
             ProcessRun processRun;
             var fileLines = File.ReadAllLines(UserAppdataFile);
             foreach (var line in fileLines)
@@ -149,7 +189,7 @@ namespace CIARE.Utils.FilesOpenOS
                 }
             }
             if (string.IsNullOrEmpty(Form1.Instance.textEditorControl1.Text))
-                Application.Exit();
+                Form1.Instance.Close();
 
             if (File.Exists(UserAppdataFileTemp) && CheckListFiles())
             {
@@ -190,6 +230,24 @@ namespace CIARE.Utils.FilesOpenOS
             string dataMarkFile = File.ReadAllText(UserAppdataFile);
 
             return dataMarkFile == dataMarkTemp;
+        }
+
+
+        /// <summary>
+        /// Check if form was closed properly and if not delete temp mark file.
+        /// </summary>
+        public void CheckSetAtiveFormState()
+        {
+            CrashCheck crashCheck = new CrashCheck(GlobalVariables.registryPath, GlobalVariables.activeForm);
+            bool status = crashCheck.CheckCrashStatus();
+            if (!status)
+            {
+                if (File.Exists(UserAppdataFileTemp))
+                    File.Delete(UserAppdataFileTemp);
+                crashCheck.SetActiveFormState();
+                return;
+            }
+            crashCheck.SetActiveFormState();
         }
     }
 }
