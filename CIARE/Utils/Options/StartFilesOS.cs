@@ -38,5 +38,16 @@ namespace CIARE.Utils.Options
             Form1.Instance.markStartFileChk.Visible = status.Checked;
             GlobalVariables.OStartUp = status.Checked;
         }
+
+        /// <summary>
+        /// Store state of windows login registry.
+        /// </summary>
+        /// <param name="status"></param>
+        /// <param name="regKeyName"></param>
+        public static void SetWinLoginState(CheckBox status, string regKeyName)
+        {
+            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, status.Checked.ToString());
+            GlobalVariables.OWinLoginState = status.Checked;
+        }
     }
 }
