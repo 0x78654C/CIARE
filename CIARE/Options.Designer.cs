@@ -37,6 +37,7 @@ namespace CIARE
             this.codeFoldingCkb = new System.Windows.Forms.CheckBox();
             this.closeBtn = new System.Windows.Forms.Button();
             this.displayGroup = new System.Windows.Forms.GroupBox();
+            this.winLoginCkb = new System.Windows.Forms.CheckBox();
             this.startBehaveCkb = new System.Windows.Forms.CheckBox();
             this.behaveSetLbl = new System.Windows.Forms.Label();
             this.displaySepLbl = new System.Windows.Forms.Label();
@@ -126,7 +127,7 @@ namespace CIARE
             this.closeBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.closeBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.closeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.closeBtn.Location = new System.Drawing.Point(603, 330);
+            this.closeBtn.Location = new System.Drawing.Point(603, 366);
             this.closeBtn.Name = "closeBtn";
             this.closeBtn.Size = new System.Drawing.Size(75, 23);
             this.closeBtn.TabIndex = 14;
@@ -136,6 +137,7 @@ namespace CIARE
             // 
             // displayGroup
             // 
+            this.displayGroup.Controls.Add(this.winLoginCkb);
             this.displayGroup.Controls.Add(this.startBehaveCkb);
             this.displayGroup.Controls.Add(this.behaveSetLbl);
             this.displayGroup.Controls.Add(this.displaySepLbl);
@@ -146,19 +148,30 @@ namespace CIARE
             this.displayGroup.Controls.Add(this.lineNumberCkb);
             this.displayGroup.Location = new System.Drawing.Point(12, 12);
             this.displayGroup.Name = "displayGroup";
-            this.displayGroup.Size = new System.Drawing.Size(330, 301);
+            this.displayGroup.Size = new System.Drawing.Size(330, 341);
             this.displayGroup.TabIndex = 15;
             this.displayGroup.TabStop = false;
             this.displayGroup.Text = "Settings:";
+            // 
+            // winLoginCkb
+            // 
+            this.winLoginCkb.AutoSize = true;
+            this.winLoginCkb.Location = new System.Drawing.Point(18, 292);
+            this.winLoginCkb.Name = "winLoginCkb";
+            this.winLoginCkb.Size = new System.Drawing.Size(156, 19);
+            this.winLoginCkb.TabIndex = 17;
+            this.winLoginCkb.Text = "Open on Windows login";
+            this.winLoginCkb.UseVisualStyleBackColor = true;
+            this.winLoginCkb.CheckedChanged += new System.EventHandler(this.winLoginCkb_CheckedChanged);
             // 
             // startBehaveCkb
             // 
             this.startBehaveCkb.AutoSize = true;
             this.startBehaveCkb.Location = new System.Drawing.Point(18, 257);
             this.startBehaveCkb.Name = "startBehaveCkb";
-            this.startBehaveCkb.Size = new System.Drawing.Size(194, 19);
+            this.startBehaveCkb.Size = new System.Drawing.Size(230, 19);
             this.startBehaveCkb.TabIndex = 16;
-            this.startBehaveCkb.Text = "Open files on Windows start up";
+            this.startBehaveCkb.Text = "Activate mark files for start on next run";
             this.startBehaveCkb.UseVisualStyleBackColor = true;
             this.startBehaveCkb.CheckedChanged += new System.EventHandler(this.startBehaveCkb_CheckedChanged);
             // 
@@ -190,7 +203,7 @@ namespace CIARE
             this.buildGroup.Controls.Add(this.platformLbl);
             this.buildGroup.Location = new System.Drawing.Point(348, 12);
             this.buildGroup.Name = "buildGroup";
-            this.buildGroup.Size = new System.Drawing.Size(330, 301);
+            this.buildGroup.Size = new System.Drawing.Size(330, 341);
             this.buildGroup.TabIndex = 16;
             this.buildGroup.TabStop = false;
             this.buildGroup.Text = "Build";
@@ -249,7 +262,7 @@ namespace CIARE
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
             this.CancelButton = this.closeBtn;
-            this.ClientSize = new System.Drawing.Size(690, 371);
+            this.ClientSize = new System.Drawing.Size(690, 404);
             this.Controls.Add(this.buildGroup);
             this.Controls.Add(this.displayGroup);
             this.Controls.Add(this.closeBtn);
@@ -286,5 +299,6 @@ namespace CIARE
         private System.Windows.Forms.CheckBox startBehaveCkb;
         private System.Windows.Forms.Label behaveSetLbl;
         private System.Windows.Forms.Label displaySepLbl;
+        private System.Windows.Forms.CheckBox winLoginCkb;
     }
 }
