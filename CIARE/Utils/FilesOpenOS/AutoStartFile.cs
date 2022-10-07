@@ -18,6 +18,7 @@ namespace CIARE.Utils.FilesOpenOS
         public string OpenedFilePath { get; set; }
         private string _ciarePath = $"{Application.StartupPath}CIARE.exe";
         private string _runCiareReg = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.regUserRunPath}", "CIARE");
+        private string _regWinLogin = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", GlobalVariables.OWinLogin);
         public AutoStartFile(string userRunRegistryPath, string userAppdataFile, string userAppdataFileTemp, string openedFilePath)
         {
             UserRunRegistryPath = userRunRegistryPath;
@@ -151,6 +152,8 @@ namespace CIARE.Utils.FilesOpenOS
                 state = false;
             }
             GlobalVariables.OWinLoginState = state;
+            if(_regWinLogin.Length>0)
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, GlobalVariables.OWinLogin, state.ToString());
         }
 
 
