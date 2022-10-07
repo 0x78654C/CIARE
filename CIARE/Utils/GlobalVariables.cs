@@ -28,6 +28,7 @@ namespace CIARE.Utils
         public static bool OFoldingCode = true;
         public static bool OWarnings = false;
         public static bool OStartUp = false;
+        public static bool OWinLoginState = false;
         public static bool noClear = false;
         public static string binaryName = string.Empty;
         public static string binaryNameStore = string.Empty;
@@ -38,6 +39,8 @@ namespace CIARE.Utils
         public static readonly string lineNumberKey = "OLineNumber";
         public static readonly string warnings = "OWarnings";
         public static readonly string startUp = "OStartUp";
+        public static readonly string OWinLogin = "OWinLogin";
+        public static readonly string activeForm = "activeForm";
         public static readonly string OConfigParam = "OConfigParam";
         public static readonly string OPlatformParam = "OPlatformParam";
         public static readonly string roslynTemplate = @"/*
