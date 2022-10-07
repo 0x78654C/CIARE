@@ -171,5 +171,17 @@ namespace CIARE.GUI
             if (!File.Exists(userAppDatafile))
                 File.WriteAllText(userAppDatafile, string.Empty);
         }
+
+        /// <summary>
+        /// Check WinLogin State in registry.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="regSubKey"></param>
+        /// <returns></returns>
+        public static void WinLoginState(string regKeyName, string regSubKey, out bool winLoginGlobal)
+        {
+            string regLoginState = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regSubKey);
+            winLoginGlobal = regLoginState.Length > 0 ? bool.Parse(regLoginState) : false;
+        }
     }
 }
