@@ -13,6 +13,8 @@ using CIARE.Roslyn;
 using System.Drawing;
 using CIARE.Utils.FilesOpenOS;
 using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.Linq;
 
 namespace CIARE
 {
@@ -37,7 +39,7 @@ namespace CIARE
         public Form1()
         {
             InitializeEditor.CreateUserDataDirectory(GlobalVariables.userProfileDirectory, GlobalVariables.markFile);
-            AutoStartFile autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, "");
+            var autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, GlobalVariables.openedFilePath);
             autoStartFile.CheckSetAtiveFormState();
             autoStartFile.OpenFilesOnLongOn();
             InitializeComponent();
@@ -353,14 +355,24 @@ namespace CIARE
             else
                 e.Cancel = false;
 
+
+
             //Delete temp mark file.
-            AutoStartFile autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, "");
-            autoStartFile.DelTempFile();
+            if (GetCiareProcesses() == 1)
+            {
+                AutoStartFile autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, "");
+                autoStartFile.DelTempFile();
+            }
 
             CrashCheck crashCheck = new CrashCheck(GlobalVariables.registryPath, GlobalVariables.activeForm);
             crashCheck.SetClosedFormState();
         }
 
+        /// <summary>
+        /// Get count of all CIARE procesess opened.
+        /// </summary>
+        /// <returns></returns>
+        private int GetCiareProcesses() => Process.GetProcessesByName("CIARE").Count();
 
         /// <summary>
         /// Check edited opened files by external application when CIARE is on Top Most event handler.
