@@ -66,6 +66,7 @@ namespace CIARE
             StartFilesOS.CheckOSStartFile(GlobalVariables.registryPath);
             BuildConfig.CheckConfig(GlobalVariables.registryPath);
             BuildConfig.CheckPlatform(GlobalVariables.registryPath);
+            TargetFramework.CheckFramework(GlobalVariables.registryPath);
 
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
