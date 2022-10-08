@@ -43,6 +43,7 @@ namespace CIARE
             startBehaveCkb.Checked = GlobalVariables.OStartUp;
             winLoginCkb.Checked = GlobalVariables.OWinLoginState;
             CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
+            TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
         }
@@ -131,13 +132,18 @@ namespace CIARE
             }
 
             var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
-            if(!autoStartFile.CheckFileContent(GlobalVariables.markFile))
+            if (!autoStartFile.CheckFileContent(GlobalVariables.markFile))
             {
                 winLoginCkb.Checked = false;
                 return;
             }
             StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
             autoStartFile.SetRegistryRunApp(winLoginCkb);
+        }
+
+        private void frameWorkCMB_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            TargetFramework.SetFramework(frameWorkCMB, GlobalVariables.OFramework);
         }
     }
 }

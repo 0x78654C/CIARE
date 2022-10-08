@@ -233,6 +233,7 @@ namespace CIARE
             this.frameWorkCMB.Size = new System.Drawing.Size(93, 23);
             this.frameWorkCMB.TabIndex = 19;
             this.frameWorkCMB.Text = ".NET 6";
+            this.frameWorkCMB.SelectedIndexChanged += new System.EventHandler(this.frameWorkCMB_SelectedIndexChanged);
             // 
             // warningsCkb
             // 
