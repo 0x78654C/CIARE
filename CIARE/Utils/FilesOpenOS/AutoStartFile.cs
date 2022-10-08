@@ -105,7 +105,7 @@ namespace CIARE.Utils.FilesOpenOS
         /// </summary>
         /// <param name="userAppdataFile"></param>
         /// <returns></returns>
-        private bool CheckFileContent(string userAppdataFile)
+        public bool CheckFileContent(string userAppdataFile)
         {
             return (File.ReadAllText(userAppdataFile).Length > 0);
         }
