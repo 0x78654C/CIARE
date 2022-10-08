@@ -29,6 +29,7 @@ namespace CIARE.Utils
         public static bool OWarnings = false;
         public static bool OStartUp = false;
         public static bool OWinLoginState = false;
+        public static string Framework = "net6.0-windows";
         public static bool noClear = false;
         public static string binaryName = string.Empty;
         public static string binaryNameStore = string.Empty;
@@ -43,6 +44,7 @@ namespace CIARE.Utils
         public static readonly string activeForm = "activeForm";
         public static readonly string OConfigParam = "OConfigParam";
         public static readonly string OPlatformParam = "OPlatformParam";
+        public static readonly string OFramework = "OFramework";
         public static readonly string roslynTemplate = @"/*
  * Simple C# code sample for run with Roslyn runtime code compiler and execution.
  */
