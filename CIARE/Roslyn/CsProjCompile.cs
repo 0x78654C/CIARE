@@ -18,7 +18,7 @@ namespace CIARE.Roslyn
         private string CsProjTemplateExe = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>"+GlobalVariables.Framework+@"</TargetFramework>
 	  <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
@@ -29,10 +29,10 @@ namespace CIARE.Roslyn
   </PropertyGroup>
 </Project>
 ";
-        private string CsProjTemplateDll = @"<Project Sdk=""Microsoft.NET.Sdk"">
+        private string CsProjTemplateDll = $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>"+GlobalVariables.Framework+@"</TargetFramework>
 	  <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
