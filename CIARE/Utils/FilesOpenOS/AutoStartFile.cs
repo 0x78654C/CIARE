@@ -8,9 +8,6 @@ namespace CIARE.Utils.FilesOpenOS
     [SupportedOSPlatform("windows")]
     public class AutoStartFile
     {
-        //TODO:
-        // - check if option for makr is active and just then run other events for marked files.
-        // - check if file path exist from mark file 
 
         public string UserRunRegistryPath { get; set; }
         public string UserAppdataFile { get; set; }
@@ -116,22 +113,16 @@ namespace CIARE.Utils.FilesOpenOS
         /// <summary>
         /// Set CIARE to start on windows login if there are marked files for open.
         /// </summary>
-        public void SetRegistryRunApp(out bool setCheckBoxState)
+        public void SetRegistryRunApp(CheckBox checkBox)
         {
-            bool state = false;
-            if (CheckFileContent(UserAppdataFile))
-            {
+            if (checkBox.Checked)
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.regUserRunPath, "CIARE", _ciarePath);
-                state = true;
-            }
             else
             {
                 if (_runCiareReg.Length > 0)
                     RegistryManagement.RegKey_Delete(GlobalVariables.regUserRunPath, "CIARE");
-                state = false;
             }
-            GlobalVariables.OWinLoginState = state;
-            setCheckBoxState = state;
+            GlobalVariables.OWinLoginState = checkBox.Checked;
         }
 
         /// <summary>
@@ -172,9 +163,12 @@ namespace CIARE.Utils.FilesOpenOS
 
             if (!CheckFileContent(UserAppdataFile))
                 return;
+
+            
             RemoveLineUnexistingPath();
             ProcessRun processRun;
             var fileLines = File.ReadAllLines(UserAppdataFile);
+
             foreach (var line in fileLines)
             {
                 if (line.Length > 0)
@@ -191,13 +185,19 @@ namespace CIARE.Utils.FilesOpenOS
                     }
                 }
             }
-            if (string.IsNullOrEmpty(Form1.Instance.textEditorControl1.Text))
-                Form1.Instance.Close();
+
+            //TODO: This is nasty. I know. I will remake it.
+            try
+            {
+                if (string.IsNullOrEmpty(Form1.Instance.textEditorControl1.Text))
+                    Environment.Exit(0);
+            }
+            catch {
+                Environment.Exit(0);
+            }
 
             if (File.Exists(UserAppdataFileTemp) && CheckListFiles())
-            {
                 File.Delete(UserAppdataFileTemp);
-            }
         }
 
 
