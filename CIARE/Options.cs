@@ -124,9 +124,20 @@ namespace CIARE
 
         private void winLoginCkb_CheckedChanged(object sender, EventArgs e)
         {
-            StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
+            if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
+            {
+                winLoginCkb.Checked = false;
+                return;
+            }
+
             var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
-            autoStartFile.SetRegistryRunApp();
+            if(!autoStartFile.CheckFileContent(GlobalVariables.markFile))
+            {
+                winLoginCkb.Checked = false;
+                return;
+            }
+            StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
+            autoStartFile.SetRegistryRunApp(winLoginCkb);
         }
     }
 }

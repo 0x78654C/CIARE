@@ -42,6 +42,8 @@ namespace CIARE
             this.behaveSetLbl = new System.Windows.Forms.Label();
             this.displaySepLbl = new System.Windows.Forms.Label();
             this.buildGroup = new System.Windows.Forms.GroupBox();
+            this.frameworkLbl = new System.Windows.Forms.Label();
+            this.frameWorkCMB = new System.Windows.Forms.ComboBox();
             this.warningsCkb = new System.Windows.Forms.CheckBox();
             this.platformBox = new System.Windows.Forms.ComboBox();
             this.configurationBox = new System.Windows.Forms.ComboBox();
@@ -158,9 +160,9 @@ namespace CIARE
             this.winLoginCkb.AutoSize = true;
             this.winLoginCkb.Location = new System.Drawing.Point(18, 292);
             this.winLoginCkb.Name = "winLoginCkb";
-            this.winLoginCkb.Size = new System.Drawing.Size(156, 19);
+            this.winLoginCkb.Size = new System.Drawing.Size(226, 19);
             this.winLoginCkb.TabIndex = 17;
-            this.winLoginCkb.Text = "Open on Windows login";
+            this.winLoginCkb.Text = "Open marked files on Windows login";
             this.winLoginCkb.UseVisualStyleBackColor = true;
             this.winLoginCkb.CheckedChanged += new System.EventHandler(this.winLoginCkb_CheckedChanged);
             // 
@@ -197,6 +199,8 @@ namespace CIARE
             // 
             // buildGroup
             // 
+            this.buildGroup.Controls.Add(this.frameworkLbl);
+            this.buildGroup.Controls.Add(this.frameWorkCMB);
             this.buildGroup.Controls.Add(this.warningsCkb);
             this.buildGroup.Controls.Add(this.platformBox);
             this.buildGroup.Controls.Add(this.configurationBox);
@@ -207,6 +211,28 @@ namespace CIARE
             this.buildGroup.TabIndex = 16;
             this.buildGroup.TabStop = false;
             this.buildGroup.Text = "Build";
+            // 
+            // frameworkLbl
+            // 
+            this.frameworkLbl.AutoSize = true;
+            this.frameworkLbl.Location = new System.Drawing.Point(12, 123);
+            this.frameworkLbl.Name = "frameworkLbl";
+            this.frameworkLbl.Size = new System.Drawing.Size(159, 15);
+            this.frameworkLbl.TabIndex = 18;
+            this.frameworkLbl.Text = "Target Compile Framework:";
+            // 
+            // frameWorkCMB
+            // 
+            this.frameWorkCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.frameWorkCMB.FormattingEnabled = true;
+            this.frameWorkCMB.Items.AddRange(new object[] {
+            ".NET 6",
+            ".NET 7"});
+            this.frameWorkCMB.Location = new System.Drawing.Point(172, 120);
+            this.frameWorkCMB.Name = "frameWorkCMB";
+            this.frameWorkCMB.Size = new System.Drawing.Size(93, 23);
+            this.frameWorkCMB.TabIndex = 19;
+            this.frameWorkCMB.Text = ".NET 6";
             // 
             // warningsCkb
             // 
@@ -226,7 +252,7 @@ namespace CIARE
             this.platformBox.Items.AddRange(new object[] {
             "Any CPU",
             "x64"});
-            this.platformBox.Location = new System.Drawing.Point(169, 23);
+            this.platformBox.Location = new System.Drawing.Point(172, 23);
             this.platformBox.Name = "platformBox";
             this.platformBox.Size = new System.Drawing.Size(93, 23);
             this.platformBox.TabIndex = 15;
@@ -240,7 +266,7 @@ namespace CIARE
             this.configurationBox.Items.AddRange(new object[] {
             "Debug",
             "Release"});
-            this.configurationBox.Location = new System.Drawing.Point(70, 23);
+            this.configurationBox.Location = new System.Drawing.Point(73, 23);
             this.configurationBox.Name = "configurationBox";
             this.configurationBox.Size = new System.Drawing.Size(93, 23);
             this.configurationBox.TabIndex = 14;
@@ -300,5 +326,7 @@ namespace CIARE
         private System.Windows.Forms.Label behaveSetLbl;
         private System.Windows.Forms.Label displaySepLbl;
         private System.Windows.Forms.CheckBox winLoginCkb;
+        private System.Windows.Forms.Label frameworkLbl;
+        private System.Windows.Forms.ComboBox frameWorkCMB;
     }
 }
