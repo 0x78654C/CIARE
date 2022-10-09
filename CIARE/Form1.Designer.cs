@@ -102,7 +102,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 105);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 104);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -417,7 +417,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 130);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 129);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -564,7 +564,7 @@ namespace CIARE
             // markStartFileChk
             // 
             this.markStartFileChk.AutoSize = true;
-            this.markStartFileChk.Location = new System.Drawing.Point(378, 4);
+            this.markStartFileChk.Location = new System.Drawing.Point(379, 4);
             this.markStartFileChk.Name = "markStartFileChk";
             this.markStartFileChk.Size = new System.Drawing.Size(147, 19);
             this.markStartFileChk.TabIndex = 16;

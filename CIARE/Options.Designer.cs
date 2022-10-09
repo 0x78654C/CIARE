@@ -215,7 +215,7 @@ namespace CIARE
             // frameworkLbl
             // 
             this.frameworkLbl.AutoSize = true;
-            this.frameworkLbl.Location = new System.Drawing.Point(12, 123);
+            this.frameworkLbl.Location = new System.Drawing.Point(12, 115);
             this.frameworkLbl.Name = "frameworkLbl";
             this.frameworkLbl.Size = new System.Drawing.Size(159, 15);
             this.frameworkLbl.TabIndex = 18;
@@ -228,7 +228,7 @@ namespace CIARE
             this.frameWorkCMB.Items.AddRange(new object[] {
             ".NET 6",
             ".NET 7"});
-            this.frameWorkCMB.Location = new System.Drawing.Point(172, 120);
+            this.frameWorkCMB.Location = new System.Drawing.Point(172, 112);
             this.frameWorkCMB.Name = "frameWorkCMB";
             this.frameWorkCMB.Size = new System.Drawing.Size(93, 23);
             this.frameWorkCMB.TabIndex = 19;
