@@ -35,13 +35,15 @@ namespace CIARE
         public const string DummyFileName = "edited.cs";
         static readonly Dom.LanguageProperties CurrentLanguageProperties = IsVisualBasic ? Dom.LanguageProperties.VBNet : Dom.LanguageProperties.CSharp;
         Thread parserThread;
+        private string[] s_args = Environment.GetCommandLineArgs();
 
         public Form1()
         {
             InitializeEditor.CreateUserDataDirectory(GlobalVariables.userProfileDirectory, GlobalVariables.markFile);
+            InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, "highlight", "C#-Dark");
             var autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, GlobalVariables.openedFilePath);
             autoStartFile.CheckSetAtiveFormState();
-            autoStartFile.OpenFilesOnLongOn();
+            autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
         }
 
@@ -91,15 +93,7 @@ namespace CIARE
             //File open via parameters(Open with option..)
             try
             {
-                var args = Environment.GetCommandLineArgs();
-                string arg = string.Empty;
-                int count = 0;
-                foreach (var a in args)
-                {
-                    count++;
-                    if (count > 1)
-                        arg += $"{a}";
-                }
+                string arg = ReadArgs(s_args);
                 LoadParamFile(arg, textEditorControl1);
                 if (!GlobalVariables.noPath)
                 {
@@ -117,7 +111,23 @@ namespace CIARE
             //----------------------------------
         }
 
-
+        /// <summary>
+        /// Read arguments on CIARE start.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        private string ReadArgs(string[] args)
+        {
+            int count = 0;
+            string arg=string.Empty;
+            foreach (var a in args)
+            {
+                count++;
+                if (count > 1)
+                    arg += $"{a}";
+            }
+            return arg;
+        }
 
         /// <summary>
         /// Button event for start compile and run code from editor.
