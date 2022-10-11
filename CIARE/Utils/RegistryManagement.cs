@@ -7,6 +7,8 @@ namespace CIARE.Utils
     [SupportedOSPlatform("windows")]
     public static class RegistryManagement
     {
+        
+
         /// <summary>
         /// Registry key check
         /// </summary>
@@ -14,12 +16,18 @@ namespace CIARE.Utils
         /// <returns></returns>
         public static bool RegKey_Check(string keyName, string subKeyName)
         {
-            RegistryKey rkApp = Registry.CurrentUser.OpenSubKey(keyName, false);
-            if ((Registry.GetValue(keyName, subKeyName, null) == null) && (!string.IsNullOrEmpty(rkApp.GetValue(subKeyName).ToString())))
+            try
+            {
+                if (Registry.GetValue(keyName, subKeyName, null) == null)
+                {
+                    return false;
+                }
+                return true;
+            }
+            catch
             {
                 return false;
             }
-            return true;
         }
 
         /// <summary>
