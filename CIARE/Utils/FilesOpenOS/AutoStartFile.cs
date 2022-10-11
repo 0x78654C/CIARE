@@ -177,18 +177,19 @@ namespace CIARE.Utils.FilesOpenOS
                     string dataReadTemp = File.ReadAllText(UserAppdataFileTemp);
                     if (!dataReadTemp.Contains(line))
                     {
-                        processRun = new ProcessRun(_ciarePath, line, Application.StartupPath);
-                        if (!CheckListFiles())
-                        {
-                            processRun.RunVisible();
-                            File.AppendAllText(UserAppdataFileTemp, line + Environment.NewLine);
-                        }
+                     
                         if (!string.IsNullOrEmpty(argParam))
                         {
                             processRun = new ProcessRun(_ciarePath, argParam, Application.StartupPath);
                             processRun.RunVisible();
+                            break;
                         }
-
+                        if(!CheckListFiles())
+                        {
+                            processRun = new ProcessRun(_ciarePath, line, Application.StartupPath);
+                            processRun.RunVisible();
+                            File.AppendAllText(UserAppdataFileTemp, line + Environment.NewLine);
+                        }
                     }
                 }
             }
