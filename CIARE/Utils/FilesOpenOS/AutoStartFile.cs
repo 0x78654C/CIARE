@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.CodeAnalysis.Operations;
+using System;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -151,7 +152,7 @@ namespace CIARE.Utils.FilesOpenOS
         /// <summary>
         /// Open marked files on windows log in.
         /// </summary>
-        public void OpenFilesOnLongOn()
+        public void OpenFilesOnLongOn(string argParam)
         {
             if (!CheckFlag())
                 return;
@@ -182,6 +183,12 @@ namespace CIARE.Utils.FilesOpenOS
                             processRun.RunVisible();
                             File.AppendAllText(UserAppdataFileTemp, line + Environment.NewLine);
                         }
+                        if (!string.IsNullOrEmpty(argParam))
+                        {
+                            processRun = new ProcessRun(_ciarePath, argParam, Application.StartupPath);
+                            processRun.RunVisible();
+                        }
+
                     }
                 }
             }
