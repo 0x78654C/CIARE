@@ -16,6 +16,20 @@ namespace CIARE.GUI
         private const string _windowSize = "windowSize";
         private const string _windowSizeMax = "windowSizeMax";
 
+
+        /// <summary>
+        /// Create main CIARE reg key with values.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="subKeyName"></param>
+        /// <param name="subKeyValue"></param>
+        public static void SetCiareRegKey(string regKeyName, string subKeyName, string subKeyValue)
+        {
+            bool ciareRegKey = RegistryManagement.RegKey_Check($"HKEY_CURRENT_USER\\{regKeyName}", subKeyName);
+            if (!ciareRegKey)
+                RegistryManagement.RegKey_CreateKey(regKeyName, subKeyName, subKeyValue);
+        }
+
         /// <summary>
         /// Read and apply highlight setting from registry.
         /// </summary>
