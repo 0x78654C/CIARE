@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
 {
+    [SupportedOSPlatform("windows")]
     /// <summary>
     /// Light mode theme class.
     /// </summary>
@@ -45,7 +47,7 @@ namespace CIARE.GUI
         }
 
         public static void OptionsLightMode(Form form, Button cancelBtn, Label highlightLbl, ComboBox highLightName,
-          CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayGroup, GroupBox buildGroup)
+          CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayGroup, GroupBox buildGroup, Label displaySetting, Label behaveSetting, CheckBox startFile)
         {
             form.BackColor = SystemColors.Window;
             form.ForeColor = Color.Black;
@@ -59,6 +61,9 @@ namespace CIARE.GUI
             codeFolding.ForeColor = Color.Black;
             displayGroup.ForeColor = Color.Black;
             buildGroup.ForeColor = Color.Black;
+            displaySetting.ForeColor = Color.Black;
+            behaveSetting.ForeColor = Color.Black;
+            startFile.ForeColor = Color.Black;
         }
     }
 }

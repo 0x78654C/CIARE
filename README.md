@@ -33,6 +33,8 @@ Useful to run code on the fly and get instant result.
  - Code completion (intellisense)
  - Build options(Debug/Release - Any CPU/x64)
  - Enable/disable warnings messages on compile.
+ - Mark files for open on next application start or Windows logon.
+ - Target desired framework(.NET6 or .NET 7) for use when a application is compiled.
 
 ## Requirements:
 

@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Drawing;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Utils;
+using CIARE.Utils.FilesOpenOS;
 using CIARE.Utils.Options;
 
 namespace CIARE
 {
+    [SupportedOSPlatform("windows")]
     public partial class Options : Form
     {
         /// <summary>
@@ -31,11 +35,15 @@ namespace CIARE
         {
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, Form1.Instance.textEditorControl1, highlightCMB);
             if (GlobalVariables.darkColor)
-                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup);
+                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb);
             codeCompletionCkb.Checked = GlobalVariables.OCodeCompletion;
             lineNumberCkb.Checked = GlobalVariables.OLineNumber;
             codeFoldingCkb.Checked = GlobalVariables.OFoldingCode;
             warningsCkb.Checked = GlobalVariables.OWarnings;
+            startBehaveCkb.Checked = GlobalVariables.OStartUp;
+            winLoginCkb.Checked = GlobalVariables.OWinLoginState;
+            CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
+            TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
         }
@@ -44,9 +52,9 @@ namespace CIARE
         {
             Form1.Instance.SetHighLighter(highlightCMB.Text);
             if (GlobalVariables.darkColor)
-                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup);
+                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb);
             else
-                LightMode.OptionsLightMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup);
+                LightMode.OptionsLightMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb);
         }
 
         private void codeCompletionCkb_CheckedChanged(object sender, EventArgs e)
@@ -91,6 +99,51 @@ namespace CIARE
             else
                 GlobalVariables.platformParam = "/p:Platform=\"x64\"";
             BuildConfig.StorePlatform(GlobalVariables.OPlatformParam, GlobalVariables.platformParam);
+        }
+
+        private void startBehaveCkb_CheckedChanged(object sender, EventArgs e)
+        {
+            StartFilesOS.SetOSStartStatus(startBehaveCkb, GlobalVariables.startUp);
+            CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
+        }
+
+        /// <summary>
+        /// Check and set state of Windows login checkbox.
+        /// </summary>
+        /// <param name="markFileCkb"></param>
+        /// <param name="winLoginCkb"></param>
+        private void CheckMarkFileActivation(CheckBox markFileCkb, CheckBox winLoginCkb)
+        {
+            if (markFileCkb.Checked)
+                winLoginCkb.Enabled = true;
+            else
+            {
+                winLoginCkb.Enabled = false;
+                winLoginCkb.Checked = false;
+            }
+        }
+
+        private void winLoginCkb_CheckedChanged(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
+            {
+                winLoginCkb.Checked = false;
+                return;
+            }
+
+            var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
+            if (!autoStartFile.CheckFileContent(GlobalVariables.markFile))
+            {
+                winLoginCkb.Checked = false;
+                return;
+            }
+            StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
+            autoStartFile.SetRegistryRunApp(winLoginCkb);
+        }
+
+        private void frameWorkCMB_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            TargetFramework.SetFramework(frameWorkCMB, GlobalVariables.OFramework);
         }
     }
 }

@@ -1,9 +1,16 @@
-﻿
+﻿using System;
+using System.IO;
+
 namespace CIARE.Utils
 {
     public class GlobalVariables
     {
         public static string paramData = string.Empty;
+        private static string s_rootPath = Path.GetPathRoot(Environment.SystemDirectory);
+        private static readonly string s_accountName = Environment.UserName;
+        public static readonly string userProfileDirectory = $"{s_rootPath}Users\\{s_accountName}\\AppData\\Local\\CIARE\\";
+        public static readonly string markFile = $"{userProfileDirectory}\\markedFiles.cDat";
+        public static readonly string markFileTemp = $"{userProfileDirectory}\\markedFiles_tmp.cDat";
         public static string openedFilePath = string.Empty;
         public static string openedFileName = string.Empty;
         public static string commandLineArguments = string.Empty;
@@ -20,16 +27,24 @@ namespace CIARE.Utils
         public static bool OLineNumber = true;
         public static bool OFoldingCode = true;
         public static bool OWarnings = false;
+        public static bool OStartUp = false;
+        public static bool OWinLoginState = false;
+        public static string Framework = "net6.0-windows";
         public static bool noClear = false;
         public static string binaryName = string.Empty;
         public static string binaryNameStore = string.Empty;
         public static readonly string registryPath = "SOFTWARE\\CIARE";
+        public static readonly string regUserRunPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
         public static readonly string codeCompletionKey = "OCodeCompletion";
         public static readonly string foldingCodeKey = "OFoldingCode";
         public static readonly string lineNumberKey = "OLineNumber";
         public static readonly string warnings = "OWarnings";
+        public static readonly string startUp = "OStartUp";
+        public static readonly string OWinLogin = "OWinLogin";
+        public static readonly string activeForm = "activeForm";
         public static readonly string OConfigParam = "OConfigParam";
         public static readonly string OPlatformParam = "OPlatformParam";
+        public static readonly string OFramework = "OFramework";
         public static readonly string roslynTemplate = @"/*
  * Simple C# code sample for run with Roslyn runtime code compiler and execution.
  */

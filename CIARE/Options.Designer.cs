@@ -37,7 +37,13 @@ namespace CIARE
             this.codeFoldingCkb = new System.Windows.Forms.CheckBox();
             this.closeBtn = new System.Windows.Forms.Button();
             this.displayGroup = new System.Windows.Forms.GroupBox();
+            this.winLoginCkb = new System.Windows.Forms.CheckBox();
+            this.startBehaveCkb = new System.Windows.Forms.CheckBox();
+            this.behaveSetLbl = new System.Windows.Forms.Label();
+            this.displaySepLbl = new System.Windows.Forms.Label();
             this.buildGroup = new System.Windows.Forms.GroupBox();
+            this.frameworkLbl = new System.Windows.Forms.Label();
+            this.frameWorkCMB = new System.Windows.Forms.ComboBox();
             this.warningsCkb = new System.Windows.Forms.CheckBox();
             this.platformBox = new System.Windows.Forms.ComboBox();
             this.configurationBox = new System.Windows.Forms.ComboBox();
@@ -49,7 +55,7 @@ namespace CIARE
             // highlightLbl
             // 
             this.highlightLbl.AutoSize = true;
-            this.highlightLbl.Location = new System.Drawing.Point(12, 26);
+            this.highlightLbl.Location = new System.Drawing.Point(15, 70);
             this.highlightLbl.Name = "highlightLbl";
             this.highlightLbl.Size = new System.Drawing.Size(94, 15);
             this.highlightLbl.TabIndex = 9;
@@ -78,7 +84,7 @@ namespace CIARE
             "ASP/XHTML",
             "JavaScript",
             "Java"});
-            this.highlightCMB.Location = new System.Drawing.Point(116, 23);
+            this.highlightCMB.Location = new System.Drawing.Point(119, 67);
             this.highlightCMB.Name = "highlightCMB";
             this.highlightCMB.Size = new System.Drawing.Size(93, 23);
             this.highlightCMB.TabIndex = 10;
@@ -88,7 +94,7 @@ namespace CIARE
             // codeCompletionCkb
             // 
             this.codeCompletionCkb.AutoSize = true;
-            this.codeCompletionCkb.Location = new System.Drawing.Point(15, 66);
+            this.codeCompletionCkb.Location = new System.Drawing.Point(18, 110);
             this.codeCompletionCkb.Name = "codeCompletionCkb";
             this.codeCompletionCkb.Size = new System.Drawing.Size(277, 19);
             this.codeCompletionCkb.TabIndex = 11;
@@ -99,7 +105,7 @@ namespace CIARE
             // lineNumberCkb
             // 
             this.lineNumberCkb.AutoSize = true;
-            this.lineNumberCkb.Location = new System.Drawing.Point(15, 103);
+            this.lineNumberCkb.Location = new System.Drawing.Point(18, 147);
             this.lineNumberCkb.Name = "lineNumberCkb";
             this.lineNumberCkb.Size = new System.Drawing.Size(98, 19);
             this.lineNumberCkb.TabIndex = 12;
@@ -110,7 +116,7 @@ namespace CIARE
             // codeFoldingCkb
             // 
             this.codeFoldingCkb.AutoSize = true;
-            this.codeFoldingCkb.Location = new System.Drawing.Point(15, 139);
+            this.codeFoldingCkb.Location = new System.Drawing.Point(18, 183);
             this.codeFoldingCkb.Name = "codeFoldingCkb";
             this.codeFoldingCkb.Size = new System.Drawing.Size(99, 19);
             this.codeFoldingCkb.TabIndex = 13;
@@ -123,7 +129,7 @@ namespace CIARE
             this.closeBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.closeBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.closeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.closeBtn.Location = new System.Drawing.Point(603, 212);
+            this.closeBtn.Location = new System.Drawing.Point(603, 366);
             this.closeBtn.Name = "closeBtn";
             this.closeBtn.Size = new System.Drawing.Size(75, 23);
             this.closeBtn.TabIndex = 14;
@@ -133,6 +139,10 @@ namespace CIARE
             // 
             // displayGroup
             // 
+            this.displayGroup.Controls.Add(this.winLoginCkb);
+            this.displayGroup.Controls.Add(this.startBehaveCkb);
+            this.displayGroup.Controls.Add(this.behaveSetLbl);
+            this.displayGroup.Controls.Add(this.displaySepLbl);
             this.displayGroup.Controls.Add(this.highlightLbl);
             this.displayGroup.Controls.Add(this.highlightCMB);
             this.displayGroup.Controls.Add(this.codeFoldingCkb);
@@ -140,23 +150,90 @@ namespace CIARE
             this.displayGroup.Controls.Add(this.lineNumberCkb);
             this.displayGroup.Location = new System.Drawing.Point(12, 12);
             this.displayGroup.Name = "displayGroup";
-            this.displayGroup.Size = new System.Drawing.Size(330, 187);
+            this.displayGroup.Size = new System.Drawing.Size(330, 341);
             this.displayGroup.TabIndex = 15;
             this.displayGroup.TabStop = false;
-            this.displayGroup.Text = "Display";
+            this.displayGroup.Text = "Settings:";
+            // 
+            // winLoginCkb
+            // 
+            this.winLoginCkb.AutoSize = true;
+            this.winLoginCkb.Location = new System.Drawing.Point(18, 292);
+            this.winLoginCkb.Name = "winLoginCkb";
+            this.winLoginCkb.Size = new System.Drawing.Size(226, 19);
+            this.winLoginCkb.TabIndex = 17;
+            this.winLoginCkb.Text = "Open marked files on Windows login";
+            this.winLoginCkb.UseVisualStyleBackColor = true;
+            this.winLoginCkb.CheckedChanged += new System.EventHandler(this.winLoginCkb_CheckedChanged);
+            // 
+            // startBehaveCkb
+            // 
+            this.startBehaveCkb.AutoSize = true;
+            this.startBehaveCkb.Location = new System.Drawing.Point(18, 257);
+            this.startBehaveCkb.Name = "startBehaveCkb";
+            this.startBehaveCkb.Size = new System.Drawing.Size(230, 19);
+            this.startBehaveCkb.TabIndex = 16;
+            this.startBehaveCkb.Text = "Activate mark files for start on next run";
+            this.startBehaveCkb.UseVisualStyleBackColor = true;
+            this.startBehaveCkb.CheckedChanged += new System.EventHandler(this.startBehaveCkb_CheckedChanged);
+            // 
+            // behaveSetLbl
+            // 
+            this.behaveSetLbl.AutoSize = true;
+            this.behaveSetLbl.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point);
+            this.behaveSetLbl.Location = new System.Drawing.Point(15, 220);
+            this.behaveSetLbl.Name = "behaveSetLbl";
+            this.behaveSetLbl.Size = new System.Drawing.Size(243, 15);
+            this.behaveSetLbl.TabIndex = 15;
+            this.behaveSetLbl.Text = "Behaviour                                           ";
+            // 
+            // displaySepLbl
+            // 
+            this.displaySepLbl.AutoSize = true;
+            this.displaySepLbl.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point);
+            this.displaySepLbl.Location = new System.Drawing.Point(15, 35);
+            this.displaySepLbl.Name = "displaySepLbl";
+            this.displaySepLbl.Size = new System.Drawing.Size(234, 15);
+            this.displaySepLbl.TabIndex = 14;
+            this.displaySepLbl.Text = "Display                                             ";
             // 
             // buildGroup
             // 
+            this.buildGroup.Controls.Add(this.frameworkLbl);
+            this.buildGroup.Controls.Add(this.frameWorkCMB);
             this.buildGroup.Controls.Add(this.warningsCkb);
             this.buildGroup.Controls.Add(this.platformBox);
             this.buildGroup.Controls.Add(this.configurationBox);
             this.buildGroup.Controls.Add(this.platformLbl);
             this.buildGroup.Location = new System.Drawing.Point(348, 12);
             this.buildGroup.Name = "buildGroup";
-            this.buildGroup.Size = new System.Drawing.Size(330, 187);
+            this.buildGroup.Size = new System.Drawing.Size(330, 341);
             this.buildGroup.TabIndex = 16;
             this.buildGroup.TabStop = false;
             this.buildGroup.Text = "Build";
+            // 
+            // frameworkLbl
+            // 
+            this.frameworkLbl.AutoSize = true;
+            this.frameworkLbl.Location = new System.Drawing.Point(12, 115);
+            this.frameworkLbl.Name = "frameworkLbl";
+            this.frameworkLbl.Size = new System.Drawing.Size(159, 15);
+            this.frameworkLbl.TabIndex = 18;
+            this.frameworkLbl.Text = "Target Compile Framework:";
+            // 
+            // frameWorkCMB
+            // 
+            this.frameWorkCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.frameWorkCMB.FormattingEnabled = true;
+            this.frameWorkCMB.Items.AddRange(new object[] {
+            ".NET 6",
+            ".NET 7"});
+            this.frameWorkCMB.Location = new System.Drawing.Point(172, 112);
+            this.frameWorkCMB.Name = "frameWorkCMB";
+            this.frameWorkCMB.Size = new System.Drawing.Size(93, 23);
+            this.frameWorkCMB.TabIndex = 19;
+            this.frameWorkCMB.Text = ".NET 6";
+            this.frameWorkCMB.SelectedIndexChanged += new System.EventHandler(this.frameWorkCMB_SelectedIndexChanged);
             // 
             // warningsCkb
             // 
@@ -176,7 +253,7 @@ namespace CIARE
             this.platformBox.Items.AddRange(new object[] {
             "Any CPU",
             "x64"});
-            this.platformBox.Location = new System.Drawing.Point(169, 23);
+            this.platformBox.Location = new System.Drawing.Point(172, 23);
             this.platformBox.Name = "platformBox";
             this.platformBox.Size = new System.Drawing.Size(93, 23);
             this.platformBox.TabIndex = 15;
@@ -190,7 +267,7 @@ namespace CIARE
             this.configurationBox.Items.AddRange(new object[] {
             "Debug",
             "Release"});
-            this.configurationBox.Location = new System.Drawing.Point(70, 23);
+            this.configurationBox.Location = new System.Drawing.Point(73, 23);
             this.configurationBox.Name = "configurationBox";
             this.configurationBox.Size = new System.Drawing.Size(93, 23);
             this.configurationBox.TabIndex = 14;
@@ -212,7 +289,7 @@ namespace CIARE
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
             this.CancelButton = this.closeBtn;
-            this.ClientSize = new System.Drawing.Size(690, 250);
+            this.ClientSize = new System.Drawing.Size(690, 404);
             this.Controls.Add(this.buildGroup);
             this.Controls.Add(this.displayGroup);
             this.Controls.Add(this.closeBtn);
@@ -246,5 +323,11 @@ namespace CIARE
         private System.Windows.Forms.ComboBox configurationBox;
         private System.Windows.Forms.Label platformLbl;
         private System.Windows.Forms.CheckBox warningsCkb;
+        private System.Windows.Forms.CheckBox startBehaveCkb;
+        private System.Windows.Forms.Label behaveSetLbl;
+        private System.Windows.Forms.Label displaySepLbl;
+        private System.Windows.Forms.CheckBox winLoginCkb;
+        private System.Windows.Forms.Label frameworkLbl;
+        private System.Windows.Forms.ComboBox frameWorkCMB;
     }
 }

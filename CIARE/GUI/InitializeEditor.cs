@@ -2,16 +2,33 @@
 using ICSharpCode.TextEditor;
 using System;
 using System.Drawing;
+using System.IO;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
 {
+    [SupportedOSPlatform("windows")]
     public class InitializeEditor
     {
         private const string _defaultHighLight = "C#-Dark";
         private const string _regName = "highlight";
         private const string _windowSize = "windowSize";
         private const string _windowSizeMax = "windowSizeMax";
+
+
+        /// <summary>
+        /// Create main CIARE reg key with values.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="subKeyName"></param>
+        /// <param name="subKeyValue"></param>
+        public static void SetCiareRegKey(string regKeyName, string subKeyName, string subKeyValue)
+        {
+            bool ciareRegKey = RegistryManagement.RegKey_Check($"HKEY_CURRENT_USER\\{regKeyName}", subKeyName);
+            if (!ciareRegKey)
+                RegistryManagement.RegKey_CreateKey(regKeyName, subKeyName, subKeyValue);
+        }
 
         /// <summary>
         /// Read and apply highlight setting from registry.
@@ -155,6 +172,30 @@ namespace CIARE.GUI
                 return;
             }
             RegistryManagement.RegKey_CreateKey(regKeyName, "OutWState", "True");
+        }
+
+        /// <summary>
+        /// Check/Create user data directory on CIARE start up.
+        /// </summary>
+        /// <param name="directoryPath"></param>
+        public static void CreateUserDataDirectory(string directoryPath, string userAppDatafile)
+        {
+            if (!Directory.Exists(directoryPath))
+                Directory.CreateDirectory(directoryPath);
+            if (!File.Exists(userAppDatafile))
+                File.WriteAllText(userAppDatafile, string.Empty);
+        }
+
+        /// <summary>
+        /// Check WinLogin State in registry.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="regSubKey"></param>
+        /// <returns></returns>
+        public static void WinLoginState(string regKeyName, string regSubKey, out bool winLoginGlobal)
+        {
+            string regLoginState = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regSubKey);
+            winLoginGlobal = regLoginState.Length > 0 ? bool.Parse(regLoginState) : false;
         }
     }
 }

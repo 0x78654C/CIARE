@@ -1,4 +1,5 @@
 ﻿using CIARE.Utils;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
@@ -6,6 +7,7 @@ namespace CIARE.GUI
     /*
      Class for manage output window (show/hide).
      */
+    [SupportedOSPlatform("windows")]
     public class OutputWindowManage
     {
         /// <summary>

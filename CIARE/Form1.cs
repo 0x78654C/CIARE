@@ -11,9 +11,14 @@ using Dom = ICSharpCode.SharpDevelop.Dom;
 using System.Threading;
 using CIARE.Roslyn;
 using System.Drawing;
+using CIARE.Utils.FilesOpenOS;
+using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.Linq;
 
 namespace CIARE
 {
+    [SupportedOSPlatform("windows")]
     public partial class Form1 : Form
     {
         public string versionName;
@@ -30,9 +35,15 @@ namespace CIARE
         public const string DummyFileName = "edited.cs";
         static readonly Dom.LanguageProperties CurrentLanguageProperties = IsVisualBasic ? Dom.LanguageProperties.VBNet : Dom.LanguageProperties.CSharp;
         Thread parserThread;
+        private string[] s_args = Environment.GetCommandLineArgs();
 
         public Form1()
         {
+            InitializeEditor.CreateUserDataDirectory(GlobalVariables.userProfileDirectory, GlobalVariables.markFile);
+            InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, "highlight", "C#-Dark");
+            var autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, GlobalVariables.openedFilePath);
+            autoStartFile.CheckSetAtiveFormState();
+            autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
         }
 
@@ -48,13 +59,16 @@ namespace CIARE
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
+            InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
             Console.SetOut(new ControlWriter(outputRBT));
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
             LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
             Warnings.CheckWarnings(GlobalVariables.registryPath);
+            StartFilesOS.CheckOSStartFile(GlobalVariables.registryPath);
             BuildConfig.CheckConfig(GlobalVariables.registryPath);
             BuildConfig.CheckPlatform(GlobalVariables.registryPath);
+            TargetFramework.CheckFramework(GlobalVariables.registryPath);
 
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
@@ -79,15 +93,7 @@ namespace CIARE
             //File open via parameters(Open with option..)
             try
             {
-                var args = Environment.GetCommandLineArgs();
-                string arg = string.Empty;
-                int count = 0;
-                foreach (var a in args)
-                {
-                    count++;
-                    if (count > 1)
-                        arg += $"{a}";
-                }
+                string arg = ReadArgs(s_args);
                 LoadParamFile(arg, textEditorControl1);
                 if (!GlobalVariables.noPath)
                 {
@@ -97,13 +103,31 @@ namespace CIARE
                     if (arg.Length > 1)
                         this.Text = $"{fileInfo.Name} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
                     openedFileLength = fileInfo.Length;
+                    var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
+                    autoStartFile.CheckFilePath();
                 }
             }
             catch { }
             //----------------------------------
         }
 
-
+        /// <summary>
+        /// Read arguments on CIARE start.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        private string ReadArgs(string[] args)
+        {
+            int count = 0;
+            string arg=string.Empty;
+            foreach (var a in args)
+            {
+                count++;
+                if (count > 1)
+                    arg += $"{a}";
+            }
+            return arg;
+        }
 
         /// <summary>
         /// Button event for start compile and run code from editor.
@@ -341,8 +365,25 @@ namespace CIARE
                 e.Cancel = true;
             else
                 e.Cancel = false;
+
+
+
+            //Delete temp mark file.
+            if (GetCiareProcesses() == 1)
+            {
+                AutoStartFile autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, "");
+                autoStartFile.DelTempFile();
+            }
+
+            CrashCheck crashCheck = new CrashCheck(GlobalVariables.registryPath, GlobalVariables.activeForm);
+            crashCheck.SetClosedFormState();
         }
 
+        /// <summary>
+        /// Get count of all CIARE procesess opened.
+        /// </summary>
+        /// <returns></returns>
+        private int GetCiareProcesses() => Process.GetProcessesByName("CIARE").Count();
 
         /// <summary>
         /// Check edited opened files by external application when CIARE is on Top Most event handler.
@@ -535,10 +576,33 @@ namespace CIARE
         /// <param name="e"></param>
         private void outputRBT_TextChanged(object sender, EventArgs e)
         {
-            // Color warning messages.
-            RichExtColor.HighlightText(outputRBT, "warning", Color.Orange);
-            outputRBT.SelectionStart = outputRBT.Text.Length;
-            outputRBT.ScrollToCaret();
+            if (outputRBT.Text.Contains("warning"))
+            {
+                // Color warning messages.
+                RichExtColor.HighlightText(outputRBT, "warning", Color.Orange);
+                outputRBT.SelectionStart = outputRBT.Text.Length;
+                outputRBT.ScrollToCaret();
+            }
+            else
+            {
+                // Color error messages.
+                RichExtColor.HighlightText(outputRBT, "error", Color.Red);
+                outputRBT.SelectionStart = outputRBT.Text.Length;
+                outputRBT.ScrollToCaret();
+            }
+        }
+
+        /// <summary>
+        /// Mark file for auto start event on Windows reboot.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void markStartFileChk_CheckedChanged(object sender, EventArgs e)
+        {
+            AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFileTemp, GlobalVariables.openedFilePath);
+            autoStartFile.SetFilePath(markStartFileChk);
+            if (GlobalVariables.OWinLoginState)
+                autoStartFile.SetRegistryRunApp();
         }
     }
 }

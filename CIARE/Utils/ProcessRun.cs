@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace CIARE.Utils
 {
@@ -22,7 +24,7 @@ namespace CIARE.Utils
         }
 
         /// <summary>
-        /// Run procces.
+        /// Run procces with console output redirect.
         /// </summary>
         /// <returns></returns>
         public string Run()
@@ -54,6 +56,21 @@ namespace CIARE.Utils
             process.BeginOutputReadLine();
             process.WaitForExit();
             return outData;
+        }
+
+        /// <summary>
+        /// Run process in visible mode without wait for exit.
+        /// </summary>
+        public void RunVisible()
+        {
+            if (string.IsNullOrEmpty(ProcessToRun) || string.IsNullOrEmpty(Arguments))
+                return;
+            ProcessStartInfo startInfo = new ProcessStartInfo(ProcessToRun);
+            startInfo.UseShellExecute = false;
+            startInfo.Arguments = Arguments;
+            Process process = new Process();
+            process.StartInfo = startInfo;
+            process.Start();
         }
     }
 }

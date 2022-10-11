@@ -78,6 +78,7 @@ namespace CIARE
             this.linesCountLbl = new System.Windows.Forms.Label();
             this.linesPositionLbl = new System.Windows.Forms.Label();
             this.imageList1 = new System.Windows.Forms.ImageList(this.components);
+            this.markStartFileChk = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -101,7 +102,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 111);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 104);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -113,7 +114,7 @@ namespace CIARE
             // runCodePb
             // 
             this.runCodePb.Image = global::CIARE.Properties.Resources.runButton21;
-            this.runCodePb.Location = new System.Drawing.Point(372, 5);
+            this.runCodePb.Location = new System.Drawing.Point(324, 5);
             this.runCodePb.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.runCodePb.Name = "runCodePb";
             this.runCodePb.Size = new System.Drawing.Size(33, 24);
@@ -416,7 +417,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 136);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 129);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -463,7 +464,7 @@ namespace CIARE
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.label2.Location = new System.Drawing.Point(350, 2);
+            this.label2.Location = new System.Drawing.Point(302, 2);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(13, 18);
@@ -474,7 +475,7 @@ namespace CIARE
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.label3.Location = new System.Drawing.Point(402, 2);
+            this.label3.Location = new System.Drawing.Point(354, 2);
             this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(13, 18);
@@ -560,12 +561,25 @@ namespace CIARE
             this.imageList1.Images.SetKeyName(49, "Icons.16x16.Reference.png");
             this.imageList1.Images.SetKeyName(50, "Icons.16x16.Struct.png");
             // 
+            // markStartFileChk
+            // 
+            this.markStartFileChk.AutoSize = true;
+            this.markStartFileChk.Location = new System.Drawing.Point(379, 4);
+            this.markStartFileChk.Name = "markStartFileChk";
+            this.markStartFileChk.Size = new System.Drawing.Size(147, 19);
+            this.markStartFileChk.TabIndex = 16;
+            this.markStartFileChk.Text = "Mark file for auto open";
+            this.markStartFileChk.UseVisualStyleBackColor = true;
+            this.markStartFileChk.Visible = false;
+            this.markStartFileChk.CheckedChanged += new System.EventHandler(this.markStartFileChk_CheckedChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
             this.ClientSize = new System.Drawing.Size(1410, 862);
+            this.Controls.Add(this.markStartFileChk);
             this.Controls.Add(this.linesPositionLbl);
             this.Controls.Add(this.linesCountLbl);
             this.Controls.Add(this.label3);
@@ -646,6 +660,7 @@ namespace CIARE
         internal System.Windows.Forms.ImageList imageList1;
         private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem optionsToolStripMenuItem;
+        public System.Windows.Forms.CheckBox markStartFileChk;
     }
 }
 
