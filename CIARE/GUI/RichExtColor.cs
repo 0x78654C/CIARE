@@ -40,7 +40,19 @@ namespace CIARE.GUI
         {
             logOutput.ForeColor = Color.Red;
             logOutput.Text = message;
-            logOutput.ForeColor = Color.White;
+        }
+
+        /// <summary>
+        /// Mark word with color in richtextbox and scroll to caret.
+        /// </summary>
+        /// <param name="richTextBox"></param>
+        /// <param name="word"></param>
+        /// <param name="color"></param>
+        public static void MarkWordRtb(RichTextBox richTextBox, string word, Color color)
+        {
+            RichExtColor.HighlightText(richTextBox, word, color);
+            richTextBox.SelectionStart = richTextBox.Text.Length;
+            richTextBox.ScrollToCaret();
         }
     }
 }
