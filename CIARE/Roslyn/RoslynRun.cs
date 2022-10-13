@@ -128,7 +128,7 @@ namespace CIARE.Roslyn
                     richTextBox.Text = "ERROR: There is no code in the editor to compile!";
                     return;
                 }
-                if (string.IsNullOrEmpty(Utils.GlobalVariables.binaryName))
+                if (string.IsNullOrEmpty(GlobalVariables.binaryName))
                     return;
 
                 if (string.IsNullOrEmpty(outPut))
@@ -186,7 +186,9 @@ namespace CIARE.Roslyn
                         projCompile.Build(richTextBox);
                         s_stopWatch.Stop();
                         s_timeSpan = s_stopWatch.Elapsed;
-                        richTextBox.Text += $"\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
+                        if (!GlobalVariables.compileTime)
+                            richTextBox.Text += $"\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
+                        GlobalVariables.compileTime = false;
                     }
                     s_stopWatch.Stop();
                     ms.Close();
