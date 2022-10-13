@@ -119,7 +119,7 @@ namespace CIARE
         private string ReadArgs(string[] args)
         {
             int count = 0;
-            string arg=string.Empty;
+            string arg = string.Empty;
             foreach (var a in args)
             {
                 count++;
@@ -576,20 +576,13 @@ namespace CIARE
         /// <param name="e"></param>
         private void outputRBT_TextChanged(object sender, EventArgs e)
         {
+            // Color warning messages.
             if (outputRBT.Text.Contains("warning"))
-            {
-                // Color warning messages.
-                RichExtColor.HighlightText(outputRBT, "warning", Color.Orange);
-                outputRBT.SelectionStart = outputRBT.Text.Length;
-                outputRBT.ScrollToCaret();
-            }
-            else
-            {
-                // Color error messages.
-                RichExtColor.HighlightText(outputRBT, "error", Color.Red);
-                outputRBT.SelectionStart = outputRBT.Text.Length;
-                outputRBT.ScrollToCaret();
-            }
+                RichExtColor.MarkWordRtb(outputRBT, "warning", Color.Orange);
+
+            // Color error messages.
+            if (outputRBT.Text.Contains("error"))
+                RichExtColor.MarkWordRtb(outputRBT, "error", Color.Red);
         }
 
         /// <summary>
