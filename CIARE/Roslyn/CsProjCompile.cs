@@ -1,5 +1,6 @@
 ﻿using CIARE.GUI;
 using CIARE.Utils;
+using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -63,36 +64,48 @@ namespace CIARE.Roslyn
         /// <param name="logOutput"></param>
         public void Build(RichTextBox logOutput)
         {
-            if (!Directory.Exists(BinaryPath))
-               RichExtColor.ErrorDisplay(logOutput, $"ERROR: Directory does not exist -> {BinaryPath}");
-
-            string exeName = FileName.Substring(0, FileName.Length - 4);
-            string projectDir = BinaryPath + exeName;
-            if (Directory.Exists(projectDir))
-                Directory.Delete(projectDir, true);
-
-            Directory.CreateDirectory(projectDir);
-            if (Library)
-                File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateDll);
-            else
-                File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateExe);
-            File.WriteAllText($"{projectDir}\\{exeName}.cs", Code);
-            string param = $"build {GlobalVariables.configParam} {GlobalVariables.platformParam}";
-            ProcessRun processRun = new ProcessRun("dotnet", param, projectDir);
-            string build = processRun.Run();
-            if (build.Contains("error"))
-                logOutput.Text = build;
-            else
+            try
             {
-                if (GlobalVariables.OWarnings)
-                    logOutput.Text = build;
+                if (!Directory.Exists(BinaryPath))
+                    RichExtColor.ErrorDisplay(logOutput, $"ERROR: Directory does not exist -> {BinaryPath}");
 
-                PathExe(projectDir, exeName);
-                if (!string.IsNullOrEmpty(_exeFilePath))
-                    logOutput.Text += $"Build succeeded.\n\n  {exeName} -> {_exeFilePath}";
+                string exeName = FileName.Substring(0, FileName.Length - 4);
+                string projectDir = BinaryPath + exeName;
+                if (!Directory.Exists(projectDir))
+                    Directory.CreateDirectory(projectDir);
+
+                if (Library)
+                    File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateDll);
+                else
+                    File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateExe);
+                File.WriteAllText($"{projectDir}\\{exeName}.cs", Code);
+                string param = $"build {GlobalVariables.configParam} {GlobalVariables.platformParam}";
+                ProcessRun processRun = new ProcessRun("dotnet", param, projectDir);
+                string build = processRun.Run();
+                if (build.Contains("error"))
+                    logOutput.Text = build;
+                else
+                {
+                    if (GlobalVariables.OWarnings)
+                        logOutput.Text = build;
+
+                    PathExe(projectDir, exeName);
+                    if (!string.IsNullOrEmpty(_exeFilePath))
+                        logOutput.Text += $"Build succeeded.\n\n  {exeName} -> {_exeFilePath}";
+                }
+                logOutput.SelectionStart = logOutput.Text.Length;
+                logOutput.ScrollToCaret();
             }
-            logOutput.SelectionStart = logOutput.Text.Length;
-            logOutput.ScrollToCaret();
+            catch(UnauthorizedAccessException uae)
+            {
+                RichExtColor.ErrorDisplay(logOutput, $"ERROR: {uae.Message}. Process may be running!");
+                GlobalVariables.compileTime = true;
+            }
+            catch (Exception e)
+            {
+                RichExtColor.ErrorDisplay(logOutput, $"ERROR: {e.Message}");
+                GlobalVariables.compileTime = true;
+            }
         }
 
         /// <summary>
