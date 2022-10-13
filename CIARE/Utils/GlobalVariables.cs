@@ -29,6 +29,7 @@ namespace CIARE.Utils
         public static bool OWarnings = false;
         public static bool OStartUp = false;
         public static bool OWinLoginState = false;
+        public static bool compileTime = false;
         public static string Framework = "net6.0-windows";
         public static bool noClear = false;
         public static string binaryName = string.Empty;
