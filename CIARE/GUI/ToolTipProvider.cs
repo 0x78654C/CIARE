@@ -47,13 +47,15 @@ namespace CIARE.GUI
                     expression.Region = new DomRegion(e.LogicalPosition.Line + 1, e.LogicalPosition.Column + 1);
                 }
 
-                TextEditor.TextArea textArea = editor.ActiveTextAreaControl.TextArea;
-                NRefactoryResolver resolver = new NRefactoryResolver(Form1.myProjectContent.Language);
-                ResolveResult rr = resolver.Resolve(expression,
-                                                    Form1.parseInformation,
-                                                    textArea.MotherTextEditorControl.Text);
+                // TODO: future investigation needed here.
                 try
                 {
+                    TextEditor.TextArea textArea = editor.ActiveTextAreaControl.TextArea;
+                    NRefactoryResolver resolver = new NRefactoryResolver(Form1.myProjectContent.Language);
+                    ResolveResult rr = resolver.Resolve(expression,
+                                                        Form1.parseInformation,
+                                                        textArea.MotherTextEditorControl.Text);
+
                     string toolTipText = GetText(rr);
                     if (toolTipText != null)
                     {
