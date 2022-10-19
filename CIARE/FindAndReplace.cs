@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 using System.Text.RegularExpressions;
 using ICSharpCode.TextEditor.Document;
+using System.Web;
 
 namespace CIARE
 {
@@ -35,16 +36,37 @@ namespace CIARE
             }
             else
                 findNReplaceTab.SelectTab(1);
-            
+
             if (GlobalVariables.darkColor)
                 DarkMode.FinAndReplaceDarkMode(this, singleReplaceBtn, multiReplaceBtn, findTxt, repalceWithTxt, groupBox1,
                     ignoreCaseCheckBox, findNReplaceTab.TabPages[0], findNReplaceTab.TabPages[1], findBtn, findTxtBox);
+
+            LoadFindRepalceStoredData(GlobalVariables.findData, GlobalVariables.findWhat, GlobalVariables.repalceWith);
+        }
+
+        /// <summary>
+        /// Load last used data for find/find and replace option.
+        /// </summary>
+        /// <param name="findData"></param>
+        /// <param name="findWhat"></param>
+        /// <param name="replaceWith"></param>
+        private void LoadFindRepalceStoredData(string findData, string findWhat, string replaceWith)
+        {
+            if (!string.IsNullOrEmpty(findData))
+                findTxtBox.Text = findData;
+
+            if (!string.IsNullOrEmpty(findWhat))
+                findTxt.Text = findWhat;
+
+            if (!string.IsNullOrEmpty(replaceWith))
+                repalceWithTxt.Text = replaceWith;
         }
 
         private void singleReplaceBtn_Click(object sender, EventArgs e)
         {
             if (Form1.Instance != null)
                 ReplaceSingle(Form1.Instance.textEditorControl1, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
+            StoreReplaceData(findTxt.Text, repalceWithTxt.Text);
         }
 
 
@@ -52,6 +74,19 @@ namespace CIARE
         {
             if (Form1.Instance != null)
                 Form1.Instance.textEditorControl1.Text = ReplaceAll(Form1.Instance.textEditorControl1.Text, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
+            StoreReplaceData(findTxt.Text, repalceWithTxt.Text);
+        }
+
+
+        /// <summary>
+        /// Set last used params for replace data.
+        /// </summary>
+        /// <param name="findWhat"></param>
+        /// <param name="repalceWith"></param>
+        private void StoreReplaceData(string findWhat, string repalceWith)
+        {
+            GlobalVariables.findWhat = findWhat;
+            GlobalVariables.repalceWith = repalceWith;
         }
 
         /// <summary>
@@ -176,7 +211,7 @@ MessageBoxIcon.Information);
 MessageBoxIcon.Warning);
                     return;
                 }
-                
+
                 if (!editor.Text.ToLower().Contains(text.ToLower()))
                 {
                     MessageBox.Show($"Cannot find: {text}", "CIARE", MessageBoxButtons.OK,
@@ -186,8 +221,8 @@ MessageBoxIcon.Warning);
 
                 int pos = _startPos;
                 int leng = editor.Text.Length;
-                string searchText=string.Empty;
-                int offset=0;
+                string searchText = string.Empty;
+                int offset = 0;
                 if (!_ignoreCaseF)
                 {
                     searchText = editor.Text.Substring(pos);
@@ -250,6 +285,7 @@ MessageBoxIcon.Warning);
         private void findBtn_Click(object sender, EventArgs e)
         {
             Find(Form1.Instance.textEditorControl1, findTxtBox.Text);
+            GlobalVariables.findData = findTxtBox.Text;
         }
 
         /// <summary>
