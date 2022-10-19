@@ -14,7 +14,11 @@ namespace CIARE.Utils
         public static string openedFilePath = string.Empty;
         public static string openedFileName = string.Empty;
         public static string commandLineArguments = string.Empty;
+        public static string findData = string.Empty;
+        public static string findWhat = string.Empty;
+        public static string repalceWith = string.Empty;
         public static bool savedFile = false;
+        public static bool splitWindowPosition = false;
         public static bool exeName = false;
         public static bool checkFormOpen = false;
         public static bool outPutDisplay = false;
