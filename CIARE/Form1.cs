@@ -597,5 +597,15 @@ namespace CIARE
             if (GlobalVariables.OWinLoginState)
                 autoStartFile.SetRegistryRunApp();
         }
+
+        /// <summary>
+        /// Set realtime spliter position controler event to middle on texteditor resize.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void textEditorControl1_Resize(object sender, EventArgs e)
+        {
+            SplitEditorWindow.SetSplitWindowSize(textEditorControl1, GlobalVariables.splitWindowPosition);
+        }
     }
 }

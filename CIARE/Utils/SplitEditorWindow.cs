@@ -16,6 +16,19 @@ namespace CIARE.Utils
             TextEditorControl editor = textEditor;
             if (editor != null)
                 editor.Split(horizontal);
+
+            GlobalVariables.splitWindowPosition = horizontal;
+        }
+        /// <summary>
+        /// Check and set realtime spliter position to middle on texteditor resize.
+        /// </summary>
+        /// <param name="textEditor"></param>
+        /// <param name="horizontal"></param>
+        public static void  SetSplitWindowSize(TextEditorControl textEditor, bool horizontal)
+        {
+            TextEditorControl editor = textEditor;
+            if (editor != null)
+                editor.SplitPosition(horizontal);
         }
     }
 }
