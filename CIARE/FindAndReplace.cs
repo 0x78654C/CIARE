@@ -5,7 +5,6 @@ using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 using System.Text.RegularExpressions;
 using ICSharpCode.TextEditor.Document;
-using System.Web;
 
 namespace CIARE
 {
@@ -115,7 +114,14 @@ namespace CIARE
                     return editor.Text;
                 }
 
-                if (!editor.Text.ToLower().Contains(findWhat.ToLower()))
+                if (!editor.Text.ToLower().Contains(findWhat.ToLower()) && ignoreCase)
+                {
+                    MessageBox.Show($"Cannot find: {findWhat}", "CIARE", MessageBoxButtons.OK,
+   MessageBoxIcon.Information);
+                    return editor.Text;
+                }
+
+                if (!editor.Text.Contains(findWhat) && !ignoreCase)
                 {
                     MessageBox.Show($"Cannot find: {findWhat}", "CIARE", MessageBoxButtons.OK,
    MessageBoxIcon.Information);
@@ -149,9 +155,9 @@ namespace CIARE
                 editor.ActiveTextAreaControl.TextArea.SelectionManager.SetSelection(selection);
                 string selectedText;
                 if (ignoreCase)
-                    selectedText = Regex.Replace(selection.SelectedText.ToLower(), findWhat.ToLower(), replaceWith, RegexOptions.IgnoreCase);
+                    selectedText = selection.SelectedText.ToLower().Replace(findWhat.ToLower(), replaceWith);
                 else
-                    selectedText = Regex.Replace(selection.SelectedText, findWhat, replaceWith, RegexOptions.None);
+                    selectedText = selection.SelectedText.Replace(findWhat, replaceWith);
                 editor.ActiveTextAreaControl.TextArea.InsertString(selectedText);
             }
             catch
@@ -184,16 +190,28 @@ namespace CIARE
 MessageBoxIcon.Warning);
                 return data;
             }
-            if (!data.ToLower().Contains(findWhat.ToLower()))
+
+
+            if (!data.ToLower().Contains(findWhat.ToLower()) && ignoreCase)
             {
                 MessageBox.Show($"Cannot find: {findWhat}", "CIARE", MessageBoxButtons.OK,
 MessageBoxIcon.Information);
                 return data;
             }
+
+
+            if (!data.Contains(findWhat) && !ignoreCase)
+            {
+                MessageBox.Show($"Cannot find: {findWhat}", "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Information);
+                return data;
+            }
+
+
             if (ignoreCase)
-                return Regex.Replace(data, findWhat, replaceWith, RegexOptions.IgnoreCase);
+                return data.Replace(findWhat, replaceWith, true, null);
             else
-                return Regex.Replace(data, findWhat, replaceWith, RegexOptions.None);
+                return data.Replace(findWhat, replaceWith);
         }
 
         /// <summary>
