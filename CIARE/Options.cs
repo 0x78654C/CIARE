@@ -35,13 +35,15 @@ namespace CIARE
         {
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, Form1.Instance.textEditorControl1, highlightCMB);
             if (GlobalVariables.darkColor)
-                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb);
+                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb,
+                    apiUrlLbl,apiUrlTxt,saveApiUrlBtn, liveShareGb);
             codeCompletionCkb.Checked = GlobalVariables.OCodeCompletion;
             lineNumberCkb.Checked = GlobalVariables.OLineNumber;
             codeFoldingCkb.Checked = GlobalVariables.OFoldingCode;
             warningsCkb.Checked = GlobalVariables.OWarnings;
             startBehaveCkb.Checked = GlobalVariables.OStartUp;
             winLoginCkb.Checked = GlobalVariables.OWinLoginState;
+            apiUrlTxt.Text = GlobalVariables.OLiveShare;
             CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
@@ -52,9 +54,11 @@ namespace CIARE
         {
             Form1.Instance.SetHighLighter(highlightCMB.Text);
             if (GlobalVariables.darkColor)
-                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb);
+                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb,
+                    apiUrlLbl, apiUrlTxt, saveApiUrlBtn, liveShareGb);
             else
-                LightMode.OptionsLightMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb);
+                LightMode.OptionsLightMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb,
+                    apiUrlLbl, apiUrlTxt, saveApiUrlBtn, liveShareGb);
         }
 
         private void codeCompletionCkb_CheckedChanged(object sender, EventArgs e)
@@ -144,6 +148,30 @@ namespace CIARE
         private void frameWorkCMB_SelectedIndexChanged(object sender, EventArgs e)
         {
             TargetFramework.SetFramework(frameWorkCMB, GlobalVariables.OFramework);
+        }
+
+        /// <summary>
+        /// Store API url for live share.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void saveApiUrlBtn_Click(object sender, EventArgs e)
+        {
+            LiveShare.SetApiLiveShare(apiUrlTxt, GlobalVariables.liveShare);
+            MessageBox.Show("API url was saved!");
+        }
+
+        /// <summary>
+        /// Enable save button if apiUrlTxt is not empty.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void apiUrlTxt_TextChanged(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(apiUrlTxt.Text))
+                saveApiUrlBtn.Enabled = true;
+            else
+                saveApiUrlBtn.Enabled = false;
         }
     }
 }
