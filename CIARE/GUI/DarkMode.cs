@@ -124,7 +124,8 @@ namespace CIARE.GUI
         }
 
         public static void OptionsDarkMode(Form form, Button cancelBtn, Label highlightLbl, ComboBox highLightName,
-            CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayBox, GroupBox buildBox, Label displaySetting ,Label behaveSetting, CheckBox startFile)
+            CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayBox, GroupBox buildBox, Label displaySetting ,Label behaveSetting, CheckBox startFile,
+            Label apiLabel, TextBox apiUrlTxt, Button saveApiBtn, GroupBox liveShare)
         {
             form.BackColor = Color.FromArgb(51, 51, 51);
             form.ForeColor = Color.FromArgb(192, 215, 207);
@@ -141,6 +142,12 @@ namespace CIARE.GUI
             displaySetting.ForeColor = Color.FromArgb(192, 215, 207);
             behaveSetting.ForeColor = Color.FromArgb(192, 215, 207);
             startFile.ForeColor = Color.FromArgb(192, 215, 207);
+            saveApiBtn.BackColor = Color.FromArgb(30, 30, 30);
+            saveApiBtn.ForeColor = Color.FromArgb(192, 215, 207);
+            apiUrlTxt.ForeColor = Color.FromArgb(192, 215, 207);
+            apiUrlTxt.BackColor = Color.FromArgb(30, 30, 30);
+            apiLabel.ForeColor = Color.FromArgb(192, 215, 207);
+            liveShare.ForeColor = Color.FromArgb(192, 215, 207);
         }
     }
 }
