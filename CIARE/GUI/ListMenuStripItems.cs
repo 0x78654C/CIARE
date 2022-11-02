@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Runtime.Versioning;
 
 namespace CIARE.GUI
 {
+    [SupportedOSPlatform("windows")]
     public class ListMenuStripItems
     {
         /// <summary>
@@ -41,6 +43,7 @@ namespace CIARE.GUI
             listToosStripM.Add(Form1.Instance.fIleToolStripMenuItem);
             listToosStripM.Add(Form1.Instance.finStripMenuItem);
             listToosStripM.Add(Form1.Instance.optionsToolStripMenuItem);
+            listToosStripM.Add(Form1.Instance.liveShareToolStripMenuItem);
             return listToosStripM;
         }
 
