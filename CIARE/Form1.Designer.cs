@@ -70,6 +70,8 @@ namespace CIARE
             this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.liveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.liveShareToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
@@ -102,7 +104,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 102);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 100);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -114,7 +116,7 @@ namespace CIARE
             // runCodePb
             // 
             this.runCodePb.Image = global::CIARE.Properties.Resources.runButton21;
-            this.runCodePb.Location = new System.Drawing.Point(324, 4);
+            this.runCodePb.Location = new System.Drawing.Point(365, 4);
             this.runCodePb.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.runCodePb.Name = "runCodePb";
             this.runCodePb.Size = new System.Drawing.Size(33, 24);
@@ -132,6 +134,7 @@ namespace CIARE
             this.compileToolStripMenuItem,
             this.viewToolStripMenuItem,
             this.settingsToolStripMenuItem,
+            this.liveToolStripMenuItem,
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
@@ -406,6 +409,20 @@ namespace CIARE
             this.aboutToolStripMenuItem.Text = "About";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
+            // liveToolStripMenuItem
+            // 
+            this.liveToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.liveShareToolStripMenuItem});
+            this.liveToolStripMenuItem.Name = "liveToolStripMenuItem";
+            this.liveToolStripMenuItem.Size = new System.Drawing.Size(40, 20);
+            this.liveToolStripMenuItem.Text = "Live";
+            // 
+            // liveShareToolStripMenuItem
+            // 
+            this.liveShareToolStripMenuItem.Name = "liveShareToolStripMenuItem";
+            this.liveShareToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.liveShareToolStripMenuItem.Text = "Live Share";
+            // 
             // groupBox1
             // 
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -417,7 +434,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 127);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 125);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -451,7 +468,7 @@ namespace CIARE
             this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.textEditorControl1.Highlighting = null;
-            this.textEditorControl1.Location = new System.Drawing.Point(4, 3);
+            this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
             this.textEditorControl1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.textEditorControl1.Name = "textEditorControl1";
             this.textEditorControl1.Size = new System.Drawing.Size(1402, 681);
@@ -465,7 +482,7 @@ namespace CIARE
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.label2.Location = new System.Drawing.Point(302, 2);
+            this.label2.Location = new System.Drawing.Point(343, 2);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(13, 18);
@@ -476,7 +493,7 @@ namespace CIARE
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.label3.Location = new System.Drawing.Point(354, 2);
+            this.label3.Location = new System.Drawing.Point(395, 2);
             this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(13, 18);
@@ -565,7 +582,7 @@ namespace CIARE
             // markStartFileChk
             // 
             this.markStartFileChk.AutoSize = true;
-            this.markStartFileChk.Location = new System.Drawing.Point(379, 4);
+            this.markStartFileChk.Location = new System.Drawing.Point(420, 4);
             this.markStartFileChk.Name = "markStartFileChk";
             this.markStartFileChk.Size = new System.Drawing.Size(147, 19);
             this.markStartFileChk.TabIndex = 16;
@@ -662,6 +679,8 @@ namespace CIARE
         private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem optionsToolStripMenuItem;
         public System.Windows.Forms.CheckBox markStartFileChk;
+        private System.Windows.Forms.ToolStripMenuItem liveToolStripMenuItem;
+        public System.Windows.Forms.ToolStripMenuItem liveShareToolStripMenuItem;
     }
 }
 
