@@ -30,6 +30,7 @@ namespace CIARE.Utils
         public static bool OCodeCompletion = true;
         public static bool OLineNumber = true;
         public static bool OFoldingCode = true;
+        public static string OLiveShare;
         public static bool OWarnings = false;
         public static bool OStartUp = false;
         public static bool OWinLoginState = false;
@@ -44,6 +45,7 @@ namespace CIARE.Utils
         public static readonly string foldingCodeKey = "OFoldingCode";
         public static readonly string lineNumberKey = "OLineNumber";
         public static readonly string warnings = "OWarnings";
+        public static readonly string liveShare = "OLiveShare";
         public static readonly string startUp = "OStartUp";
         public static readonly string OWinLogin = "OWinLogin";
         public static readonly string activeForm = "activeForm";
