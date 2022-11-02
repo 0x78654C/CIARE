@@ -54,7 +54,7 @@ namespace CIARE
             textEditorControl1.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             versionName = versionName.Substring(0, versionName.Length - 2);
-            this.Text = $"CIARE {versionName}";
+            this.Text = $"CIARE {versionName} - beta 1";
             InitializeEditor.ReadEditorWindowSize(this, GlobalVariables.registryPath);
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
@@ -69,6 +69,7 @@ namespace CIARE
             BuildConfig.CheckConfig(GlobalVariables.registryPath);
             BuildConfig.CheckPlatform(GlobalVariables.registryPath);
             TargetFramework.CheckFramework(GlobalVariables.registryPath);
+            LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
 
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
