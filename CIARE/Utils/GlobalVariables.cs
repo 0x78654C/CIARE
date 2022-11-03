@@ -17,6 +17,7 @@ namespace CIARE.Utils
         public static string findData = string.Empty;
         public static string findWhat = string.Empty;
         public static string repalceWith = string.Empty;
+        public static string sessionId = string.Empty;
         public static bool savedFile = false;
         public static bool splitWindowPosition = false;
         public static bool exeName = false;
