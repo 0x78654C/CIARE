@@ -68,10 +68,10 @@ namespace CIARE
             this.showHideHSCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.liveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.liveShareToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
@@ -104,7 +104,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 100);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 97);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -390,9 +390,24 @@ namespace CIARE
             // optionsToolStripMenuItem
             // 
             this.optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
-            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.optionsToolStripMenuItem.Text = "Options";
             this.optionsToolStripMenuItem.Click += new System.EventHandler(this.optionsToolStripMenuItem_Click);
+            // 
+            // liveToolStripMenuItem
+            // 
+            this.liveToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.liveShareToolStripMenuItem});
+            this.liveToolStripMenuItem.Name = "liveToolStripMenuItem";
+            this.liveToolStripMenuItem.Size = new System.Drawing.Size(40, 20);
+            this.liveToolStripMenuItem.Text = "Live";
+            // 
+            // liveShareToolStripMenuItem
+            // 
+            this.liveShareToolStripMenuItem.Name = "liveShareToolStripMenuItem";
+            this.liveShareToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.liveShareToolStripMenuItem.Text = "Live Share Manage";
+            this.liveShareToolStripMenuItem.Click += new System.EventHandler(this.liveShareHostToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 
@@ -409,20 +424,6 @@ namespace CIARE
             this.aboutToolStripMenuItem.Text = "About";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
-            // liveToolStripMenuItem
-            // 
-            this.liveToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.liveShareToolStripMenuItem});
-            this.liveToolStripMenuItem.Name = "liveToolStripMenuItem";
-            this.liveToolStripMenuItem.Size = new System.Drawing.Size(40, 20);
-            this.liveToolStripMenuItem.Text = "Live";
-            // 
-            // liveShareToolStripMenuItem
-            // 
-            this.liveShareToolStripMenuItem.Name = "liveShareToolStripMenuItem";
-            this.liveShareToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.liveShareToolStripMenuItem.Text = "Live Share";
-            // 
             // groupBox1
             // 
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -434,7 +435,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 125);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 122);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
