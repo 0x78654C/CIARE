@@ -14,6 +14,7 @@ using System.Drawing;
 using CIARE.Utils.FilesOpenOS;
 using System.Runtime.Versioning;
 using System.Diagnostics;
+using Microsoft.AspNetCore.SignalR.Client;
 using System.Linq;
 
 namespace CIARE
@@ -21,6 +22,7 @@ namespace CIARE
     [SupportedOSPlatform("windows")]
     public partial class Form1 : Form
     {
+        internal HubConnection hubConnection;
         public string versionName;
         public long openedFileLength = 0;
         public bool visibleSplitContainer = false;
@@ -60,6 +62,7 @@ namespace CIARE
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
             InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
+            InitializeEditor.GenerateLiveSessionId();
             Console.SetOut(new ControlWriter(outputRBT));
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
@@ -607,6 +610,17 @@ namespace CIARE
         private void textEditorControl1_Resize(object sender, EventArgs e)
         {
             SplitEditorWindow.SetSplitWindowSize(textEditorControl1, GlobalVariables.splitWindowPosition);
+        }
+
+        /// <summary>
+        /// Start live share host
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void liveShareHostToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            LiveShareHost liveShareHost = new LiveShareHost();
+            liveShareHost.Show();
         }
     }
 }
