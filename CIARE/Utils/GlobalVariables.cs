@@ -32,6 +32,7 @@ namespace CIARE.Utils
         public static bool OLineNumber = true;
         public static bool OFoldingCode = true;
         public static string apiUrl;
+        public static string codeReceived;
         public static bool OWarnings = false;
         public static bool OStartUp = false;
         public static bool OWinLoginState = false;
