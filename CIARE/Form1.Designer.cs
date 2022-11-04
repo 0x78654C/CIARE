@@ -81,6 +81,8 @@ namespace CIARE
             this.linesPositionLbl = new System.Windows.Forms.Label();
             this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.markStartFileChk = new System.Windows.Forms.CheckBox();
+            this.updateLiveCode = new System.Windows.Forms.Timer(this.components);
+            this.writer = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -104,7 +106,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 97);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 93);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -390,7 +392,7 @@ namespace CIARE
             // optionsToolStripMenuItem
             // 
             this.optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
-            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
             this.optionsToolStripMenuItem.Text = "Options";
             this.optionsToolStripMenuItem.Click += new System.EventHandler(this.optionsToolStripMenuItem_Click);
             // 
@@ -405,7 +407,7 @@ namespace CIARE
             // liveShareToolStripMenuItem
             // 
             this.liveShareToolStripMenuItem.Name = "liveShareToolStripMenuItem";
-            this.liveShareToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.liveShareToolStripMenuItem.Size = new System.Drawing.Size(173, 22);
             this.liveShareToolStripMenuItem.Text = "Live Share Manage";
             this.liveShareToolStripMenuItem.Click += new System.EventHandler(this.liveShareHostToolStripMenuItem_Click);
             // 
@@ -435,7 +437,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 122);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 118);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -592,6 +594,15 @@ namespace CIARE
             this.markStartFileChk.Visible = false;
             this.markStartFileChk.CheckedChanged += new System.EventHandler(this.markStartFileChk_CheckedChanged);
             // 
+            // updateLiveCode
+            // 
+            this.updateLiveCode.Tick += new System.EventHandler(this.updateLiveCode_Tick);
+            // 
+            // writer
+            // 
+            this.writer.Interval = 500;
+            this.writer.Tick += new System.EventHandler(this.writer_Tick);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -634,7 +645,7 @@ namespace CIARE
 
         public ICSharpCode.TextEditor.TextEditorControl textEditorControl1;
         private System.Windows.Forms.PictureBox runCodePb;
-        private System.Windows.Forms.RichTextBox outputRBT;
+        public System.Windows.Forms.RichTextBox outputRBT; // TODO: restore to private after tests.
         private System.Windows.Forms.ToolTip toolTip1;
         public System.Windows.Forms.ToolStripMenuItem fIleToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
@@ -682,6 +693,8 @@ namespace CIARE
         public System.Windows.Forms.CheckBox markStartFileChk;
         private System.Windows.Forms.ToolStripMenuItem liveToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem liveShareToolStripMenuItem;
+        public System.Windows.Forms.Timer updateLiveCode;
+        public System.Windows.Forms.Timer writer;
     }
 }
 
