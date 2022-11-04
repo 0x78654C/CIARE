@@ -643,7 +643,7 @@ namespace CIARE
         private void updateLiveCode_Tick(object sender, EventArgs e)
         {
             var apiConnectionEvents = new ApiConnectionEvents(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, GlobalVariables.apiUrl);
-            apiConnectionEvents.SetLiveCode(textEditorControl1, GlobalVariables.codeWriter);
+            apiConnectionEvents.SetLiveCode(textEditorControl1, GlobalVariables.codeWriter,outputRBT);
         }
 
 
@@ -668,7 +668,7 @@ namespace CIARE
             GlobalVariables.codeWriter = false;
             await Task.Delay(10);
             var apiConnectionEvents = new ApiConnectionEvents(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, GlobalVariables.apiUrl);
-            await apiConnectionEvents.SendData(textEditorControl1, outputRBT);
+            await apiConnectionEvents.SendData(hubConnection,textEditorControl1, outputRBT);
         }
 
         /// <summary>
