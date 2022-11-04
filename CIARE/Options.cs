@@ -43,7 +43,7 @@ namespace CIARE
             warningsCkb.Checked = GlobalVariables.OWarnings;
             startBehaveCkb.Checked = GlobalVariables.OStartUp;
             winLoginCkb.Checked = GlobalVariables.OWinLoginState;
-            apiUrlTxt.Text = GlobalVariables.OLiveShare;
+            apiUrlTxt.Text = GlobalVariables.apiUrl;
             CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
