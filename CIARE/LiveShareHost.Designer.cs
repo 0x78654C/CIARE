@@ -145,12 +145,13 @@
             // connectHostBtn
             // 
             this.connectHostBtn.BackColor = System.Drawing.SystemColors.Window;
-            this.connectHostBtn.Location = new System.Drawing.Point(72, 160);
+            this.connectHostBtn.Location = new System.Drawing.Point(70, 160);
             this.connectHostBtn.Name = "connectHostBtn";
-            this.connectHostBtn.Size = new System.Drawing.Size(101, 28);
+            this.connectHostBtn.Size = new System.Drawing.Size(108, 28);
             this.connectHostBtn.TabIndex = 1;
-            this.connectHostBtn.Text = "Connect";
+            this.connectHostBtn.Text = "Remote Connect";
             this.connectHostBtn.UseVisualStyleBackColor = false;
+            this.connectHostBtn.Click += new System.EventHandler(this.connectHostBtn_Click);
             // 
             // remoteSessioniDtxt
             // 
@@ -158,10 +159,9 @@
             this.remoteSessioniDtxt.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.remoteSessioniDtxt.Location = new System.Drawing.Point(9, 59);
             this.remoteSessioniDtxt.Name = "remoteSessioniDtxt";
-            this.remoteSessioniDtxt.ReadOnly = true;
             this.remoteSessioniDtxt.Size = new System.Drawing.Size(236, 25);
             this.remoteSessioniDtxt.TabIndex = 2;
-            this.remoteSessioniDtxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.remoteSessioniDtxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // remoteSessionLbl
             // 
