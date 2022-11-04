@@ -31,14 +31,17 @@ namespace CIARE.Utils
         public static bool OCodeCompletion = true;
         public static bool OLineNumber = true;
         public static bool OFoldingCode = true;
-        public static string OLiveShare;
+        public static string apiUrl;
         public static bool OWarnings = false;
         public static bool OStartUp = false;
         public static bool OWinLoginState = false;
         public static bool compileTime = false;
+        public static bool apiConnected = false;
+        public static bool codeWriter = false;
         public static string Framework = "net6.0-windows";
         public static bool noClear = false;
         public static string binaryName = string.Empty;
+        public static string livePassword = string.Empty;
         public static string binaryNameStore = string.Empty;
         public static readonly string registryPath = "SOFTWARE\\CIARE";
         public static readonly string regUserRunPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
