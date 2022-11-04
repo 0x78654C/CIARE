@@ -16,13 +16,17 @@ using System.Runtime.Versioning;
 using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Linq;
+using CIARE.LiveShareManage;
+using System.Threading.Tasks;
+using static Humanizer.On;
+using Timer = System.Windows.Forms.Timer;
 
 namespace CIARE
 {
     [SupportedOSPlatform("windows")]
     public partial class Form1 : Form
     {
-        internal HubConnection hubConnection;
+        public HubConnection hubConnection;
         public string versionName;
         public long openedFileLength = 0;
         public bool visibleSplitContainer = false;
@@ -73,6 +77,7 @@ namespace CIARE
             BuildConfig.CheckPlatform(GlobalVariables.registryPath);
             TargetFramework.CheckFramework(GlobalVariables.registryPath);
             LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
+            ApiConnection(updateLiveCode, writer, GlobalVariables.apiConnected, GlobalVariables.apiUrl);
 
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
@@ -211,6 +216,9 @@ namespace CIARE
             LinesManage.GetTotalLinesCount(textEditorControl1, linesCountLbl);
             textEditorControl1.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
             textEditorControl1.Document.FoldingManager.UpdateFoldings(null, null);
+
+            // Send live share data to api.
+            SendData();
         }
 
         /// <summary>
@@ -372,7 +380,7 @@ namespace CIARE
 
 
 
-            //Delete temp mark file.
+            // Delete temp mark file.
             if (GetCiareProcesses() == 1)
             {
                 AutoStartFile autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, "");
@@ -381,6 +389,10 @@ namespace CIARE
 
             CrashCheck crashCheck = new CrashCheck(GlobalVariables.registryPath, GlobalVariables.activeForm);
             crashCheck.SetClosedFormState();
+
+            // Stop Live share if connected.
+            var apiConnectionEvents = new ApiConnectionEvents(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, GlobalVariables.apiUrl);
+            Task.Run(() => apiConnectionEvents.CloseConnection());
         }
 
         /// <summary>
@@ -621,6 +633,93 @@ namespace CIARE
         {
             LiveShareHost liveShareHost = new LiveShareHost();
             liveShareHost.Show();
+        }
+
+        /// <summary>
+        /// Update live code on text editor timer.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void updateLiveCode_Tick(object sender, EventArgs e)
+        {
+            var apiConnectionEvents = new ApiConnectionEvents(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, GlobalVariables.apiUrl);
+            apiConnectionEvents.SetLiveCode(textEditorControl1, GlobalVariables.codeWriter);
+        }
+
+
+        /// <summary>
+        /// Set writer falg timer.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void writer_Tick(object sender, EventArgs e)
+        {
+            GlobalVariables.codeWriter = true;
+        }
+
+        /// <summary>
+        /// Send data to remote client.
+        /// </summary>
+        private async void SendData()
+        {
+            if (GlobalVariables.apiConnected)
+                return;
+
+            GlobalVariables.codeWriter = false;
+            await Task.Delay(10);
+            var apiConnectionEvents = new ApiConnectionEvents(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, GlobalVariables.apiUrl);
+            await apiConnectionEvents.SendData(textEditorControl1, outputRBT);
+        }
+
+        /// <summary>
+        /// Build connection events to API.
+        /// </summary>
+        /// <param name="updateCode"></param>
+        /// <param name="writer"></param>
+        /// <param name="connected"></param>
+        public void ApiConnection(Timer updateCode, Timer writer, bool connected, string apiUrl)
+        {
+            if (string.IsNullOrEmpty(apiUrl))
+                return;
+
+            // Hub connection builder event.
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(apiUrl)
+                .WithAutomaticReconnect()
+                .Build();
+
+            // Reconnecting event.
+            hubConnection.Reconnecting += (sender) =>
+            {
+                updateCode.Stop();
+                updateCode.Enabled = false;
+                writer.Stop();
+                writer.Enabled = false;
+                connected = false;
+                return Task.CompletedTask;
+            };
+
+            // Reconnected event.
+            hubConnection.Reconnected += (sender) =>
+            {
+                connected = true;
+                updateCode.Enabled = true;
+                updateCode.Start();
+                writer.Enabled = true;
+                writer.Start();
+                return Task.CompletedTask;
+            };
+
+            // Reconnected event.
+            hubConnection.Closed += (sender) =>
+            {
+                updateCode.Stop();
+                updateCode.Enabled = false;
+                writer.Stop();
+                writer.Enabled = false;
+                connected = false;
+                return Task.CompletedTask;
+            };
         }
     }
 }
