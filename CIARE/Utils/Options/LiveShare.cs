@@ -15,7 +15,7 @@ namespace CIARE.Utils.Options
         {
             string regLiveShare = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.liveShare);
             if (regLiveShare.Length > 0)
-                GlobalVariables.OLiveShare = regLiveShare;
+                GlobalVariables.apiUrl = regLiveShare;
         }
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace CIARE.Utils.Options
         public static void SetApiLiveShare(TextBox liveShareApi, string regKeyName)
         {
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, liveShareApi.Text);
-            GlobalVariables.OLiveShare = liveShareApi.Text;
+            GlobalVariables.apiUrl = liveShareApi.Text;
         }
     }
 }
