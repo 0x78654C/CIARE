@@ -43,10 +43,7 @@ namespace CIARE.Utils.Encryption
                 };
                 return Convert.ToBase64String(encoding.GetBytes(JsonSerializer.Serialize(keyValues)));
             }
-            catch (Exception e)
-            {
-                return "Error encrypting: " + e.ToString();
-            }
+            catch { return string.Empty; }
         }
 
         /// <summary>
@@ -75,10 +72,7 @@ namespace CIARE.Utils.Encryption
                 byte[] buffer = Convert.FromBase64String(payload["value"]);
                 return encoding.GetString(AESDecrypt.TransformFinalBlock(buffer, 0, buffer.Length));
             }
-            catch (Exception e)
-            {
-                return "Error decrypting: " + e.ToString();
-            }
+            catch { return string.Empty; }
         }
 
         private static byte[] CreateKey(string password, int keyBytes = 32)
