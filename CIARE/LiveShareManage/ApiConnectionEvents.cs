@@ -11,19 +11,18 @@ namespace CIARE.LiveShareManage
     public class ApiConnectionEvents
     {
 
-        
-
         /// <summary>
         /// Connect to remote session.
         /// </summary>
-        public static async Task Connect(HubConnection hubConnection,RichTextBox output,Button connectBtn, Button liveShareBtn,
-           string password,string sessionId, TextEditorControl textEditorControl)
+        public static async Task Connect(HubConnection hubConnection, Button connectBtn, Button liveShareBtn,
+           string password, string sessionId, TextEditorControl textEditorControl, PictureBox pictureBox)
         {
-            if (GlobalVariables.apiConnected)
+            if (GlobalVariables.apiRemoteConnected)
             {
                 if (hubConnection != null)
                     await hubConnection.StopAsync();
-                GlobalVariables.apiConnected = false;
+                GlobalVariables.connected = false;
+                GlobalVariables.apiRemoteConnected = false;
                 connectBtn.Text = "Remote Connect";
                 MessageBox.Show("Connected Stoped", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 liveShareBtn.Enabled = true;
@@ -43,24 +42,23 @@ namespace CIARE.LiveShareManage
                     return;
                 }
 
-                hubConnection.On<string>("GetSend", (code) =>
+                hubConnection.On<string, int>("GetSend", (code, lineNumber) =>
                 {
-                    SetLiveCode(textEditorControl,code, password, output);
+                    SetLiveCode(textEditorControl, code, password, lineNumber);
                 });
 
                 try
                 {
                     await hubConnection.StartAsync();
-                    await hubConnection.InvokeAsync("GetSendCode", sessionId, string.Empty);
-                    GlobalVariables.apiConnected = true;
+                    await hubConnection.InvokeAsync("GetSendCode", sessionId, string.Empty, 0);
+                    pictureBox.Image = Properties.Resources.red_dot;
+                    GlobalVariables.apiRemoteConnected = true;
+                    GlobalVariables.connected = true;
                     connectBtn.Text = "Stop Connection";
                     MessageBox.Show("Connected to remote session!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     liveShareBtn.Enabled = false;
                 }
-                catch (Exception ex)
-                {
-                    output.Text = ex.ToString(); // TODO: remove after tests.
-                }
+                catch { }
             }
         }
 
@@ -69,20 +67,19 @@ namespace CIARE.LiveShareManage
         /// </summary>
         /// <param name="textEditorControl"></param>
         /// <param name="output"></param>
-        public async Task SendData(HubConnection hubConnection,string password,string sessionId,TextEditorControl textEditorControl, RichTextBox output)
+        public async Task SendData(HubConnection hubConnection, string password, string sessionId, TextEditorControl textEditorControl)
         {
             try
             {
                 if (!GlobalVariables.codeWriter)
                 {
+                    int lineNumber = 0;
+                    lineNumber = GoToLineNumber.GetLineNumber(textEditorControl);
                     var encyrpted = AESEncryption.Encrypt(textEditorControl.Text, password);
-                    await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted);
+                    await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted, lineNumber + 20);
                 }
             }
-            catch (Exception ex)
-            {
-                output.Text = ex.ToString(); // TODO: remove after tests.
-            }
+            catch { }
         }
 
         /// <summary>
@@ -104,8 +101,8 @@ namespace CIARE.LiveShareManage
         /// <param name="connectBtn"></param>
         /// <param name="output"></param>
         /// <returns></returns>
-        public static async Task StartShare(HubConnection hubConnection,string password, string sessionId, Button startShareBtn, 
-            Button connectBtn, RichTextBox output, TextEditorControl textEditorControl)
+        public static async Task StartShare(HubConnection hubConnection, string password, string sessionId, Button startShareBtn,
+            Button connectBtn, TextEditorControl textEditorControl, PictureBox pictureBox)
         {
             if (GlobalVariables.apiConnected)
             {
@@ -114,8 +111,9 @@ namespace CIARE.LiveShareManage
                     await hubConnection.StopAsync();
 
                 connectBtn.Enabled = true;
-
+                GlobalVariables.livePassword = string.Empty;
                 GlobalVariables.apiConnected = false;
+                GlobalVariables.connected = false;
                 MessageBox.Show("Live Share stopped!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
@@ -127,23 +125,22 @@ namespace CIARE.LiveShareManage
                     return;
                 }
 
-                hubConnection.On<string>("GetSend", (code) =>
+                hubConnection.On<string, int>("GetSend", (code, lineNumber) =>
                 {
-                    SetLiveCode(textEditorControl,code, password, output);
+                    SetLiveCode(textEditorControl, code, password, lineNumber);
                 });
 
                 try
                 {
                     await hubConnection.StartAsync();
-                    await hubConnection.InvokeAsync("GetSendCode", sessionId, string.Empty);
+                    await hubConnection.InvokeAsync("GetSendCode", sessionId, string.Empty, 0);
+                    pictureBox.Image = Properties.Resources.red_dot;
                     GlobalVariables.apiConnected = true;
+                    GlobalVariables.connected = true;
                     connectBtn.Enabled = false;
                     MessageBox.Show("Live Share started!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
-                catch (Exception ex)
-                {   
-                    output.Text = ex.ToString();
-                }
+                catch { }
             }
         }
 
@@ -152,21 +149,22 @@ namespace CIARE.LiveShareManage
         /// </summary>
         /// <param name="textEditorControl"></param>
         /// <param name="writer"></param>
-        public static void SetLiveCode(TextEditorControl textEditorControl, string code, string password, RichTextBox output)
+        public static void SetLiveCode(TextEditorControl textEditorControl, string code, string password, int lineNumber)
         {
             try
             {
                 if (!string.IsNullOrEmpty(code))
                 {
                     var decrypt = AESEncryption.Decrypt(code, password);
-                    textEditorControl.Text = decrypt;
+                    if (!string.IsNullOrEmpty(decrypt))
+                    {
+                        textEditorControl.Text = decrypt;
+                        GoToLineNumber.GoToLine(textEditorControl, lineNumber);
+                    }
                 }
                 GlobalVariables.codeWriter = true;
             }
-            catch ( Exception ex)
-            {
-                output.Text = ex.ToString();
-            }
+            catch { }
         }
     }
 }
