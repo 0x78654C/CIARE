@@ -84,7 +84,7 @@ namespace CIARE.Utils.Encryption
         private static byte[] CreateKey(string password, int keyBytes = 32)
         {
             const int Iterations = 300;
-            var keyGenerator = new Rfc2898DeriveBytes(password.Substring(2, 10), Salt, Iterations);
+            var keyGenerator = new Rfc2898DeriveBytes(password, Salt, Iterations);
             return keyGenerator.GetBytes(keyBytes);
         }
 
