@@ -51,8 +51,9 @@ namespace CIARE
         private async void startLiveBtn_Click(object sender, EventArgs e)
         {
             GlobalVariables.livePassword = passwordTxt.Text;
-            var apiConnectionEvents = new ApiConnectionEvents(Form1.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, GlobalVariables.apiUrl);
-            await apiConnectionEvents.StartShare(GlobalVariables.apiConnected, startLiveBtn,Form1.Instance.updateLiveCode,Form1.Instance.writer, connectHostBtn, Form1.Instance.outputRBT);
+            GlobalVariables.sessionId = sessionTxt.Text;
+            await ApiConnectionEvents.StartShare(Form1.Instance.hubConnection,GlobalVariables.livePassword, GlobalVariables.sessionId,
+                startLiveBtn, connectHostBtn, Form1.Instance.outputRBT,Form1.Instance.textEditorControl1);
         }
 
         /// <summary>
@@ -106,8 +107,10 @@ namespace CIARE
         /// <param name="e"></param>
         private async void connectHostBtn_Click(object sender, EventArgs e)
         {
-            var apiConnectionEvents = new ApiConnectionEvents(Form1.Instance.hubConnection, remotePasswordTxt.Text, remoteSessioniDtxt.Text, GlobalVariables.apiUrl);
-            await apiConnectionEvents.Connect(Form1.Instance.outputRBT, connectHostBtn, startLiveBtn, Form1.Instance.updateLiveCode, Form1.Instance.writer,GlobalVariables.apiConnected);
+            GlobalVariables.livePassword = remotePasswordTxt.Text;
+            GlobalVariables.sessionId = remoteSessioniDtxt.Text;
+           await ApiConnectionEvents.Connect(Form1.Instance.hubConnection, Form1.Instance.outputRBT, connectHostBtn, startLiveBtn,
+               GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1);
         }
     }
 }
