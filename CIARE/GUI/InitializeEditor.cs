@@ -204,6 +204,7 @@ namespace CIARE.GUI
         public static void GenerateLiveSessionId()
         {
             GlobalVariables.sessionId = Utils.Encryption.KeyGenerator.GeneratePassword(20, false, false, false, true);
+            GlobalVariables.sessionIdMain = GlobalVariables.sessionId;
         }
     }
 }
