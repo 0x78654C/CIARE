@@ -18,8 +18,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using System.Linq;
 using CIARE.LiveShareManage;
 using System.Threading.Tasks;
-using static Humanizer.On;
-using Timer = System.Windows.Forms.Timer;
+using CIARE.Utils.Encryption;
 
 namespace CIARE
 {
@@ -42,6 +41,7 @@ namespace CIARE
         static readonly Dom.LanguageProperties CurrentLanguageProperties = IsVisualBasic ? Dom.LanguageProperties.VBNet : Dom.LanguageProperties.CSharp;
         Thread parserThread;
         private string[] s_args = Environment.GetCommandLineArgs();
+        private ApiConnectionEvents _apiConnectionEvents;
 
         public Form1()
         {
@@ -77,7 +77,8 @@ namespace CIARE
             BuildConfig.CheckPlatform(GlobalVariables.registryPath);
             TargetFramework.CheckFramework(GlobalVariables.registryPath);
             LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
-            ApiConnection(updateLiveCode, writer, GlobalVariables.apiConnected, GlobalVariables.apiUrl);
+            _apiConnectionEvents = new ApiConnectionEvents();
+            ApiConnection(GlobalVariables.apiConnected, GlobalVariables.apiUrl);
 
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
@@ -391,8 +392,7 @@ namespace CIARE
             crashCheck.SetClosedFormState();
 
             // Stop Live share if connected.
-            var apiConnectionEvents = new ApiConnectionEvents(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, GlobalVariables.apiUrl);
-            Task.Run(() => apiConnectionEvents.CloseConnection());
+            Task.Run(() => _apiConnectionEvents.CloseConnection(hubConnection));
         }
 
         /// <summary>
@@ -632,43 +632,22 @@ namespace CIARE
         private void liveShareHostToolStripMenuItem_Click(object sender, EventArgs e)
         {
             LiveShareHost liveShareHost = new LiveShareHost();
-            liveShareHost.Show();
+            liveShareHost.ShowDialog();
         }
 
-        /// <summary>
-        /// Update live code on text editor timer.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void updateLiveCode_Tick(object sender, EventArgs e)
-        {
-            var apiConnectionEvents = new ApiConnectionEvents(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, GlobalVariables.apiUrl);
-            apiConnectionEvents.SetLiveCode(textEditorControl1, GlobalVariables.codeWriter,outputRBT);
-        }
-
-
-        /// <summary>
-        /// Set writer falg timer.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void writer_Tick(object sender, EventArgs e)
-        {
-            GlobalVariables.codeWriter = true;
-        }
 
         /// <summary>
         /// Send data to remote client.
         /// </summary>
         private async void SendData()
         {
-            if (GlobalVariables.apiConnected)
+            GlobalVariables.codeWriter = false;
+
+            if (!GlobalVariables.apiConnected)
                 return;
 
-            GlobalVariables.codeWriter = false;
             await Task.Delay(10);
-            var apiConnectionEvents = new ApiConnectionEvents(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, GlobalVariables.apiUrl);
-            await apiConnectionEvents.SendData(hubConnection,textEditorControl1, outputRBT);
+            await _apiConnectionEvents.SendData(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, textEditorControl1, outputRBT);
         }
 
         /// <summary>
@@ -677,7 +656,7 @@ namespace CIARE
         /// <param name="updateCode"></param>
         /// <param name="writer"></param>
         /// <param name="connected"></param>
-        public void ApiConnection(Timer updateCode, Timer writer, bool connected, string apiUrl)
+        public void ApiConnection(bool connected, string apiUrl)
         {
             if (string.IsNullOrEmpty(apiUrl))
                 return;
@@ -691,10 +670,6 @@ namespace CIARE
             // Reconnecting event.
             hubConnection.Reconnecting += (sender) =>
             {
-                updateCode.Stop();
-                updateCode.Enabled = false;
-                writer.Stop();
-                writer.Enabled = false;
                 connected = false;
                 return Task.CompletedTask;
             };
@@ -703,20 +678,12 @@ namespace CIARE
             hubConnection.Reconnected += (sender) =>
             {
                 connected = true;
-                updateCode.Enabled = true;
-                updateCode.Start();
-                writer.Enabled = true;
-                writer.Start();
                 return Task.CompletedTask;
             };
 
             // Reconnected event.
             hubConnection.Closed += (sender) =>
             {
-                updateCode.Stop();
-                updateCode.Enabled = false;
-                writer.Stop();
-                writer.Enabled = false;
                 connected = false;
                 return Task.CompletedTask;
             };
