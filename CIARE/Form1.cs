@@ -18,7 +18,6 @@ using Microsoft.AspNetCore.SignalR.Client;
 using System.Linq;
 using CIARE.LiveShareManage;
 using System.Threading.Tasks;
-using CIARE.Utils.Encryption;
 
 namespace CIARE
 {
@@ -78,7 +77,7 @@ namespace CIARE
             TargetFramework.CheckFramework(GlobalVariables.registryPath);
             LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
             _apiConnectionEvents = new ApiConnectionEvents();
-            ApiConnection(GlobalVariables.apiConnected, GlobalVariables.apiUrl);
+            ApiConnection(GlobalVariables.connected, GlobalVariables.apiUrl);
 
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
@@ -643,12 +642,20 @@ namespace CIARE
         {
             GlobalVariables.codeWriter = false;
 
-            if (!GlobalVariables.apiConnected)
+            if (!GlobalVariables.connected)
                 return;
 
             await Task.Delay(10);
-            await _apiConnectionEvents.SendData(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, textEditorControl1, outputRBT);
+            await _apiConnectionEvents.SendData(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, textEditorControl1);
         }
+
+        /// <summary>
+        /// Set timespan to 60 secconds for hub close.
+        /// </summary>
+        private static TimeSpan[] DefaultBackoffTimes = new TimeSpan[]
+        {
+        TimeSpan.FromSeconds(60),
+        };
 
         /// <summary>
         /// Build connection events to API.
@@ -660,17 +667,20 @@ namespace CIARE
         {
             if (string.IsNullOrEmpty(apiUrl))
                 return;
-
+    
             // Hub connection builder event.
             hubConnection = new HubConnectionBuilder()
                 .WithUrl(apiUrl)
-                .WithAutomaticReconnect()
+                .WithAutomaticReconnect(DefaultBackoffTimes)
                 .Build();
 
             // Reconnecting event.
             hubConnection.Reconnecting += (sender) =>
             {
                 connected = false;
+                GlobalVariables.apiConnected = false;
+                GlobalVariables.apiRemoteConnected = false;
+                liveStatusPb.Image = Properties.Resources.orange_dot;
                 return Task.CompletedTask;
             };
 
@@ -678,13 +688,20 @@ namespace CIARE
             hubConnection.Reconnected += (sender) =>
             {
                 connected = true;
+                GlobalVariables.apiConnected = true;
+                GlobalVariables.apiRemoteConnected = true;
+                hubConnection.InvokeAsync("GetSendCode", GlobalVariables.sessionId, string.Empty);
+                liveStatusPb.Image = Properties.Resources.red_dot;
                 return Task.CompletedTask;
             };
 
-            // Reconnected event.
+            // Closed event.
             hubConnection.Closed += (sender) =>
             {
                 connected = false;
+                GlobalVariables.apiConnected = false;
+                GlobalVariables.apiRemoteConnected = false;
+                liveStatusPb.Image = null;
                 return Task.CompletedTask;
             };
         }
