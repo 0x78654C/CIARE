@@ -48,6 +48,7 @@ namespace CIARE.Utils
         public static bool connected = false;
         public static bool apiConnected = false;
         public static bool apiRemoteConnected = false;
+        public static bool typeConnection = false;
         public static readonly string registryPath = "SOFTWARE\\CIARE";
         public static readonly string regUserRunPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
         public static readonly string codeCompletionKey = "OCodeCompletion";
