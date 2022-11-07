@@ -2,15 +2,8 @@
 using CIARE.LiveShareManage;
 using CIARE.Utils;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Reflection.Metadata;
 using System.Runtime.Versioning;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CIARE
@@ -48,6 +41,12 @@ namespace CIARE
 
             // Set remote password in textbox.
             SetRemotePassword(remotePasswordTxt, GlobalVariables.livePassword, GlobalVariables.apiRemoteConnected);
+
+            // Set live share button dark mode for disable status.
+            SetColorButtonsOnDisable(startLiveBtn, GlobalVariables.darkColor);
+
+            // Set remote connect button dark mode for disable status.
+            SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
         }
 
         /// <summary>
@@ -59,6 +58,7 @@ namespace CIARE
         {
             GlobalVariables.livePassword = passwordTxt.Text;
             GlobalVariables.sessionId = sessionTxt.Text;
+            GlobalVariables.typeConnection = true;
             await ApiConnectionEvents.StartShare(Form1.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
                 startLiveBtn, connectHostBtn, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
         }
@@ -150,8 +150,25 @@ namespace CIARE
             GlobalVariables.livePassword = remotePasswordTxt.Text;
             GlobalVariables.sessionId = remoteSessioniDtxt.Text;
             GlobalVariables.remoteSessionId = remoteSessioniDtxt.Text;
+            GlobalVariables.typeConnection = false;
             await ApiConnectionEvents.Connect(Form1.Instance.hubConnection, connectHostBtn, startLiveBtn,
                 GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
+        }
+
+        /// <summary>
+        /// Set color to gray on disabled button to be displayed properly in dark mode.
+        /// </summary>
+        /// <param name="button"></param>
+        /// <param name="darkMode"></param>
+        private void SetColorButtonsOnDisable(Button button, bool darkMode)
+        {
+            if (!darkMode)
+                return;
+
+            if (button.Enabled)
+                button.BackColor = Color.FromArgb(30, 30, 30);
+            else
+                button.BackColor = Color.Gray;
         }
     }
 }
