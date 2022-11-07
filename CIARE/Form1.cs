@@ -77,7 +77,15 @@ namespace CIARE
             TargetFramework.CheckFramework(GlobalVariables.registryPath);
             LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
             _apiConnectionEvents = new ApiConnectionEvents();
-            ApiConnection(GlobalVariables.connected, GlobalVariables.apiUrl);
+
+            // Hub connection builder event and connection handle events.
+            hubConnection = new HubConnectionBuilder()
+             .WithUrl(GlobalVariables.apiUrl)
+             .WithAutomaticReconnect(DefaultBackoffTimes)
+             .Build();
+
+            ApiConnectionEvents.ApiConnection(hubConnection, liveStatusPb, textEditorControl1, GlobalVariables.connected, GlobalVariables.apiUrl);
+            //------------------------------
 
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
@@ -650,60 +658,14 @@ namespace CIARE
         }
 
         /// <summary>
-        /// Set timespan to 60 secconds for hub close.
+        /// Set timespan to 60 secconds for hub to reconnect(every 10 sec a reconnection).
         /// </summary>
         private static TimeSpan[] DefaultBackoffTimes = new TimeSpan[]
         {
-        TimeSpan.FromSeconds(60),
+            TimeSpan.Zero,
+            TimeSpan.FromSeconds(10),
+            TimeSpan.FromSeconds(20),
+            TimeSpan.FromSeconds(30),
         };
-
-        /// <summary>
-        /// Build connection events to API.
-        /// </summary>
-        /// <param name="updateCode"></param>
-        /// <param name="writer"></param>
-        /// <param name="connected"></param>
-        public void ApiConnection(bool connected, string apiUrl)
-        {
-            if (string.IsNullOrEmpty(apiUrl))
-                return;
-    
-            // Hub connection builder event.
-            hubConnection = new HubConnectionBuilder()
-                .WithUrl(apiUrl)
-                .WithAutomaticReconnect(DefaultBackoffTimes)
-                .Build();
-
-            // Reconnecting event.
-            hubConnection.Reconnecting += (sender) =>
-            {
-                connected = false;
-                GlobalVariables.apiConnected = false;
-                GlobalVariables.apiRemoteConnected = false;
-                liveStatusPb.Image = Properties.Resources.orange_dot;
-                return Task.CompletedTask;
-            };
-
-            // Reconnected event.
-            hubConnection.Reconnected += (sender) =>
-            {
-                connected = true;
-                GlobalVariables.apiConnected = true;
-                GlobalVariables.apiRemoteConnected = true;
-                hubConnection.InvokeAsync("GetSendCode", GlobalVariables.sessionId, string.Empty);
-                liveStatusPb.Image = Properties.Resources.red_dot;
-                return Task.CompletedTask;
-            };
-
-            // Closed event.
-            hubConnection.Closed += (sender) =>
-            {
-                connected = false;
-                GlobalVariables.apiConnected = false;
-                GlobalVariables.apiRemoteConnected = false;
-                liveStatusPb.Image = null;
-                return Task.CompletedTask;
-            };
-        }
     }
 }
