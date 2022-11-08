@@ -106,7 +106,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 86);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 85);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -437,7 +437,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 111);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 110);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -597,7 +597,7 @@ namespace CIARE
             // liveStatusPb
             // 
             this.liveStatusPb.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.liveStatusPb.Location = new System.Drawing.Point(1383, 5);
+            this.liveStatusPb.Location = new System.Drawing.Point(1387, 5);
             this.liveStatusPb.Name = "liveStatusPb";
             this.liveStatusPb.Size = new System.Drawing.Size(18, 19);
             this.liveStatusPb.TabIndex = 17;
