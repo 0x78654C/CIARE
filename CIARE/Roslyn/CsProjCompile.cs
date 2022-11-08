@@ -3,6 +3,7 @@ using CIARE.Utils;
 using System;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace CIARE.Roslyn
@@ -88,8 +89,8 @@ namespace CIARE.Roslyn
                 {
                     if (GlobalVariables.OWarnings)
                         logOutput.Text = build;
-
-                    PathExe(projectDir, exeName);
+                    string framework = GlobalVariables.Framework.Split('-')[0];
+                    PathExe(projectDir, exeName,framework);
                     if (!string.IsNullOrEmpty(_exeFilePath))
                         logOutput.Text += $"Build succeeded.\n\n  {exeName} -> {_exeFilePath}";
                 }
@@ -113,7 +114,7 @@ namespace CIARE.Roslyn
         /// </summary>
         /// <param name="pathProject"></param>
         /// <param name="projectName"></param>
-        private void PathExe(string pathProject, string projectName)
+        private void PathExe(string pathProject, string projectName, string framework)
         {
             var directories = Directory.GetDirectories(pathProject);
             foreach (var dir in directories)
@@ -124,10 +125,12 @@ namespace CIARE.Roslyn
                     foreach (var file in files)
                     {
                         var fileInfo = new FileInfo(file);
-                        if (fileInfo.FullName.EndsWith($"{projectName}.exe"))
+                        int pathSplit = fileInfo.FullName.Split('\\').Count();
+                        string frameworkPath = fileInfo.FullName.Split('\\')[pathSplit - 2];
+                        if (fileInfo.FullName.EndsWith($"{projectName}.exe") && frameworkPath.Contains(framework))
                             _exeFilePath = fileInfo.FullName;
                     }
-                    PathExe(dir, projectName);
+                    PathExe(dir, projectName,framework);
                 }
             }
         }
