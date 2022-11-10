@@ -81,7 +81,6 @@ namespace CIARE
             // Hub connection builder event and connection handle events.
             hubConnection = new HubConnectionBuilder()
              .WithUrl(GlobalVariables.apiUrl)
-             .WithAutomaticReconnect(DefaultBackoffTimes)
              .Build();
 
             ApiConnectionEvents.ApiConnection(hubConnection, liveStatusPb, textEditorControl1, GlobalVariables.connected, GlobalVariables.apiUrl);
@@ -642,7 +641,6 @@ namespace CIARE
             liveShareHost.ShowDialog();
         }
 
-
         /// <summary>
         /// Send data to remote client.
         /// </summary>
@@ -658,14 +656,17 @@ namespace CIARE
         }
 
         /// <summary>
-        /// Set timespan to 60 secconds for hub to reconnect(every 10 sec a reconnection).
+        /// Manage live hub disconection event.
         /// </summary>
-        private static TimeSpan[] DefaultBackoffTimes = new TimeSpan[]
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void liveStatusPb_Paint(object sender, PaintEventArgs e)
         {
-            TimeSpan.Zero,
-            TimeSpan.FromSeconds(10),
-            TimeSpan.FromSeconds(20),
-            TimeSpan.FromSeconds(30),
-        };
+            if (GlobalVariables.connected && GlobalVariables.liveDisconnected)
+            {
+                if (GlobalVariables.apiRemoteConnected || GlobalVariables.apiConnected)
+                   ApiConnectionEvents.ManageHubDisconnection(hubConnection);
+            }
+        }
     }
 }
