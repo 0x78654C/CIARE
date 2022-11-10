@@ -44,8 +44,10 @@ namespace CIARE.Utils
         public static string sessionId = string.Empty;
         public static string sessionIdMain = string.Empty;
         public static string remoteSessionId = string.Empty;
+        public static string remoteConnectionId = string.Empty;
         public static string binaryNameStore = string.Empty;
         public static bool connected = false;
+        public static bool liveDisconnected = false;
         public static bool apiConnected = false;
         public static bool apiRemoteConnected = false;
         public static bool typeConnection = false;
