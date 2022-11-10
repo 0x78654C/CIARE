@@ -106,7 +106,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 113);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 112);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -437,7 +437,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 138);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 137);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -602,6 +602,7 @@ namespace CIARE
             this.liveStatusPb.Size = new System.Drawing.Size(18, 19);
             this.liveStatusPb.TabIndex = 17;
             this.liveStatusPb.TabStop = false;
+            this.liveStatusPb.Paint += new System.Windows.Forms.PaintEventHandler(this.liveStatusPb_Paint);
             // 
             // Form1
             // 
