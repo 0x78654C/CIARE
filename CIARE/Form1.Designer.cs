@@ -106,7 +106,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 112);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 111);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -135,8 +135,8 @@ namespace CIARE
             this.editToolStripMenuItem,
             this.compileToolStripMenuItem,
             this.viewToolStripMenuItem,
-            this.settingsToolStripMenuItem,
             this.liveToolStripMenuItem,
+            this.settingsToolStripMenuItem,
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
@@ -407,7 +407,7 @@ namespace CIARE
             // liveShareToolStripMenuItem
             // 
             this.liveShareToolStripMenuItem.Name = "liveShareToolStripMenuItem";
-            this.liveShareToolStripMenuItem.Size = new System.Drawing.Size(173, 22);
+            this.liveShareToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.liveShareToolStripMenuItem.Text = "Live Share Manage";
             this.liveShareToolStripMenuItem.Click += new System.EventHandler(this.liveShareHostToolStripMenuItem_Click);
             // 
@@ -437,7 +437,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 137);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 136);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -648,7 +648,7 @@ namespace CIARE
 
         public ICSharpCode.TextEditor.TextEditorControl textEditorControl1;
         private System.Windows.Forms.PictureBox runCodePb;
-        public System.Windows.Forms.RichTextBox outputRBT; // TODO: restore to private after tests.
+        private System.Windows.Forms.RichTextBox outputRBT;
         private System.Windows.Forms.ToolTip toolTip1;
         public System.Windows.Forms.ToolStripMenuItem fIleToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
