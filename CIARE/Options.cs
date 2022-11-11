@@ -158,7 +158,7 @@ namespace CIARE
         private void saveApiUrlBtn_Click(object sender, EventArgs e)
         {
             LiveShare.SetApiLiveShare(apiUrlTxt, GlobalVariables.liveShare);
-            MessageBox.Show("API url was saved!");
+            MessageBox.Show("API url was saved!", "CIARE", MessageBoxButtons.OK,MessageBoxIcon.Information);
         }
 
         /// <summary>

@@ -1,6 +1,8 @@
 ﻿using CIARE.GUI;
 using CIARE.LiveShareManage;
 using CIARE.Utils;
+using ICSharpCode.TextEditor;
+using Microsoft.AspNetCore.SignalR.Client;
 using System;
 using System.Drawing;
 using System.Runtime.Versioning;
@@ -59,8 +61,16 @@ namespace CIARE
             GlobalVariables.livePassword = passwordTxt.Text;
             GlobalVariables.sessionId = sessionTxt.Text;
             GlobalVariables.typeConnection = true;
-            await ApiConnectionEvents.StartShare(Form1.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
-                startLiveBtn, connectHostBtn, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
+            try
+            {
+                HubConnectionBuild();
+                await ApiConnectionEvents.StartShare(Form1.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
+                    startLiveBtn, connectHostBtn, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         /// <summary>
@@ -151,8 +161,16 @@ namespace CIARE
             GlobalVariables.sessionId = remoteSessioniDtxt.Text;
             GlobalVariables.remoteSessionId = remoteSessioniDtxt.Text;
             GlobalVariables.typeConnection = false;
-            await ApiConnectionEvents.Connect(Form1.Instance.hubConnection, connectHostBtn, startLiveBtn,
-                GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
+            try
+            {
+                HubConnectionBuild();
+                await ApiConnectionEvents.Connect(Form1.Instance.hubConnection, connectHostBtn, startLiveBtn,
+                    GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         /// <summary>
@@ -169,6 +187,20 @@ namespace CIARE
                 button.BackColor = Color.FromArgb(30, 30, 30);
             else
                 button.BackColor = Color.Gray;
+        }
+
+
+        /// <summary>
+        /// Hub connection builder.
+        /// </summary>
+        private void HubConnectionBuild()
+        {
+            Form1.Instance.hubConnection = new HubConnectionBuilder()
+  .WithUrl(GlobalVariables.apiUrl)
+  .Build();
+            ApiConnectionEvents.ApiConnection(Form1.Instance.hubConnection, Form1.Instance.liveStatusPb, Form1.Instance.textEditorControl1,
+                GlobalVariables.connected, GlobalVariables.apiUrl);
+
         }
     }
 }

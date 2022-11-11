@@ -59,7 +59,7 @@ namespace CIARE
             textEditorControl1.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             versionName = versionName.Substring(0, versionName.Length - 2);
-            this.Text = $"CIARE {versionName} - beta 1";
+            this.Text = $"CIARE {versionName}";
             InitializeEditor.ReadEditorWindowSize(this, GlobalVariables.registryPath);
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
@@ -79,11 +79,8 @@ namespace CIARE
             _apiConnectionEvents = new ApiConnectionEvents();
 
             // Hub connection builder event and connection handle events.
-            hubConnection = new HubConnectionBuilder()
-             .WithUrl(GlobalVariables.apiUrl)
-             .Build();
 
-            ApiConnectionEvents.ApiConnection(hubConnection, liveStatusPb, textEditorControl1, GlobalVariables.connected, GlobalVariables.apiUrl);
+
             //------------------------------
 
             //Code completion initialize.
