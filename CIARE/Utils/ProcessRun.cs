@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace CIARE.Utils
 {
@@ -67,7 +68,7 @@ namespace CIARE.Utils
                 return;
             ProcessStartInfo startInfo = new ProcessStartInfo(ProcessToRun);
             startInfo.UseShellExecute = false;
-            startInfo.Arguments = Arguments;
+            startInfo.Arguments = "\""+Arguments+"\"";
             Process process = new Process();
             process.StartInfo = startInfo;
             process.Start();

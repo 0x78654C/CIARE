@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis.Operations;
-using System;
+﻿using System;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -165,7 +164,6 @@ namespace CIARE.Utils.FilesOpenOS
             if (!CheckFileContent(UserAppdataFile))
                 return;
 
-            
             RemoveLineUnexistingPath();
             ProcessRun processRun;
             var fileLines = File.ReadAllLines(UserAppdataFile);
