@@ -394,8 +394,12 @@ namespace CIARE
                 autoStartFile.DelTempFile();
             }
 
-            CrashCheck crashCheck = new CrashCheck(GlobalVariables.registryPath, GlobalVariables.activeForm);
-            crashCheck.SetClosedFormState();
+            // Set if form is not active anymore if there is not process left
+            if (ProcessRun.CheckActiveProcessCount("CIARE") <= 1)
+            {
+                CrashCheck crashCheck = new CrashCheck(GlobalVariables.registryPath, GlobalVariables.activeForm);
+                crashCheck.SetClosedFormState();
+            }
 
             // Stop Live share if connected.
             Task.Run(() => _apiConnectionEvents.CloseConnection(hubConnection));

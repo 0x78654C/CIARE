@@ -73,5 +73,12 @@ namespace CIARE.Utils
             process.StartInfo = startInfo;
             process.Start();
         }
+
+        /// <summary>
+        /// Count the active processes by name.
+        /// </summary>
+        /// <param name="processName"></param>
+        /// <returns></returns>
+        public static int CheckActiveProcessCount(string processName) => Process.GetProcessesByName(processName).Length;
     }
 }
