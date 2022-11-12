@@ -77,10 +77,6 @@ namespace CIARE
             TargetFramework.CheckFramework(GlobalVariables.registryPath);
             LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
             _apiConnectionEvents = new ApiConnectionEvents();
-
-            // Hub connection builder event and connection handle events.
-
-
             //------------------------------
 
             //Code completion initialize.
