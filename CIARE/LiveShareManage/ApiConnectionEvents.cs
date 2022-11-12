@@ -249,6 +249,8 @@ MessageBoxIcon.Warning);
                     await Connect(hubConnection, fakeButton, fakeButton,
 GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
             }
+            else
+                GlobalVariables.livePassword = string.Empty;
         }
     }
 }
