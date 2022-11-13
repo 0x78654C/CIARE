@@ -95,7 +95,7 @@ Useful to run code on the fly and get instant result.
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_remote.png?raw=true)
 
-INFO: Maximum connection are two / session id.
+INFO: Maximum two connections / session id.
 
 # Live share video sample
 
