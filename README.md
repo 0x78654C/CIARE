@@ -69,7 +69,7 @@ Useful to run code on the fly and get instant result.
 
  With Live Share you can work on same project/file in same time with another person. 
 
- Project is based on https://dotnet.microsoft.com/en-us/apps/aspnet/signalr .
+ Project is based on https://dotnet.microsoft.com/en-us/apps/aspnet/signalr library.
 
  Requirements:
  A hosted CIARE Live Share API: https://github.com/0x78654C/CIARELiveShareAPI 
@@ -81,24 +81,23 @@ Useful to run code on the fly and get instant result.
 ![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_setting.png?raw=true)
 
  2. To start a Live Share connection go to Live tab -> Live Share Manage and click on 'Start Live share' button.
-	After the live share is started give the Session Id and Password to the person you want to share with.
+    After the live share is started give the Session Id and Password to the person you want to share with.
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_start.png?raw=true)
 
- When live share is started and connection to API  message box will be prompted and a red notification bubble will appear in right-up corner that notify you that is broadcasting.
+ When live share is started and connection to API message box will be prompted a red notification bubble will appear in right-up corner that notify you that is broadcasting.
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_notify.png?raw=true)
 
  3. To start a remote connection go to Live tab -> Live Share Manage and add your given session id and password 
- and add them to 'Remote Session Id/Password' text boxes. After click on 'Remote Connect' button.
- Same here will be notified with a the red dot when broadcast is started.
+    and add them to 'Remote Session Id/Password' text boxes. After click on 'Remote Connect' button.
+    Same here will be notified with a the red dot when broadcast is started.
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_remote.png?raw=true)
 
 INFO: Maximum connection are two / session id.
 
 # Live share video sample
-
 
 
 https://user-images.githubusercontent.com/13780514/201545030-c6cba10c-f117-45b5-bfc2-0a6dbf3af0ec.mp4
