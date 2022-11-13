@@ -15,6 +15,9 @@ namespace CIARE
     {
         public LiveShareHost()
         {
+            // Check if api url exist.
+            CheckApiUrl(GlobalVariables.apiUrl);
+
             InitializeComponent();
         }
 
@@ -69,7 +72,7 @@ namespace CIARE
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -169,7 +172,7 @@ namespace CIARE
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -195,12 +198,28 @@ namespace CIARE
         /// </summary>
         private void HubConnectionBuild()
         {
-            Form1.Instance.hubConnection = new HubConnectionBuilder()
-  .WithUrl(GlobalVariables.apiUrl)
-  .Build();
-            ApiConnectionEvents.ApiConnection(Form1.Instance.hubConnection, Form1.Instance.liveStatusPb, Form1.Instance.textEditorControl1,
-                GlobalVariables.connected, GlobalVariables.apiUrl);
+            if (!GlobalVariables.connected)
+            {
+                Form1.Instance.hubConnection = new HubConnectionBuilder()
+      .WithUrl(GlobalVariables.apiUrl)
+      .Build();
 
+                ApiConnectionEvents.ApiConnection(Form1.Instance.hubConnection, Form1.Instance.liveStatusPb, Form1.Instance.textEditorControl1,
+                    GlobalVariables.connected, GlobalVariables.apiUrl);
+            }
+        }
+
+        /// <summary>
+        /// Check if API url is loaded from registry.
+        /// </summary>
+        /// <param name="apiUrl"></param>
+        private void CheckApiUrl(string apiUrl)
+        {
+            if (string.IsNullOrEmpty(apiUrl) && apiUrl.Length>1)
+            {
+                MessageBox.Show("There is no API url stored. Check settings!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                this.Close();
+            }
         }
     }
 }

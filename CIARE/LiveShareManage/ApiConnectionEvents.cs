@@ -45,6 +45,7 @@ namespace CIARE.LiveShareManage
                     await hubConnection.StopAsync();
 
                 GlobalVariables.connected = false;
+                GlobalVariables.livePassword = string.Empty;
                 connectBtn.Text = "Remote Connect";
                 MessageBox.Show("Connected Stoped", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 liveShareBtn.Enabled = true;
