@@ -101,8 +101,7 @@ After connection is made the remote connected user can see host user data but ca
 
 # Live share video sample
 
-
-https://user-images.githubusercontent.com/13780514/201545030-c6cba10c-f117-45b5-bfc2-0a6dbf3af0ec.mp4
+https://user-images.githubusercontent.com/13780514/201774933-e53d3ba2-95e0-434e-aa9a-16489169afd5.mp4
 
 
 
