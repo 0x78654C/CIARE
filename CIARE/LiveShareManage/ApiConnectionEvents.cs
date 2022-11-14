@@ -76,7 +76,7 @@ namespace CIARE.LiveShareManage
                 try
                 {
                     await hubConnection.StartAsync();
-                    await hubConnection.InvokeAsync("GetSendCode", sessionId, "connected", 0);
+                    await hubConnection.InvokeAsync("GetSendCode", sessionId, "remote", 0);
                     pictureBox.Image = Properties.Resources.red_dot;
                     GlobalVariables.apiRemoteConnected = true;
                     GlobalVariables.connected = true;
@@ -168,8 +168,10 @@ namespace CIARE.LiveShareManage
 
                 try
                 {
+                    string code = textEditorControl.Text;
+                    var encyrpted = AESEncryption.Encrypt(code, password);
                     await hubConnection.StartAsync();
-                    await hubConnection.InvokeAsync("GetSendCode", sessionId, "connected", 0);
+                    await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted, 0);
                     pictureBox.Image = Properties.Resources.red_dot;
                     GlobalVariables.apiConnected = true;
                     GlobalVariables.connected = true;
@@ -197,7 +199,7 @@ namespace CIARE.LiveShareManage
         {
             try
             {
-                if (!string.IsNullOrEmpty(code) && code != "reconnected")
+                if (!string.IsNullOrEmpty(code))
                 {
                     var decrypt = AESEncryption.Decrypt(code, password);
                     if (!string.IsNullOrEmpty(decrypt))
