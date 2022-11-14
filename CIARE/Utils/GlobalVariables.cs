@@ -27,11 +27,11 @@ namespace CIARE.Utils
         public static bool noPath = false;
         public static bool darkColor = false;
         public static string configParam = "/p:configuration=Debug";
-        public static string platformParam= "/p:Platform=\"Any CPU\"";
+        public static string platformParam = "/p:Platform=\"Any CPU\"";
         public static bool OCodeCompletion = true;
         public static bool OLineNumber = true;
         public static bool OFoldingCode = true;
-        public static string apiUrl;
+        public static string apiUrl = string.Empty;
         public static bool OWarnings = false;
         public static bool OStartUp = false;
         public static bool OWinLoginState = false;

@@ -1,7 +1,6 @@
 ﻿using CIARE.GUI;
 using CIARE.LiveShareManage;
 using CIARE.Utils;
-using ICSharpCode.TextEditor;
 using Microsoft.AspNetCore.SignalR.Client;
 using System;
 using System.Drawing;
@@ -15,14 +14,14 @@ namespace CIARE
     {
         public LiveShareHost()
         {
-            // Check if api url exist.
-            CheckApiUrl(GlobalVariables.apiUrl);
-
             InitializeComponent();
         }
 
         private void LiveShareHost_Load(object sender, EventArgs e)
         {
+            // Check if api url exist.
+            CheckApiUrl(GlobalVariables.apiUrl);
+
             // Set dark mode if enabled.
             if (GlobalVariables.darkColor)
                 DarkMode.LiveShareDarkMode(this, liveShareStartGrp, sessionIdLbl, sessionTxt, passwordLbl, passwordTxt, startLiveBtn,
@@ -215,7 +214,7 @@ namespace CIARE
         /// <param name="apiUrl"></param>
         private void CheckApiUrl(string apiUrl)
         {
-            if (string.IsNullOrEmpty(apiUrl) && apiUrl.Length>1)
+            if (string.IsNullOrEmpty(apiUrl))
             {
                 MessageBox.Show("There is no API url stored. Check settings!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 this.Close();
