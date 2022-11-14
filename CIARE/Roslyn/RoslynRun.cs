@@ -153,13 +153,26 @@ namespace CIARE.Roslyn
                 SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
                 string assemblyName = Path.GetRandomFileName();
                 CSharpCompilation compilation;
-                compilation = CSharpCompilation.Create(
-                  assemblyName,
-                  syntaxTrees: new[] { syntaxTree },
-                  references: References(),
-                  options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
-                  null, null, OptimizationLevel.Debug, false, false, null, null,
-                  ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
+                if (exeFile)
+                {
+                    compilation = CSharpCompilation.Create(
+                      assemblyName,
+                      syntaxTrees: new[] { syntaxTree },
+                      references: References(),
+                      options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
+                      null, null, OptimizationLevel.Debug, false, false, null, null,
+                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
+                }
+                else
+                {
+                    compilation = CSharpCompilation.Create(
+                     assemblyName,
+                     syntaxTrees: new[] { syntaxTree },
+                     references: References(),
+                     options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, true, null, null,
+                     null, null, OptimizationLevel.Debug, false, false, null, null,
+                     ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
+                }
 
 
                 using (var ms = new MemoryStream())

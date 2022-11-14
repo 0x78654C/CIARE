@@ -129,6 +129,8 @@ namespace CIARE.Roslyn
                         string frameworkPath = fileInfo.FullName.Split('\\')[pathSplit - 2];
                         if (fileInfo.FullName.EndsWith($"{projectName}.exe") && frameworkPath.Contains(framework))
                             _exeFilePath = fileInfo.FullName;
+                        if (fileInfo.FullName.EndsWith($"{projectName}.dll") && frameworkPath.Contains(framework))
+                            _exeFilePath = fileInfo.FullName;
                     }
                     PathExe(dir, projectName,framework);
                 }
