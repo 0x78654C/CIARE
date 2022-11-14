@@ -79,22 +79,22 @@ Useful to run code on the fly and get instant result.
  Setup:
  1. Save your API link in Settings tab -> Options -> Live Share
 
-![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_setting.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_setting.png?raw=true)
 
  2. To start a Live Share connection go to Live tab -> Live Share Manage and click on 'Start Live share' button.
     After the live share is started give the Session Id and Password to the person you want to share with.
 
-![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_start.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_start.png?raw=true)
 
  When live share is started and connection to API message box will be prompted a red notification bubble will appear in right-up corner that notify you that is broadcasting.
 
-![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_notify.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_notify.png?raw=true)
 
  3. To start a remote connection go to Live tab -> Live Share Manage and add your given session id and password 
     and add them to 'Remote Session Id/Password' text boxes. After click on 'Remote Connect' button.
     Same here will be notified with a the red dot when broadcast is started.
 
-![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_remote.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_remote.png?raw=true)
 
 INFO: Maximum connection are two / session id.
 After connection is made the remote connected user can see host user data but can edit just after host made the first edit on data.
