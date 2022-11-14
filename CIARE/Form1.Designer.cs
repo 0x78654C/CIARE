@@ -66,10 +66,10 @@ namespace CIARE
             this.splitVEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.compileStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.showHideHSCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.liveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.liveShareToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
@@ -106,7 +106,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 111);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 109);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -381,6 +381,21 @@ namespace CIARE
             this.showHideHSCToolStripMenuItem.Text = "Show/Hide Output          ( CTRL + K )";
             this.showHideHSCToolStripMenuItem.Click += new System.EventHandler(this.showHideSCToolStripMenuItem_Click);
             // 
+            // liveToolStripMenuItem
+            // 
+            this.liveToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.liveShareToolStripMenuItem});
+            this.liveToolStripMenuItem.Name = "liveToolStripMenuItem";
+            this.liveToolStripMenuItem.Size = new System.Drawing.Size(40, 20);
+            this.liveToolStripMenuItem.Text = "Live";
+            // 
+            // liveShareToolStripMenuItem
+            // 
+            this.liveShareToolStripMenuItem.Name = "liveShareToolStripMenuItem";
+            this.liveShareToolStripMenuItem.Size = new System.Drawing.Size(173, 22);
+            this.liveShareToolStripMenuItem.Text = "Live Share Manage";
+            this.liveShareToolStripMenuItem.Click += new System.EventHandler(this.liveShareHostToolStripMenuItem_Click);
+            // 
             // settingsToolStripMenuItem
             // 
             this.settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -395,21 +410,6 @@ namespace CIARE
             this.optionsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
             this.optionsToolStripMenuItem.Text = "Options";
             this.optionsToolStripMenuItem.Click += new System.EventHandler(this.optionsToolStripMenuItem_Click);
-            // 
-            // liveToolStripMenuItem
-            // 
-            this.liveToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.liveShareToolStripMenuItem});
-            this.liveToolStripMenuItem.Name = "liveToolStripMenuItem";
-            this.liveToolStripMenuItem.Size = new System.Drawing.Size(40, 20);
-            this.liveToolStripMenuItem.Text = "Live";
-            // 
-            // liveShareToolStripMenuItem
-            // 
-            this.liveShareToolStripMenuItem.Name = "liveShareToolStripMenuItem";
-            this.liveShareToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.liveShareToolStripMenuItem.Text = "Live Share Manage";
-            this.liveShareToolStripMenuItem.Click += new System.EventHandler(this.liveShareHostToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 
@@ -437,7 +437,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 136);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 134);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -474,7 +474,7 @@ namespace CIARE
             this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
             this.textEditorControl1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.textEditorControl1.Name = "textEditorControl1";
-            this.textEditorControl1.Size = new System.Drawing.Size(1402, 681);
+            this.textEditorControl1.Size = new System.Drawing.Size(1397, 681);
             this.textEditorControl1.TabIndex = 0;
             this.textEditorControl1.VRulerRow = 0;
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
@@ -597,7 +597,7 @@ namespace CIARE
             // liveStatusPb
             // 
             this.liveStatusPb.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.liveStatusPb.Location = new System.Drawing.Point(1389, 5);
+            this.liveStatusPb.Location = new System.Drawing.Point(1384, 5);
             this.liveStatusPb.Name = "liveStatusPb";
             this.liveStatusPb.Size = new System.Drawing.Size(18, 19);
             this.liveStatusPb.TabIndex = 17;
