@@ -32,6 +32,15 @@ namespace CIARE.LiveShareManage
         }
 
         /// <summary>
+        /// Remove read only from text editor.
+        /// </summary>
+        /// <param name="textEditorControl"></param>
+        private static void RemoveReadOnlyTextEditor(TextEditorControl textEditorControl)
+        {
+            if (textEditorControl.ReadOnly)
+                textEditorControl.ReadOnly = false;
+        }
+        /// <summary>
         /// Connect to remote session.
         /// </summary>
         public static async Task Connect(HubConnection hubConnection, Button connectBtn, Button liveShareBtn,
@@ -44,6 +53,7 @@ namespace CIARE.LiveShareManage
                 if (hubConnection != null)
                     await hubConnection.StopAsync();
 
+                RemoveReadOnlyTextEditor(textEditorControl);
                 GlobalVariables.connected = false;
                 GlobalVariables.livePassword = string.Empty;
                 connectBtn.Text = "Remote Connect";
@@ -201,8 +211,7 @@ namespace CIARE.LiveShareManage
         {
             try
             {
-                if (textEditorControl.ReadOnly)
-                    textEditorControl.ReadOnly = false;
+                RemoveReadOnlyTextEditor(textEditorControl);
                 if (!string.IsNullOrEmpty(code))
                 {
                     var decrypt = AESEncryption.Decrypt(code, password);
