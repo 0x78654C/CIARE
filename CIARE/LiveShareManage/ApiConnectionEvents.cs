@@ -77,6 +77,8 @@ namespace CIARE.LiveShareManage
                 {
                     await hubConnection.StartAsync();
                     await hubConnection.InvokeAsync("GetSendCode", sessionId, "remote", 0);
+                    if (!textEditorControl.ReadOnly)
+                        textEditorControl.ReadOnly = true;
                     pictureBox.Image = Properties.Resources.red_dot;
                     GlobalVariables.apiRemoteConnected = true;
                     GlobalVariables.connected = true;
@@ -199,6 +201,8 @@ namespace CIARE.LiveShareManage
         {
             try
             {
+                if (textEditorControl.ReadOnly)
+                    textEditorControl.ReadOnly = false;
                 if (!string.IsNullOrEmpty(code))
                 {
                     var decrypt = AESEncryption.Decrypt(code, password);
