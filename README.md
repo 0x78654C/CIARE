@@ -96,6 +96,7 @@ Useful to run code on the fly and get instant result.
 ![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_remote.png?raw=true)
 
 INFO: Maximum connection are two / session id.
+After connection is made the remote connected user can see host user data but can edit just after host made the first edit on data.
 
 # Live share video sample
 
