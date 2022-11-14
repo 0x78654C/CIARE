@@ -103,6 +103,7 @@ namespace CIARE.LiveShareManage
                 {
                     MessageBox.Show(ex.Message, "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     connectBtn.Text = "Remote Connect";
+                    GlobalVariables.livePassword = string.Empty;
                 }
             }
         }
@@ -198,6 +199,7 @@ namespace CIARE.LiveShareManage
                 {
                     MessageBox.Show(ex.Message, "CIARE - Live share", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     startShareBtn.Text = "Start Live Share";
+                    GlobalVariables.livePassword = string.Empty;
                 }
             }
         }
