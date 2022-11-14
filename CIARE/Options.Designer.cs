@@ -48,8 +48,13 @@ namespace CIARE
             this.platformBox = new System.Windows.Forms.ComboBox();
             this.configurationBox = new System.Windows.Forms.ComboBox();
             this.platformLbl = new System.Windows.Forms.Label();
+            this.liveShareGb = new System.Windows.Forms.GroupBox();
+            this.saveApiUrlBtn = new System.Windows.Forms.Button();
+            this.apiUrlTxt = new System.Windows.Forms.TextBox();
+            this.apiUrlLbl = new System.Windows.Forms.Label();
             this.displayGroup.SuspendLayout();
             this.buildGroup.SuspendLayout();
+            this.liveShareGb.SuspendLayout();
             this.SuspendLayout();
             // 
             // highlightLbl
@@ -207,7 +212,7 @@ namespace CIARE
             this.buildGroup.Controls.Add(this.platformLbl);
             this.buildGroup.Location = new System.Drawing.Point(348, 12);
             this.buildGroup.Name = "buildGroup";
-            this.buildGroup.Size = new System.Drawing.Size(330, 341);
+            this.buildGroup.Size = new System.Drawing.Size(330, 168);
             this.buildGroup.TabIndex = 16;
             this.buildGroup.TabStop = false;
             this.buildGroup.Text = "Build";
@@ -283,6 +288,49 @@ namespace CIARE
             this.platformLbl.TabIndex = 0;
             this.platformLbl.Text = "Params:";
             // 
+            // liveShareGb
+            // 
+            this.liveShareGb.Controls.Add(this.saveApiUrlBtn);
+            this.liveShareGb.Controls.Add(this.apiUrlTxt);
+            this.liveShareGb.Controls.Add(this.apiUrlLbl);
+            this.liveShareGb.Location = new System.Drawing.Point(348, 185);
+            this.liveShareGb.Name = "liveShareGb";
+            this.liveShareGb.Size = new System.Drawing.Size(330, 168);
+            this.liveShareGb.TabIndex = 17;
+            this.liveShareGb.TabStop = false;
+            this.liveShareGb.Text = "Live Share";
+            // 
+            // saveApiUrlBtn
+            // 
+            this.saveApiUrlBtn.Enabled = false;
+            this.saveApiUrlBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.saveApiUrlBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.saveApiUrlBtn.Location = new System.Drawing.Point(237, 124);
+            this.saveApiUrlBtn.Name = "saveApiUrlBtn";
+            this.saveApiUrlBtn.Size = new System.Drawing.Size(75, 23);
+            this.saveApiUrlBtn.TabIndex = 18;
+            this.saveApiUrlBtn.Text = "Save";
+            this.saveApiUrlBtn.UseVisualStyleBackColor = true;
+            this.saveApiUrlBtn.Click += new System.EventHandler(this.saveApiUrlBtn_Click);
+            // 
+            // apiUrlTxt
+            // 
+            this.apiUrlTxt.Location = new System.Drawing.Point(16, 78);
+            this.apiUrlTxt.Name = "apiUrlTxt";
+            this.apiUrlTxt.Size = new System.Drawing.Size(296, 21);
+            this.apiUrlTxt.TabIndex = 1;
+            this.apiUrlTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.apiUrlTxt.TextChanged += new System.EventHandler(this.apiUrlTxt_TextChanged);
+            // 
+            // apiUrlLbl
+            // 
+            this.apiUrlLbl.AutoSize = true;
+            this.apiUrlLbl.Location = new System.Drawing.Point(12, 40);
+            this.apiUrlLbl.Name = "apiUrlLbl";
+            this.apiUrlLbl.Size = new System.Drawing.Size(117, 15);
+            this.apiUrlLbl.TabIndex = 0;
+            this.apiUrlLbl.Text = "Live Share API URL:";
+            // 
             // Options
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -290,6 +338,7 @@ namespace CIARE
             this.BackColor = System.Drawing.SystemColors.Window;
             this.CancelButton = this.closeBtn;
             this.ClientSize = new System.Drawing.Size(690, 404);
+            this.Controls.Add(this.liveShareGb);
             this.Controls.Add(this.buildGroup);
             this.Controls.Add(this.displayGroup);
             this.Controls.Add(this.closeBtn);
@@ -305,6 +354,8 @@ namespace CIARE
             this.displayGroup.PerformLayout();
             this.buildGroup.ResumeLayout(false);
             this.buildGroup.PerformLayout();
+            this.liveShareGb.ResumeLayout(false);
+            this.liveShareGb.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -329,5 +380,9 @@ namespace CIARE
         private System.Windows.Forms.CheckBox winLoginCkb;
         private System.Windows.Forms.Label frameworkLbl;
         private System.Windows.Forms.ComboBox frameWorkCMB;
+        private System.Windows.Forms.GroupBox liveShareGb;
+        private System.Windows.Forms.Button saveApiUrlBtn;
+        private System.Windows.Forms.TextBox apiUrlTxt;
+        private System.Windows.Forms.Label apiUrlLbl;
     }
 }

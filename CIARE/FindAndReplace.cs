@@ -3,7 +3,6 @@ using CIARE.Utils;
 using CIARE.GUI;
 using System.Windows.Forms;
 using ICSharpCode.TextEditor;
-using System.Text.RegularExpressions;
 using ICSharpCode.TextEditor.Document;
 
 namespace CIARE

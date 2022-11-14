@@ -47,7 +47,8 @@ namespace CIARE.GUI
         }
 
         public static void OptionsLightMode(Form form, Button cancelBtn, Label highlightLbl, ComboBox highLightName,
-          CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayGroup, GroupBox buildGroup, Label displaySetting, Label behaveSetting, CheckBox startFile)
+          CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayGroup, GroupBox buildGroup, Label displaySetting, Label behaveSetting, CheckBox startFile,
+          Label apiLabel, TextBox apiUrlTxt, Button saveApiBtn, GroupBox liveShare)
         {
             form.BackColor = SystemColors.Window;
             form.ForeColor = Color.Black;
@@ -64,6 +65,12 @@ namespace CIARE.GUI
             displaySetting.ForeColor = Color.Black;
             behaveSetting.ForeColor = Color.Black;
             startFile.ForeColor = Color.Black;
+            apiLabel.ForeColor = Color.Black;
+            apiUrlTxt.BackColor = SystemColors.Window;
+            apiUrlTxt.ForeColor = Color.Black;
+            saveApiBtn.BackColor = SystemColors.Window;
+            saveApiBtn.ForeColor = Color.Black;
+            liveShare.ForeColor = Color.Black;
         }
     }
 }

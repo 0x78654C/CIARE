@@ -35,6 +35,7 @@ Useful to run code on the fly and get instant result.
  - Enable/disable warnings messages on compile.
  - Mark files for open on next application start or Windows logon.
  - Target desired framework(.NET6 or .NET 7) for use when a application is compiled.
+ - Live share: share and work in same time at a project/file data.
 
 ## Requirements:
 
@@ -63,6 +64,47 @@ Useful to run code on the fly and get instant result.
  As code highlighter I use ICSharpCode.TextEditor.Extended forked from https://github.com/megakraken/ICSharpCode.TextEditor
  For code completion I use the libraries(ICSharpCode.SharpDevelop.Dom,ICSharpCode,Core and NRefactory)
  from https://sourceforge.net/projects/sharpdevelop/files/SharpDevelop%203.x/3.2/ version.
+
+## Live share
+
+ With Live Share you can work on same project/file in same time with another person. 
+
+ Project is based on https://dotnet.microsoft.com/en-us/apps/aspnet/signalr library.
+
+ Requirements: 
+ 
+  A hosted CIARE Live Share API: https://github.com/0x78654C/CIARELiveShareAPI 
+  for managing connection.
+
+ Setup:
+ 1. Save your API link in Settings tab -> Options -> Live Share
+
+![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_setting.png?raw=true)
+
+ 2. To start a Live Share connection go to Live tab -> Live Share Manage and click on 'Start Live share' button.
+    After the live share is started give the Session Id and Password to the person you want to share with.
+
+![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_start.png?raw=true)
+
+ When live share is started and connection to API message box will be prompted a red notification bubble will appear in right-up corner that notify you that is broadcasting.
+
+![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_notify.png?raw=true)
+
+ 3. To start a remote connection go to Live tab -> Live Share Manage and add your given session id and password 
+    and add them to 'Remote Session Id/Password' text boxes. After click on 'Remote Connect' button.
+    Same here will be notified with a the red dot when broadcast is started.
+
+![alt text](https://github.com/0x78654C/CIARE/blob/v1.2.4-LiveShare/Media/ls_remote.png?raw=true)
+
+INFO: Maximum connection are two / session id.
+After connection is made the remote connected user can see host user data but can edit just after host made the first edit on data.
+
+# Live share video sample
+
+
+https://user-images.githubusercontent.com/13780514/201545030-c6cba10c-f117-45b5-bfc2-0a6dbf3af0ec.mp4
+
+
 
 # Sample pictures
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_inteli.png?raw=true)

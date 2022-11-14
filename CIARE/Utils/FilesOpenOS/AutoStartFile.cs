@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis.Operations;
-using System;
+﻿using System;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -14,7 +13,7 @@ namespace CIARE.Utils.FilesOpenOS
         public string UserAppdataFile { get; set; }
         public string UserAppdataFileTemp { get; set; }
         public string OpenedFilePath { get; set; }
-        private string _ciarePath = $"{Application.StartupPath}CIARE.exe";
+        private string _ciarePath = GlobalVariables.ciarePath;
         private string _runCiareReg = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.regUserRunPath}", "CIARE");
         private string _regWinLogin = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", GlobalVariables.OWinLogin);
         public AutoStartFile(string userRunRegistryPath, string userAppdataFile, string userAppdataFileTemp, string openedFilePath)
@@ -144,7 +143,7 @@ namespace CIARE.Utils.FilesOpenOS
                 state = false;
             }
             GlobalVariables.OWinLoginState = state;
-            if(_regWinLogin.Length>0)
+            if (_regWinLogin.Length > 0)
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, GlobalVariables.OWinLogin, state.ToString());
         }
 
@@ -165,7 +164,6 @@ namespace CIARE.Utils.FilesOpenOS
             if (!CheckFileContent(UserAppdataFile))
                 return;
 
-            
             RemoveLineUnexistingPath();
             ProcessRun processRun;
             var fileLines = File.ReadAllLines(UserAppdataFile);
@@ -177,14 +175,14 @@ namespace CIARE.Utils.FilesOpenOS
                     string dataReadTemp = File.ReadAllText(UserAppdataFileTemp);
                     if (!dataReadTemp.Contains(line))
                     {
-                     
+
                         if (!string.IsNullOrEmpty(argParam))
                         {
                             processRun = new ProcessRun(_ciarePath, argParam, Application.StartupPath);
                             processRun.RunVisible();
                             break;
                         }
-                        if(!CheckListFiles())
+                        if (!CheckListFiles())
                         {
                             processRun = new ProcessRun(_ciarePath, line, Application.StartupPath);
                             processRun.RunVisible();
@@ -200,7 +198,8 @@ namespace CIARE.Utils.FilesOpenOS
                 if (string.IsNullOrEmpty(Form1.Instance.textEditorControl1.Text))
                     Environment.Exit(0);
             }
-            catch {
+            catch
+            {
                 Environment.Exit(0);
             }
 

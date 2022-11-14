@@ -14,13 +14,17 @@ using System.Drawing;
 using CIARE.Utils.FilesOpenOS;
 using System.Runtime.Versioning;
 using System.Diagnostics;
+using Microsoft.AspNetCore.SignalR.Client;
 using System.Linq;
+using CIARE.LiveShareManage;
+using System.Threading.Tasks;
 
 namespace CIARE
 {
     [SupportedOSPlatform("windows")]
     public partial class Form1 : Form
     {
+        public HubConnection hubConnection;
         public string versionName;
         public long openedFileLength = 0;
         public bool visibleSplitContainer = false;
@@ -36,6 +40,7 @@ namespace CIARE
         static readonly Dom.LanguageProperties CurrentLanguageProperties = IsVisualBasic ? Dom.LanguageProperties.VBNet : Dom.LanguageProperties.CSharp;
         Thread parserThread;
         private string[] s_args = Environment.GetCommandLineArgs();
+        private ApiConnectionEvents _apiConnectionEvents;
 
         public Form1()
         {
@@ -60,6 +65,7 @@ namespace CIARE
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
             InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
+            InitializeEditor.GenerateLiveSessionId();
             Console.SetOut(new ControlWriter(outputRBT));
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
@@ -69,6 +75,9 @@ namespace CIARE
             BuildConfig.CheckConfig(GlobalVariables.registryPath);
             BuildConfig.CheckPlatform(GlobalVariables.registryPath);
             TargetFramework.CheckFramework(GlobalVariables.registryPath);
+            LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
+            _apiConnectionEvents = new ApiConnectionEvents();
+            //------------------------------
 
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
@@ -207,6 +216,9 @@ namespace CIARE
             LinesManage.GetTotalLinesCount(textEditorControl1, linesCountLbl);
             textEditorControl1.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
             textEditorControl1.Document.FoldingManager.UpdateFoldings(null, null);
+
+            // Send live share data to api.
+            SendData();
         }
 
         /// <summary>
@@ -368,15 +380,22 @@ namespace CIARE
 
 
 
-            //Delete temp mark file.
+            // Delete temp mark file.
             if (GetCiareProcesses() == 1)
             {
                 AutoStartFile autoStartFile = new AutoStartFile("", GlobalVariables.markFile, GlobalVariables.markFileTemp, "");
                 autoStartFile.DelTempFile();
             }
 
-            CrashCheck crashCheck = new CrashCheck(GlobalVariables.registryPath, GlobalVariables.activeForm);
-            crashCheck.SetClosedFormState();
+            // Set if form is not active anymore if there is not process left
+            if (ProcessRun.CheckActiveProcessCount("CIARE") <= 1)
+            {
+                CrashCheck crashCheck = new CrashCheck(GlobalVariables.registryPath, GlobalVariables.activeForm);
+                crashCheck.SetClosedFormState();
+            }
+
+            // Stop Live share if connected.
+            Task.Run(() => _apiConnectionEvents.CloseConnection(hubConnection));
         }
 
         /// <summary>
@@ -606,6 +625,45 @@ namespace CIARE
         private void textEditorControl1_Resize(object sender, EventArgs e)
         {
             SplitEditorWindow.SetSplitWindowSize(textEditorControl1, GlobalVariables.splitWindowPosition);
+        }
+
+        /// <summary>
+        /// Start live share host
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void liveShareHostToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            LiveShareHost liveShareHost = new LiveShareHost();
+            liveShareHost.ShowDialog();
+        }
+
+        /// <summary>
+        /// Send data to remote client.
+        /// </summary>
+        private async void SendData()
+        {
+            GlobalVariables.codeWriter = false;
+
+            if (!GlobalVariables.connected)
+                return;
+
+            await Task.Delay(10);
+            await _apiConnectionEvents.SendData(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, textEditorControl1);
+        }
+
+        /// <summary>
+        /// Manage live hub disconection event.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void liveStatusPb_Paint(object sender, PaintEventArgs e)
+        {
+            if (GlobalVariables.connected && GlobalVariables.liveDisconnected)
+            {
+                if (GlobalVariables.apiRemoteConnected || GlobalVariables.apiConnected)
+                   ApiConnectionEvents.ManageHubDisconnection(hubConnection);
+            }
         }
     }
 }

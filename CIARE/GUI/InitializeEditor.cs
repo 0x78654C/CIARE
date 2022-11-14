@@ -197,5 +197,14 @@ namespace CIARE.GUI
             string regLoginState = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regSubKey);
             winLoginGlobal = regLoginState.Length > 0 ? bool.Parse(regLoginState) : false;
         }
+
+        /// <summary>
+        /// Generate Session id on CIARE load.
+        /// </summary>
+        public static void GenerateLiveSessionId()
+        {
+            GlobalVariables.sessionId = Utils.Encryption.KeyGenerator.GeneratePassword(20, false, false, false, true);
+            GlobalVariables.sessionIdMain = GlobalVariables.sessionId;
+        }
     }
 }

@@ -13,9 +13,9 @@ namespace CIARE.Utils.Options
         /// <param name="regKeyName"></param>
         public static void CheckWarnings(string regKeyName)
         {
-            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.warnings);
-            if (regHighlight.Length > 0)
-                GlobalVariables.OWarnings = bool.Parse(regHighlight);
+            string regWarnings = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.warnings);
+            if (regWarnings.Length > 0)
+                GlobalVariables.OWarnings = bool.Parse(regWarnings);
         }
 
         /// <summary>

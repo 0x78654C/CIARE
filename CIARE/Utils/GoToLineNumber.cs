@@ -1,4 +1,5 @@
-﻿using ICSharpCode.TextEditor;
+﻿using CIARE.Utils.Options;
+using ICSharpCode.TextEditor;
 
 namespace CIARE.Utils
 {
@@ -14,6 +15,17 @@ namespace CIARE.Utils
             TextArea textArea = textEditorControl.ActiveTextAreaControl.TextArea;
             textArea.Caret.Line = lineNumber - 1;
             textArea.Caret.UpdateCaretPosition();
+        }
+
+        /// <summary>
+        /// Get Line number.
+        /// </summary>
+        /// <param name="textEditorControl"></param>
+        /// <returns></returns>
+        public static int GetLineNumber(TextEditorControl textEditorControl)
+        {
+            TextArea textArea = textEditorControl.ActiveTextAreaControl.TextArea;
+            return textArea.Caret.Line;
         }
     }
 }

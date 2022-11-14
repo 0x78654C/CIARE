@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Windows.Forms;
 
 namespace CIARE.Utils
 {
@@ -26,24 +27,39 @@ namespace CIARE.Utils
         public static bool noPath = false;
         public static bool darkColor = false;
         public static string configParam = "/p:configuration=Debug";
-        public static string platformParam= "/p:Platform=\"Any CPU\"";
+        public static string platformParam = "/p:Platform=\"Any CPU\"";
         public static bool OCodeCompletion = true;
         public static bool OLineNumber = true;
         public static bool OFoldingCode = true;
+        public static string apiUrl = string.Empty;
         public static bool OWarnings = false;
         public static bool OStartUp = false;
         public static bool OWinLoginState = false;
         public static bool compileTime = false;
+        public static bool codeWriter = false;
         public static string Framework = "net6.0-windows";
         public static bool noClear = false;
         public static string binaryName = string.Empty;
+        public static string livePassword = string.Empty;
+        public static string remoteLivePassword = string.Empty;
+        public static string sessionId = string.Empty;
+        public static string sessionIdMain = string.Empty;
+        public static string remoteSessionId = string.Empty;
+        public static string remoteConnectionId = string.Empty;
         public static string binaryNameStore = string.Empty;
+        public static bool connected = false;
+        public static bool liveDisconnected = false;
+        public static bool apiConnected = false;
+        public static bool apiRemoteConnected = false;
+        public static bool typeConnection = false;
+        public static string ciarePath = $"{Application.StartupPath}CIARE.exe";
         public static readonly string registryPath = "SOFTWARE\\CIARE";
         public static readonly string regUserRunPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
         public static readonly string codeCompletionKey = "OCodeCompletion";
         public static readonly string foldingCodeKey = "OFoldingCode";
         public static readonly string lineNumberKey = "OLineNumber";
         public static readonly string warnings = "OWarnings";
+        public static readonly string liveShare = "OLiveShare";
         public static readonly string startUp = "OStartUp";
         public static readonly string OWinLogin = "OWinLogin";
         public static readonly string activeForm = "activeForm";
