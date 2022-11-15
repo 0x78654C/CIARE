@@ -106,7 +106,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 109);
+            this.outputRBT.Size = new System.Drawing.Size(1382, 107);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -437,7 +437,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 134);
+            this.groupBox1.Size = new System.Drawing.Size(1396, 132);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -507,7 +507,7 @@ namespace CIARE
             // 
             this.linesCountLbl.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.linesCountLbl.AutoSize = true;
-            this.linesCountLbl.Location = new System.Drawing.Point(1219, 7);
+            this.linesCountLbl.Location = new System.Drawing.Point(1219, 6);
             this.linesCountLbl.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.linesCountLbl.Name = "linesCountLbl";
             this.linesCountLbl.Size = new System.Drawing.Size(64, 15);
@@ -518,7 +518,7 @@ namespace CIARE
             // 
             this.linesPositionLbl.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.linesPositionLbl.AutoSize = true;
-            this.linesPositionLbl.Location = new System.Drawing.Point(1036, 7);
+            this.linesPositionLbl.Location = new System.Drawing.Point(1036, 6);
             this.linesPositionLbl.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.linesPositionLbl.Name = "linesPositionLbl";
             this.linesPositionLbl.Size = new System.Drawing.Size(74, 15);
