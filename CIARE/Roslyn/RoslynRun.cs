@@ -15,7 +15,7 @@ using ICSharpCode.TextEditor;
 using System.Runtime.Versioning;
 using Path = System.IO.Path;
 using System.Collections.Immutable;
-
+using System.Reflection.Emit;
 
 namespace CIARE.Roslyn
 {
@@ -96,10 +96,16 @@ namespace CIARE.Roslyn
             }
             catch (DivideByZeroException dbze)
             {
-
                 richTextBox.Text += dbze.StackTrace;
             }
-            catch { }
+            catch (Exception st) 
+            {
+                if (richTextBox.Text.EndsWith("\n"))
+                    richTextBox.Text += $"---------------Stack Trace------------------\n";
+                else
+                    richTextBox.Text += $"\n--------------Stack Trace-------------------\n";
+                richTextBox.Text += st.InnerException; 
+            }
         }
 
         /// <summary>
@@ -259,7 +265,7 @@ namespace CIARE.Roslyn
             BinaryName binaryName = new BinaryName();
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
-            GUI.OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
+            OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
             BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb);
             GC.Collect();
         }
