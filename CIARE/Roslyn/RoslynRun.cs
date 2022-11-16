@@ -98,13 +98,16 @@ namespace CIARE.Roslyn
             {
                 richTextBox.Text += dbze.StackTrace;
             }
-            catch (Exception st) 
+            catch (Exception st)
             {
-                if (richTextBox.Text.EndsWith("\n"))
-                    richTextBox.Text += $"---------------Stack Trace------------------\n";
-                else
-                    richTextBox.Text += $"\n--------------Stack Trace-------------------\n";
-                richTextBox.Text += st.InnerException; 
+                if (!richTextBox.Text.StartsWith("ERROR"))
+                {
+                    if (richTextBox.Text.EndsWith("\n"))
+                        richTextBox.Text += $"---------------Stack Trace------------------\n";
+                    else
+                        richTextBox.Text += $"\n--------------Stack Trace-------------------\n";
+                    richTextBox.Text += st.InnerException;
+                }
             }
         }
 
