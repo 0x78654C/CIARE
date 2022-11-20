@@ -20,7 +20,7 @@ namespace CIARE
         private void LiveShareHost_Load(object sender, EventArgs e)
         {
             // Check if api url exist.
-            CheckApiUrl(GlobalVariables.apiUrl);
+            CheckApiUrl(ref GlobalVariables.apiUrl);
 
             // Set dark mode if enabled.
             if (GlobalVariables.darkColor)
@@ -209,15 +209,25 @@ namespace CIARE
         }
 
         /// <summary>
-        /// Check if API url is loaded from registry.
+        /// Check if API url is loaded from registry and store it.
         /// </summary>
         /// <param name="apiUrl"></param>
-        private void CheckApiUrl(string apiUrl)
+        private void CheckApiUrl(ref string apiUrl)
         {
-            if (string.IsNullOrEmpty(apiUrl))
+            if (string.IsNullOrWhiteSpace(apiUrl))
             {
-                MessageBox.Show("There is no API url stored. Check settings!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                this.Close();
+                DialogResult dr = DialogResult.No;
+                dr = MessageBox.Show("There is no API url stored. Do you want to add one?", "CIARE - Live Share", MessageBoxButtons.YesNo,
+    MessageBoxIcon.Warning);
+
+                if (dr == DialogResult.Yes)
+                {
+                    ApiUrlCheck apiUrlCheck = new ApiUrlCheck();
+                    apiUrlCheck.ShowDialog();
+                }
+               
+                if(string.IsNullOrWhiteSpace(apiUrl))
+                    this.Close();
             }
         }
     }
