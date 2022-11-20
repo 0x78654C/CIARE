@@ -209,5 +209,25 @@ namespace CIARE.GUI
             remoteConnect.BackColor = Color.FromArgb(30, 30, 30);
             remoteConnect.ForeColor = Color.FromArgb(192, 215, 207);
         }
+
+        /// <summary>
+        /// Api url check form dark mode.
+        /// </summary>
+        /// <param name="form"></param>
+        /// <param name="groupBox"></param>
+        /// <param name="label"></param>
+        /// <param name="textBox"></param>
+        /// <param name="button"></param>
+        public static void ApiUrlCheckDarkMode(Form form,GroupBox groupBox, Label label,TextBox textBox, Button button)
+        {
+            form.BackColor = Color.FromArgb(51, 51, 51);
+            form.ForeColor = Color.FromArgb(192, 215, 207);
+            groupBox.ForeColor = Color.FromArgb(192, 215, 207);
+            label.ForeColor = Color.FromArgb(192, 215, 207);
+            textBox.ForeColor = Color.FromArgb(192, 215, 207);
+            textBox.BackColor = Color.FromArgb(30, 30, 30);
+            button.BackColor = Color.FromArgb(30, 30, 30);
+            button.ForeColor = Color.FromArgb(192, 215, 207);
+        }
     }
 }
