@@ -69,7 +69,7 @@ namespace CIARE
             try
             {
                 HubConnectionBuild();
-                await ApiConnectionEvents.StartShare(Form1.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
+                await ApiConnectionEvents.StartShare(this, Form1.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
                     startLiveBtn, connectHostBtn, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
             }
             catch (Exception ex)
@@ -169,7 +169,7 @@ namespace CIARE
             try
             {
                 HubConnectionBuild();
-                await ApiConnectionEvents.Connect(Form1.Instance.hubConnection, connectHostBtn, startLiveBtn,
+                await ApiConnectionEvents.Connect(this, Form1.Instance.hubConnection, connectHostBtn, startLiveBtn,
                     GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
             }
             catch (Exception ex)
@@ -216,7 +216,7 @@ namespace CIARE
         /// </summary>
         private void CheckReconnectionStatus()
         {
-            if (GlobalVariables.liveDisconnected || GlobalVariables.reconnectionCount <6)
+            if (GlobalVariables.liveDisconnected  || GlobalVariables.reconnectionCount < 6)
             {
                 MessageBox.Show("You cannot access this setting when trying to reconnect to Live Share API!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.Close();
@@ -239,8 +239,8 @@ namespace CIARE
                     ApiUrlCheck apiUrlCheck = new ApiUrlCheck();
                     apiUrlCheck.ShowDialog();
                 }
-               
-                if(string.IsNullOrWhiteSpace(apiUrl))
+
+                if (string.IsNullOrWhiteSpace(apiUrl))
                     this.Close();
             }
         }
