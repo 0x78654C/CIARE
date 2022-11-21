@@ -19,6 +19,9 @@ namespace CIARE
 
         private void LiveShareHost_Load(object sender, EventArgs e)
         {
+            // Check if CIARE is reconnecting to Live API.
+            CheckReconnectionStatus();
+
             // Check if api url exist.
             CheckApiUrl(ref GlobalVariables.apiUrl);
 
@@ -208,6 +211,17 @@ namespace CIARE
             }
         }
 
+        /// <summary>
+        /// Check if CIARE is reconnecting to Live API.
+        /// </summary>
+        private void CheckReconnectionStatus()
+        {
+            if (GlobalVariables.liveDisconnected || GlobalVariables.reconnectionCount <6)
+            {
+                MessageBox.Show("You cannot access this setting when trying to reconnect to Live Share API!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                this.Close();
+            }
+        }
         /// <summary>
         /// Check if API url is loaded from registry and store it.
         /// </summary>
