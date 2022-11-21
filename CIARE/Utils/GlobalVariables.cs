@@ -52,6 +52,7 @@ namespace CIARE.Utils
         public static bool apiConnected = false;
         public static bool apiRemoteConnected = false;
         public static bool typeConnection = false;
+        public static int reconnectionCount = 6;
         public static string ciarePath = $"{Application.StartupPath}CIARE.exe";
         public static readonly string registryPath = "SOFTWARE\\CIARE";
         public static readonly string regUserRunPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";

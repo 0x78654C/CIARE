@@ -6,6 +6,7 @@ using CIARE.Utils;
 using CIARE.Utils.Encryption;
 using ICSharpCode.TextEditor;
 using Microsoft.AspNetCore.SignalR.Client;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace CIARE.LiveShareManage
 {
@@ -85,6 +86,7 @@ namespace CIARE.LiveShareManage
 
                 try
                 {
+                    connectBtn.Text = "Stop Connection";
                     await hubConnection.StartAsync();
                     await hubConnection.InvokeAsync("GetSendCode", sessionId, "remote", 0);
                     if (!textEditorControl.ReadOnly)
@@ -93,7 +95,7 @@ namespace CIARE.LiveShareManage
                     GlobalVariables.apiRemoteConnected = true;
                     GlobalVariables.connected = true;
                     GlobalVariables.liveDisconnected = false;
-                    connectBtn.Text = "Stop Connection";
+                    GlobalVariables.reconnectionCount = 6;
                     MessageBox.Show("Connected to remote session!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     liveShareBtn.Enabled = false;
                     if (GlobalVariables.darkColor)
@@ -101,11 +103,30 @@ namespace CIARE.LiveShareManage
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message, "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    connectBtn.Text = "Remote Connect";
-                    GlobalVariables.livePassword = string.Empty;
+                    if (!GlobalVariables.liveDisconnected)
+                        ErrorDisconection(ex.Message, connectBtn);
+                    else
+                    {
+                        GlobalVariables.reconnectionCount--;
+                        if (GlobalVariables.reconnectionCount == 0 && GlobalVariables.liveDisconnected)
+                            ErrorDisconection(ex.Message, connectBtn);
+                        else
+                            ManageHubDisconnection(hubConnection, connectBtn);
+                    }
                 }
             }
+        }
+
+        /// <summary>
+        /// Display error message on live connection fail.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="connectionButton"></param>
+        private static void ErrorDisconection(string message, Button connectionButton)
+        {
+            MessageBox.Show(message, "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            connectionButton.Text = GlobalVariables.typeConnection ? "Start Live Share" : "Remote Connect";
+            GlobalVariables.livePassword = string.Empty;
         }
 
         /// <summary>
@@ -189,6 +210,7 @@ namespace CIARE.LiveShareManage
                     GlobalVariables.apiConnected = true;
                     GlobalVariables.connected = true;
                     GlobalVariables.liveDisconnected = false;
+                    GlobalVariables.reconnectionCount = 6;
                     connectBtn.Enabled = false;
                     if (GlobalVariables.darkColor)
                         connectBtn.BackColor = Color.Gray;
@@ -197,9 +219,17 @@ namespace CIARE.LiveShareManage
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message, "CIARE - Live share", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    startShareBtn.Text = "Start Live Share";
-                    GlobalVariables.livePassword = string.Empty;
+
+                    if (!GlobalVariables.liveDisconnected)
+                        ErrorDisconection(ex.Message, startShareBtn);
+                    else
+                    {
+                        GlobalVariables.reconnectionCount--;
+                        if (GlobalVariables.reconnectionCount == 0)
+                            ErrorDisconection(ex.Message, startShareBtn);
+                        else
+                            ManageHubDisconnection(hubConnection, startShareBtn);
+                    }
                 }
             }
         }
@@ -244,7 +274,7 @@ namespace CIARE.LiveShareManage
         /// Handle live hub disconnection.
         /// </summary>
         /// <param name="textEditorControl"></param>
-        public static async void ManageHubDisconnection(HubConnection hubConnection)
+        public static async void ManageHubDisconnection(HubConnection hubConnection, Button connection)
         {
             GlobalVariables.apiConnected = false;
             GlobalVariables.apiRemoteConnected = false;
@@ -253,7 +283,7 @@ namespace CIARE.LiveShareManage
                 await hubConnection.StopAsync();
 
             DialogResult dr = DialogResult.No;
-            dr = MessageBox.Show("The live share connection is down. Do you want to reconnect?", "CIARE - Live Share", MessageBoxButtons.YesNo,
+            dr = MessageBox.Show("The live share connection or API is down. Do you want to reconnect?", "CIARE - Live Share", MessageBoxButtons.YesNo,
 MessageBoxIcon.Warning);
 
             var fakeButton = new Button();
@@ -268,7 +298,15 @@ MessageBoxIcon.Warning);
 GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
             }
             else
+            {
                 GlobalVariables.livePassword = string.Empty;
+                if (GlobalVariables.typeConnection)
+                    connection.Text = "Start Live Share";
+                else
+                    connection.Text = "Remote Connect";
+                GlobalVariables.reconnectionCount = 6;
+                GlobalVariables.liveDisconnected = false;
+            }
         }
     }
 }
