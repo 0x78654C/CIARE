@@ -19,8 +19,11 @@ namespace CIARE
 
         private void LiveShareHost_Load(object sender, EventArgs e)
         {
+            // Check if CIARE is reconnecting to Live API.
+            CheckReconnectionStatus();
+
             // Check if api url exist.
-            CheckApiUrl(GlobalVariables.apiUrl);
+            CheckApiUrl(ref GlobalVariables.apiUrl);
 
             // Set dark mode if enabled.
             if (GlobalVariables.darkColor)
@@ -66,7 +69,7 @@ namespace CIARE
             try
             {
                 HubConnectionBuild();
-                await ApiConnectionEvents.StartShare(Form1.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
+                await ApiConnectionEvents.StartShare(this, Form1.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
                     startLiveBtn, connectHostBtn, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
             }
             catch (Exception ex)
@@ -166,7 +169,7 @@ namespace CIARE
             try
             {
                 HubConnectionBuild();
-                await ApiConnectionEvents.Connect(Form1.Instance.hubConnection, connectHostBtn, startLiveBtn,
+                await ApiConnectionEvents.Connect(this, Form1.Instance.hubConnection, connectHostBtn, startLiveBtn,
                     GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
             }
             catch (Exception ex)
@@ -209,15 +212,36 @@ namespace CIARE
         }
 
         /// <summary>
-        /// Check if API url is loaded from registry.
+        /// Check if CIARE is reconnecting to Live API.
+        /// </summary>
+        private void CheckReconnectionStatus()
+        {
+            if (GlobalVariables.liveDisconnected  || GlobalVariables.reconnectionCount < 6)
+            {
+                MessageBox.Show("You cannot access this setting when trying to reconnect to Live Share API!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                this.Close();
+            }
+        }
+        /// <summary>
+        /// Check if API url is loaded from registry and store it.
         /// </summary>
         /// <param name="apiUrl"></param>
-        private void CheckApiUrl(string apiUrl)
+        private void CheckApiUrl(ref string apiUrl)
         {
-            if (string.IsNullOrEmpty(apiUrl))
+            if (string.IsNullOrWhiteSpace(apiUrl))
             {
-                MessageBox.Show("There is no API url stored. Check settings!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                this.Close();
+                DialogResult dr = DialogResult.No;
+                dr = MessageBox.Show("There is no API url stored. Do you want to add one?", "CIARE - Live Share", MessageBoxButtons.YesNo,
+    MessageBoxIcon.Warning);
+
+                if (dr == DialogResult.Yes)
+                {
+                    ApiUrlCheck apiUrlCheck = new ApiUrlCheck();
+                    apiUrlCheck.ShowDialog();
+                }
+
+                if (string.IsNullOrWhiteSpace(apiUrl))
+                    this.Close();
             }
         }
     }

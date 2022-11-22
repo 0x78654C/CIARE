@@ -25,8 +25,9 @@ namespace CIARE.Utils.Options
         /// <param name="regKeyName"></param>
         public static void SetApiLiveShare(TextBox liveShareApi, string regKeyName)
         {
-            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, liveShareApi.Text);
-            GlobalVariables.apiUrl = liveShareApi.Text;
+            var trimLink = liveShareApi.Text.Trim();
+            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, trimLink);
+            GlobalVariables.apiUrl = trimLink;
         }
     }
 }

@@ -15,7 +15,6 @@ using ICSharpCode.TextEditor;
 using System.Runtime.Versioning;
 using Path = System.IO.Path;
 using System.Collections.Immutable;
-using System.Reflection.Emit;
 
 namespace CIARE.Roslyn
 {
@@ -296,7 +295,7 @@ namespace CIARE.Roslyn
             List<MetadataReference> references = new List<MetadataReference>();
             foreach (var refs in ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator))
                 references.Add(MetadataReference.CreateFromFile(refs));
-            return references;
+                return references;
         }
     }
 }

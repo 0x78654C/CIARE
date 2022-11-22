@@ -35,11 +35,8 @@ namespace ICSharpCode.SharpDevelop.Dom
 
             return (false, null, null);
         }
-
-
-        private static Dictionary<string, Assembly> _assemblies = Directory.GetFiles(Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location))
+        private static Dictionary<string, Assembly> _assemblies = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator)
     .Select(e => IsManaged(e))
-    .Where(e => e.isManaged)
     .Select(e => new { e.name, e.assembly })
     .GroupBy(e => e.name)
     .ToDictionary(e => e.Key, e => e.First().assembly);
