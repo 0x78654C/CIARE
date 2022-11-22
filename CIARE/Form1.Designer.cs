@@ -106,7 +106,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1382, 107);
+            this.outputRBT.Size = new System.Drawing.Size(1388, 112);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -433,11 +433,11 @@ namespace CIARE
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox1.Controls.Add(this.outputRBT);
             this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.groupBox1.Location = new System.Drawing.Point(7, 3);
+            this.groupBox1.Location = new System.Drawing.Point(4, 3);
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1396, 132);
+            this.groupBox1.Size = new System.Drawing.Size(1402, 137);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -471,10 +471,10 @@ namespace CIARE
             this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.textEditorControl1.Highlighting = null;
-            this.textEditorControl1.Location = new System.Drawing.Point(6, 3);
+            this.textEditorControl1.Location = new System.Drawing.Point(4, 3);
             this.textEditorControl1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.textEditorControl1.Name = "textEditorControl1";
-            this.textEditorControl1.Size = new System.Drawing.Size(1397, 681);
+            this.textEditorControl1.Size = new System.Drawing.Size(1402, 683);
             this.textEditorControl1.TabIndex = 0;
             this.textEditorControl1.VRulerRow = 0;
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
@@ -597,7 +597,7 @@ namespace CIARE
             // liveStatusPb
             // 
             this.liveStatusPb.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.liveStatusPb.Location = new System.Drawing.Point(1384, 5);
+            this.liveStatusPb.Location = new System.Drawing.Point(1387, 5);
             this.liveStatusPb.Name = "liveStatusPb";
             this.liveStatusPb.Size = new System.Drawing.Size(18, 19);
             this.liveStatusPb.TabIndex = 17;
