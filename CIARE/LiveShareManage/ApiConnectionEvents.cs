@@ -6,8 +6,6 @@ using CIARE.Utils;
 using CIARE.Utils.Encryption;
 using ICSharpCode.TextEditor;
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace CIARE.LiveShareManage
 {
@@ -87,17 +85,17 @@ namespace CIARE.LiveShareManage
                     return;
                 }
 
-                hubConnection.On<string, int, string>("GetSend", (code, lineNumber, remoteConnectionId) =>
+                hubConnection.On<string, string, string>("GetSend", (code, position, remoteConnectionId) =>
                 {
                     GlobalVariables.remoteConnectionId = remoteConnectionId;
-                    SetLiveCode(textEditorControl, code, password, lineNumber);
+                    SetLiveCode(textEditorControl, code, password, position);
                 });
 
                 try
                 {
                     connectBtn.Text = "Stop Connection";
                     await hubConnection.StartAsync();
-                    await hubConnection.InvokeAsync("GetSendCode", sessionId, "remote", 0);
+                    await hubConnection.InvokeAsync("GetSendCode", sessionId, "remote", "");
                     if (!textEditorControl.ReadOnly)
                         textEditorControl.ReadOnly = true;
                     pictureBox.Image = Properties.Resources.red_dot;
@@ -151,9 +149,11 @@ namespace CIARE.LiveShareManage
                 if (!GlobalVariables.codeWriter && hubConnection.ConnectionId != GlobalVariables.remoteConnectionId)
                 {
                     int lineNumber = 0;
+                    int columnNumber = 0;
                     lineNumber = GoToLineNumber.GetLineNumber(textEditorControl);
+                    columnNumber = GoToLineNumber.GetColumnNumber(textEditorControl);
                     var encyrpted = AESEncryption.Encrypt(textEditorControl.Text, password);
-                    await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted, lineNumber + 20);
+                    await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted, $"{lineNumber}|{columnNumber}");
                 }
             }
             catch { }
@@ -206,10 +206,10 @@ namespace CIARE.LiveShareManage
                     return;
                 }
 
-                hubConnection.On<string, int, string>("GetSend", (code, lineNumber, remoteConnectionId) =>
+                hubConnection.On<string, string, string>("GetSend", (code, position, remoteConnectionId) =>
                 {
                     GlobalVariables.remoteConnectionId = remoteConnectionId;
-                    SetLiveCode(textEditorControl, code, password, lineNumber);
+                    SetLiveCode(textEditorControl, code, password, position);
                     DisplayConnectedUser(ref GlobalVariables.isConnected, remoteConnectionId);
                 });
 
@@ -218,7 +218,7 @@ namespace CIARE.LiveShareManage
                     string code = textEditorControl.Text;
                     var encyrpted = AESEncryption.Encrypt(code, password);
                     await hubConnection.StartAsync();
-                    await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted, 0);
+                    await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted, "");
                     pictureBox.Image = Properties.Resources.red_dot;
                     GlobalVariables.apiConnected = true;
                     GlobalVariables.connected = true;
@@ -253,7 +253,7 @@ namespace CIARE.LiveShareManage
         /// </summary>
         /// <param name="textEditorControl"></param>
         /// <param name="writer"></param>
-        public static void SetLiveCode(TextEditorControl textEditorControl, string code, string password, int lineNumber)
+        public static void SetLiveCode(TextEditorControl textEditorControl, string code, string password, string position)
         {
             try
             {
@@ -264,7 +264,7 @@ namespace CIARE.LiveShareManage
                     if (!string.IsNullOrEmpty(decrypt))
                     {
                         textEditorControl.Text = decrypt;
-                        GoToLineNumber.GoToLine(textEditorControl, lineNumber);
+                        GoToLineNumber.SetPositionCaret(textEditorControl, position);
                         textEditorControl.Refresh();
                     }
                 }
