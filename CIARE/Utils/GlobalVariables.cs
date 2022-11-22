@@ -70,6 +70,7 @@ namespace CIARE.Utils
         public static readonly string OFramework = "OFramework";
         public static readonly string roslynTemplate = @"/*
  * Simple C# code sample for run with Roslyn runtime code compiler and execution.
+ * Top-level statements can be used as well.
  */
 
 using System;
