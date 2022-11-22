@@ -1,6 +1,7 @@
 ﻿using System;
 using System.DirectoryServices.ActiveDirectory;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
@@ -10,6 +11,7 @@ using Path = System.IO.Path;
 
 namespace CIARE.Utils
 {
+    [SupportedOSPlatform("windows")]
     public class FileManage
     {
         private static OpenFileDialog s_openFileDialog = new OpenFileDialog();
@@ -258,6 +260,7 @@ MessageBoxIcon.Warning);
                 return;
             textEditor.Clear();
             GlobalVariables.openedFilePath = string.Empty;
+            GlobalVariables.savedFile=false;
             Form1.Instance.Text = $"CIARE {Form1.Instance.versionName}";
             Form1.Instance.markStartFileChk.Checked = false;
         }
