@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CIARE.Utils;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 namespace CIARE.LiveShareManage
 {
+    [SupportedOSPlatform("windows")]
     public class ApiConnectionEvents
     {
         /// <summary>
