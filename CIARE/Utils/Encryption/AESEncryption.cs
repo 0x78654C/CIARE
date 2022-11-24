@@ -78,11 +78,40 @@ namespace CIARE.Utils.Encryption
         private static byte[] CreateKey(string password, int keyBytes = 32)
         {
             const int Iterations = 300;
-            var keyGenerator = new Rfc2898DeriveBytes(password, Salt, Iterations);
+            var keyGenerator = new Rfc2898DeriveBytes(password, Salt(password), Iterations);
             return keyGenerator.GetBytes(keyBytes);
         }
 
-        private static readonly byte[] Salt = new byte[] { 10, 20, 30, 40, 50, 60, 70, 80 };
+        /// <summary>
+        /// Salt genrate from the first 
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        private static  byte[] Salt(string password)
+        {
+            byte[] bArray =new byte[5];
+            var first = password.Substring(0, 5);
+            foreach(var c in first)
+            {
+                var charToByte = Convert.ToByte(c);
+                bArray= AddByteToArray(bArray, charToByte);
+            }
+            return bArray;
+        }
+
+        /// <summary>
+        /// Add bytes to array of bytes.
+        /// </summary>
+        /// <param name="bArray"></param>
+        /// <param name="newByte"></param>
+        /// <returns></returns>
+        public static byte[] AddByteToArray(byte[] bArray, byte newByte)
+        {
+            byte[] newArray = new byte[bArray.Length + 1];
+            bArray.CopyTo(newArray, 1);
+            newArray[0] = newByte;
+            return newArray;
+        }
 
         /// <summary>
         /// Hash computation with SHA256
