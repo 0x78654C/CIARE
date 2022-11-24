@@ -65,7 +65,7 @@ namespace CIARE
         {
             if(passwordTxt.Text.Length < 5)
             {
-                MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             GlobalVariables.livePassword = passwordTxt.Text;
@@ -169,7 +169,7 @@ namespace CIARE
         {
             if (remotePasswordTxt.Text.Length < 5)
             {
-                MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             GlobalVariables.livePassword = remotePasswordTxt.Text;
