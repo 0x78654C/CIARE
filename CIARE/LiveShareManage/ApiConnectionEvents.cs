@@ -19,7 +19,7 @@ namespace CIARE.LiveShareManage
         /// <param name="updateCode"></param>
         /// <param name="writer"></param>
         /// <param name="connected"></param>
-        public static void ApiConnection(HubConnection hubConnection, PictureBox liveStatusPb, TextEditorControl textEditorControl, bool connected, string apiUrl)
+        public static void ApiConnection(HubConnection hubConnection, TextEditorControl textEditorControl, bool connected, string apiUrl)
         {
             if (string.IsNullOrEmpty(apiUrl))
                 return;
@@ -28,7 +28,7 @@ namespace CIARE.LiveShareManage
             hubConnection.Closed += (sender) =>
             {
                 GlobalVariables.liveDisconnected = true;
-                liveStatusPb.Image = Properties.Resources.orange_dot;
+                Form1.Instance.liveStatusPb.Image = Properties.Resources.orange_dot;
                 return Task.CompletedTask;
             };
         }
@@ -37,7 +37,7 @@ namespace CIARE.LiveShareManage
         /// Clean picture status on main form.
         /// </summary>
         /// <param name="liveStatusPb"></param>
-        private static void CleanDot(PictureBox liveStatusPb) => liveStatusPb.Image = null;
+        public static void CleanDot(PictureBox liveStatusPb) => liveStatusPb.Image = null;
 
         /// <summary>
         /// Remove read only from text editor.
@@ -52,15 +52,14 @@ namespace CIARE.LiveShareManage
         /// Connect to remote session.
         /// </summary>
         public static async Task Connect(Form form, HubConnection hubConnection, Button connectBtn, Button liveShareBtn,
-           string password, string sessionId, TextEditorControl textEditorControl, PictureBox pictureBox)
+           string password, string sessionId, TextEditorControl textEditorControl)
         {
             if (GlobalVariables.apiRemoteConnected)
             {
                 GlobalVariables.apiRemoteConnected = false;
-
                 if (hubConnection != null)
                     await hubConnection.StopAsync();
-                pictureBox.Image = null;
+                Form1.Instance.liveStatusPb.Image = null;
                 RemoveReadOnlyTextEditor(textEditorControl);
                 GlobalVariables.connected = false;
                 GlobalVariables.liveDisconnected = false;
@@ -100,7 +99,7 @@ namespace CIARE.LiveShareManage
                     await hubConnection.InvokeAsync("GetSendCode", sessionId, "remote", "");
                     if (!textEditorControl.ReadOnly)
                         textEditorControl.ReadOnly = true;
-                    pictureBox.Image = Properties.Resources.red_dot;
+                    Form1.Instance.liveStatusPb.Image = Properties.Resources.red_dot;
                     GlobalVariables.apiRemoteConnected = true;
                     GlobalVariables.connected = true;
                     GlobalVariables.liveDisconnected = false;
@@ -121,7 +120,7 @@ namespace CIARE.LiveShareManage
                         if (GlobalVariables.reconnectionCount == 0 && GlobalVariables.liveDisconnected)
                             ErrorDisconection(ex.Message, connectBtn);
                         else
-                            ManageHubDisconnection(hubConnection, connectBtn, new PictureBox());
+                            ManageHubDisconnection(hubConnection, connectBtn);
                     }
                 }
             }
@@ -181,7 +180,7 @@ namespace CIARE.LiveShareManage
         /// <param name="output"></param>
         /// <returns></returns>
         public static async Task StartShare(Form form,HubConnection hubConnection, string password, string sessionId, Button startShareBtn,
-            Button connectBtn, TextEditorControl textEditorControl, PictureBox pictureBox)
+            Button connectBtn, TextEditorControl textEditorControl)
         {
             if (GlobalVariables.apiConnected)
             {
@@ -189,7 +188,7 @@ namespace CIARE.LiveShareManage
                 GlobalVariables.apiConnected = false;
                 if (hubConnection != null)
                     await hubConnection.StopAsync();
-                pictureBox.Image = null;
+                Form1.Instance.liveStatusPb.Image = null;
                 connectBtn.Enabled = true;
                 if (GlobalVariables.darkColor)
                     connectBtn.BackColor = Color.FromArgb(30, 30, 30);
@@ -221,7 +220,7 @@ namespace CIARE.LiveShareManage
                     var encyrpted = AESEncryption.Encrypt(code, password);
                     await hubConnection.StartAsync();
                     await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted, "");
-                    pictureBox.Image = Properties.Resources.red_dot;
+                    Form1.Instance.liveStatusPb.Image = Properties.Resources.red_dot;
                     GlobalVariables.apiConnected = true;
                     GlobalVariables.connected = true;
                     GlobalVariables.liveDisconnected = false;
@@ -244,7 +243,7 @@ namespace CIARE.LiveShareManage
                         if (GlobalVariables.reconnectionCount == 0)
                             ErrorDisconection(ex.Message, startShareBtn);
                         else
-                            ManageHubDisconnection(hubConnection, startShareBtn, new PictureBox());
+                            ManageHubDisconnection(hubConnection, startShareBtn);
                     }
                 }
             }
@@ -305,7 +304,7 @@ namespace CIARE.LiveShareManage
         /// Handle live hub disconnection.
         /// </summary>
         /// <param name="textEditorControl"></param>
-        public static async void ManageHubDisconnection(HubConnection hubConnection, Button connection, PictureBox liveStatusPb)
+        public static async void ManageHubDisconnection(HubConnection hubConnection, Button connection)
         {
             GlobalVariables.apiConnected = false;
             GlobalVariables.apiRemoteConnected = false;
@@ -323,10 +322,10 @@ MessageBoxIcon.Warning);
             {
                 if (GlobalVariables.typeConnection)
                     await StartShare(new Form(),hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
-               fakeButton, fakeButton, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
+               fakeButton, fakeButton, Form1.Instance.textEditorControl1);
                 else
                     await Connect(new Form(),hubConnection, fakeButton, fakeButton,
-GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb); ;
+GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1); ;
             }
             else
             {

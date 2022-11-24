@@ -662,7 +662,7 @@ namespace CIARE
             if (GlobalVariables.connected && GlobalVariables.liveDisconnected)
             {
                 if (GlobalVariables.apiRemoteConnected || GlobalVariables.apiConnected) 
-                    ApiConnectionEvents.ManageHubDisconnection(hubConnection, new Button(), liveStatusPb);
+                    ApiConnectionEvents.ManageHubDisconnection(hubConnection, new Button());
             }
         }
     }

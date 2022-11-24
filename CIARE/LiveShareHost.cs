@@ -63,6 +63,11 @@ namespace CIARE
         /// <param name="e"></param>
         private async void startLiveBtn_Click(object sender, EventArgs e)
         {
+            if(passwordTxt.Text.Length < 5)
+            {
+                MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             GlobalVariables.livePassword = passwordTxt.Text;
             GlobalVariables.sessionId = sessionTxt.Text;
             GlobalVariables.typeConnection = true;
@@ -70,7 +75,7 @@ namespace CIARE
             {
                 HubConnectionBuild();
                 await ApiConnectionEvents.StartShare(this, Form1.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
-                    startLiveBtn, connectHostBtn, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
+                    startLiveBtn, connectHostBtn, Form1.Instance.textEditorControl1);
             }
             catch (Exception ex)
             {
@@ -162,6 +167,11 @@ namespace CIARE
         /// <param name="e"></param>
         private async void connectHostBtn_Click(object sender, EventArgs e)
         {
+            if (remotePasswordTxt.Text.Length < 5)
+            {
+                MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             GlobalVariables.livePassword = remotePasswordTxt.Text;
             GlobalVariables.sessionId = remoteSessioniDtxt.Text;
             GlobalVariables.remoteSessionId = remoteSessioniDtxt.Text;
@@ -170,7 +180,7 @@ namespace CIARE
             {
                 HubConnectionBuild();
                 await ApiConnectionEvents.Connect(this, Form1.Instance.hubConnection, connectHostBtn, startLiveBtn,
-                    GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1, Form1.Instance.liveStatusPb);
+                    GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1);
             }
             catch (Exception ex)
             {
@@ -206,7 +216,7 @@ namespace CIARE
       .WithUrl(GlobalVariables.apiUrl)
       .Build();
 
-                ApiConnectionEvents.ApiConnection(Form1.Instance.hubConnection, Form1.Instance.liveStatusPb, Form1.Instance.textEditorControl1,
+                ApiConnectionEvents.ApiConnection(Form1.Instance.hubConnection, Form1.Instance.textEditorControl1,
                     GlobalVariables.connected, GlobalVariables.apiUrl);
             }
         }
