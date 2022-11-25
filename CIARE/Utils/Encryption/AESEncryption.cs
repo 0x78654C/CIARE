@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Linq;
 
 namespace CIARE.Utils.Encryption
 {
@@ -87,31 +88,7 @@ namespace CIARE.Utils.Encryption
         /// </summary>
         /// <param name="password"></param>
         /// <returns></returns>
-        private static  byte[] Salt(string password)
-        {
-            byte[] bArray =new byte[5];
-            var first = password.Substring(0, 5);
-            foreach(var c in first)
-            {
-                var charToByte = Convert.ToByte(c);
-                bArray= AddByteToArray(bArray, charToByte);
-            }
-            return bArray;
-        }
-
-        /// <summary>
-        /// Add bytes to array of bytes.
-        /// </summary>
-        /// <param name="bArray"></param>
-        /// <param name="newByte"></param>
-        /// <returns></returns>
-        public static byte[] AddByteToArray(byte[] bArray, byte newByte)
-        {
-            byte[] newArray = new byte[bArray.Length + 1];
-            bArray.CopyTo(newArray, 1);
-            newArray[0] = newByte;
-            return newArray;
-        }
+        private static  byte[] Salt(string password) => password.Select(Convert.ToByte).Take(5).ToArray();
 
         /// <summary>
         /// Hash computation with SHA256
