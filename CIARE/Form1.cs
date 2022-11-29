@@ -18,6 +18,8 @@ using Microsoft.AspNetCore.SignalR.Client;
 using System.Linq;
 using CIARE.LiveShareManage;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace CIARE
 {
@@ -39,7 +41,7 @@ namespace CIARE
         public const string DummyFileName = "edited.cs";
         static readonly Dom.LanguageProperties CurrentLanguageProperties = IsVisualBasic ? Dom.LanguageProperties.VBNet : Dom.LanguageProperties.CSharp;
         Thread parserThread;
-        private string[] s_args = Environment.GetCommandLineArgs();
+        private string s_args =SplitArguments.GetCommandLineArgs();
         private ApiConnectionEvents _apiConnectionEvents;
 
         public Form1()
@@ -125,17 +127,28 @@ namespace CIARE
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        private string ReadArgs(string[] args)
+        private string ReadArgs(string args)
         {
-            int count = 0;
-            string arg = string.Empty;
-            foreach (var a in args)
+            if (args.StartsWith("\"") && args.Length > 1)
             {
-                count++;
-                if (count > 1)
-                    arg += $"{a}";
+                int ix = args.IndexOf("\"", 1);
+
+                if (ix != -1)
+                {
+                    args = args.Substring(ix + 1).TrimStart();
+                }
             }
-            return arg;
+            else
+            {
+                int ix = args.IndexOf(" ");
+
+                if (ix != -1)
+                {
+                    args = args.Substring(ix + 1).TrimStart();
+                }
+            }
+            args = args.Trim('"');
+            return args;
         }
 
         /// <summary>
@@ -661,7 +674,7 @@ namespace CIARE
         {
             if (GlobalVariables.connected && GlobalVariables.liveDisconnected)
             {
-                if (GlobalVariables.apiRemoteConnected || GlobalVariables.apiConnected) 
+                if (GlobalVariables.apiRemoteConnected || GlobalVariables.apiConnected)
                     ApiConnectionEvents.ManageHubDisconnection(hubConnection, new Button());
             }
         }

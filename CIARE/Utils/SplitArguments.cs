@@ -10,6 +10,20 @@ namespace CIARE.Utils
         static extern IntPtr CommandLineToArgvW(
     [MarshalAs(UnmanagedType.LPWStr)] string lpCmdLine, out int pNumArgs);
 
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr GetCommandLine();
+
+        /// <summary>
+        /// Get command line arguments without split by space.
+        /// </summary>
+        /// <returns></returns>
+        public static string GetCommandLineArgs()
+        {
+            IntPtr ptr = GetCommandLine();
+
+            return Marshal.PtrToStringAuto(ptr);
+        }
+
         /// <summary>
         /// Convert string to Command lines arguments.
         /// </summary>
