@@ -36,7 +36,7 @@ namespace CIARE.Utils
 
             ProcessStartInfo startInfo = new ProcessStartInfo(ProcessToRun);
             startInfo.UseShellExecute = false;
-            startInfo.Arguments = "\"" + Arguments + "\"";
+            startInfo.Arguments =Arguments;
             startInfo.WorkingDirectory = WorkingDirectory;
             startInfo.CreateNoWindow = true;
             startInfo.RedirectStandardOutput = true;
