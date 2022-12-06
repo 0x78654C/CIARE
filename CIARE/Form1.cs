@@ -41,7 +41,7 @@ namespace CIARE
         public const string DummyFileName = "edited.cs";
         static readonly Dom.LanguageProperties CurrentLanguageProperties = IsVisualBasic ? Dom.LanguageProperties.VBNet : Dom.LanguageProperties.CSharp;
         Thread parserThread;
-        private string s_args =SplitArguments.GetCommandLineArgs();
+        private string s_args = SplitArguments.GetCommandLineArgs();
         private ApiConnectionEvents _apiConnectionEvents;
 
         public Form1()
@@ -590,6 +590,9 @@ namespace CIARE
         /// <param name="e"></param>
         private void Form1_Resize(object sender, EventArgs e)
         {
+            if (this.WindowState == FormWindowState.Minimized)
+                return;
+
             if (this.WindowState != FormWindowState.Maximized)
             {
                 InitializeEditor.SetEditorWindowSize(GlobalVariables.registryPath, this.Width, this.Height);
