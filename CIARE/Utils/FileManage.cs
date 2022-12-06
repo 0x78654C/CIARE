@@ -1,5 +1,4 @@
 ﻿using System;
-using System.DirectoryServices.ActiveDirectory;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -37,6 +36,10 @@ namespace CIARE.Utils
                     GlobalVariables.openedFileName = fileInfo.Name;
                     return reader.ReadToEnd();
                 }
+            }
+            else
+            {
+                GlobalVariables.noFileSelected = true;
             }
             return "";
         }
@@ -188,7 +191,13 @@ MessageBoxIcon.Warning);
             ManageUnsavedData(textEditor);
             if (GlobalVariables.noClear)
                 return;
+  
             string openedData = OpenFile();
+            if (GlobalVariables.noFileSelected)
+            {
+                GlobalVariables.noFileSelected = false;
+                return;
+            }
             textEditor.Clear();
             textEditor.Text = openedData;
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);

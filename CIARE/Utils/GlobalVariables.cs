@@ -19,6 +19,7 @@ namespace CIARE.Utils
         public static string findWhat = string.Empty;
         public static string repalceWith = string.Empty;
         public static bool savedFile = false;
+        public static bool noFileSelected = false;
         public static bool splitWindowPosition = false;
         public static bool exeName = false;
         public static bool checkFormOpen = false;
