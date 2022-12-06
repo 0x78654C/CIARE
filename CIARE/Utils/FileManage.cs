@@ -189,17 +189,14 @@ MessageBoxIcon.Warning);
             if (GlobalVariables.noClear)
                 return;
             string openedData = OpenFile();
-            if (openedData.Length > 0)
-            {
-                textEditor.Clear();
-                textEditor.Text = openedData;
-                FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                GlobalVariables.openedFileName = fileInfo.Name;
-                Form1.Instance.openedFileLength = fileInfo.Length;
-                Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
-                AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath,GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
-                autoStartFile.CheckFilePath();
-            }
+            textEditor.Clear();
+            textEditor.Text = openedData;
+            FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+            GlobalVariables.openedFileName = fileInfo.Name;
+            Form1.Instance.openedFileLength = fileInfo.Length;
+            Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
+            AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
+            autoStartFile.CheckFilePath();
         }
 
         /// <summary>
@@ -260,7 +257,7 @@ MessageBoxIcon.Warning);
                 return;
             textEditor.Clear();
             GlobalVariables.openedFilePath = string.Empty;
-            GlobalVariables.savedFile=false;
+            GlobalVariables.savedFile = false;
             Form1.Instance.Text = $"CIARE {Form1.Instance.versionName}";
             Form1.Instance.markStartFileChk.Checked = false;
         }
