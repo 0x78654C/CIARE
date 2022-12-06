@@ -71,29 +71,13 @@ namespace CIARE
             this.highlightCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.highlightCMB.FormattingEnabled = true;
             this.highlightCMB.Items.AddRange(new object[] {
-            "Default",
-            "XML",
-            "HTML",
-            "C++.NET",
-            "BAT",
-            "Coco",
-            "Python",
-            "PHP",
-            "SQL",
             "C#-Light",
-            "C#-Dark",
-            "Batch",
-            "Boo",
-            "VBNET",
-            "TeX",
-            "ASP/XHTML",
-            "JavaScript",
-            "Java"});
+            "C#-Dark"});
             this.highlightCMB.Location = new System.Drawing.Point(119, 67);
             this.highlightCMB.Name = "highlightCMB";
             this.highlightCMB.Size = new System.Drawing.Size(93, 23);
             this.highlightCMB.TabIndex = 10;
-            this.highlightCMB.Text = "Default";
+            this.highlightCMB.Text = "C#-Dark";
             this.highlightCMB.SelectedIndexChanged += new System.EventHandler(this.highlightCMB_SelectedIndexChanged);
             // 
             // codeCompletionCkb
