@@ -106,7 +106,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1388, 112);
+            this.outputRBT.Size = new System.Drawing.Size(1388, 109);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -437,7 +437,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1402, 137);
+            this.groupBox1.Size = new System.Drawing.Size(1402, 134);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -471,6 +471,7 @@ namespace CIARE
             this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.textEditorControl1.Highlighting = null;
+            this.textEditorControl1.IsIconBarVisible = true;
             this.textEditorControl1.Location = new System.Drawing.Point(4, 3);
             this.textEditorControl1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.textEditorControl1.Name = "textEditorControl1";
@@ -479,6 +480,7 @@ namespace CIARE
             this.textEditorControl1.VRulerRow = 0;
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
             this.textEditorControl1.Enter += new System.EventHandler(this.textEditorControl1_Enter);
+            this.textEditorControl1.MouseClick += new System.Windows.Forms.MouseEventHandler(this.textEditorControl1_MouseClick);
             this.textEditorControl1.Resize += new System.EventHandler(this.textEditorControl1_Resize);
             // 
             // label2
