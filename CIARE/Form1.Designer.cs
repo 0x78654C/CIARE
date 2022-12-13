@@ -480,7 +480,6 @@ namespace CIARE
             this.textEditorControl1.VRulerRow = 0;
             this.textEditorControl1.TextChanged += new System.EventHandler(this.textEditorControl1_TextChanged);
             this.textEditorControl1.Enter += new System.EventHandler(this.textEditorControl1_Enter);
-            this.textEditorControl1.MouseClick += new System.Windows.Forms.MouseEventHandler(this.textEditorControl1_MouseClick);
             this.textEditorControl1.Resize += new System.EventHandler(this.textEditorControl1_Resize);
             // 
             // label2
