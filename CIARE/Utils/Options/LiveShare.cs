@@ -8,7 +8,7 @@ namespace CIARE.Utils.Options
     {
 
         /// <summary>
-        /// Check stored status for warnings display in registry.
+        /// Check stored data for LiveShare
         /// </summary>
         /// <param name="regKeyName"></param>
         public static void CheckApiLiveShare(string regKeyName)
@@ -19,7 +19,7 @@ namespace CIARE.Utils.Options
         }
 
         /// <summary>
-        /// Store in registry warinings display status.
+        /// Set stored data for LiveShare
         /// </summary>
         /// <param name="status"></param>
         /// <param name="regKeyName"></param>
