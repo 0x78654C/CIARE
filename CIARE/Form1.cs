@@ -18,8 +18,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using System.Linq;
 using CIARE.LiveShareManage;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions;
-using System.Collections.Generic;
+using CIARE.Utils.OpenAISettings;
 
 namespace CIARE
 {
@@ -78,6 +77,7 @@ namespace CIARE
             BuildConfig.CheckPlatform(GlobalVariables.registryPath);
             TargetFramework.CheckFramework(GlobalVariables.registryPath);
             LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
+            OpenAISetting.CheckOpenAIData(GlobalVariables.registryPath);
             _apiConnectionEvents = new ApiConnectionEvents();
             //------------------------------
 
@@ -308,6 +308,9 @@ namespace CIARE
                     CmdLineArgs cmdLineArgs = new CmdLineArgs();
                     cmdLineArgs.ShowDialog();
                     return true;
+                case Keys.P | Keys.Control | Keys.Shift:
+                    AiManage.GetDataAI(textEditorControl1, GlobalVariables.aiKey);
+                    return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
@@ -499,6 +502,11 @@ namespace CIARE
         {
             Options options = new Options();
             options.ShowDialog();
+        }
+
+        private void chatGPTCTRLShiftPToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AiManage.GetDataAI(textEditorControl1, GlobalVariables.aiKey);
         }
         #endregion
 

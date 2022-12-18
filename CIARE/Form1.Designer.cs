@@ -56,6 +56,8 @@ namespace CIARE
             this.replaceStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.goToLineStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.selectAllStripMenuItem3 = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
+            this.chatGPTCTRLShiftPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.compileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.compileToexeCtrlShiftBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.compileToDLLCtrlSfitBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -106,7 +108,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1388, 109);
+            this.outputRBT.Size = new System.Drawing.Size(1388, 113);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -226,7 +228,9 @@ namespace CIARE
             this.finStripMenuItem,
             this.replaceStripMenuItem,
             this.goToLineStripMenuItem,
-            this.selectAllStripMenuItem3});
+            this.selectAllStripMenuItem3,
+            this.toolStripSeparator6,
+            this.chatGPTCTRLShiftPToolStripMenuItem});
             this.editToolStripMenuItem.Name = "editToolStripMenuItem";
             this.editToolStripMenuItem.ShowShortcutKeys = false;
             this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
@@ -235,7 +239,7 @@ namespace CIARE
             // undoToolStripMenuItem
             // 
             this.undoToolStripMenuItem.Name = "undoToolStripMenuItem";
-            this.undoToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.undoToolStripMenuItem.Size = new System.Drawing.Size(229, 22);
             this.undoToolStripMenuItem.Text = "Undo        ( CTRL + Z )";
             this.undoToolStripMenuItem.Click += new System.EventHandler(this.undoToolStripMenuItem_Click);
             // 
@@ -244,68 +248,80 @@ namespace CIARE
             this.toolStripSeparator3.BackColor = System.Drawing.SystemColors.ActiveCaptionText;
             this.toolStripSeparator3.ForeColor = System.Drawing.SystemColors.AppWorkspace;
             this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(188, 6);
+            this.toolStripSeparator3.Size = new System.Drawing.Size(226, 6);
             // 
             // cutStripMenuItem
             // 
             this.cutStripMenuItem.Name = "cutStripMenuItem";
-            this.cutStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.cutStripMenuItem.Size = new System.Drawing.Size(229, 22);
             this.cutStripMenuItem.Text = "Cut           ( CTRL + X )";
             this.cutStripMenuItem.Click += new System.EventHandler(this.cutStripMenuItem_Click);
             // 
             // copyStripMenuItem
             // 
             this.copyStripMenuItem.Name = "copyStripMenuItem";
-            this.copyStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.copyStripMenuItem.Size = new System.Drawing.Size(229, 22);
             this.copyStripMenuItem.Text = "Copy        ( CTRL + C )";
             this.copyStripMenuItem.Click += new System.EventHandler(this.copyStripMenuItem_Click);
             // 
             // pasteStripMenuItem
             // 
             this.pasteStripMenuItem.Name = "pasteStripMenuItem";
-            this.pasteStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.pasteStripMenuItem.Size = new System.Drawing.Size(229, 22);
             this.pasteStripMenuItem.Text = "Paste        ( CTRL + V )";
             this.pasteStripMenuItem.Click += new System.EventHandler(this.pasteStripMenuItem_Click);
             // 
             // deleteStripMenuItem
             // 
             this.deleteStripMenuItem.Name = "deleteStripMenuItem";
-            this.deleteStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.deleteStripMenuItem.Size = new System.Drawing.Size(229, 22);
             this.deleteStripMenuItem.Text = "Delete                     Del";
             this.deleteStripMenuItem.Click += new System.EventHandler(this.deleteStripMenuItem_Click);
             // 
             // toolStripSeparator4
             // 
             this.toolStripSeparator4.Name = "toolStripSeparator4";
-            this.toolStripSeparator4.Size = new System.Drawing.Size(188, 6);
+            this.toolStripSeparator4.Size = new System.Drawing.Size(226, 6);
             // 
             // finStripMenuItem
             // 
             this.finStripMenuItem.Name = "finStripMenuItem";
-            this.finStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.finStripMenuItem.Size = new System.Drawing.Size(229, 22);
             this.finStripMenuItem.Text = "Find          ( CTRL + F  )";
             this.finStripMenuItem.Click += new System.EventHandler(this.finStripMenuItem_Click);
             // 
             // replaceStripMenuItem
             // 
             this.replaceStripMenuItem.Name = "replaceStripMenuItem";
-            this.replaceStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.replaceStripMenuItem.Size = new System.Drawing.Size(229, 22);
             this.replaceStripMenuItem.Text = "Replace    ( CTRL + H )";
             this.replaceStripMenuItem.Click += new System.EventHandler(this.replaceStripMenuItem_Click);
             // 
             // goToLineStripMenuItem
             // 
             this.goToLineStripMenuItem.Name = "goToLineStripMenuItem";
-            this.goToLineStripMenuItem.Size = new System.Drawing.Size(191, 22);
+            this.goToLineStripMenuItem.Size = new System.Drawing.Size(229, 22);
             this.goToLineStripMenuItem.Text = "Go To ..     ( CTRL + G )";
             this.goToLineStripMenuItem.Click += new System.EventHandler(this.goToLineStripMenuItem_Click);
             // 
             // selectAllStripMenuItem3
             // 
             this.selectAllStripMenuItem3.Name = "selectAllStripMenuItem3";
-            this.selectAllStripMenuItem3.Size = new System.Drawing.Size(191, 22);
+            this.selectAllStripMenuItem3.Size = new System.Drawing.Size(229, 22);
             this.selectAllStripMenuItem3.Text = "Select All  ( CTRL + A )";
             this.selectAllStripMenuItem3.Click += new System.EventHandler(this.selectAllStripMenuItem3_Click);
+            // 
+            // toolStripSeparator6
+            // 
+            this.toolStripSeparator6.Name = "toolStripSeparator6";
+            this.toolStripSeparator6.Size = new System.Drawing.Size(226, 6);
+            // 
+            // chatGPTCTRLShiftPToolStripMenuItem
+            // 
+            this.chatGPTCTRLShiftPToolStripMenuItem.Name = "chatGPTCTRLShiftPToolStripMenuItem";
+            this.chatGPTCTRLShiftPToolStripMenuItem.Size = new System.Drawing.Size(229, 22);
+            this.chatGPTCTRLShiftPToolStripMenuItem.Text = "ChatGPT   ( CTRL + Shift + P )";
+            this.chatGPTCTRLShiftPToolStripMenuItem.Click += new System.EventHandler(this.chatGPTCTRLShiftPToolStripMenuItem_Click);
             // 
             // compileToolStripMenuItem
             // 
@@ -437,7 +453,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1402, 134);
+            this.groupBox1.Size = new System.Drawing.Size(1402, 138);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -471,7 +487,6 @@ namespace CIARE
             this.textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.textEditorControl1.Highlighting = null;
-            this.textEditorControl1.IsIconBarVisible = true;
             this.textEditorControl1.Location = new System.Drawing.Point(4, 3);
             this.textEditorControl1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.textEditorControl1.Name = "textEditorControl1";
@@ -698,6 +713,8 @@ namespace CIARE
         private System.Windows.Forms.ToolStripMenuItem liveToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem liveShareToolStripMenuItem;
         public System.Windows.Forms.PictureBox liveStatusPb;
+        public System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
+        public System.Windows.Forms.ToolStripMenuItem chatGPTCTRLShiftPToolStripMenuItem;
     }
 }
 

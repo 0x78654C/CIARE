@@ -19,7 +19,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ICSharpCode.Core", "Core\Pr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NRefactory", "NRefactory\Project\NRefactory.csproj", "{3A9AE6AA-BC07-4A2F-972C-581E3AE2F195}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CIARE.Core", "CIARE.Core\CIARE.Core.csproj", "{EFBC401E-4A03-4319-84E7-9B3804E40525}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CIARE.Core", "CIARE.Core\CIARE.Core.csproj", "{EFBC401E-4A03-4319-84E7-9B3804E40525}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAI.Api.Client", "..\xTerminal\OpenAI.Api.Client\OpenAI.Api.Client.csproj", "{6F8A403B-565F-4F31-9EDA-3231D001B51D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -77,6 +79,14 @@ Global
 		{EFBC401E-4A03-4319-84E7-9B3804E40525}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EFBC401E-4A03-4319-84E7-9B3804E40525}.Release|x64.ActiveCfg = Release|Any CPU
 		{EFBC401E-4A03-4319-84E7-9B3804E40525}.Release|x64.Build.0 = Release|Any CPU
+		{6F8A403B-565F-4F31-9EDA-3231D001B51D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F8A403B-565F-4F31-9EDA-3231D001B51D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F8A403B-565F-4F31-9EDA-3231D001B51D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6F8A403B-565F-4F31-9EDA-3231D001B51D}.Debug|x64.Build.0 = Debug|Any CPU
+		{6F8A403B-565F-4F31-9EDA-3231D001B51D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F8A403B-565F-4F31-9EDA-3231D001B51D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F8A403B-565F-4F31-9EDA-3231D001B51D}.Release|x64.ActiveCfg = Release|Any CPU
+		{6F8A403B-565F-4F31-9EDA-3231D001B51D}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
