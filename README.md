@@ -118,6 +118,7 @@ https://user-images.githubusercontent.com/13780514/201774933-e53d3ba2-95e0-434e-
 
 # ChatGPT code generator video sample
 
+https://user-images.githubusercontent.com/13780514/208532011-bd2327fd-fcdd-47ad-8818-306739317326.mp4
 
 # Sample pictures
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_inteli.png?raw=true)
