@@ -36,6 +36,7 @@ Useful to run code on the fly and get instant result.
  - Mark files for open on next application start or Windows logon.
  - Target desired framework(.NET6 or .NET 7) for use when a application is compiled.
  - Live share: share and work in same time at a project/file data.
+ - Generate code/data with chatGPT from OpenAI.
 
 ## Requirements:
 
@@ -103,6 +104,19 @@ After connection is made the remote connected user can see host user data but ca
 
 https://user-images.githubusercontent.com/13780514/201774933-e53d3ba2-95e0-434e-aa9a-16489169afd5.mp4
 
+# ChatGPT autocomplete
+  
+ ChatGPT is chatbot from https://openai.com that uses AI with GPT3 integration that answers questions with a very precise output.
+ That been said chatGPT can be even be used as code generator for your projects.
+ * Usage:
+ 1. Add your OpenAI API key in Settings>Options
+ 2. Add the amsount of maxim tokens to be displayed. More info at https://beta.openai.com/tokenizer
+ 1. Write your question in editor using the following format /*[QUESTION HERE]*/
+ 2. Got to Edit>ChatGPT or press hotkeys CTRL + Shift + P
+
+ Answer will be display automatically in your editor.
+
+# ChatGPT code generator video sample
 
 
 # Sample pictures
