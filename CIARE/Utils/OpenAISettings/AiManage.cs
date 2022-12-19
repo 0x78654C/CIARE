@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 namespace CIARE.Utils.OpenAISettings
 {
@@ -14,6 +15,7 @@ namespace CIARE.Utils.OpenAISettings
         private string ApiKey = string.Empty;
         private string Qestion = string.Empty;
         private static HttpClient HttpClient = new HttpClient();
+        private static int s_line = 0;
 
         public AiManage(string apiKey, string question)
         {
@@ -82,11 +84,42 @@ namespace CIARE.Utils.OpenAISettings
             StringReader reader = new StringReader(await openAI.AskOpenAI());
             string line = "";
             string outPut = string.Empty;
+
             while ((line = reader.ReadLine()) != null)
             {
                 outPut += $"{Environment.NewLine}{line}";
             }
-            textEditorControl.Text += $"{Environment.NewLine}/* {outPut} */";
+            outPut = $"//----------{question}----------{outPut}\n//-----------------------------------";
+            textEditorControl.Text = InsertData(textEditorControl.Text, "]*/",outPut).Replace($"/*[{question}]*/","");
+            GoToLineNumber.GoToLine(textEditorControl, s_line);
+        }
+
+        /// <summary>
+        /// Instert data in string by a specfic patern
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="patern"></param>
+        /// <param name="insertedData"></param>
+        /// <returns></returns>
+        private static string InsertData(string data, string patern, string insertedData)
+        {
+            string outData = string.Empty;
+            List<string> dataList = new List<string>();
+            StringReader reader = new StringReader(data);
+            string line = string.Empty;
+            int result = 0 ,count = 0;
+            
+            while ((line = reader.ReadLine()) != null)
+            {
+                count++;
+                if (line.Contains("]*/"))
+                    result = count;
+                dataList.Add(line);
+            }
+            dataList.Insert(result, insertedData);
+            outData = string.Join("\n", dataList);
+            s_line = result + insertedData.Length;
+            return outData;
         }
     }
 }
