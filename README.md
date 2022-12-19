@@ -110,7 +110,7 @@ https://user-images.githubusercontent.com/13780514/201774933-e53d3ba2-95e0-434e-
  That been said chatGPT can be even be used as code generator for your projects.
  * Usage:
  1. Add your OpenAI API key in Settings>Options
- 2. Add the amsount of maxim tokens to be displayed. More info at https://beta.openai.com/tokenizer
+ 2. Add the amount of maxim tokens to be displayed. More info at https://beta.openai.com/tokenizer
  1. Write your question in editor using the following format ![image](https://user-images.githubusercontent.com/13780514/208530240-81cc2960-c6a8-484b-9e35-06f5a1f151ba.png)
  2. Got to Edit>ChatGPT or press hotkeys CTRL + Shift + P
 
