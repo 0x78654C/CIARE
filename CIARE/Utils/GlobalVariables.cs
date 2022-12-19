@@ -69,6 +69,12 @@ namespace CIARE.Utils
         public static readonly string OConfigParam = "OConfigParam";
         public static readonly string OPlatformParam = "OPlatformParam";
         public static readonly string OFramework = "OFramework";
+        // --OpenAI--
+        public static readonly string openAIKey = "openAIKey";
+        public static readonly string openAIMaxTokens = "openAIMaxTokens";
+        public static string aiMaxTokens = string.Empty;
+        public static string aiKey = string.Empty;
+        // ----------
         public static readonly string roslynTemplate = @"/*
  * Simple C# code sample for run with Roslyn runtime code compiler and execution.
  * Top-level statements can be used as well.

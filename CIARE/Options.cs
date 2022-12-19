@@ -15,6 +15,9 @@ namespace CIARE
         /// <summary>
         /// TODO: add compile param /p:Platform=
         /// </summary>
+
+
+        int _tokenTxtLen = 0;
         public Options()
         {
             InitializeComponent();
@@ -36,7 +39,7 @@ namespace CIARE
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, Form1.Instance.textEditorControl1, highlightCMB);
             if (GlobalVariables.darkColor)
                 DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb,
-                    apiUrlLbl,apiUrlTxt,saveApiUrlBtn, liveShareGb);
+                    apiUrlLbl,apiUrlTxt,saveApiUrlBtn, liveShareGb,openAIGroup,apiKeyAIlbl,maxTokensLbl,apiKeyAiTxtBox,maxTokensTxtBox, openAISaveBtn);
             codeCompletionCkb.Checked = GlobalVariables.OCodeCompletion;
             lineNumberCkb.Checked = GlobalVariables.OLineNumber;
             codeFoldingCkb.Checked = GlobalVariables.OFoldingCode;
@@ -44,10 +47,13 @@ namespace CIARE
             startBehaveCkb.Checked = GlobalVariables.OStartUp;
             winLoginCkb.Checked = GlobalVariables.OWinLoginState;
             apiUrlTxt.Text = GlobalVariables.apiUrl;
+            apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
+            maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
+            _tokenTxtLen = maxTokensTxtBox.Text.Length;
         }
 
         private void highlightCMB_SelectedIndexChanged(object sender, EventArgs e)
@@ -55,10 +61,10 @@ namespace CIARE
             Form1.Instance.SetHighLighter(highlightCMB.Text);
             if (GlobalVariables.darkColor)
                 DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb,
-                    apiUrlLbl, apiUrlTxt, saveApiUrlBtn, liveShareGb);
+                    apiUrlLbl, apiUrlTxt, saveApiUrlBtn, liveShareGb, openAIGroup, apiKeyAIlbl, maxTokensLbl, apiKeyAiTxtBox, maxTokensTxtBox, openAISaveBtn);
             else
                 LightMode.OptionsLightMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb,
-                    apiUrlLbl, apiUrlTxt, saveApiUrlBtn, liveShareGb);
+                    apiUrlLbl, apiUrlTxt, saveApiUrlBtn, liveShareGb, openAIGroup, apiKeyAIlbl, maxTokensLbl, apiKeyAiTxtBox, maxTokensTxtBox, openAISaveBtn);
         }
 
         private void codeCompletionCkb_CheckedChanged(object sender, EventArgs e)
@@ -172,6 +178,47 @@ namespace CIARE
                 saveApiUrlBtn.Enabled = true;
             else
                 saveApiUrlBtn.Enabled = false;
+        }
+
+        /// <summary>
+        /// Store OpenAI API key and max tokens.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void openAISaveBtn_Click(object sender, EventArgs e)
+        {
+            OpenAISetting.SetOpenAIData(apiKeyAiTxtBox, maxTokensTxtBox, GlobalVariables.openAIKey, GlobalVariables.openAIMaxTokens);
+            MessageBox.Show("OpenAI settings are saved!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        /// <summary>
+        /// Enable save button if apiKeyAiTxtBox is not empty.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void apiKeyAiTxtBox_TextChanged(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
+                openAISaveBtn.Enabled = true;
+            else
+                openAISaveBtn.Enabled = false;
+        }
+
+        /// <summary>
+        /// Check if field contains numbers only on text changed!
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void maxTokensTxtBox_TextChanged(object sender, EventArgs e)
+        {
+            if (!DataManage.IsNumberAllowed(maxTokensTxtBox.Text))
+            {
+                MessageBox.Show("Field must contain numbers only!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                maxTokensTxtBox.Text = maxTokensTxtBox.Text.Substring(0,_tokenTxtLen);
+                maxTokensTxtBox.SelectionStart = maxTokensTxtBox.Text.Length;
+                maxTokensTxtBox.ScrollToCaret();
+                return;
+            }
         }
     }
 }

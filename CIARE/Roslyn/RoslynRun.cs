@@ -290,12 +290,6 @@ namespace CIARE.Roslyn
         /// Get binary reference list.
         /// </summary>
         /// <returns></returns>
-        private static List<MetadataReference> References()
-        {
-            List<MetadataReference> references = new List<MetadataReference>();
-            foreach (var refs in ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator))
-                references.Add(MetadataReference.CreateFromFile(refs));
-                return references;
-        }
+        private static IEnumerable<MetadataReference> References() => ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).Select(refs => MetadataReference.CreateFromFile(refs)).Cast<MetadataReference>().ToList();
     }
 }

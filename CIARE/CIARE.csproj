@@ -66,6 +66,8 @@
     <Content Include="ciare.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\xTerminal\OpenAI.Api.Client\OpenAI.Api.Client.csproj" />
+    <ProjectReference Include="..\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\ICSharpCode.SharpDevelop.Dom\Project\ICSharpCode.SharpDevelop.Dom.csproj" />
     <ProjectReference Include="..\ICSharpCode.TextEditor\ICSharpCode.TextEditor.csproj" />
     <ProjectReference Include="..\NRefactory\Project\NRefactory.csproj" />

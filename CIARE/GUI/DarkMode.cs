@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.Versioning;
@@ -144,7 +145,7 @@ namespace CIARE.GUI
         /// <param name="liveShare"></param>
         public static void OptionsDarkMode(Form form, Button cancelBtn, Label highlightLbl, ComboBox highLightName,
             CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayBox, GroupBox buildBox, Label displaySetting ,Label behaveSetting, CheckBox startFile,
-            Label apiLabel, TextBox apiUrlTxt, Button saveApiBtn, GroupBox liveShare)
+            Label apiLabel, TextBox apiUrlTxt, Button saveApiBtn, GroupBox liveShare, GroupBox openAIgrp,Label apiAiLbl,Label tokenLbl, TextBox apiAIKey, TextBox maxTokens, Button saveAibtn)
         {
             form.BackColor = Color.FromArgb(51, 51, 51);
             form.ForeColor = Color.FromArgb(192, 215, 207);
@@ -167,8 +168,17 @@ namespace CIARE.GUI
             apiUrlTxt.BackColor = Color.FromArgb(30, 30, 30);
             apiLabel.ForeColor = Color.FromArgb(192, 215, 207);
             liveShare.ForeColor = Color.FromArgb(192, 215, 207);
+            openAIgrp.ForeColor = Color.FromArgb(192, 215, 207);
+            apiAiLbl.ForeColor = Color.FromArgb(192, 215, 207);
+            tokenLbl.ForeColor = Color.FromArgb(192, 215, 207);
+            apiAIKey.ForeColor = Color.FromArgb(192, 215, 207);
+            apiAIKey.BackColor = Color.FromArgb(30, 30, 30);
+            maxTokens.ForeColor = Color.FromArgb(192, 215, 207);
+            maxTokens.BackColor = Color.FromArgb(30, 30, 30);
+            saveAibtn.BackColor = Color.FromArgb(30, 30, 30);
+            saveAibtn.ForeColor = Color.FromArgb(192, 215, 207);
         }
-
+      
         /// <summary>
         /// Live Share dark mode.
         /// </summary>

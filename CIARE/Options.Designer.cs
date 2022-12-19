@@ -52,9 +52,16 @@ namespace CIARE
             this.saveApiUrlBtn = new System.Windows.Forms.Button();
             this.apiUrlTxt = new System.Windows.Forms.TextBox();
             this.apiUrlLbl = new System.Windows.Forms.Label();
+            this.openAIGroup = new System.Windows.Forms.GroupBox();
+            this.openAISaveBtn = new System.Windows.Forms.Button();
+            this.maxTokensTxtBox = new System.Windows.Forms.TextBox();
+            this.maxTokensLbl = new System.Windows.Forms.Label();
+            this.apiKeyAiTxtBox = new System.Windows.Forms.TextBox();
+            this.apiKeyAIlbl = new System.Windows.Forms.Label();
             this.displayGroup.SuspendLayout();
             this.buildGroup.SuspendLayout();
             this.liveShareGb.SuspendLayout();
+            this.openAIGroup.SuspendLayout();
             this.SuspendLayout();
             // 
             // highlightLbl
@@ -119,7 +126,7 @@ namespace CIARE
             this.closeBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.closeBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.closeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.closeBtn.Location = new System.Drawing.Point(603, 366);
+            this.closeBtn.Location = new System.Drawing.Point(603, 485);
             this.closeBtn.Name = "closeBtn";
             this.closeBtn.Size = new System.Drawing.Size(75, 23);
             this.closeBtn.TabIndex = 14;
@@ -316,13 +323,79 @@ namespace CIARE
             this.apiUrlLbl.TabIndex = 0;
             this.apiUrlLbl.Text = "Live Share API URL:";
             // 
+            // openAIGroup
+            // 
+            this.openAIGroup.Controls.Add(this.openAISaveBtn);
+            this.openAIGroup.Controls.Add(this.maxTokensTxtBox);
+            this.openAIGroup.Controls.Add(this.maxTokensLbl);
+            this.openAIGroup.Controls.Add(this.apiKeyAiTxtBox);
+            this.openAIGroup.Controls.Add(this.apiKeyAIlbl);
+            this.openAIGroup.Location = new System.Drawing.Point(12, 359);
+            this.openAIGroup.Name = "openAIGroup";
+            this.openAIGroup.Size = new System.Drawing.Size(666, 110);
+            this.openAIGroup.TabIndex = 18;
+            this.openAIGroup.TabStop = false;
+            this.openAIGroup.Text = "OpenAI";
+            // 
+            // openAISaveBtn
+            // 
+            this.openAISaveBtn.Enabled = false;
+            this.openAISaveBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.openAISaveBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.openAISaveBtn.Location = new System.Drawing.Point(573, 75);
+            this.openAISaveBtn.Name = "openAISaveBtn";
+            this.openAISaveBtn.Size = new System.Drawing.Size(75, 23);
+            this.openAISaveBtn.TabIndex = 19;
+            this.openAISaveBtn.Text = "Save";
+            this.openAISaveBtn.UseVisualStyleBackColor = true;
+            this.openAISaveBtn.Click += new System.EventHandler(this.openAISaveBtn_Click);
+            // 
+            // maxTokensTxtBox
+            // 
+            this.maxTokensTxtBox.Location = new System.Drawing.Point(98, 64);
+            this.maxTokensTxtBox.Name = "maxTokensTxtBox";
+            this.maxTokensTxtBox.Size = new System.Drawing.Size(79, 21);
+            this.maxTokensTxtBox.TabIndex = 21;
+            this.maxTokensTxtBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.maxTokensTxtBox.TextChanged += new System.EventHandler(this.maxTokensTxtBox_TextChanged);
+            // 
+            // maxTokensLbl
+            // 
+            this.maxTokensLbl.AutoSize = true;
+            this.maxTokensLbl.CausesValidation = false;
+            this.maxTokensLbl.Location = new System.Drawing.Point(15, 66);
+            this.maxTokensLbl.Name = "maxTokensLbl";
+            this.maxTokensLbl.Size = new System.Drawing.Size(77, 15);
+            this.maxTokensLbl.TabIndex = 20;
+            this.maxTokensLbl.Text = "Max Tokens:";
+            // 
+            // apiKeyAiTxtBox
+            // 
+            this.apiKeyAiTxtBox.Location = new System.Drawing.Point(75, 24);
+            this.apiKeyAiTxtBox.Name = "apiKeyAiTxtBox";
+            this.apiKeyAiTxtBox.Size = new System.Drawing.Size(573, 21);
+            this.apiKeyAiTxtBox.TabIndex = 19;
+            this.apiKeyAiTxtBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.apiKeyAiTxtBox.UseSystemPasswordChar = true;
+            this.apiKeyAiTxtBox.TextChanged += new System.EventHandler(this.apiKeyAiTxtBox_TextChanged);
+            // 
+            // apiKeyAIlbl
+            // 
+            this.apiKeyAIlbl.AutoSize = true;
+            this.apiKeyAIlbl.Location = new System.Drawing.Point(15, 26);
+            this.apiKeyAIlbl.Name = "apiKeyAIlbl";
+            this.apiKeyAIlbl.Size = new System.Drawing.Size(54, 15);
+            this.apiKeyAIlbl.TabIndex = 0;
+            this.apiKeyAIlbl.Text = "API Key: ";
+            // 
             // Options
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
             this.CancelButton = this.closeBtn;
-            this.ClientSize = new System.Drawing.Size(690, 404);
+            this.ClientSize = new System.Drawing.Size(690, 525);
+            this.Controls.Add(this.openAIGroup);
             this.Controls.Add(this.liveShareGb);
             this.Controls.Add(this.buildGroup);
             this.Controls.Add(this.displayGroup);
@@ -341,6 +414,8 @@ namespace CIARE
             this.buildGroup.PerformLayout();
             this.liveShareGb.ResumeLayout(false);
             this.liveShareGb.PerformLayout();
+            this.openAIGroup.ResumeLayout(false);
+            this.openAIGroup.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -369,5 +444,11 @@ namespace CIARE
         private System.Windows.Forms.Button saveApiUrlBtn;
         private System.Windows.Forms.TextBox apiUrlTxt;
         private System.Windows.Forms.Label apiUrlLbl;
+        private System.Windows.Forms.GroupBox openAIGroup;
+        private System.Windows.Forms.TextBox maxTokensTxtBox;
+        private System.Windows.Forms.Label maxTokensLbl;
+        private System.Windows.Forms.TextBox apiKeyAiTxtBox;
+        private System.Windows.Forms.Label apiKeyAIlbl;
+        private System.Windows.Forms.Button openAISaveBtn;
     }
 }

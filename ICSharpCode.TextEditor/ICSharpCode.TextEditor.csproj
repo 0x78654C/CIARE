@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>.net6.0-windows</TargetFramework>
     <OutputTarget>Library</OutputTarget>
@@ -86,6 +86,9 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CIARE.Core\CIARE.Core.csproj" />
   </ItemGroup>
   <PropertyGroup />
   <PropertyGroup />
