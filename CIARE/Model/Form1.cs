@@ -328,13 +328,13 @@ namespace CIARE
             {
                 GlobalVariables.darkColor = true;
                 ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = true;
-                DarkMode.SetDarkModeMain(this, outputRBT, groupBox1, label2, label3,
+                DarkModeMain.SetDarkModeMain(this, outputRBT, groupBox1, label2, label3,
                     menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
                 return;
             }
             GlobalVariables.darkColor = false;
             ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = false;
-            LightMode.SetLightModeMain(this, outputRBT, groupBox1,
+            LightModeMain.SetLightModeMain(this, outputRBT, groupBox1,
                 menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
         }
 

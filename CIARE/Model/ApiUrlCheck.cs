@@ -3,6 +3,7 @@ using CIARE.Utils;
 using System;
 using System.Windows.Forms;
 using System.Runtime.Versioning;
+using CIARE.GUI;
 
 namespace CIARE
 {
@@ -33,8 +34,7 @@ namespace CIARE
 
         private void ApiUrlCheck_Load(object sender, EventArgs e)
         {
-            if (GlobalVariables.darkColor)
-                GUI.DarkMode.ApiUrlCheckDarkMode(this, liveShareGb, apiUrlLbl, apiUrlTxt, saveApiUrlBtn);
+            FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
         }
 
         private void apiUrlTxt_TextChanged(object sender, EventArgs e)

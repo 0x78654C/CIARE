@@ -26,9 +26,7 @@ namespace CIARE
             CheckApiUrl(ref GlobalVariables.apiUrl);
 
             // Set dark mode if enabled.
-            if (GlobalVariables.darkColor)
-                DarkMode.LiveShareDarkMode(this, liveShareStartGrp, sessionIdLbl, sessionTxt, passwordLbl, passwordTxt, startLiveBtn,
-                    remoteGrp, remoteSessionLbl, remoteSessioniDtxt, remotePassLbl, remotePasswordTxt, connectHostBtn);
+            FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
 
             // Generate secure encryption password.
             GeneratePassword(passwordTxt, GlobalVariables.livePassword, GlobalVariables.apiRemoteConnected);

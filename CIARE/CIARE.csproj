@@ -63,10 +63,7 @@
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.3.3.3\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ciare.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\xTerminal\OpenAI.Api.Client\OpenAI.Api.Client.csproj" />
+    <ProjectReference Include="..\..\CIARE\OpenAI.Api.Client\OpenAI.Api.Client.csproj" />
     <ProjectReference Include="..\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\ICSharpCode.SharpDevelop.Dom\Project\ICSharpCode.SharpDevelop.Dom.csproj" />
     <ProjectReference Include="..\ICSharpCode.TextEditor\ICSharpCode.TextEditor.csproj" />

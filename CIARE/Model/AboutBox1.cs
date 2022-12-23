@@ -18,8 +18,7 @@ namespace CIARE
             this.labelCopyright.Text = AssemblyCopyright;
             this.labelCompanyName.Text = AssemblyCompany;
             this.textBoxDescription.Text = AssemblyDescription;
-            if (GlobalVariables.darkColor)
-                DarkMode.AboutFormDarkMode(this, okButton,textBoxDescription,logoPictureBox);
+            FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
         }
 
         #region Assembly Attribute Accessors

@@ -21,8 +21,7 @@ namespace CIARE
         {
             GlobalVariables.checkFormOpen = true;
             binaryNameTxt.Text = GlobalVariables.binaryNameStore;
-            if (GlobalVariables.darkColor)
-                DarkMode.CMDLineArgsDarkMode(this, ConfirmButton, cancelButton, binaryNameTxt, groupBox1);
+            FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             if (GlobalVariables.exeName)
             {
                 this.Text = "Set EXE binary name";
