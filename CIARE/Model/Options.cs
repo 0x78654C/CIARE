@@ -97,10 +97,8 @@ namespace CIARE
 
         private void platformBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (platformBox.Text == "Any CPU")
-                GlobalVariables.platformParam = "/p:Platform=\"Any CPU\"";
-            else
-                GlobalVariables.platformParam = "/p:Platform=\"x64\"";
+            string platform = platformBox.Text;
+            GlobalVariables.platformParam = $"/p:Platform=\"{platform}\"";
             BuildConfig.StorePlatform(GlobalVariables.OPlatformParam, GlobalVariables.platformParam);
         }
 

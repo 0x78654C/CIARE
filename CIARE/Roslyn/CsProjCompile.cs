@@ -90,7 +90,7 @@ namespace CIARE.Roslyn
                     if (GlobalVariables.OWarnings)
                         logOutput.Text = build;
                     string framework = GlobalVariables.Framework.Split('-')[0];
-                    PathExe(projectDir, exeName,framework);
+                    PathExe(projectDir, exeName,framework, GlobalVariables.platformParam);
                     if (!string.IsNullOrEmpty(_exeFilePath))
                         logOutput.Text += $"Build succeeded.\n\n  {exeName} -> {_exeFilePath}";
                 }
@@ -104,7 +104,7 @@ namespace CIARE.Roslyn
             }
             catch (Exception e)
             {
-                RichExtColor.ErrorDisplay(logOutput, $"ERROR: {e.Message}");
+                RichExtColor.ErrorDisplay(logOutput, $"ERROR: {e.ToString()}");
                 GlobalVariables.compileTime = true;
             }
         }
@@ -114,7 +114,7 @@ namespace CIARE.Roslyn
         /// </summary>
         /// <param name="pathProject"></param>
         /// <param name="projectName"></param>
-        private void PathExe(string pathProject, string projectName, string framework)
+        private void PathExe(string pathProject, string projectName, string framework, string platform)
         {
             var directories = Directory.GetDirectories(pathProject);
             foreach (var dir in directories)
@@ -127,12 +127,13 @@ namespace CIARE.Roslyn
                         var fileInfo = new FileInfo(file);
                         int pathSplit = fileInfo.FullName.Split('\\').Count();
                         string frameworkPath = fileInfo.FullName.Split('\\')[pathSplit - 2];
-                        if (fileInfo.FullName.EndsWith($"{projectName}.exe") && frameworkPath.Contains(framework))
+                        string parsePlatform = platform.Split('"')[1];
+                        if (fileInfo.Extension==".exe" && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
                             _exeFilePath = fileInfo.FullName;
-                        if (fileInfo.FullName.EndsWith($"{projectName}.dll") && frameworkPath.Contains(framework))
+                        if (fileInfo.Extension == ".dll" && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
                             _exeFilePath = fileInfo.FullName;
                     }
-                    PathExe(dir, projectName,framework);
+                    PathExe(dir, projectName,framework,platform);
                 }
             }
         }

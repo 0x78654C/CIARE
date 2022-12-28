@@ -60,10 +60,12 @@ namespace CIARE.Utils.Options
         /// <param name="comboBox"></param>
         public static void SetPlatformControl(ComboBox comboBox)
         {
-            if (GlobalVariables.platformParam.Contains("x64"))
+            if (GlobalVariables.platformParam.Contains("x86"))
+                comboBox.SelectedIndex = 2;
+            else if(GlobalVariables.platformParam.Contains("x64"))
                 comboBox.SelectedIndex = 1;
             else
-                comboBox.SelectedIndex = 0;
+                comboBox.SelectedIndex = 0; // Any CPU
         }
 
         /// <summary>
