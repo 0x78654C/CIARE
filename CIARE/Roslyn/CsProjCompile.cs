@@ -104,7 +104,7 @@ namespace CIARE.Roslyn
             }
             catch (Exception e)
             {
-                RichExtColor.ErrorDisplay(logOutput, $"ERROR: {e.ToString()}");
+                RichExtColor.ErrorDisplay(logOutput, $"ERROR: {e.Message}");
                 GlobalVariables.compileTime = true;
             }
         }
@@ -125,8 +125,8 @@ namespace CIARE.Roslyn
                     foreach (var file in files)
                     {
                         var fileInfo = new FileInfo(file);
-                        int pathSplit = fileInfo.FullName.Split('\\').Count();
-                        string frameworkPath = fileInfo.FullName.Split('\\')[pathSplit - 2];
+                        int pathSplit = fileInfo.FullName.Split(Path.DirectorySeparatorChar).Count();
+                        string frameworkPath = fileInfo.FullName.Split(Path.DirectorySeparatorChar)[pathSplit - 2];
                         string parsePlatform = platform.Split('"')[1];
                         if (fileInfo.Extension==".exe" && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
                             _exeFilePath = fileInfo.FullName;
