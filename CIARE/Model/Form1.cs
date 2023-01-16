@@ -19,6 +19,7 @@ using System.Linq;
 using CIARE.LiveShareManage;
 using System.Threading.Tasks;
 using CIARE.Utils.OpenAISettings;
+using Button = System.Windows.Forms.Button;
 
 namespace CIARE
 {
@@ -689,5 +690,12 @@ namespace CIARE
                     ApiConnectionEvents.ManageHubDisconnection(hubConnection, new Button());
             }
         }
+
+        /// <summary>
+        /// RichtextBox mouse wheel event for store zoomfactor value.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void outputRBT_MouseWheel(object sender, MouseEventArgs e) => GlobalVariables.zoomFactor = outputRBT.ZoomFactor;
     }
 }
