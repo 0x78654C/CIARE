@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32825.248
@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NRefactory", "NRefactory\Pr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CIARE.Core", "CIARE.Core\CIARE.Core.csproj", "{EFBC401E-4A03-4319-84E7-9B3804E40525}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAI.Api.Client", "..\xTerminal\OpenAI.Api.Client\OpenAI.Api.Client.csproj", "{6F8A403B-565F-4F31-9EDA-3231D001B51D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAI.Api.Client", "..\CIARE\OpenAI.Api.Client\OpenAI.Api.Client.csproj", "{6F8A403B-565F-4F31-9EDA-3231D001B51D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
