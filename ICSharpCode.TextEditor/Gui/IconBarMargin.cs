@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
-using CIARE.Core.Utils;
 using ICSharpCode.TextEditor.Document;
 
 namespace ICSharpCode.TextEditor
@@ -52,7 +51,7 @@ namespace ICSharpCode.TextEditor
                 return;
             }
             // paint background
-            var highlight = RegistryManagement.RegKey_Read("HKEY_CURRENT_USER\\SOFTWARE\\CIARE", "highlight");
+            var highlight = Util.RegistryManagement.RegKey_Read("HKEY_CURRENT_USER\\SOFTWARE\\CIARE", "highlight");
             var brush = new SolidBrush(Color.FromArgb(255, 51, 51, 51));
             if (highlight == "C#-Dark")
                 g.FillRectangle(brush, new Rectangle(drawingPosition.X, rect.Top, drawingPosition.Width, rect.Height));

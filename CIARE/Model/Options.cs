@@ -37,9 +37,7 @@ namespace CIARE
         private void Options_Load(object sender, EventArgs e)
         {
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, Form1.Instance.textEditorControl1, highlightCMB);
-            if (GlobalVariables.darkColor)
-                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb,
-                    apiUrlLbl,apiUrlTxt,saveApiUrlBtn, liveShareGb,openAIGroup,apiKeyAIlbl,maxTokensLbl,apiKeyAiTxtBox,maxTokensTxtBox, openAISaveBtn);
+            FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             codeCompletionCkb.Checked = GlobalVariables.OCodeCompletion;
             lineNumberCkb.Checked = GlobalVariables.OLineNumber;
             codeFoldingCkb.Checked = GlobalVariables.OFoldingCode;
@@ -59,12 +57,7 @@ namespace CIARE
         private void highlightCMB_SelectedIndexChanged(object sender, EventArgs e)
         {
             Form1.Instance.SetHighLighter(highlightCMB.Text);
-            if (GlobalVariables.darkColor)
-                DarkMode.OptionsDarkMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb,
-                    apiUrlLbl, apiUrlTxt, saveApiUrlBtn, liveShareGb, openAIGroup, apiKeyAIlbl, maxTokensLbl, apiKeyAiTxtBox, maxTokensTxtBox, openAISaveBtn);
-            else
-                LightMode.OptionsLightMode(this, closeBtn, highlightLbl, highlightCMB, codeCompletionCkb, lineNumberCkb, codeFoldingCkb, displayGroup, buildGroup, displaySepLbl, behaveSetLbl, startBehaveCkb,
-                    apiUrlLbl, apiUrlTxt, saveApiUrlBtn, liveShareGb, openAIGroup, apiKeyAIlbl, maxTokensLbl, apiKeyAiTxtBox, maxTokensTxtBox, openAISaveBtn);
+            FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
         }
 
         private void codeCompletionCkb_CheckedChanged(object sender, EventArgs e)
@@ -104,10 +97,8 @@ namespace CIARE
 
         private void platformBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (platformBox.Text == "Any CPU")
-                GlobalVariables.platformParam = "/p:Platform=\"Any CPU\"";
-            else
-                GlobalVariables.platformParam = "/p:Platform=\"x64\"";
+            string platform = platformBox.Text;
+            GlobalVariables.platformParam = $"/p:Platform=\"{platform}\"";
             BuildConfig.StorePlatform(GlobalVariables.OPlatformParam, GlobalVariables.platformParam);
         }
 

@@ -249,7 +249,8 @@ namespace CIARE
             this.platformBox.FormattingEnabled = true;
             this.platformBox.Items.AddRange(new object[] {
             "Any CPU",
-            "x64"});
+            "x64",
+            "x86"});
             this.platformBox.Location = new System.Drawing.Point(172, 23);
             this.platformBox.Name = "platformBox";
             this.platformBox.Size = new System.Drawing.Size(93, 23);

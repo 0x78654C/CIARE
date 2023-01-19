@@ -36,6 +36,7 @@ namespace CIARE.Roslyn
         {
             try
             {
+
                 if (string.IsNullOrEmpty(code))
                 {
                     richTextBox.ForeColor = Color.Red;
@@ -253,6 +254,7 @@ namespace CIARE.Roslyn
             runCodePb.Image = Properties.Resources.runButton_gray;
             runCodePb.Enabled = false;
             CompileAndRun(textEditor.Text, outLogRtb);
+            RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             runCodePb.Image = Properties.Resources.runButton21;
             runCodePb.Enabled = true;
             GC.Collect();
@@ -269,6 +271,7 @@ namespace CIARE.Roslyn
                 binaryName.ShowDialog();
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
             BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb);
+            RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             GC.Collect();
         }
 
@@ -283,6 +286,7 @@ namespace CIARE.Roslyn
                 binaryName.ShowDialog();
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
             BinaryCompile(textEditor.Text, false, GlobalVariables.binaryName, outLogRtb);
+            RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             GC.Collect();
         }
 

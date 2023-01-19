@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 
-namespace CIARE.Core.Utils
+namespace ICSharpCode.TextEditor.Util
 {
     [SupportedOSPlatform("windows")]
     public static class RegistryManagement
     {
-
+        
 
         /// <summary>
         /// Registry key check

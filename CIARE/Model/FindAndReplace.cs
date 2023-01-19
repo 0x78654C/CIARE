@@ -35,10 +35,7 @@ namespace CIARE
             else
                 findNReplaceTab.SelectTab(1);
 
-            if (GlobalVariables.darkColor)
-                DarkMode.FinAndReplaceDarkMode(this, singleReplaceBtn, multiReplaceBtn, findTxt, repalceWithTxt, groupBox1,
-                    ignoreCaseCheckBox, findNReplaceTab.TabPages[0], findNReplaceTab.TabPages[1], findBtn, findTxtBox);
-
+            FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             LoadFindRepalceStoredData(GlobalVariables.findData, GlobalVariables.findWhat, GlobalVariables.repalceWith);
         }
 
