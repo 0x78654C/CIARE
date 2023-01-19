@@ -108,10 +108,11 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1388, 113);
+            this.outputRBT.Size = new System.Drawing.Size(1388, 114);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
+            this.outputRBT.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.outputRBT_MouseWheel);
             // 
             // toolTip1
             // 

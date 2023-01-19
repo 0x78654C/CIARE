@@ -69,6 +69,9 @@ namespace CIARE.Utils
         public static readonly string OConfigParam = "OConfigParam";
         public static readonly string OPlatformParam = "OPlatformParam";
         public static readonly string OFramework = "OFramework";
+        //output richtextbox zoomfactor varlue store;
+        public static float zoomFactor = 1f;
+        //-----------
         // --OpenAI--
         public static readonly string openAIKey = "openAIKey";
         public static readonly string openAIMaxTokens = "openAIMaxTokens";

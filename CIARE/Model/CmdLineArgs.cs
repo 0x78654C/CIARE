@@ -18,8 +18,7 @@ namespace CIARE
         private void CmdLineArgs_Load(object sender, EventArgs e)
         {
             cmdLineArgTxtBox.Text= GlobalVariables.commandLineArguments;
-            if (GlobalVariables.darkColor)
-                DarkMode.CMDLineArgsDarkMode(this, confirmBtn, cancelBtn, cmdLineArgTxtBox, groupBox1);
+            FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
         }
 
         private void cancelBtn_Click(object sender, EventArgs e)
