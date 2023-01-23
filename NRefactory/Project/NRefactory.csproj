@@ -45,7 +45,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DefineConstants>TEST;NET35</DefineConstants>
-    <OutputPath>..\..\..\..\bin\</OutputPath>
+    <OutputPath>Src\Release\</OutputPath>
     <CodeAnalysisRuleSet>Migrated rules for NRefactory.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
   </PropertyGroup>
