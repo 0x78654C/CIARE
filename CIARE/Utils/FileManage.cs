@@ -259,12 +259,13 @@ MessageBoxIcon.Warning);
         /// Set new empty editor.
         /// </summary>
         /// <param name="textEditor"></param>
-        public static void NewFile(TextEditorControl textEditor)
+        public static void NewFile(TextEditorControl textEditor, RichTextBox logOutput)
         {
             ManageUnsavedData(textEditor);
             if (GlobalVariables.noClear)
                 return;
             textEditor.Clear();
+            logOutput.Clear();
             GlobalVariables.openedFilePath = string.Empty;
             GlobalVariables.savedFile = false;
             MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
