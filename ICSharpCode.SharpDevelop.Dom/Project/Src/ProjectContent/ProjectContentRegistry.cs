@@ -35,15 +35,26 @@ namespace ICSharpCode.SharpDevelop.Dom
 
             return (false, null, null);
         }
+
+
+
+
         private static Dictionary<string, Assembly> _assemblies = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator)
     .Select(e => IsManaged(e))
     .Select(e => new { e.name, e.assembly })
     .GroupBy(e => e.name)
     .ToDictionary(e => e.Key, e => e.First().assembly);
 
+
+
         public IProjectContent[] LoadAll()
         {
-            return _assemblies.Select(e => e.Value).Select(e => load(e)).Where(e => e != null).ToArray();
+            //test: load custom reference lib by dd
+            var b = "C:\\Users\\mrx\\CIARE\\CIARE\\bin\\Debug\\net6.0-windows\\binary\\lib\\bin\\Any CPU\\Debug\\net6.0-windows\\lib.dll";
+            var asmName = AssemblyName.GetAssemblyName(b);
+            _assemblies.Add(asmName.Name, Assembly.LoadFrom(b));
+            var asemb = _assemblies.Select(e => e.Value).Select(e => load(e)).Where(e => e != null).ToArray();
+            return asemb;
         }
 
         public IProjectContent load(Assembly assembly)
