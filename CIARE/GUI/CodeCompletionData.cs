@@ -90,7 +90,7 @@ namespace CIARE.GUI
 		/// </summary>
 		static string GetText(IEntity entity)
 		{
-			IAmbience ambience = Form1.IsVisualBasic ? (IAmbience)vbAmbience : csharpAmbience;
+			IAmbience ambience = MainForm.IsVisualBasic ? (IAmbience)vbAmbience : csharpAmbience;
 			if (entity is IMethod)
 				return ambience.Convert(entity as IMethod);
 			if (entity is IProperty)

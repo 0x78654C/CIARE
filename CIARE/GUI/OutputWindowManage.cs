@@ -21,7 +21,7 @@ namespace CIARE.GUI
             if (runner)
             {
                 SplitContainerHideShow.ShowSplitContainer(splitContainer);
-                Form1.Instance.visibleSplitContainer = false;
+                MainForm.Instance.visibleSplitContainer = false;
                 GlobalVariables.outPutDisplay = false;
                 outLogRtb.Focus();
                 return;
@@ -30,7 +30,7 @@ namespace CIARE.GUI
             if (GlobalVariables.outPutDisplay)
             {
                 SplitContainerHideShow.ShowSplitContainer(splitContainer);
-                Form1.Instance.visibleSplitContainer = false;
+                MainForm.Instance.visibleSplitContainer = false;
                 GlobalVariables.outPutDisplay = false;
                 outLogRtb.Focus();
             }
@@ -43,19 +43,19 @@ namespace CIARE.GUI
         /// <param name="splitContainer"></param>
         public static void SetOutputWindowState(RichTextBox outputRtb,SplitContainer splitContainer)
         {
-            if (Form1.Instance.visibleSplitContainer)
+            if (MainForm.Instance.visibleSplitContainer)
             {
                 SplitContainerHideShow.ShowSplitContainer(splitContainer);
-                Form1.Instance.visibleSplitContainer = false;
-                Form1.Instance.visibleSplitContainerAutoHide = true;
+                MainForm.Instance.visibleSplitContainer = false;
+                MainForm.Instance.visibleSplitContainerAutoHide = true;
                 outputRtb.Focus();
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "False");
             }
             else
             {
                 SplitContainerHideShow.HideSplitContainer(splitContainer);
-                Form1.Instance.visibleSplitContainer = true;
-                Form1.Instance.visibleSplitContainerAutoHide = false;
+                MainForm.Instance.visibleSplitContainer = true;
+                MainForm.Instance.visibleSplitContainerAutoHide = false;
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "True");
             }
         }

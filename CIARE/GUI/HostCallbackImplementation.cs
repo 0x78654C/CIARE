@@ -8,11 +8,11 @@ namespace CIARE.GUI
     [SupportedOSPlatform("windows")]
     static class HostCallbackImplementation
 	{
-		public static void Register(Form1 mainForm)
+		public static void Register(MainForm mainForm)
 		{
 			// Must be implemented. Gets the project content of the active project.
 			HostCallback.GetCurrentProjectContent = delegate {
-				return Form1.myProjectContent;
+				return MainForm.myProjectContent;
 			};
 
 			// The default implementation just logs to Log4Net. We want to display a MessageBox.

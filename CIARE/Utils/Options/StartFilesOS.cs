@@ -23,7 +23,7 @@ namespace CIARE.Utils.Options
             {
                 bool regParse = bool.Parse(regOSStartFile);
                 GlobalVariables.OStartUp = bool.Parse(regOSStartFile);
-                Form1.Instance.markStartFileChk.Visible = regParse;
+                MainForm.Instance.markStartFileChk.Visible = regParse;
             }
         }
 
@@ -35,7 +35,7 @@ namespace CIARE.Utils.Options
         public static void SetOSStartStatus(CheckBox status, string regKeyName)
         {
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, status.Checked.ToString());
-            Form1.Instance.markStartFileChk.Visible = status.Checked;
+            MainForm.Instance.markStartFileChk.Visible = status.Checked;
             GlobalVariables.OStartUp = status.Checked;
         }
 

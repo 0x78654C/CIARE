@@ -14,37 +14,37 @@ namespace CIARE.GUI
         public static List<ToolStripMenuItem> ListToolStripMenu()
         {
             List<ToolStripMenuItem> listToosStripM = new List<ToolStripMenuItem>();
-            listToosStripM.Add(Form1.Instance.fIleToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.openToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.saveToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.exitToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.saveAsStripMenuItem);
-            listToosStripM.Add(Form1.Instance.toolStripMenuItem1);
-            listToosStripM.Add(Form1.Instance.LoadCStripMenuItem);
-            listToosStripM.Add(Form1.Instance.helpToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.aboutToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.compileToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.compileToexeCtrlShiftBToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.compileToDLLCtrlSfitBToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.editToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.undoToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.copyStripMenuItem);
-            listToosStripM.Add(Form1.Instance.cutStripMenuItem);
-            listToosStripM.Add(Form1.Instance.pasteStripMenuItem);
-            listToosStripM.Add(Form1.Instance.deleteStripMenuItem);
-            listToosStripM.Add(Form1.Instance.replaceStripMenuItem);
-            listToosStripM.Add(Form1.Instance.selectAllStripMenuItem3);
-            listToosStripM.Add(Form1.Instance.viewToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.splitEditorToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.showHideHSCToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.goToLineStripMenuItem);
-            listToosStripM.Add(Form1.Instance.cmdLinesArgsStripMenuItem);
-            listToosStripM.Add(Form1.Instance.splitVEditorToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.fIleToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.finStripMenuItem);
-            listToosStripM.Add(Form1.Instance.optionsToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.liveShareToolStripMenuItem);
-            listToosStripM.Add(Form1.Instance.chatGPTCTRLShiftPToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.fIleToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.openToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.saveToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.exitToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.saveAsStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.toolStripMenuItem1);
+            listToosStripM.Add(MainForm.Instance.LoadCStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.helpToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.aboutToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.compileToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.compileToexeCtrlShiftBToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.compileToDLLCtrlSfitBToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.editToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.undoToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.copyStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.cutStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.pasteStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.deleteStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.replaceStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.selectAllStripMenuItem3);
+            listToosStripM.Add(MainForm.Instance.viewToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.splitEditorToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.showHideHSCToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.goToLineStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.cmdLinesArgsStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.splitVEditorToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.fIleToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.finStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.optionsToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.liveShareToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.chatGPTCTRLShiftPToolStripMenuItem);
             return listToosStripM;
         }
 
@@ -55,13 +55,13 @@ namespace CIARE.GUI
         public static List<ToolStripSeparator> ListToolStripSeparator()
         {
             List<ToolStripSeparator> listToosStripS = new List<ToolStripSeparator>();
-            listToosStripS.Add(Form1.Instance.toolStripSeparator1);
-            listToosStripS.Add(Form1.Instance.toolStripSeparator2);
-            listToosStripS.Add(Form1.Instance.toolStripSeparator3);
-            listToosStripS.Add(Form1.Instance.toolStripSeparator4);
-            listToosStripS.Add(Form1.Instance.toolStripSeparator5);
-            listToosStripS.Add(Form1.Instance.toolStripSeparator6);
-            listToosStripS.Add(Form1.Instance.compileStripSeparator1);
+            listToosStripS.Add(MainForm.Instance.toolStripSeparator1);
+            listToosStripS.Add(MainForm.Instance.toolStripSeparator2);
+            listToosStripS.Add(MainForm.Instance.toolStripSeparator3);
+            listToosStripS.Add(MainForm.Instance.toolStripSeparator4);
+            listToosStripS.Add(MainForm.Instance.toolStripSeparator5);
+            listToosStripS.Add(MainForm.Instance.toolStripSeparator6);
+            listToosStripS.Add(MainForm.Instance.compileStripSeparator1);
             return listToosStripS;
         }
     }

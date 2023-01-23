@@ -24,7 +24,7 @@ using Button = System.Windows.Forms.Button;
 namespace CIARE
 {
     [SupportedOSPlatform("windows")]
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         public HubConnection hubConnection;
         public string versionName;
@@ -32,7 +32,7 @@ namespace CIARE
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
         private string _editFontSize = "editorFontSizeZoom";
-        public static Form1 Instance { get; private set; }
+        public static MainForm Instance { get; private set; }
         internal static Dom.ProjectContentRegistry pcRegistry;
         internal static Dom.DefaultProjectContent myProjectContent;
         internal static Dom.ParseInformation parseInformation = new Dom.ParseInformation();
@@ -44,7 +44,7 @@ namespace CIARE
         private string s_args = SplitArguments.GetCommandLineArgs();
         private ApiConnectionEvents _apiConnectionEvents;
 
-        public Form1()
+        public MainForm()
         {
             InitializeEditor.CreateUserDataDirectory(GlobalVariables.userProfileDirectory, GlobalVariables.markFile);
             InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, "highlight", "C#-Dark");
@@ -54,7 +54,7 @@ namespace CIARE
             InitializeComponent();
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void MainForm_Load(object sender, EventArgs e)
         {
             Instance = this;
             textEditorControl1.TextEditorProperties.StoreZoomSize = true;
@@ -387,7 +387,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             FileManage.ManageUnsavedData(textEditorControl1);
             if (GlobalVariables.noClear)
@@ -426,7 +426,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Form1_Activated(object sender, EventArgs e)
+        private void MainForm_Activated(object sender, EventArgs e)
         {
             FileManage.CheckFileExternalEdited(GlobalVariables.openedFilePath, openedFileLength, textEditorControl1);
         }
@@ -597,7 +597,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Form1_Resize(object sender, EventArgs e)
+        private void MainForm_Resize(object sender, EventArgs e)
         {
             if (this.WindowState == FormWindowState.Minimized)
                 return;

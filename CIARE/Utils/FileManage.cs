@@ -83,12 +83,12 @@ namespace CIARE.Utils
             if (data.Contains(":\\"))
             {
                 if (!File.Exists(data))
-                    return ManageCommandFileParam(Form1.Instance.textEditorControl1, data);
+                    return ManageCommandFileParam(MainForm.Instance.textEditorControl1, data);
                 return data;
             }
             else
             {
-                return ManageCommandFileParam(Form1.Instance.textEditorControl1, data);
+                return ManageCommandFileParam(MainForm.Instance.textEditorControl1, data);
             }
         }
 
@@ -162,12 +162,12 @@ namespace CIARE.Utils
         public static void ManageUnsavedData(TextEditorControl textEditorControl)
         {
             DialogResult dr = DialogResult.No;
-            if (Form1.Instance.Text.StartsWith("*"))
+            if (MainForm.Instance.Text.StartsWith("*"))
             {
                 dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
 MessageBoxIcon.Warning);
             }
-            else if (!Form1.Instance.Text.Contains("-"))
+            else if (!MainForm.Instance.Text.Contains("-"))
             {
                 if (!string.IsNullOrEmpty(textEditorControl.Text))
                     dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
@@ -202,8 +202,8 @@ MessageBoxIcon.Warning);
             textEditor.Text = openedData;
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
             GlobalVariables.openedFileName = fileInfo.Name;
-            Form1.Instance.openedFileLength = fileInfo.Length;
-            Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
+            MainForm.Instance.openedFileLength = fileInfo.Length;
+            MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
             AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
             autoStartFile.CheckFilePath();
         }
@@ -220,16 +220,16 @@ MessageBoxIcon.Warning);
                 {
                     File.WriteAllText(GlobalVariables.openedFilePath, textEditor.Text);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    Form1.Instance.openedFileLength = fileInfo.Length;
-                    Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
+                    MainForm.Instance.openedFileLength = fileInfo.Length;
+                    MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
                     return;
                 }
                 SaveFile(textEditor.Text);
                 if (GlobalVariables.savedFile)
                 {
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    Form1.Instance.openedFileLength = fileInfo.Length;
-                    Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
+                    MainForm.Instance.openedFileLength = fileInfo.Length;
+                    MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
                 }
             }
             catch (Exception ex)
@@ -248,10 +248,10 @@ MessageBoxIcon.Warning);
             if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
                 return;
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-            Form1.Instance.openedFileLength = fileInfo.Length;
+            MainForm.Instance.openedFileLength = fileInfo.Length;
             if (GlobalVariables.savedFile)
             {
-                Form1.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
+                MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
             }
         }
 
@@ -267,8 +267,8 @@ MessageBoxIcon.Warning);
             textEditor.Clear();
             GlobalVariables.openedFilePath = string.Empty;
             GlobalVariables.savedFile = false;
-            Form1.Instance.Text = $"CIARE {Form1.Instance.versionName}";
-            Form1.Instance.markStartFileChk.Checked = false;
+            MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
+            MainForm.Instance.markStartFileChk.Checked = false;
         }
 
         /// <summary>
@@ -293,12 +293,12 @@ MessageBoxIcon.Warning);
                     {
                         textEditorControl.Clear();
                         textEditorControl.Text = reader.ReadToEnd();
-                        Form1.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
-                        Form1.Instance.openedFileLength = fileInfo.Length;
+                        MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                        MainForm.Instance.openedFileLength = fileInfo.Length;
                     }
                     return;
                 }
-                Form1.Instance.openedFileLength = fileInfo.Length;
+                MainForm.Instance.openedFileLength = fileInfo.Length;
             }
         }
 
@@ -315,9 +315,9 @@ MessageBoxIcon.Information);
             {
                 string path = GlobalVariables.openedFilePath;
                 if (!string.IsNullOrEmpty(path))
-                    Form1.Instance.Text = $"*{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {Form1.Instance.versionName}";
+                    MainForm.Instance.Text = $"*{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
                 else
-                    Form1.Instance.Text = $"CIARE {Form1.Instance.versionName}";
+                    MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
                 textEditor.Text = GlobalVariables.roslynTemplate;
             }
         }

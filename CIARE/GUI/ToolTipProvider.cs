@@ -11,16 +11,16 @@ namespace CIARE.GUI
 {
     sealed class ToolTipProvider
     {
-        Form1 mainForm;
+        MainForm mainForm;
         TextEditor.TextEditorControl editor;
 
-        private ToolTipProvider(Form1 mainForm, TextEditor.TextEditorControl editor)
+        private ToolTipProvider(MainForm mainForm, TextEditor.TextEditorControl editor)
         {
             this.mainForm = mainForm;
             this.editor = editor;
         }
 
-        public static void Attach(Form1 mainForm, TextEditor.TextEditorControl editor)
+        public static void Attach(MainForm mainForm, TextEditor.TextEditorControl editor)
         {
             ToolTipProvider tp = new ToolTipProvider(mainForm, editor);
             editor.ActiveTextAreaControl.TextArea.ToolTipRequest += tp.OnToolTipRequest;
@@ -31,13 +31,13 @@ namespace CIARE.GUI
             if (e.InDocument && !e.ToolTipShown)
             {
                 IExpressionFinder expressionFinder;
-                if (Form1.IsVisualBasic)
+                if (MainForm.IsVisualBasic)
                 {
                     expressionFinder = new VBExpressionFinder();
                 }
                 else
                 {
-                    expressionFinder = new CSharpExpressionFinder(Form1.parseInformation);
+                    expressionFinder = new CSharpExpressionFinder(MainForm.parseInformation);
                 }
                 ExpressionResult expression = expressionFinder.FindFullExpression(
                     editor.Text,
@@ -51,9 +51,9 @@ namespace CIARE.GUI
                 try
                 {
                     TextEditor.TextArea textArea = editor.ActiveTextAreaControl.TextArea;
-                    NRefactoryResolver resolver = new NRefactoryResolver(Form1.myProjectContent.Language);
+                    NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
                     ResolveResult rr = resolver.Resolve(expression,
-                                                        Form1.parseInformation,
+                                                        MainForm.parseInformation,
                                                         textArea.MotherTextEditorControl.Text);
 
                     string toolTipText = GetText(rr);
@@ -74,7 +74,7 @@ namespace CIARE.GUI
             }
             if (result is MixedResolveResult)
                 return GetText(((MixedResolveResult)result).PrimaryResult);
-            IAmbience ambience = Form1.IsVisualBasic ? (IAmbience)new VBNetAmbience() : new CSharpAmbience();
+            IAmbience ambience = MainForm.IsVisualBasic ? (IAmbience)new VBNetAmbience() : new CSharpAmbience();
             ambience.ConversionFlags = ConversionFlags.StandardConversionFlags | ConversionFlags.ShowAccessibility;
             if (result is MemberResolveResult)
             {

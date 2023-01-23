@@ -16,7 +16,7 @@ namespace CIARE.Utils.Options
             if (regHighlight.Length > 0)
             {
                 GlobalVariables.OLineNumber = bool.Parse(regHighlight);
-                Form1.Instance.textEditorControl1.ShowLineNumbers = GlobalVariables.OLineNumber;
+                MainForm.Instance.textEditorControl1.ShowLineNumbers = GlobalVariables.OLineNumber;
             }
         }
 
@@ -28,7 +28,7 @@ namespace CIARE.Utils.Options
         public static void SetLineNumberStatus(CheckBox status, string regKeyName)
         {
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, status.Checked.ToString());
-            Form1.Instance.textEditorControl1.ShowLineNumbers = status.Checked;
+            MainForm.Instance.textEditorControl1.ShowLineNumbers = status.Checked;
             GlobalVariables.OLineNumber = status.Checked;
         }
     }
