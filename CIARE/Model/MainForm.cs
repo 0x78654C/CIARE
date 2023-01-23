@@ -20,6 +20,7 @@ using CIARE.LiveShareManage;
 using System.Threading.Tasks;
 using CIARE.Utils.OpenAISettings;
 using Button = System.Windows.Forms.Button;
+using CIARE.Reference;
 
 namespace CIARE
 {
@@ -259,7 +260,7 @@ namespace CIARE
             switch (keyData)
             {
                 case Keys.N | Keys.Control:
-                    FileManage.NewFile(textEditorControl1);
+                    FileManage.NewFile(textEditorControl1, outputRBT);
                     return true;
                 case Keys.H | Keys.Control:
                     GlobalVariables.findTabOpen = false;
@@ -311,6 +312,12 @@ namespace CIARE
                     return true;
                 case Keys.P | Keys.Control | Keys.Shift:
                     AiManage.GetDataAI(textEditorControl1, GlobalVariables.aiKey);
+                    return true;
+                // Test hotkey for load custom reference.
+                case Keys.R | Keys.Control:
+                    CustomRef.LoadCustomAssembly("C:\\Users\\mrx\\CIARE\\CIARE\\bin\\Debug\\net6.0-windows\\binary\\lib\\bin\\Any CPU\\Debug\\net6.0-windows\\lib.dll", outputRBT);
+                    var e = new EventArgs();
+                    OnLoad(e);
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
