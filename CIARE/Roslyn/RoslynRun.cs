@@ -294,6 +294,12 @@ namespace CIARE.Roslyn
         /// Get binary reference list.
         /// </summary>
         /// <returns></returns>
-        private static IEnumerable<MetadataReference> References() => ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).Select(refs => MetadataReference.CreateFromFile(refs)).Cast<MetadataReference>().ToList();
+        /// TEST: add custom reference 
+        private static IEnumerable<MetadataReference> References()
+        {
+            var refList = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).Select(refs => MetadataReference.CreateFromFile(refs)).Cast<MetadataReference>().ToList();
+            refList.Add(MetadataReference.CreateFromFile("C:\\Users\\mrx\\CIARE\\CIARE\\bin\\Debug\\net6.0-windows\\binary\\lib\\lib.dll"));
+            return refList;
+        }
     }
 }

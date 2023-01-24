@@ -32,6 +32,7 @@ namespace CIARE
         public long openedFileLength = 0;
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
+        public bool isLoaded = false;
         private string _editFontSize = "editorFontSizeZoom";
         public static MainForm Instance { get; private set; }
         internal static Dom.ProjectContentRegistry pcRegistry;
@@ -314,8 +315,8 @@ namespace CIARE
                     AiManage.GetDataAI(textEditorControl1, GlobalVariables.aiKey);
                     return true;
                 // Test hotkey for load custom reference.
-                case Keys.R | Keys.Control:
-                    CustomRef.LoadCustomAssembly("C:\\Users\\mrx\\CIARE\\CIARE\\bin\\Debug\\net6.0-windows\\binary\\lib\\bin\\Any CPU\\Debug\\net6.0-windows\\lib.dll", outputRBT);
+                case Keys.I | Keys.Control:
+                    isLoaded = true;
                     var e = new EventArgs();
                     OnLoad(e);
                     return true;
@@ -547,7 +548,23 @@ namespace CIARE
         {
             myProjectContent.AddReferencedContent(pcRegistry.Mscorlib);
             ParseStep();
-            var total = pcRegistry.LoadAll();
+            // Test: load custom assembly from path
+            if (isLoaded)
+            {
+             //   pcRegistry.LoadCustomAssembly("C:\\Users\\mrx\\CIARE\\CIARE\\bin\\Debug\\net6.0-windows\\binary\\math\\bin\\Any CPU\\Debug\\net6.0-windows\\math.dll");
+                isLoaded = false;
+               // outputRBT.Text = "Loaded custom assebly!";
+            }
+            //------------------
+            Dom.IProjectContent[] total=null; //test
+            try
+            {
+                total = pcRegistry.LoadAll();
+            }
+            catch (Exception ex)
+            {
+                outputRBT.Text = ex.ToString();
+            }
             foreach (var item in total)
             {
                 myProjectContent.AddReferencedContent(item);

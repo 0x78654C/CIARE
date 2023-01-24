@@ -45,16 +45,17 @@ namespace ICSharpCode.SharpDevelop.Dom
     .GroupBy(e => e.name)
     .ToDictionary(e => e.Key, e => e.First().assembly);
 
-
+        //TEST: load custom assembly
+        public void LoadCustomAssembly(string assemblyName)
+        {
+            var asmName = AssemblyName.GetAssemblyName(assemblyName);
+            if(!_assemblies.ContainsKey(asmName.Name))
+               _assemblies.Add(asmName.Name, Assembly.LoadFrom(assemblyName));
+        }
 
         public IProjectContent[] LoadAll()
         {
-            //test: load custom reference lib by dd
-            var b = "C:\\Users\\mrx\\CIARE\\CIARE\\bin\\Debug\\net6.0-windows\\binary\\lib\\bin\\Any CPU\\Debug\\net6.0-windows\\lib.dll";
-            var asmName = AssemblyName.GetAssemblyName(b);
-            _assemblies.Add(asmName.Name, Assembly.LoadFrom(b));
-            var asemb = _assemblies.Select(e => e.Value).Select(e => load(e)).Where(e => e != null).ToArray();
-            return asemb;
+                return _assemblies.Select(e => e.Value).Select(e => load(e)).Where(e => e != null).ToArray();
         }
 
         public IProjectContent load(Assembly assembly)
@@ -62,7 +63,6 @@ namespace ICSharpCode.SharpDevelop.Dom
             try
             {
                 return new ReflectionProjectContent(assembly, this);
-
             }
             catch
             {
