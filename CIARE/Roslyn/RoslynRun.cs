@@ -15,6 +15,7 @@ using ICSharpCode.TextEditor;
 using System.Runtime.Versioning;
 using Path = System.IO.Path;
 using System.Collections.Immutable;
+using System.Runtime.Loader;
 
 namespace CIARE.Roslyn
 {
@@ -82,6 +83,9 @@ namespace CIARE.Roslyn
                         richTextBox.Clear();
                         ms.Seek(0, SeekOrigin.Begin);
                         assembly = Assembly.Load(ms.ToArray());
+                        // TODO: set to read from custom varbiale the library path
+                        var stream = File.OpenRead(@"C:\Users\mrx\CIARE\CIARE\bin\Debug\net6.0-windows\binary\lib\lib.dll");
+                        AssemblyLoadContext.Default.LoadFromStream(stream);
                     }
                     ms.Close();
                 }
@@ -203,6 +207,10 @@ namespace CIARE.Roslyn
                     }
                     else
                     {
+
+                        // TODO: set to read from custom varbiale the library path
+                        var stream = File.OpenRead(@"C:\Users\mrx\CIARE\CIARE\bin\Debug\net6.0-windows\binary\lib\lib.dll");
+                        AssemblyLoadContext.Default.LoadFromStream(stream);
                         richTextBox.Clear();
                         CsProjCompile projCompile = new CsProjCompile(outPut, pathOutput, code, !exeFile);
                         projCompile.Build(richTextBox);
@@ -294,11 +302,13 @@ namespace CIARE.Roslyn
         /// Get binary reference list.
         /// </summary>
         /// <returns></returns>
-        /// TEST: add custom reference 
+        /// TEST: add custom reference
+        /// WIP: test load path for custom lib error 
         private static IEnumerable<MetadataReference> References()
         {
             var refList = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).Select(refs => MetadataReference.CreateFromFile(refs)).Cast<MetadataReference>().ToList();
-            refList.Add(MetadataReference.CreateFromFile("C:\\Users\\mrx\\CIARE\\CIARE\\bin\\Debug\\net6.0-windows\\binary\\lib\\lib.dll"));
+            var r = MetadataReference.CreateFromFile(@"C:\Users\mrx\CIARE\CIARE\bin\Debug\net6.0-windows\binary\lib\lib.dll");
+            refList.Add(r);
             return refList;
         }
     }
