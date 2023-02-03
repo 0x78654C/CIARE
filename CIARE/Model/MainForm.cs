@@ -35,7 +35,7 @@ namespace CIARE
         public bool isLoaded = false;
         private string _editFontSize = "editorFontSizeZoom";
         public static MainForm Instance { get; private set; }
-        internal static Dom.ProjectContentRegistry pcRegistry;
+        public static Dom.ProjectContentRegistry pcRegistry;
         internal static Dom.DefaultProjectContent myProjectContent;
         internal static Dom.ParseInformation parseInformation = new Dom.ParseInformation();
         public static bool IsVisualBasic = false;
@@ -317,8 +317,10 @@ namespace CIARE
                 // Test hotkey for load custom reference.
                 case Keys.I | Keys.Control:
                     isLoaded = true;
-                    var e = new EventArgs();
-                    OnLoad(e);
+                    //var e = new EventArgs();
+                    //OnLoad(e);
+                    // Test: load custom assembly from path
+                    CustomRef.SetCustomRefDirective(textEditorControl1, outputRBT);
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -548,13 +550,7 @@ namespace CIARE
         {
             myProjectContent.AddReferencedContent(pcRegistry.Mscorlib);
             ParseStep();
-            // Test: load custom assembly from path
-            if (isLoaded)
-            {
-             //   pcRegistry.LoadCustomAssembly("C:\\Users\\mrx\\CIARE\\CIARE\\bin\\Debug\\net6.0-windows\\binary\\math\\bin\\Any CPU\\Debug\\net6.0-windows\\math.dll");
-                isLoaded = false;
-               // outputRBT.Text = "Loaded custom assebly!";
-            }
+
             //------------------
             Dom.IProjectContent[] total=null; //test
             try
