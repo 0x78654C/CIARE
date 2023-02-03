@@ -83,9 +83,6 @@ namespace CIARE.Roslyn
                         richTextBox.Clear();
                         ms.Seek(0, SeekOrigin.Begin);
                         assembly = Assembly.Load(ms.ToArray());
-                        // TODO: set to read from custom varbiale the library path
-                        var stream = File.OpenRead(@"C:\Users\mrx\CIARE\CIARE\bin\Debug\net6.0-windows\binary\lib\lib.dll");
-                        AssemblyLoadContext.Default.LoadFromStream(stream);
                     }
                     ms.Close();
                 }
@@ -307,8 +304,14 @@ namespace CIARE.Roslyn
         private static IEnumerable<MetadataReference> References()
         {
             var refList = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).Select(refs => MetadataReference.CreateFromFile(refs)).Cast<MetadataReference>().ToList();
-            var r = MetadataReference.CreateFromFile(@"C:\Users\mrx\CIARE\CIARE\bin\Debug\net6.0-windows\binary\lib\lib.dll");
-            refList.Add(r);
+            var customRefList = GlobalVariables.customRefAsm;
+            foreach (var libPath in customRefList)
+            {
+                var stream = File.OpenRead(libPath);
+                AssemblyLoadContext.Default.LoadFromStream(stream);
+                var r = MetadataReference.CreateFromFile(libPath);
+                refList.Add(r);
+            }
             return refList;
         }
     }
