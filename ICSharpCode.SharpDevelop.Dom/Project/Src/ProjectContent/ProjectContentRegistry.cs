@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Xml;
 
 namespace ICSharpCode.SharpDevelop.Dom
@@ -37,25 +38,29 @@ namespace ICSharpCode.SharpDevelop.Dom
         }
 
 
-
-
         private static Dictionary<string, Assembly> _assemblies = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator)
     .Select(e => IsManaged(e))
     .Select(e => new { e.name, e.assembly })
     .GroupBy(e => e.name)
     .ToDictionary(e => e.Key, e => e.First().assembly);
 
+        private static object LockAssembly = new object();
         //TEST: load custom assembly
         public void LoadCustomAssembly(string assemblyName)
         {
-            var asmName = AssemblyName.GetAssemblyName(assemblyName);
-            if(!_assemblies.ContainsKey(asmName.Name))
-               _assemblies.Add(asmName.Name, Assembly.LoadFrom(assemblyName));
+            lock (LockAssembly)
+            {
+                var asmName = AssemblyName.GetAssemblyName(assemblyName);
+                var asm = Assembly.LoadFile(assemblyName);
+                if (!_assemblies.ContainsKey(asmName.Name))
+                    _assemblies.Add(asmName.Name, asm);
+            }
         }
 
         public IProjectContent[] LoadAll()
         {
-                return _assemblies.Select(e => e.Value).Select(e => load(e)).Where(e => e != null).ToArray();
+            lock (LockAssembly)
+                    return _assemblies.Select(e => e.Value).Select(e => load(e)).Where(e => e != null).ToArray();
         }
 
         public IProjectContent load(Assembly assembly)
