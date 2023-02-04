@@ -204,10 +204,6 @@ namespace CIARE.Roslyn
                     }
                     else
                     {
-
-                        // TODO: set to read from custom varbiale the library path
-                        var stream = File.OpenRead(@"C:\Users\mrx\CIARE\CIARE\bin\Debug\net6.0-windows\binary\lib\lib.dll");
-                        AssemblyLoadContext.Default.LoadFromStream(stream);
                         richTextBox.Clear();
                         CsProjCompile projCompile = new CsProjCompile(outPut, pathOutput, code, !exeFile);
                         projCompile.Build(richTextBox);
