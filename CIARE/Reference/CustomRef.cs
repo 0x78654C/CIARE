@@ -1,23 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Loader;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CIARE.Utils;
 using ICSharpCode.TextEditor;
-using System.Diagnostics.Eventing.Reader;
-using Microsoft.Win32;
 using System.Runtime.Versioning;
+using System.Drawing;
 
 namespace CIARE.Reference
 {
     [SupportedOSPlatform("Windows")]
     public class CustomRef
     {
+        private static string s_libPath = string.Empty;
         private static bool IsManaged(string libName)
         {
             try
@@ -63,21 +60,22 @@ namespace CIARE.Reference
                             if (!refList.Contains(libPath))
                             {
                                 refList.Add(libPath);
-                                MainForm.pcRegistry.LoadCustomAssembly(libPath);
+                                s_libPath = libPath;
+                                Task.Run(()=> MainForm.pcRegistry.LoadCustomAssembly(libPath));
                             }
-                            textData = textData.Replace(line, $"using {asmName}; // Custom ref: {libPath}");
+                            textData = textData.Replace(line, $"using {asmName};");
                         }
                     }
                 }
+                MainForm.Instance.ReloadRef();
                 textEditorControl.Text = textData;
             }
             catch (Exception ex)// Exception is for tests at this point
             {
+                logOutput.ForeColor = Color.Red;
                 logOutput.Text = $"Error: {ex.Message}";
             }
         }
-
-
 
         public static void LoadCustomAssembly(string libPath, RichTextBox logOutput)
         {
@@ -98,6 +96,5 @@ namespace CIARE.Reference
                 logOutput.Text = ex.ToString();
             }
         }
-
     }
 }
