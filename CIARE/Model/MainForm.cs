@@ -21,6 +21,8 @@ using System.Threading.Tasks;
 using CIARE.Utils.OpenAISettings;
 using Button = System.Windows.Forms.Button;
 using CIARE.Reference;
+using Microsoft.Win32;
+using System.Collections.Generic;
 
 namespace CIARE
 {
@@ -123,6 +125,7 @@ namespace CIARE
             }
             catch { }
             //----------------------------------
+            ReloadRef();
         }
 
         /// <summary>
@@ -316,10 +319,6 @@ namespace CIARE
                     return true;
                 // Test hotkey for load custom reference.
                 case Keys.I | Keys.Control:
-                    isLoaded = true;
-                    //var e = new EventArgs();
-                    //OnLoad(e);
-                    // Test: load custom assembly from path
                     CustomRef.SetCustomRefDirective(textEditorControl1, outputRBT);
                     return true;
             }
@@ -536,34 +535,36 @@ namespace CIARE
         }
 
         #region Code Completion settup.
-        protected override void OnLoad(EventArgs e)
+
+        /// <summary>
+        /// Relaod ref in texteditor control.
+        /// </summary>
+        public void ReloadRef()
         {
-            base.OnLoad(e);
             if (GlobalVariables.OCodeCompletion)
             {
-                parserThread = new Thread(ParserThread);
+                var parserThread = new Thread(ParserThread);
                 parserThread.IsBackground = true;
                 parserThread.Start();
             }
         }
+        private HashSet<string> _alreadyLoaded = new HashSet<string>();
         void ParserThread()
         {
             myProjectContent.AddReferencedContent(pcRegistry.Mscorlib);
             ParseStep();
 
-            //------------------
-            Dom.IProjectContent[] total=null; //test
-            try
-            {
-                total = pcRegistry.LoadAll();
-            }
-            catch (Exception ex)
-            {
-                outputRBT.Text = ex.ToString();
-            }
+            Dom.IProjectContent[] total = pcRegistry.LoadAll();
+
             foreach (var item in total)
             {
+                if (_alreadyLoaded.Contains(item.ToString()))
+                    continue;
+
+                _alreadyLoaded.Add(item.ToString());
+
                 myProjectContent.AddReferencedContent(item);
+
                 if (myProjectContent is Dom.ReflectionProjectContent)
                 {
                     (myProjectContent as Dom.ReflectionProjectContent).InitializeReferences();
