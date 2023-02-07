@@ -55,7 +55,7 @@ namespace CIARE.Reference
 
                         if (IsManaged(libPath))
                         {
-                            var asmName = Assembly.LoadFile(libPath).GetTypes().Select(t => t.Namespace).Last();
+                            var asmName = GetAssemblyNamespace(libPath);
                             var refList = GlobalVariables.customRefAsm;
                             if (!refList.Contains(libPath))
                             {
@@ -85,16 +85,26 @@ namespace CIARE.Reference
                 return;
             try
             {
-                var asmName = Assembly.LoadFile(libPath).GetTypes().Select(t => t.Namespace).Last();
+                var asmName = GetAssemblyNamespace(libPath);
 
                 var refList = GlobalVariables.customRefAsm;
                 if (!refList.Contains(libPath))
                     refList.Add(libPath);
+                MessageBox.Show("Reference added o list!", "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Information);
             }
             catch (Exception ex)// Exception is for tests at this point
             {
-                logOutput.Text = ex.ToString();
+                MessageBox.Show($"Error: {ex.Message}", "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Error);
             }
         }
+
+        /// <summary>
+        /// Get reference assembly namesapce.
+        /// </summary>
+        /// <param name="libPath"></param>
+        /// <returns></returns>
+        public static string GetAssemblyNamespace(string libPath) => Assembly.LoadFile(libPath).GetTypes().Select(t => t.Namespace).Last();
     }
 }
