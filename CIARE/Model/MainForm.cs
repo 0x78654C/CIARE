@@ -20,7 +20,7 @@ using CIARE.LiveShareManage;
 using System.Threading.Tasks;
 using CIARE.Utils.OpenAISettings;
 using Button = System.Windows.Forms.Button;
-using CIARE.Reference;
+using CIARE.Model;
 using Microsoft.Win32;
 using System.Collections.Generic;
 
@@ -319,7 +319,9 @@ namespace CIARE
                     return true;
                 // Test hotkey for load custom reference.
                 case Keys.I | Keys.Control:
-                    CustomRef.SetCustomRefDirective(textEditorControl1, outputRBT);
+                    //CustomRef.SetCustomRefDirective(textEditorControl1, outputRBT);
+                    RefManager refManager = new RefManager();
+                    refManager.Show();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
