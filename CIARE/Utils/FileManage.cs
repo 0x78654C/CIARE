@@ -2,6 +2,7 @@
 using System.IO;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
 using Application = System.Windows.Forms.Application;
@@ -43,6 +44,36 @@ namespace CIARE.Utils
             }
             return "";
         }
+
+
+        /// <summary>
+        /// Open file dialog.
+        /// </summary>
+        /// <returns></returns>
+        public static void AddReferenceDialog()
+        {
+            s_openFileDialog.Filter = "Dynamic Linked Library (*.dll)|*.dll|All Files (*.*)|*.*";
+            s_openFileDialog.Title = "Select file top open:";
+            s_openFileDialog.CheckFileExists = true;
+            s_openFileDialog.CheckPathExists = true;
+            s_openFileDialog.Multiselect = true;
+            DialogResult dr = s_openFileDialog.ShowDialog();
+            if (dr == DialogResult.OK)
+            {
+                foreach (var lib in s_openFileDialog.FileNames)
+                {
+                    if (CustomRef.IsManaged(lib))
+                    {
+                        if (!GlobalVariables.customRefAsm.Contains(lib))
+                            GlobalVariables.customRefAsm.Add(lib);
+                    }
+                    else
+                        MessageBox.Show($"{lib} is not managed library!", "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Information);
+                }
+            }
+        }
+
 
         /// <summary>
         /// Save file dialog.
@@ -191,7 +222,7 @@ MessageBoxIcon.Warning);
             ManageUnsavedData(textEditor);
             if (GlobalVariables.noClear)
                 return;
-  
+
             string openedData = OpenFile();
             if (GlobalVariables.noFileSelected)
             {
