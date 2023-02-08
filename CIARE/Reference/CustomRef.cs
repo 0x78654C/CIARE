@@ -1,21 +1,18 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
-using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using CIARE.Utils;
-using ICSharpCode.TextEditor;
 using System.Runtime.Versioning;
 using System.Drawing;
+using System.Collections.Generic;
 
 namespace CIARE.Reference
 {
     [SupportedOSPlatform("Windows")]
     public class CustomRef
     {
-        private static string s_libPath = string.Empty;
-        private static bool IsManaged(string libName)
+        public static bool IsManaged(string libName)
         {
             try
             {
@@ -34,69 +31,20 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="textEditorControl"></param>
         /// <param name="logOutput"></param>
-        public static void SetCustomRefDirective(TextEditorControl textEditorControl, RichTextBox logOutput)
+        public static void SetCustomRefDirective(List<string> refList, RichTextBox logOutput)
         {
             try
             {
-                if (string.IsNullOrEmpty(textEditorControl.Text))
-                    return;
-                var textData = textEditorControl.Text;
-                var reader = new StringReader(textData);
-                string line = "";
-                while ((line = reader.ReadLine()) != null)
+                foreach (var libPath in refList)
                 {
-                    if (line.StartsWith("using [\"") && line.EndsWith("\"]"))
-                    {
-                        var libPath = line.Replace("using [\"", string.Empty).Trim();
-                        libPath = libPath.Replace("\"]", string.Empty).Trim();
-
-                        if (!File.Exists(libPath))
-                            logOutput.Text += $"Reference library not found: {libPath}\n";
-
-                        if (IsManaged(libPath))
-                        {
-                            var asmName = GetAssemblyNamespace(libPath);
-                            var refList = GlobalVariables.customRefAsm;
-                            if (!refList.Contains(libPath))
-                            {
-                                refList.Add(libPath);
-                                s_libPath = libPath;
-                                Task.Run(()=> MainForm.pcRegistry.LoadCustomAssembly(libPath));
-                            }
-                            textData = textData.Replace(line, $"using {asmName};");
-                        }
-                    }
+                  Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
                 }
                 MainForm.Instance.ReloadRef();
-                textEditorControl.Text = textData;
             }
-            catch (Exception ex)// Exception is for tests at this point
+            catch (Exception ex)
             {
                 logOutput.ForeColor = Color.Red;
                 logOutput.Text = $"Error: {ex.Message}";
-            }
-        }
-
-        public static void LoadCustomAssembly(string libPath, RichTextBox logOutput)
-        {
-            if (!File.Exists(libPath))
-                logOutput.Text = $"Reference library not found: {libPath}";
-            if (!IsManaged(libPath))
-                return;
-            try
-            {
-                var asmName = GetAssemblyNamespace(libPath);
-
-                var refList = GlobalVariables.customRefAsm;
-                if (!refList.Contains(libPath))
-                    refList.Add(libPath);
-                MessageBox.Show("Reference added o list!", "CIARE", MessageBoxButtons.OK,
-MessageBoxIcon.Information);
-            }
-            catch (Exception ex)// Exception is for tests at this point
-            {
-                MessageBox.Show($"Error: {ex.Message}", "CIARE", MessageBoxButtons.OK,
-MessageBoxIcon.Error);
             }
         }
 
