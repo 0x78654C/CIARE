@@ -45,6 +45,7 @@ namespace CIARE.GUI
             listToosStripM.Add(MainForm.Instance.optionsToolStripMenuItem);
             listToosStripM.Add(MainForm.Instance.liveShareToolStripMenuItem);
             listToosStripM.Add(MainForm.Instance.chatGPTCTRLShiftPToolStripMenuItem);
+            listToosStripM.Add(MainForm.Instance.referenceAddToolStripMenuItem);
             return listToosStripM;
         }
 
@@ -61,6 +62,7 @@ namespace CIARE.GUI
             listToosStripS.Add(MainForm.Instance.toolStripSeparator4);
             listToosStripS.Add(MainForm.Instance.toolStripSeparator5);
             listToosStripS.Add(MainForm.Instance.toolStripSeparator6);
+            listToosStripS.Add(MainForm.Instance.toolStripSeparator7);
             listToosStripS.Add(MainForm.Instance.compileStripSeparator1);
             return listToosStripS;
         }
