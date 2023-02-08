@@ -52,9 +52,6 @@ namespace CIARE.Roslyn
                 SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
                 string assemblyName = Path.GetRandomFileName();
                 string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
-                //        var references = Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
-                //.Where(t => ManageCheck.IsManaged(t))
-                //.Select(t => MetadataReference.CreateFromFile(t)).ToArray();
 
                 CSharpCompilation compilation = CSharpCompilation.Create(
                     assemblyName,
@@ -159,7 +156,6 @@ namespace CIARE.Roslyn
                 s_timeSpan = new TimeSpan();
                 s_stopWatch = new Stopwatch();
                 s_stopWatch.Start();
-                //Assembly assembly = null;
                 SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
                 string assemblyName = Path.GetRandomFileName();
                 CSharpCompilation compilation;
