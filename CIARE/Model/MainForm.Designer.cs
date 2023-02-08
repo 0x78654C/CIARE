@@ -63,6 +63,8 @@ namespace CIARE
             this.compileToDLLCtrlSfitBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.cmdLinesArgsStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
+            this.referenceAddToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitVEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -108,7 +110,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1388, 114);
+            this.outputRBT.Size = new System.Drawing.Size(1388, 112);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -330,7 +332,9 @@ namespace CIARE
             this.compileToexeCtrlShiftBToolStripMenuItem,
             this.compileToDLLCtrlSfitBToolStripMenuItem,
             this.toolStripSeparator5,
-            this.cmdLinesArgsStripMenuItem});
+            this.cmdLinesArgsStripMenuItem,
+            this.toolStripSeparator7,
+            this.referenceAddToolStripMenuItem});
             this.compileToolStripMenuItem.Name = "compileToolStripMenuItem";
             this.compileToolStripMenuItem.Size = new System.Drawing.Size(64, 20);
             this.compileToolStripMenuItem.Text = "Compile";
@@ -360,6 +364,18 @@ namespace CIARE
             this.cmdLinesArgsStripMenuItem.Size = new System.Drawing.Size(290, 22);
             this.cmdLinesArgsStripMenuItem.Text = "Command Line Args...  ( Ctrl + L )";
             this.cmdLinesArgsStripMenuItem.Click += new System.EventHandler(this.cmdLinesArgsStripMenuItem_Click);
+            // 
+            // toolStripSeparator7
+            // 
+            this.toolStripSeparator7.Name = "toolStripSeparator7";
+            this.toolStripSeparator7.Size = new System.Drawing.Size(287, 6);
+            // 
+            // referenceAddToolStripMenuItem
+            // 
+            this.referenceAddToolStripMenuItem.Name = "referenceAddToolStripMenuItem";
+            this.referenceAddToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            this.referenceAddToolStripMenuItem.Text = "Add Reference                (Ctrl + R)";
+            this.referenceAddToolStripMenuItem.Click += new System.EventHandler(this.referenceAddToolStripMenuItem_Click);
             // 
             // viewToolStripMenuItem
             // 
@@ -454,7 +470,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1402, 138);
+            this.groupBox1.Size = new System.Drawing.Size(1402, 136);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
@@ -665,7 +681,7 @@ namespace CIARE
 
         public ICSharpCode.TextEditor.TextEditorControl textEditorControl1;
         private System.Windows.Forms.PictureBox runCodePb;
-        private System.Windows.Forms.RichTextBox outputRBT;
+        public System.Windows.Forms.RichTextBox outputRBT;
         private System.Windows.Forms.ToolTip toolTip1;
         public System.Windows.Forms.ToolStripMenuItem fIleToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
@@ -716,6 +732,8 @@ namespace CIARE
         public System.Windows.Forms.PictureBox liveStatusPb;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
         public System.Windows.Forms.ToolStripMenuItem chatGPTCTRLShiftPToolStripMenuItem;
+        public System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
+        public System.Windows.Forms.ToolStripMenuItem referenceAddToolStripMenuItem;
     }
 }
 

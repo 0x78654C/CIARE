@@ -23,6 +23,7 @@ using Button = System.Windows.Forms.Button;
 using CIARE.Model;
 using Microsoft.Win32;
 using System.Collections.Generic;
+using CIARE.Reference;
 
 namespace CIARE
 {
@@ -317,11 +318,9 @@ namespace CIARE
                 case Keys.P | Keys.Control | Keys.Shift:
                     AiManage.GetDataAI(textEditorControl1, GlobalVariables.aiKey);
                     return true;
-                // Test hotkey for load custom reference.
-                case Keys.I | Keys.Control:
-                    //CustomRef.SetCustomRefDirective(textEditorControl1, outputRBT);
+                case Keys.R | Keys.Control:
                     RefManager refManager = new RefManager();
-                    refManager.Show();
+                    refManager.ShowDialog();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -392,6 +391,7 @@ namespace CIARE
         {
             RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
         }
+
 
         /// <summary>
         /// Run the method for unsaved data check on form closing.
@@ -520,6 +520,12 @@ namespace CIARE
         {
             AiManage.GetDataAI(textEditorControl1, GlobalVariables.aiKey);
         }
+
+        private void referenceAddToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^r");
+        }
+
         #endregion
 
         /// <summary>
@@ -720,5 +726,7 @@ namespace CIARE
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void outputRBT_MouseWheel(object sender, MouseEventArgs e) => GlobalVariables.zoomFactor = outputRBT.ZoomFactor;
+
+
     }
 }
