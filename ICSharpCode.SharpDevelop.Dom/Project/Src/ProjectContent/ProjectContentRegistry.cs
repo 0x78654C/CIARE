@@ -14,12 +14,15 @@ using System.Xml;
 
 namespace ICSharpCode.SharpDevelop.Dom
 {
+
+
     /// <summary>
     /// Contains project contents read from external assemblies.
     /// Caches loaded assemblies in memory and optionally also to disk.
     /// </summary>
     public class ProjectContentRegistry : IDisposable
     {
+        private static object s_lockAssembly = new object();
         internal DomPersistence persistence;
         Dictionary<string, IProjectContent> contents = new Dictionary<string, IProjectContent>(StringComparer.OrdinalIgnoreCase);
         static (bool isManaged, Assembly assembly, string name) IsManaged(string name)
@@ -43,11 +46,10 @@ namespace ICSharpCode.SharpDevelop.Dom
     .GroupBy(e => e.name)
     .ToDictionary(e => e.Key, e => e.First().assembly);
 
-        private static object LockAssembly = new object();
-        //TEST: load custom assembly
+        
         public void LoadCustomAssembly(string assemblyName)
         {
-            lock (LockAssembly)
+            lock (s_lockAssembly)
             {
                 var asmName = AssemblyName.GetAssemblyName(assemblyName);
                 var asm = Assembly.LoadFile(assemblyName);
@@ -58,7 +60,7 @@ namespace ICSharpCode.SharpDevelop.Dom
 
         public IProjectContent[] LoadAll()
         {
-            lock (LockAssembly)
+            lock (s_lockAssembly)
                     return _assemblies.Select(e => e.Value).Select(e => load(e)).Where(e => e != null).ToArray();
         }
 
