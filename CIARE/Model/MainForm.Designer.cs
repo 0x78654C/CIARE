@@ -374,7 +374,7 @@ namespace CIARE
             // 
             this.referenceAddToolStripMenuItem.Name = "referenceAddToolStripMenuItem";
             this.referenceAddToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
-            this.referenceAddToolStripMenuItem.Text = "Add Reference                (Ctrl + R)";
+            this.referenceAddToolStripMenuItem.Text = "Add Reference                ( Ctrl + R )";
             this.referenceAddToolStripMenuItem.Click += new System.EventHandler(this.referenceAddToolStripMenuItem_Click);
             // 
             // viewToolStripMenuItem
