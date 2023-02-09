@@ -6,17 +6,17 @@ namespace CIARE.GUI
 {
 	class CodeCompletionKeyHandler
 	{
-		Form1 mainForm;
+        MainForm mainForm;
 		TextEditorControl editor;
 		CodeCompletionWindow codeCompletionWindow;
 
-		private CodeCompletionKeyHandler(Form1 mainForm, TextEditorControl editor)
+		private CodeCompletionKeyHandler(MainForm mainForm, TextEditorControl editor)
 		{
 			this.mainForm = mainForm;
 			this.editor = editor;
 		}
 
-		public static CodeCompletionKeyHandler Attach(Form1 mainForm, TextEditorControl editor)
+		public static CodeCompletionKeyHandler Attach(MainForm mainForm, TextEditorControl editor)
 		{
 			CodeCompletionKeyHandler h = new CodeCompletionKeyHandler(mainForm, editor);
 
@@ -47,7 +47,7 @@ namespace CIARE.GUI
 				codeCompletionWindow = CodeCompletionWindow.ShowCompletionWindow(
 					mainForm,                   // The parent window for the completion window
 					editor,                     // The text editor to show the window for
-					Form1.DummyFileName,     // Filename - will be passed back to the provider
+					MainForm.DummyFileName,     // Filename - will be passed back to the provider
 					completionDataProvider,     // Provider to get the list of possible completions
 					key                         // Key pressed - will be passed to the provider
 				);

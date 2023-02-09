@@ -28,7 +28,7 @@ namespace CIARE.LiveShareManage
             hubConnection.Closed += (sender) =>
             {
                 GlobalVariables.liveDisconnected = true;
-                Form1.Instance.liveStatusPb.Image = Properties.Resources.orange_dot;
+                MainForm.Instance.liveStatusPb.Image = Properties.Resources.orange_dot;
                 return Task.CompletedTask;
             };
         }
@@ -59,7 +59,7 @@ namespace CIARE.LiveShareManage
                 GlobalVariables.apiRemoteConnected = false;
                 if (hubConnection != null)
                     await hubConnection.StopAsync();
-                Form1.Instance.liveStatusPb.Image = null;
+                MainForm.Instance.liveStatusPb.Image = null;
                 RemoveReadOnlyTextEditor(textEditorControl);
                 GlobalVariables.connected = false;
                 GlobalVariables.liveDisconnected = false;
@@ -99,7 +99,7 @@ namespace CIARE.LiveShareManage
                     await hubConnection.InvokeAsync("GetSendCode", sessionId, "remote", "");
                     if (!textEditorControl.ReadOnly)
                         textEditorControl.ReadOnly = true;
-                    Form1.Instance.liveStatusPb.Image = Properties.Resources.red_dot;
+                    MainForm.Instance.liveStatusPb.Image = Properties.Resources.red_dot;
                     GlobalVariables.apiRemoteConnected = true;
                     GlobalVariables.connected = true;
                     GlobalVariables.liveDisconnected = false;
@@ -188,7 +188,7 @@ namespace CIARE.LiveShareManage
                 GlobalVariables.apiConnected = false;
                 if (hubConnection != null)
                     await hubConnection.StopAsync();
-                Form1.Instance.liveStatusPb.Image = null;
+                MainForm.Instance.liveStatusPb.Image = null;
                 connectBtn.Enabled = true;
                 if (GlobalVariables.darkColor)
                     connectBtn.BackColor = Color.FromArgb(30, 30, 30);
@@ -220,7 +220,7 @@ namespace CIARE.LiveShareManage
                     var encyrpted = AESEncryption.Encrypt(code, password);
                     await hubConnection.StartAsync();
                     await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted, "");
-                    Form1.Instance.liveStatusPb.Image = Properties.Resources.red_dot;
+                    MainForm.Instance.liveStatusPb.Image = Properties.Resources.red_dot;
                     GlobalVariables.apiConnected = true;
                     GlobalVariables.connected = true;
                     GlobalVariables.liveDisconnected = false;
@@ -322,10 +322,10 @@ MessageBoxIcon.Warning);
             {
                 if (GlobalVariables.typeConnection)
                     await StartShare(new Form(),hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
-               fakeButton, fakeButton, Form1.Instance.textEditorControl1);
+               fakeButton, fakeButton, MainForm.Instance.textEditorControl1);
                 else
                     await Connect(new Form(),hubConnection, fakeButton, fakeButton,
-GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1); ;
+GlobalVariables.livePassword, GlobalVariables.sessionId, MainForm.Instance.textEditorControl1); ;
             }
             else
             {
@@ -337,7 +337,7 @@ GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEdit
                 GlobalVariables.reconnectionCount = 6;
                 GlobalVariables.liveDisconnected = false;
                 GlobalVariables.isConnected = false;
-                CleanDot(Form1.Instance.liveStatusPb);
+                CleanDot(MainForm.Instance.liveStatusPb);
             }
         }
     }

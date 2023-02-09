@@ -13,9 +13,9 @@ namespace CIARE.GUI
 {
 	class CodeCompletionProvider : ICompletionDataProvider
 	{
-		Form1 mainForm;
+		MainForm mainForm;
 
-		public CodeCompletionProvider(Form1 mainForm)
+		public CodeCompletionProvider(MainForm mainForm)
 		{
 			this.mainForm = mainForm;
 		}
@@ -24,7 +24,7 @@ namespace CIARE.GUI
 		{
 			get
 			{
-				return Form1.Instance.imageList1;
+				return MainForm.Instance.imageList1;
 			}
 		}
 
@@ -74,14 +74,14 @@ namespace CIARE.GUI
 			//	new DefaultCompletionData("Text", "Description", 1)
 			//};
 
-			NRefactoryResolver resolver = new NRefactoryResolver(Form1.myProjectContent.Language);
+			NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
 			Dom.ResolveResult rr = resolver.Resolve(FindExpression(textArea),
-													Form1.parseInformation,
+													MainForm.parseInformation,
 													textArea.MotherTextEditorControl.Text);
 			List<ICompletionData> resultList = new List<ICompletionData>();
 			if (rr != null)
 			{
-				ArrayList completionData = rr.GetCompletionData(Form1.myProjectContent);
+				ArrayList completionData = rr.GetCompletionData(MainForm.myProjectContent);
 				if (completionData != null)
 				{
 					AddCompletionData(resultList, completionData);
@@ -98,13 +98,13 @@ namespace CIARE.GUI
 		Dom.ExpressionResult FindExpression(TextArea textArea)
 		{
 			Dom.IExpressionFinder finder;
-			if (Form1.IsVisualBasic)
+			if (MainForm.IsVisualBasic)
 			{
 				finder = new Dom.VBNet.VBExpressionFinder();
 			}
 			else
 			{
-				finder = new Dom.CSharp.CSharpExpressionFinder(Form1.parseInformation);
+				finder = new Dom.CSharp.CSharpExpressionFinder(MainForm.parseInformation);
 			}
 			Dom.ExpressionResult expression = finder.FindExpression(textArea.Document.TextContent, textArea.Caret.Offset);
 			if (expression.Region.IsEmpty)

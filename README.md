@@ -37,6 +37,7 @@ Useful to run code on the fly and get instant result.
  - Target desired framework(.NET6 or .NET 7) for use when a application is compiled.
  - Live share: share and work in same time at a project/file data.
  - Generate code/data with chatGPT from OpenAI.
+ - Add reference to custom managed libraries.
 
 ## Requirements:
 

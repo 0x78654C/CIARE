@@ -15,6 +15,7 @@ using ICSharpCode.TextEditor;
 using System.Runtime.Versioning;
 using Path = System.IO.Path;
 using System.Collections.Immutable;
+using System.Runtime.Loader;
 
 namespace CIARE.Roslyn
 {
@@ -51,9 +52,6 @@ namespace CIARE.Roslyn
                 SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
                 string assemblyName = Path.GetRandomFileName();
                 string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
-                //        var references = Directory.GetFiles(assemblyPath).Where(t => t.EndsWith(".dll"))
-                //.Where(t => ManageCheck.IsManaged(t))
-                //.Select(t => MetadataReference.CreateFromFile(t)).ToArray();
 
                 CSharpCompilation compilation = CSharpCompilation.Create(
                     assemblyName,
@@ -158,7 +156,6 @@ namespace CIARE.Roslyn
                 s_timeSpan = new TimeSpan();
                 s_stopWatch = new Stopwatch();
                 s_stopWatch.Start();
-                //Assembly assembly = null;
                 SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
                 string assemblyName = Path.GetRandomFileName();
                 CSharpCompilation compilation;
@@ -294,6 +291,20 @@ namespace CIARE.Roslyn
         /// Get binary reference list.
         /// </summary>
         /// <returns></returns>
-        private static IEnumerable<MetadataReference> References() => ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).Select(refs => MetadataReference.CreateFromFile(refs)).Cast<MetadataReference>().ToList();
+        /// TEST: add custom reference
+        /// WIP: test load path for custom lib error 
+        private static IEnumerable<MetadataReference> References()
+        {
+            var refList = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).Select(refs => MetadataReference.CreateFromFile(refs)).Cast<MetadataReference>().ToList();
+            var customRefList = GlobalVariables.customRefAsm;
+            foreach (var libPath in customRefList)
+            {
+                var stream = File.OpenRead(libPath);
+                AssemblyLoadContext.Default.LoadFromStream(stream);
+                var r = MetadataReference.CreateFromFile(libPath);
+                refList.Add(r);
+            }
+            return refList;
+        }
     }
 }

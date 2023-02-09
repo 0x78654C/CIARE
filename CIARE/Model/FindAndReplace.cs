@@ -59,16 +59,16 @@ namespace CIARE
 
         private void singleReplaceBtn_Click(object sender, EventArgs e)
         {
-            if (Form1.Instance != null)
-                ReplaceSingle(Form1.Instance.textEditorControl1, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
+            if (MainForm.Instance != null)
+                ReplaceSingle(MainForm.Instance.textEditorControl1, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
             StoreReplaceData(findTxt.Text, repalceWithTxt.Text);
         }
 
 
         private void multiReplaceBtn_Click(object sender, EventArgs e)
         {
-            if (Form1.Instance != null)
-                Form1.Instance.textEditorControl1.Text = ReplaceAll(Form1.Instance.textEditorControl1.Text, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
+            if (MainForm.Instance != null)
+                MainForm.Instance.textEditorControl1.Text = ReplaceAll(MainForm.Instance.textEditorControl1.Text, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
             StoreReplaceData(findTxt.Text, repalceWithTxt.Text);
         }
 
@@ -298,7 +298,7 @@ MessageBoxIcon.Warning);
         /// <param name="e"></param>
         private void findBtn_Click(object sender, EventArgs e)
         {
-            Find(Form1.Instance.textEditorControl1, findTxtBox.Text);
+            Find(MainForm.Instance.textEditorControl1, findTxtBox.Text);
             GlobalVariables.findData = findTxtBox.Text;
         }
 

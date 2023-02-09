@@ -120,14 +120,14 @@ namespace CIARE.GUI
                 if (regHighlight == _defaultHighLight)
                 {
                     GlobalVariables.darkColor = true;
-                    Form1.Instance.SetHighLighter(regHighlight);
+                    MainForm.Instance.SetHighLighter(regHighlight);
                 }
                 textEditor.SetHighlighting(regHighlight);
                 return;
             }
             RegistryManagement.RegKey_CreateKey(regKeyName, _regName, _defaultHighLight);
             GlobalVariables.darkColor = true;
-            Form1.Instance.SetHighLighter(_defaultHighLight);
+            MainForm.Instance.SetHighLighter(_defaultHighLight);
         }
 
 
@@ -160,14 +160,14 @@ namespace CIARE.GUI
                 if (regHighlight == "False")
                 {
                     SplitContainerHideShow.ShowSplitContainer(splitContainer);
-                    Form1.Instance.visibleSplitContainer = false;
-                    Form1.Instance.visibleSplitContainerAutoHide = true;
+                    MainForm.Instance.visibleSplitContainer = false;
+                    MainForm.Instance.visibleSplitContainerAutoHide = true;
                 }
                 else
                 {
                     SplitContainerHideShow.HideSplitContainer(splitContainer);
-                    Form1.Instance.visibleSplitContainer = true;
-                    Form1.Instance.visibleSplitContainerAutoHide = false;
+                    MainForm.Instance.visibleSplitContainer = true;
+                    MainForm.Instance.visibleSplitContainerAutoHide = false;
                 }
                 return;
             }

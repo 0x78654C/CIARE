@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 
@@ -78,6 +79,8 @@ namespace CIARE.Utils
         public static string aiMaxTokens = string.Empty;
         public static string aiKey = string.Empty;
         // ----------
+        public static List<string> customRefAsm = new List<string>(); // Used to store custom asspably path file.
+
         public static readonly string roslynTemplate = @"/*
  * Simple C# code sample for run with Roslyn runtime code compiler and execution.
  * Top-level statements can be used as well.

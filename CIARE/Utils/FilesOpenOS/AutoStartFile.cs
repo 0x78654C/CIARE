@@ -96,7 +96,7 @@ namespace CIARE.Utils.FilesOpenOS
                 return;
 
             var readFile = File.ReadAllText(UserAppdataFile);
-            Form1.Instance.markStartFileChk.Checked = readFile.Contains(OpenedFilePath);
+            MainForm.Instance.markStartFileChk.Checked = readFile.Contains(OpenedFilePath);
         }
 
 
@@ -195,7 +195,7 @@ namespace CIARE.Utils.FilesOpenOS
             //TODO: This is nasty. I know. I will remake it.
             try
             {
-                if (string.IsNullOrEmpty(Form1.Instance.textEditorControl1.Text))
+                if (string.IsNullOrEmpty(MainForm.Instance.textEditorControl1.Text))
                     Environment.Exit(0);
             }
             catch

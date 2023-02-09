@@ -20,20 +20,25 @@ using CIARE.LiveShareManage;
 using System.Threading.Tasks;
 using CIARE.Utils.OpenAISettings;
 using Button = System.Windows.Forms.Button;
+using CIARE.Model;
+using Microsoft.Win32;
+using System.Collections.Generic;
+using CIARE.Reference;
 
 namespace CIARE
 {
     [SupportedOSPlatform("windows")]
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         public HubConnection hubConnection;
         public string versionName;
         public long openedFileLength = 0;
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
+        public bool isLoaded = false;
         private string _editFontSize = "editorFontSizeZoom";
-        public static Form1 Instance { get; private set; }
-        internal static Dom.ProjectContentRegistry pcRegistry;
+        public static MainForm Instance { get; private set; }
+        public static Dom.ProjectContentRegistry pcRegistry;
         internal static Dom.DefaultProjectContent myProjectContent;
         internal static Dom.ParseInformation parseInformation = new Dom.ParseInformation();
         public static bool IsVisualBasic = false;
@@ -44,7 +49,7 @@ namespace CIARE
         private string s_args = SplitArguments.GetCommandLineArgs();
         private ApiConnectionEvents _apiConnectionEvents;
 
-        public Form1()
+        public MainForm()
         {
             InitializeEditor.CreateUserDataDirectory(GlobalVariables.userProfileDirectory, GlobalVariables.markFile);
             InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, "highlight", "C#-Dark");
@@ -54,7 +59,7 @@ namespace CIARE
             InitializeComponent();
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void MainForm_Load(object sender, EventArgs e)
         {
             Instance = this;
             textEditorControl1.TextEditorProperties.StoreZoomSize = true;
@@ -121,6 +126,7 @@ namespace CIARE
             }
             catch { }
             //----------------------------------
+            ReloadRef();
         }
 
         /// <summary>
@@ -259,7 +265,7 @@ namespace CIARE
             switch (keyData)
             {
                 case Keys.N | Keys.Control:
-                    FileManage.NewFile(textEditorControl1);
+                    FileManage.NewFile(textEditorControl1, outputRBT);
                     return true;
                 case Keys.H | Keys.Control:
                     GlobalVariables.findTabOpen = false;
@@ -311,6 +317,10 @@ namespace CIARE
                     return true;
                 case Keys.P | Keys.Control | Keys.Shift:
                     AiManage.GetDataAI(textEditorControl1, GlobalVariables.aiKey);
+                    return true;
+                case Keys.R | Keys.Control:
+                    RefManager refManager = new RefManager();
+                    refManager.ShowDialog();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -382,12 +392,13 @@ namespace CIARE
             RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
         }
 
+
         /// <summary>
         /// Run the method for unsaved data check on form closing.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             FileManage.ManageUnsavedData(textEditorControl1);
             if (GlobalVariables.noClear)
@@ -426,7 +437,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Form1_Activated(object sender, EventArgs e)
+        private void MainForm_Activated(object sender, EventArgs e)
         {
             FileManage.CheckFileExternalEdited(GlobalVariables.openedFilePath, openedFileLength, textEditorControl1);
         }
@@ -509,6 +520,12 @@ namespace CIARE
         {
             AiManage.GetDataAI(textEditorControl1, GlobalVariables.aiKey);
         }
+
+        private void referenceAddToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^r");
+        }
+
         #endregion
 
         /// <summary>
@@ -526,24 +543,36 @@ namespace CIARE
         }
 
         #region Code Completion settup.
-        protected override void OnLoad(EventArgs e)
+
+        /// <summary>
+        /// Relaod ref in texteditor control.
+        /// </summary>
+        public void ReloadRef()
         {
-            base.OnLoad(e);
             if (GlobalVariables.OCodeCompletion)
             {
-                parserThread = new Thread(ParserThread);
+                var parserThread = new Thread(ParserThread);
                 parserThread.IsBackground = true;
                 parserThread.Start();
             }
         }
+        private HashSet<string> _alreadyLoaded = new HashSet<string>();
         void ParserThread()
         {
             myProjectContent.AddReferencedContent(pcRegistry.Mscorlib);
             ParseStep();
-            var total = pcRegistry.LoadAll();
+
+            Dom.IProjectContent[] total = pcRegistry.LoadAll();
+
             foreach (var item in total)
             {
+                if (_alreadyLoaded.Contains(item.ToString()))
+                    continue;
+
+                _alreadyLoaded.Add(item.ToString());
+
                 myProjectContent.AddReferencedContent(item);
+
                 if (myProjectContent is Dom.ReflectionProjectContent)
                 {
                     (myProjectContent as Dom.ReflectionProjectContent).InitializeReferences();
@@ -597,7 +626,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Form1_Resize(object sender, EventArgs e)
+        private void MainForm_Resize(object sender, EventArgs e)
         {
             if (this.WindowState == FormWindowState.Minimized)
                 return;
@@ -697,5 +726,7 @@ namespace CIARE
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void outputRBT_MouseWheel(object sender, MouseEventArgs e) => GlobalVariables.zoomFactor = outputRBT.ZoomFactor;
+
+
     }
 }

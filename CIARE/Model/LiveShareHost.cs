@@ -72,8 +72,8 @@ namespace CIARE
             try
             {
                 HubConnectionBuild();
-                await ApiConnectionEvents.StartShare(this, Form1.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
-                    startLiveBtn, connectHostBtn, Form1.Instance.textEditorControl1);
+                await ApiConnectionEvents.StartShare(this, MainForm.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
+                    startLiveBtn, connectHostBtn, MainForm.Instance.textEditorControl1);
             }
             catch (Exception ex)
             {
@@ -177,8 +177,8 @@ namespace CIARE
             try
             {
                 HubConnectionBuild();
-                await ApiConnectionEvents.Connect(this, Form1.Instance.hubConnection, connectHostBtn, startLiveBtn,
-                    GlobalVariables.livePassword, GlobalVariables.sessionId, Form1.Instance.textEditorControl1);
+                await ApiConnectionEvents.Connect(this, MainForm.Instance.hubConnection, connectHostBtn, startLiveBtn,
+                    GlobalVariables.livePassword, GlobalVariables.sessionId, MainForm.Instance.textEditorControl1);
             }
             catch (Exception ex)
             {
@@ -210,11 +210,11 @@ namespace CIARE
         {
             if (!GlobalVariables.connected)
             {
-                Form1.Instance.hubConnection = new HubConnectionBuilder()
+                MainForm.Instance.hubConnection = new HubConnectionBuilder()
       .WithUrl(GlobalVariables.apiUrl)
       .Build();
 
-                ApiConnectionEvents.ApiConnection(Form1.Instance.hubConnection, Form1.Instance.textEditorControl1,
+                ApiConnectionEvents.ApiConnection(MainForm.Instance.hubConnection, MainForm.Instance.textEditorControl1,
                     GlobalVariables.connected, GlobalVariables.apiUrl);
             }
         }

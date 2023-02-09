@@ -13,11 +13,11 @@ namespace CIARE.Utils
         /// <param name="e"></param>
         public static void GetCaretPositon(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(Form1.Instance.textEditorControl1.Text))
-                Form1.Instance.linesPositionLbl.Text =
-                    $"[Line {Form1.Instance.textEditorControl1.ActiveTextAreaControl.TextArea.Caret.Position.Line + 1}, Col {Form1.Instance.textEditorControl1.ActiveTextAreaControl.TextArea.Caret.Column}]";
+            if (!string.IsNullOrEmpty(MainForm.Instance.textEditorControl1.Text))
+                MainForm.Instance.linesPositionLbl.Text =
+                    $"[Line {MainForm.Instance.textEditorControl1.ActiveTextAreaControl.TextArea.Caret.Position.Line + 1}, Col {MainForm.Instance.textEditorControl1.ActiveTextAreaControl.TextArea.Caret.Column}]";
             else
-                Form1.Instance.linesPositionLbl.Text = string.Empty;
+                MainForm.Instance.linesPositionLbl.Text = string.Empty;
         }
 
         /// <summary>

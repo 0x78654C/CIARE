@@ -1,7 +1,7 @@
 ﻿
 namespace CIARE
 {
-    partial class Form1
+    partial class MainForm
     {
         /// <summary>
         /// Required designer variable.
@@ -30,7 +30,7 @@ namespace CIARE
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.outputRBT = new System.Windows.Forms.RichTextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.runCodePb = new System.Windows.Forms.PictureBox();
@@ -63,6 +63,8 @@ namespace CIARE
             this.compileToDLLCtrlSfitBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.cmdLinesArgsStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
+            this.referenceAddToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitVEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -330,7 +332,9 @@ namespace CIARE
             this.compileToexeCtrlShiftBToolStripMenuItem,
             this.compileToDLLCtrlSfitBToolStripMenuItem,
             this.toolStripSeparator5,
-            this.cmdLinesArgsStripMenuItem});
+            this.cmdLinesArgsStripMenuItem,
+            this.toolStripSeparator7,
+            this.referenceAddToolStripMenuItem});
             this.compileToolStripMenuItem.Name = "compileToolStripMenuItem";
             this.compileToolStripMenuItem.Size = new System.Drawing.Size(64, 20);
             this.compileToolStripMenuItem.Text = "Compile";
@@ -360,6 +364,18 @@ namespace CIARE
             this.cmdLinesArgsStripMenuItem.Size = new System.Drawing.Size(290, 22);
             this.cmdLinesArgsStripMenuItem.Text = "Command Line Args...  ( Ctrl + L )";
             this.cmdLinesArgsStripMenuItem.Click += new System.EventHandler(this.cmdLinesArgsStripMenuItem_Click);
+            // 
+            // toolStripSeparator7
+            // 
+            this.toolStripSeparator7.Name = "toolStripSeparator7";
+            this.toolStripSeparator7.Size = new System.Drawing.Size(287, 6);
+            // 
+            // referenceAddToolStripMenuItem
+            // 
+            this.referenceAddToolStripMenuItem.Name = "referenceAddToolStripMenuItem";
+            this.referenceAddToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            this.referenceAddToolStripMenuItem.Text = "Add Reference                ( Ctrl + R )";
+            this.referenceAddToolStripMenuItem.Click += new System.EventHandler(this.referenceAddToolStripMenuItem_Click);
             // 
             // viewToolStripMenuItem
             // 
@@ -621,7 +637,7 @@ namespace CIARE
             this.liveStatusPb.TabStop = false;
             this.liveStatusPb.Paint += new System.Windows.Forms.PaintEventHandler(this.liveStatusPb_Paint);
             // 
-            // Form1
+            // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -640,13 +656,13 @@ namespace CIARE
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.Name = "Form1";
+            this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "CIARE";
-            this.Activated += new System.EventHandler(this.Form1_Activated);
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
-            this.Load += new System.EventHandler(this.Form1_Load);
-            this.Resize += new System.EventHandler(this.Form1_Resize);
+            this.Activated += new System.EventHandler(this.MainForm_Activated);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
+            this.Load += new System.EventHandler(this.MainForm_Load);
+            this.Resize += new System.EventHandler(this.MainForm_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.runCodePb)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
@@ -665,7 +681,7 @@ namespace CIARE
 
         public ICSharpCode.TextEditor.TextEditorControl textEditorControl1;
         private System.Windows.Forms.PictureBox runCodePb;
-        private System.Windows.Forms.RichTextBox outputRBT;
+        public System.Windows.Forms.RichTextBox outputRBT;
         private System.Windows.Forms.ToolTip toolTip1;
         public System.Windows.Forms.ToolStripMenuItem fIleToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
@@ -716,6 +732,8 @@ namespace CIARE
         public System.Windows.Forms.PictureBox liveStatusPb;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
         public System.Windows.Forms.ToolStripMenuItem chatGPTCTRLShiftPToolStripMenuItem;
+        public System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
+        public System.Windows.Forms.ToolStripMenuItem referenceAddToolStripMenuItem;
     }
 }
 
