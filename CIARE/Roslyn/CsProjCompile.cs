@@ -1,15 +1,17 @@
 ﻿using CIARE.GUI;
+using CIARE.Reference;
 using CIARE.Utils;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.Roslyn
 {
-    //TODO: implement /clp:ErrorsOnly as GUI option
-    //TODO1: implement param /p:Platform=
+    [SupportedOSPlatform("Windows")]
     public class CsProjCompile
     {
         private string FileName { get; set; }
@@ -20,7 +22,7 @@ namespace CIARE.Roslyn
         private string CsProjTemplateExe = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>"+GlobalVariables.Framework+@"</TargetFramework>
+    <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
 	  <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
@@ -29,12 +31,13 @@ namespace CIARE.Roslyn
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='Debug|AnyCPU'"">
     <Optimize>True</Optimize>
   </PropertyGroup>
+" + SetReference(GlobalVariables.customRefAsm) + @"
 </Project>
 ";
         private string CsProjTemplateDll = $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>"+GlobalVariables.Framework+@"</TargetFramework>
+    <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
 	  <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
@@ -43,6 +46,7 @@ namespace CIARE.Roslyn
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='Debug|AnyCPU'"">
     <Optimize>True</Optimize>
   </PropertyGroup>
+" + SetReference(GlobalVariables.customRefAsm) + @"
 </Project>
 ";
         /// <summary>
@@ -57,6 +61,28 @@ namespace CIARE.Roslyn
             BinaryPath = binaryPath;
             Code = code;
             Library = library;
+        }
+
+        /// <summary>
+        /// Set reference link template for csproj file extension from the loaded list in reference manager.
+        /// </summary>
+        /// <param name="refList"></param>
+        /// <returns></returns>
+        private static string SetReference(List<string> refList)
+        {
+            string outRef = string.Empty;
+
+            foreach (var item in refList)
+            {
+                    var assemblyName = CustomRef.GetAssemblyNamespace(item);
+                    string format = $@"<ItemGroup>
+  <Reference Include=""" + assemblyName + @""">
+    <HintPath>" + item + @"</HintPath>
+  </Reference>
+</ItemGroup>";
+                    outRef += Environment.NewLine + format;
+            }
+            return outRef;
         }
 
         /// <summary>
@@ -90,14 +116,14 @@ namespace CIARE.Roslyn
                     if (GlobalVariables.OWarnings)
                         logOutput.Text = build;
                     string framework = GlobalVariables.Framework.Split('-')[0];
-                    PathExe(projectDir, exeName,framework, GlobalVariables.platformParam);
+                    PathExe(projectDir, exeName, framework, GlobalVariables.platformParam);
                     if (!string.IsNullOrEmpty(_exeFilePath))
                         logOutput.Text += $"Build succeeded.\n\n  {exeName} -> {_exeFilePath}";
                 }
                 logOutput.SelectionStart = logOutput.Text.Length;
                 logOutput.ScrollToCaret();
             }
-            catch(UnauthorizedAccessException uae)
+            catch (UnauthorizedAccessException uae)
             {
                 RichExtColor.ErrorDisplay(logOutput, $"ERROR: {uae.Message}. Process may be running!");
                 GlobalVariables.compileTime = true;
@@ -128,12 +154,12 @@ namespace CIARE.Roslyn
                         int pathSplit = fileInfo.FullName.Split(Path.DirectorySeparatorChar).Count();
                         string frameworkPath = fileInfo.FullName.Split(Path.DirectorySeparatorChar)[pathSplit - 2];
                         string parsePlatform = platform.Split('"')[1];
-                        if (fileInfo.Extension==".exe" && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
+                        if (fileInfo.Extension == ".exe" && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
                             _exeFilePath = fileInfo.FullName;
                         if (fileInfo.Extension == ".dll" && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
                             _exeFilePath = fileInfo.FullName;
                     }
-                    PathExe(dir, projectName,framework,platform);
+                    PathExe(dir, projectName, framework, platform);
                 }
             }
         }
