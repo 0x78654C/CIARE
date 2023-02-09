@@ -37,8 +37,8 @@
             this.AddRefFileBtn = new System.Windows.Forms.Button();
             this.CancelBtn = new System.Windows.Forms.Button();
             this.deleteStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.copyNamespaceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.refLisgGroupBox.SuspendLayout();
             this.deleteStrip.SuspendLayout();
             this.SuspendLayout();
@@ -78,7 +78,7 @@
             // 
             // AddRefFileBtn
             // 
-            this.AddRefFileBtn.Location = new System.Drawing.Point(12, 343);
+            this.AddRefFileBtn.Location = new System.Drawing.Point(12, 344);
             this.AddRefFileBtn.Name = "AddRefFileBtn";
             this.AddRefFileBtn.Size = new System.Drawing.Size(106, 28);
             this.AddRefFileBtn.TabIndex = 1;
@@ -88,7 +88,7 @@
             // 
             // CancelBtn
             // 
-            this.CancelBtn.Location = new System.Drawing.Point(638, 343);
+            this.CancelBtn.Location = new System.Drawing.Point(638, 344);
             this.CancelBtn.Name = "CancelBtn";
             this.CancelBtn.Size = new System.Drawing.Size(106, 28);
             this.CancelBtn.TabIndex = 2;
@@ -99,25 +99,25 @@
             // deleteStrip
             // 
             this.deleteStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.deleteToolStripMenuItem,
-            this.copyNamespaceToolStripMenuItem});
+            this.copyNamespaceToolStripMenuItem,
+            this.deleteToolStripMenuItem});
             this.deleteStrip.Name = "deleteStrip";
-            this.deleteStrip.Size = new System.Drawing.Size(181, 70);
+            this.deleteStrip.Size = new System.Drawing.Size(168, 48);
             this.deleteStrip.Text = "Delete";
-            // 
-            // deleteToolStripMenuItem
-            // 
-            this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
-            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.deleteToolStripMenuItem.Text = "Delete reference";
-            this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
             // 
             // copyNamespaceToolStripMenuItem
             // 
             this.copyNamespaceToolStripMenuItem.Name = "copyNamespaceToolStripMenuItem";
-            this.copyNamespaceToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.copyNamespaceToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
             this.copyNamespaceToolStripMenuItem.Text = "Copy Namespace";
             this.copyNamespaceToolStripMenuItem.Click += new System.EventHandler(this.copyNamespaceToolStripMenuItem_Click);
+            // 
+            // deleteToolStripMenuItem
+            // 
+            this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
+            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+            this.deleteToolStripMenuItem.Text = "Delete reference";
+            this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
             // 
             // RefManager
             // 
