@@ -12,6 +12,11 @@ namespace CIARE.Reference
     [SupportedOSPlatform("Windows")]
     public class CustomRef
     {
+        /// <summary>
+        /// Check if  a library is managed.
+        /// </summary>
+        /// <param name="libName"></param>
+        /// <returns></returns>
         public static bool IsManaged(string libName)
         {
             try
