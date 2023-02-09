@@ -110,7 +110,7 @@ namespace CIARE
             this.outputRBT.Name = "outputRBT";
             this.outputRBT.ReadOnly = true;
             this.outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.outputRBT.Size = new System.Drawing.Size(1388, 112);
+            this.outputRBT.Size = new System.Drawing.Size(1388, 114);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
             this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
@@ -470,7 +470,7 @@ namespace CIARE
             this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.groupBox1.Size = new System.Drawing.Size(1402, 136);
+            this.groupBox1.Size = new System.Drawing.Size(1402, 138);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output:";
