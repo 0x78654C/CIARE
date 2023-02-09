@@ -25,6 +25,11 @@ namespace CIARE.Model
             PopulateList(GlobalVariables.customRefAsm, ref refListView);
         }
 
+        /// <summary>
+        /// Load reference assembly button control event.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void AddRefFileBtn_Click(object sender, EventArgs e)
         {
             // Add lib's to list dialog.
