@@ -54,6 +54,7 @@ namespace CIARE.Utils
         {
             s_openFileDialog.Filter = "Dynamic Linked Library (*.dll)|*.dll|All Files (*.*)|*.*";
             s_openFileDialog.Title = "Select file top open:";
+            s_openFileDialog.DefaultExt = "dll";
             s_openFileDialog.CheckFileExists = true;
             s_openFileDialog.CheckPathExists = true;
             s_openFileDialog.Multiselect = true;
@@ -62,7 +63,7 @@ namespace CIARE.Utils
             {
                 foreach (var lib in s_openFileDialog.FileNames)
                 {
-                    if (CustomRef.IsManaged(lib))
+                    if (CustomRef.IsManaged(lib) )
                     {
                         if (!GlobalVariables.customRefAsm.Contains(lib))
                             GlobalVariables.customRefAsm.Add(lib);
