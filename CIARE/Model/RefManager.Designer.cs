@@ -102,21 +102,21 @@
             this.copyNamespaceToolStripMenuItem,
             this.deleteToolStripMenuItem});
             this.deleteStrip.Name = "deleteStrip";
-            this.deleteStrip.Size = new System.Drawing.Size(168, 48);
+            this.deleteStrip.Size = new System.Drawing.Size(170, 48);
             this.deleteStrip.Text = "Delete";
             // 
             // copyNamespaceToolStripMenuItem
             // 
             this.copyNamespaceToolStripMenuItem.Name = "copyNamespaceToolStripMenuItem";
-            this.copyNamespaceToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+            this.copyNamespaceToolStripMenuItem.Size = new System.Drawing.Size(169, 22);
             this.copyNamespaceToolStripMenuItem.Text = "Copy Namespace";
             this.copyNamespaceToolStripMenuItem.Click += new System.EventHandler(this.copyNamespaceToolStripMenuItem_Click);
             // 
             // deleteToolStripMenuItem
             // 
             this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
-            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
-            this.deleteToolStripMenuItem.Text = "Delete reference";
+            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(169, 22);
+            this.deleteToolStripMenuItem.Text = "Remove reference";
             this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
             // 
             // RefManager

@@ -97,9 +97,14 @@ namespace CIARE.Model
         /// <param name="refList"></param>
         private void DeleteRefLibrary(ListView refList)
         {
-            var selecItem = refList.SelectedItems[0].SubItems[1].Text;
-            GlobalVariables.customRefAsm.Remove(selecItem);
-            refList.SelectedItems[0].Remove();
+            var selecItem = refList.SelectedItems[0].Text;
+            var dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference. Are you sure? ", "CIARE", MessageBoxButtons.YesNo,
+MessageBoxIcon.Warning);
+            if (dialogResult == DialogResult.Yes)
+            {
+                GlobalVariables.customRefAsm.Remove(selecItem);
+                refList.SelectedItems[0].Remove();
+            }
         }
         
         /// <summary>
