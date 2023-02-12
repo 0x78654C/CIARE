@@ -70,7 +70,7 @@ namespace CIARE.Utils
                     }
                     else
                         MessageBox.Show($"{lib} is not managed library!", "CIARE", MessageBoxButtons.OK,
-MessageBoxIcon.Information);
+MessageBoxIcon.Warning);
                 }
             }
         }
