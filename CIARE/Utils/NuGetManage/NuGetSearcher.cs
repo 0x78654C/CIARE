@@ -1,0 +1,53 @@
+﻿using NuGet.Protocol.Core.Types;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using NuGet.Protocol;
+using ILogger = NuGet.Common.ILogger;
+using NullLogger = NuGet.Common.NullLogger;
+
+namespace CIARE.Utils.NuGet
+{
+    public class NuGetSearcher
+    {
+        /// <summary>
+        /// Package name to be searched.
+        /// </summary>
+        private string PackageName { get; set; } = string.Empty;
+
+        public NuGetSearcher(string packageName)
+        {
+            PackageName = packageName;
+        }
+
+        /// <summary>
+        /// Get Search rezult from nuget with name of package
+        /// </summary>
+        /// <param name="richTextBox"></param>
+        /// <returns></returns>
+        public async Task Search(RichTextBox richTextBox)
+        {
+            ILogger logger = NullLogger.Instance;
+            CancellationToken cancellationToken = CancellationToken.None;
+
+            SourceRepository repository = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
+            PackageSearchResource resource = await repository.GetResourceAsync<PackageSearchResource>();
+            SearchFilter searchFilter = new SearchFilter(includePrerelease: false);
+
+            IEnumerable<IPackageSearchMetadata> results = await resource.SearchAsync(
+                PackageName,
+                searchFilter,
+                skip:0,
+                take:20,
+                logger,
+                cancellationToken);
+            richTextBox.Clear();
+            foreach (var result in results)
+            {
+                GlobalVariables.packageVersions.Add(result.Title);
+                richTextBox.Text+= $"{result.Title}\n";
+            }
+        }
+    }
+}
