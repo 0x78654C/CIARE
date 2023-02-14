@@ -24,6 +24,7 @@ using CIARE.Model;
 using Microsoft.Win32;
 using System.Collections.Generic;
 using CIARE.Reference;
+using CIARE.Utils.NuGet;
 
 namespace CIARE
 {
@@ -322,11 +323,44 @@ namespace CIARE
                     RefManager refManager = new RefManager();
                     refManager.ShowDialog();
                     return true;
+                case Keys.Z | Keys.Control:
+                    GetNuGetSearhed(textEditorControl1.Text, outputRBT);
+                    return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
         #endregion
 
+
+        /// <summary>
+        /// TEST: Method for display on log the version for a NuGet package
+        /// </summary>
+        private void GetNuGetVerions(string packageName, RichTextBox output)
+        {
+            NuGetVersions nSearcher = new NuGetVersions(packageName);
+            output.Text = $"Searching NuGet for {packageName}\n";
+            nSearcher.GetVerions(output);
+            
+            foreach(var version in GlobalVariables.packageVersions)
+            {
+                output.Text += $"{packageName} {version}\n";
+            }
+        }
+
+        /// <summary>
+        /// TEST: Method for display on log the version for a NuGet package
+        /// </summary>
+        private void GetNuGetSearhed(string packageName, RichTextBox output)
+        {
+            NuGetSearcher nSearcher = new NuGetSearcher(packageName);
+            output.Text = $"Searching NuGet for {packageName}\n";
+          Task.Run(()=>  nSearcher.Search(output));
+
+            foreach (var version in GlobalVariables.packageVersions)
+            {
+                output.Text += $"{packageName} {version}\n";
+            }
+        }
 
         public void SetHighLighter(string highlight)
         {
