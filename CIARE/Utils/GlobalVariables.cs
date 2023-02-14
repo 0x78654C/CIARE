@@ -80,7 +80,7 @@ namespace CIARE.Utils
         public static string aiKey = string.Empty;
         // ----------
         public static List<string> customRefAsm = new List<string>(); // Used to store custom asspably path file.
-
+        public static List<string> packageVersions = new List<string>();
         public static readonly string roslynTemplate = @"/*
  * Simple C# code sample for run with Roslyn runtime code compiler and execution.
  * Top-level statements can be used as well.
