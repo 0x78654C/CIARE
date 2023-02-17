@@ -15,10 +15,12 @@ namespace CIARE.Utils.NuGet
         /// Package name to be searched.
         /// </summary>
         private string PackageName { get; set; } = string.Empty;
+        private string NugetApi { get; set; } = string.Empty;
 
-        public NuGetSearcher(string packageName)
+        public NuGetSearcher(string packageName, string nugetApi)
         {
             PackageName = packageName;
+            NugetApi = nugetApi;
         }
 
         /// <summary>
@@ -28,10 +30,13 @@ namespace CIARE.Utils.NuGet
         /// <returns></returns>
         public async Task Search(RichTextBox richTextBox)
         {
+            if (string.IsNullOrEmpty(NugetApi))
+                return;
+
             ILogger logger = NullLogger.Instance;
             CancellationToken cancellationToken = CancellationToken.None;
 
-            SourceRepository repository = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
+            SourceRepository repository = Repository.Factory.GetCoreV3(NugetApi);
             PackageSearchResource resource = await repository.GetResourceAsync<PackageSearchResource>();
             SearchFilter searchFilter = new SearchFilter(includePrerelease: false);
 

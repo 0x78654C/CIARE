@@ -15,10 +15,12 @@ namespace CIARE.Utils.NuGet
         /// NuGet package name.
         /// </summary>
         private string PackageName { get; set; } = string.Empty;
+        private string NugetApi { get; set; }=string.Empty;
         
-        public NuGetVersions(string packageName)
+        public NuGetVersions(string packageName, string nugetApi)
         {
             PackageName = packageName;
+            NugetApi = nugetApi;
         }
 
         /// <summary>
@@ -27,10 +29,12 @@ namespace CIARE.Utils.NuGet
         /// <param name="richTextBox"></param>
         public async void GetVerions(RichTextBox richTextBox)
         {
+            if (string.IsNullOrEmpty(NugetApi))
+                return;
             ILogger logger = NullLogger.Instance;
             CancellationToken cancellationToken = CancellationToken.None;
             SourceCacheContext cache = new SourceCacheContext();
-            SourceRepository repository = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
+            SourceRepository repository = Repository.Factory.GetCoreV3(NugetApi);
             FindPackageByIdResource resource = await repository.GetResourceAsync <FindPackageByIdResource>();
 
             IEnumerable<NuGetVersion> versions = await resource.GetAllVersionsAsync(
