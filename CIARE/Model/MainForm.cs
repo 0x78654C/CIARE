@@ -25,6 +25,7 @@ using Microsoft.Win32;
 using System.Collections.Generic;
 using CIARE.Reference;
 using CIARE.Utils.NuGet;
+using CIARE.Utils.NuGetManage;
 
 namespace CIARE
 {
@@ -324,24 +325,32 @@ namespace CIARE
                     refManager.ShowDialog();
                     return true;
                 case Keys.Z | Keys.Control:
-                    GetNuGetSearhed(textEditorControl1.Text, outputRBT);
+                    GetNuGetDownload("Newtonsoft.Json","12.0.1",GlobalVariables.nugetApi, outputRBT);
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
         #endregion
 
+        /// <summary>
+        /// TEST: Method for download a specific package by name and id.
+        /// </summary>
+        private void GetNuGetDownload(string packageName, string version, string nugetApi, RichTextBox output)
+        {
+            NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName, version, nugetApi);
+            nuGetDownloader.DownloadPackage(output);
+        }
 
         /// <summary>
         /// TEST: Method for display on log the version for a NuGet package
         /// </summary>
-        private void GetNuGetVerions(string packageName, RichTextBox output)
+        private void GetNuGetVerions(string packageName, string nugetApi, RichTextBox output)
         {
-            NuGetVersions nSearcher = new NuGetVersions(packageName);
+            NuGetVersions nSearcher = new NuGetVersions(packageName, GlobalVariables.nugetApi);
             output.Text = $"Searching NuGet for {packageName}\n";
             nSearcher.GetVerions(output);
-            
-            foreach(var version in GlobalVariables.packageVersions)
+
+            foreach (var version in GlobalVariables.packageVersions)
             {
                 output.Text += $"{packageName} {version}\n";
             }
@@ -350,9 +359,9 @@ namespace CIARE
         /// <summary>
         /// TEST: Method for display on log the version for a NuGet package
         /// </summary>
-        private void GetNuGetSearhed(string packageName, RichTextBox output)
+        private void GetNuGetSearhed(string packageName, RichTextBox output, string nugetApi)
         {
-            NuGetSearcher nSearcher = new NuGetSearcher(packageName);
+            NuGetSearcher nSearcher = new NuGetSearcher(packageName,nugetApi);
             output.Text = $"Searching NuGet for {packageName}\n";
           Task.Run(()=>  nSearcher.Search(output));
 
