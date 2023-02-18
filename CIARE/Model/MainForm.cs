@@ -325,7 +325,7 @@ namespace CIARE
                     refManager.ShowDialog();
                     return true;
                 case Keys.Z | Keys.Control:
-                    GetNuGetDownload("Newtonsoft.Json","12.0.1",GlobalVariables.nugetApi, outputRBT);
+                    GetNuGetDownload("Konscious.Security.Cryptography.Argon2",GlobalVariables.nugetApi, outputRBT);
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -335,10 +335,11 @@ namespace CIARE
         /// <summary>
         /// TEST: Method for download a specific package by name and id.
         /// </summary>
-        private void GetNuGetDownload(string packageName, string version, string nugetApi, RichTextBox output)
+        private void GetNuGetDownload(string packageName, string nugetApi, RichTextBox output)
         {
-            NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName, version, nugetApi);
+            NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName, nugetApi);
             nuGetDownloader.DownloadPackage(output);
+            nuGetDownloader.Extract(output);
         }
 
         /// <summary>
