@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 using CIARE.Reference;
@@ -63,7 +65,7 @@ namespace CIARE.Utils
             {
                 foreach (var lib in s_openFileDialog.FileNames)
                 {
-                    if (CustomRef.IsManaged(lib) )
+                    if (CustomRef.IsManaged(lib))
                     {
                         if (!GlobalVariables.customRefAsm.Contains(lib))
                             GlobalVariables.customRefAsm.Add(lib);
@@ -341,7 +343,7 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void LoadCSTemplate(TextEditorControl textEditor)
         {
-            FileManage.ManageUnsavedData(textEditor);
+            ManageUnsavedData(textEditor);
             DialogResult dr = MessageBox.Show("Do you really want to load C# code template?", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Information);
             if (dr == DialogResult.Yes)
@@ -352,6 +354,28 @@ MessageBoxIcon.Information);
                 else
                     MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
                 textEditor.Text = GlobalVariables.roslynTemplate;
+            }
+        }
+
+        public static void SearchFile(string directoryName, RichTextBox richTextBox)
+        {
+            var dirsList = new List<string>();
+            var fileList = new List<string>();
+            GlobalVariables.depNugetFiles.Clear();
+            Directory.GetDirectories(directoryName).ToList().ForEach(dir => dirsList.Add(dir));
+            Directory.GetFiles(directoryName).ToList().ForEach(file => fileList.Add(file));
+            foreach (var file in fileList)
+            {
+                var fileInfo = new FileInfo(file);
+                if (fileInfo.FullName.Contains(@"\lib\") && fileInfo.Extension == ".dll")
+                    if (!GlobalVariables.depNugetFiles.Contains(fileInfo.FullName))
+                        GlobalVariables.depNugetFiles.Add(fileInfo.FullName);
+            }
+            foreach (var file in GlobalVariables.depNugetFiles)
+                richTextBox.Text+= file + "\n";
+            foreach (var dir in dirsList)
+            {
+                SearchFile(dir, richTextBox);
             }
         }
     }
