@@ -1,27 +1,31 @@
-﻿using NuGet.Protocol.Core.Types;
+﻿using Microsoft.CodeAnalysis;
+using NuGet.Frameworks;
+using NuGet.Packaging;
+using NuGet.Protocol;
+using NuGet.Protocol.Core.Types;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using NuGet.Protocol;
 using ILogger = NuGet.Common.ILogger;
 using NullLogger = NuGet.Common.NullLogger;
-using System.IO;
-using NuGet.Packaging;
-using System.Linq;
-using System;
-using Microsoft.CodeAnalysis;
-using NuGet.Frameworks;
 
 namespace CIARE.Utils.NuGetManage
 {
+    [SupportedOSPlatform("windows")]
     public class NuGetDownloader
     {
         private string PackageName { get; set; } = string.Empty;
         private string NugetApi { get; set; } = string.Empty;
         private List<string> Dependencies = new List<string>();
         private List<string> LocalDependencies = new List<string>();
-        private readonly string _downloadPath = $"{Application.StartupPath}\\nuget\\";
+        private readonly string _downloadPath = $"{Application.StartupPath}nuget\\";
+        public static object lockDownloader = new object();
+
         public NuGetDownloader(string packageName, string nugetApi)
         {
             PackageName = packageName;
@@ -32,7 +36,7 @@ namespace CIARE.Utils.NuGetManage
         /// NuGet pacakge downloader
         /// </summary>
         /// <param name="richTextBox"></param>
-        public async void DownloadPackage(RichTextBox richTextBox)
+        public async Task DownloadPackage(RichTextBox richTextBox)
         {
 
             ILogger logger = NullLogger.Instance;
@@ -55,10 +59,8 @@ namespace CIARE.Utils.NuGetManage
                 take: 1,
                 logger,
                 cancellationToken)).ToList();
-            richTextBox.Text = "--";
             foreach (IPackageSearchMetadata result in results)
             {
-                richTextBox.Text += $"package {result.Identity.Id} {result.Identity.Version}\n";
                 var versions = await result.GetVersionsAsync();
                 var version = versions.LastOrDefault();
                 var fileStore = $"{_downloadPath}{result.Identity.Id}.{version.Version}.zip";
@@ -70,7 +72,6 @@ namespace CIARE.Utils.NuGetManage
                     cache,
                     logger,
                     cancellationToken);
-                richTextBox.Text += $" downloaded version {version.Version} {packageStream.Length} bytes\n";
                 bytesDownloaded += packageStream.Length;
                 packageStream.Close();
 
@@ -85,23 +86,29 @@ namespace CIARE.Utils.NuGetManage
                     cache,
                     logger,
                     cancellationToken);
-
                 await GetDependencies(packageStreamDep, cancellationToken, richTextBox);
-
             }
-
-            richTextBox.Text += $"Downloaded {bytesDownloaded}";
         }
 
-       /// <summary>
-       /// Extract package after download.
-       /// </summary>
-       /// <param name="richTextBox"></param>
+        /// <summary>
+        /// Extract package after download.
+        /// </summary>
+        /// <param name="richTextBox"></param>
         public void Extract(RichTextBox richTextBox)
         {
-            foreach(var file in GlobalVariables.downloadPackages)
+            Task.Run(() => DownloadPackage(richTextBox));
+            Thread.Sleep(3000);
+            foreach (var file in GlobalVariables.downloadPackages)
                 ArchiveManager.Extract(file, richTextBox);
+            GetLatestFrameworkFile(richTextBox);
+        }
 
+
+        public void GetLatestFrameworkFile(RichTextBox outputLog)
+        {
+            if (!Directory.Exists(_downloadPath))
+                return;
+            FileManage.SearchFile(_downloadPath, outputLog);
         }
 
         /// <summary>
@@ -116,7 +123,6 @@ namespace CIARE.Utils.NuGetManage
             using var packageReader = new PackageArchiveReader(packageStreamDep);
             var nuspecReader = await packageReader.GetNuspecReaderAsync(cancellationToken);
             nuspecReader.GetDescription();
-            NuGetFramework.ParseFolder("net6.0");
             foreach (var dependencyGroup in nuspecReader.GetDependencyGroups())
             {
                 foreach (var dependecyPackage in dependencyGroup.Packages)
