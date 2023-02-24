@@ -325,7 +325,7 @@ namespace CIARE
                     refManager.ShowDialog();
                     return true;
                 case Keys.Z | Keys.Control:
-                    GetNuGetDownload("Konscious.Security.Cryptography.Argon2",GlobalVariables.nugetApi, outputRBT);
+                    GetNuGetDownload("Konscious.Security.Cryptography.Argon2", GlobalVariables.nugetApi, outputRBT);
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -338,8 +338,8 @@ namespace CIARE
         private void GetNuGetDownload(string packageName, string nugetApi, RichTextBox output)
         {
             NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName, nugetApi);
-            nuGetDownloader.DownloadPackage(output);
             nuGetDownloader.Extract(output);
+            nuGetDownloader.GetLatestFrameworkFile(outputRBT);
         }
 
         /// <summary>
@@ -362,9 +362,9 @@ namespace CIARE
         /// </summary>
         private void GetNuGetSearhed(string packageName, RichTextBox output, string nugetApi)
         {
-            NuGetSearcher nSearcher = new NuGetSearcher(packageName,nugetApi);
+            NuGetSearcher nSearcher = new NuGetSearcher(packageName, nugetApi);
             output.Text = $"Searching NuGet for {packageName}\n";
-          Task.Run(()=>  nSearcher.Search(output));
+            Task.Run(() => nSearcher.Search(output));
 
             foreach (var version in GlobalVariables.packageVersions)
             {
