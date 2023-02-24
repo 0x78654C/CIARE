@@ -24,7 +24,6 @@ namespace CIARE.Utils.NuGetManage
         private List<string> Dependencies = new List<string>();
         private List<string> LocalDependencies = new List<string>();
         private readonly string _downloadPath = $"{Application.StartupPath}nuget\\";
-        public static object lockDownloader = new object();
 
         public NuGetDownloader(string packageName, string nugetApi)
         {
