@@ -357,7 +357,11 @@ MessageBoxIcon.Information);
             }
         }
 
-        public static void SearchFile(string directoryName, RichTextBox richTextBox)
+        /// <summary>
+        /// Search dll file in nuget extracted archive.
+        /// </summary>
+        /// <param name="directoryName"></param>
+        public static void SearchFile(string directoryName, List<string> listFramework)
         {
             var dirsList = new List<string>();
             var fileList = new List<string>();
@@ -368,14 +372,22 @@ MessageBoxIcon.Information);
             {
                 var fileInfo = new FileInfo(file);
                 if (fileInfo.FullName.Contains(@"\lib\") && fileInfo.Extension == ".dll")
-                    if (!GlobalVariables.depNugetFiles.Contains(fileInfo.FullName))
-                        GlobalVariables.depNugetFiles.Add(fileInfo.FullName);
+                {
+                    foreach (var framework in listFramework)
+                    {
+                        if (fileInfo.FullName.Contains(framework))
+                            if (!GlobalVariables.depNugetFiles.Contains(fileInfo.FullName))
+                            {
+                                GlobalVariables.depNugetFiles.Add(fileInfo.FullName);
+                                GlobalVariables.isFrameworkFound = true;
+                            }
+                        break;
+                    }
+                }
             }
-            foreach (var file in GlobalVariables.depNugetFiles)
-                richTextBox.Text+= file + "\n";
             foreach (var dir in dirsList)
             {
-                SearchFile(dir, richTextBox);
+                SearchFile(dir, listFramework);
             }
         }
     }
