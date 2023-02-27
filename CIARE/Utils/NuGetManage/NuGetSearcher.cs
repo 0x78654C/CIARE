@@ -28,7 +28,7 @@ namespace CIARE.Utils.NuGet
         /// </summary>
         /// <param name="richTextBox"></param>
         /// <returns></returns>
-        public async Task Search(RichTextBox richTextBox)
+        public async Task Search()
         {
             if (string.IsNullOrEmpty(NugetApi))
                 return;
@@ -44,14 +44,12 @@ namespace CIARE.Utils.NuGet
                 PackageName,
                 searchFilter,
                 skip:0,
-                take:20,
+                take:999,
                 logger,
                 cancellationToken);
-            richTextBox.Clear();
             foreach (var result in results)
             {
-                GlobalVariables.packageVersions.Add(result.Title);
-                richTextBox.Text+= $"{result.Title}\n";
+                GlobalVariables.nugetPackage.Add($"{result.Identity.Id} | {result.Identity.Version} | {result.Description} ");
             }
         }
     }
