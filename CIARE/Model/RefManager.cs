@@ -106,7 +106,7 @@ MessageBoxIcon.Warning);
                 refList.SelectedItems[0].Remove();
             }
         }
-        
+
         /// <summary>
         /// Set namespace to clipborad.
         /// </summary>
@@ -116,11 +116,22 @@ MessageBoxIcon.Warning);
         {
             CopyNamespace(refListView);
         }
-        
+
         /// <summary>
         /// Set text to clipborad from reference list.
         /// </summary>
         /// <param name="refList"></param>
         private void CopyNamespace(ListView refList) => Clipboard.SetText(refList.SelectedItems[0].Text);
+
+        /// <summary>
+        /// Open NuGet manager.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void NugetManagerBtn_Click(object sender, EventArgs e)
+        {
+            NuGetSearch nuGetSearch = new NuGetSearch();
+            nuGetSearch.ShowDialog();
+        }
     }
 }

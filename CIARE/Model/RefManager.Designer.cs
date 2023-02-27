@@ -28,117 +28,124 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(RefManager));
-            this.refLisgGroupBox = new System.Windows.Forms.GroupBox();
-            this.refListView = new System.Windows.Forms.ListView();
-            this.nameSpace = new System.Windows.Forms.ColumnHeader();
-            this.filePath = new System.Windows.Forms.ColumnHeader();
-            this.AddRefFileBtn = new System.Windows.Forms.Button();
-            this.CancelBtn = new System.Windows.Forms.Button();
-            this.deleteStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.copyNamespaceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.refLisgGroupBox.SuspendLayout();
-            this.deleteStrip.SuspendLayout();
-            this.SuspendLayout();
+            refLisgGroupBox = new System.Windows.Forms.GroupBox();
+            refListView = new System.Windows.Forms.ListView();
+            nameSpace = new System.Windows.Forms.ColumnHeader();
+            filePath = new System.Windows.Forms.ColumnHeader();
+            AddRefFileBtn = new System.Windows.Forms.Button();
+            CancelBtn = new System.Windows.Forms.Button();
+            deleteStrip = new System.Windows.Forms.ContextMenuStrip(components);
+            copyNamespaceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            NugetManagerBtn = new System.Windows.Forms.Button();
+            refLisgGroupBox.SuspendLayout();
+            deleteStrip.SuspendLayout();
+            SuspendLayout();
             // 
             // refLisgGroupBox
             // 
-            this.refLisgGroupBox.Controls.Add(this.refListView);
-            this.refLisgGroupBox.Location = new System.Drawing.Point(12, 12);
-            this.refLisgGroupBox.Name = "refLisgGroupBox";
-            this.refLisgGroupBox.Size = new System.Drawing.Size(732, 310);
-            this.refLisgGroupBox.TabIndex = 0;
-            this.refLisgGroupBox.TabStop = false;
-            this.refLisgGroupBox.Text = "Reference List";
+            refLisgGroupBox.Controls.Add(refListView);
+            refLisgGroupBox.Location = new System.Drawing.Point(12, 12);
+            refLisgGroupBox.Name = "refLisgGroupBox";
+            refLisgGroupBox.Size = new System.Drawing.Size(732, 310);
+            refLisgGroupBox.TabIndex = 0;
+            refLisgGroupBox.TabStop = false;
+            refLisgGroupBox.Text = "Reference List";
             // 
             // refListView
             // 
-            this.refListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.nameSpace,
-            this.filePath});
-            this.refListView.Location = new System.Drawing.Point(6, 22);
-            this.refListView.Name = "refListView";
-            this.refListView.Size = new System.Drawing.Size(720, 282);
-            this.refListView.TabIndex = 0;
-            this.refListView.UseCompatibleStateImageBehavior = false;
-            this.refListView.View = System.Windows.Forms.View.Details;
-            this.refListView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.refListView_MouseClick);
+            refListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { nameSpace, filePath });
+            refListView.Location = new System.Drawing.Point(6, 22);
+            refListView.Name = "refListView";
+            refListView.Size = new System.Drawing.Size(720, 282);
+            refListView.TabIndex = 0;
+            refListView.UseCompatibleStateImageBehavior = false;
+            refListView.View = System.Windows.Forms.View.Details;
+            refListView.MouseClick += refListView_MouseClick;
             // 
             // nameSpace
             // 
-            this.nameSpace.Text = "Namespace";
-            this.nameSpace.Width = 132;
+            nameSpace.Text = "Namespace";
+            nameSpace.Width = 132;
             // 
             // filePath
             // 
-            this.filePath.Text = "File Path";
-            this.filePath.Width = 580;
+            filePath.Text = "File Path";
+            filePath.Width = 580;
             // 
             // AddRefFileBtn
             // 
-            this.AddRefFileBtn.Location = new System.Drawing.Point(12, 344);
-            this.AddRefFileBtn.Name = "AddRefFileBtn";
-            this.AddRefFileBtn.Size = new System.Drawing.Size(106, 28);
-            this.AddRefFileBtn.TabIndex = 1;
-            this.AddRefFileBtn.Text = "Add Reference";
-            this.AddRefFileBtn.UseVisualStyleBackColor = true;
-            this.AddRefFileBtn.Click += new System.EventHandler(this.AddRefFileBtn_Click);
+            AddRefFileBtn.Location = new System.Drawing.Point(12, 344);
+            AddRefFileBtn.Name = "AddRefFileBtn";
+            AddRefFileBtn.Size = new System.Drawing.Size(106, 28);
+            AddRefFileBtn.TabIndex = 1;
+            AddRefFileBtn.Text = "Add Reference";
+            AddRefFileBtn.UseVisualStyleBackColor = true;
+            AddRefFileBtn.Click += AddRefFileBtn_Click;
             // 
             // CancelBtn
             // 
-            this.CancelBtn.Location = new System.Drawing.Point(638, 344);
-            this.CancelBtn.Name = "CancelBtn";
-            this.CancelBtn.Size = new System.Drawing.Size(106, 28);
-            this.CancelBtn.TabIndex = 2;
-            this.CancelBtn.Text = "Cancel";
-            this.CancelBtn.UseVisualStyleBackColor = true;
-            this.CancelBtn.Click += new System.EventHandler(this.CancelBtn_Click);
+            CancelBtn.Location = new System.Drawing.Point(638, 344);
+            CancelBtn.Name = "CancelBtn";
+            CancelBtn.Size = new System.Drawing.Size(106, 28);
+            CancelBtn.TabIndex = 2;
+            CancelBtn.Text = "Cancel";
+            CancelBtn.UseVisualStyleBackColor = true;
+            CancelBtn.Click += CancelBtn_Click;
             // 
             // deleteStrip
             // 
-            this.deleteStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.copyNamespaceToolStripMenuItem,
-            this.deleteToolStripMenuItem});
-            this.deleteStrip.Name = "deleteStrip";
-            this.deleteStrip.Size = new System.Drawing.Size(170, 48);
-            this.deleteStrip.Text = "Delete";
+            deleteStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { copyNamespaceToolStripMenuItem, deleteToolStripMenuItem });
+            deleteStrip.Name = "deleteStrip";
+            deleteStrip.Size = new System.Drawing.Size(170, 48);
+            deleteStrip.Text = "Delete";
             // 
             // copyNamespaceToolStripMenuItem
             // 
-            this.copyNamespaceToolStripMenuItem.Name = "copyNamespaceToolStripMenuItem";
-            this.copyNamespaceToolStripMenuItem.Size = new System.Drawing.Size(169, 22);
-            this.copyNamespaceToolStripMenuItem.Text = "Copy Namespace";
-            this.copyNamespaceToolStripMenuItem.Click += new System.EventHandler(this.copyNamespaceToolStripMenuItem_Click);
+            copyNamespaceToolStripMenuItem.Name = "copyNamespaceToolStripMenuItem";
+            copyNamespaceToolStripMenuItem.Size = new System.Drawing.Size(169, 22);
+            copyNamespaceToolStripMenuItem.Text = "Copy Namespace";
+            copyNamespaceToolStripMenuItem.Click += copyNamespaceToolStripMenuItem_Click;
             // 
             // deleteToolStripMenuItem
             // 
-            this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
-            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(169, 22);
-            this.deleteToolStripMenuItem.Text = "Remove reference";
-            this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
+            deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
+            deleteToolStripMenuItem.Size = new System.Drawing.Size(169, 22);
+            deleteToolStripMenuItem.Text = "Remove reference";
+            deleteToolStripMenuItem.Click += deleteToolStripMenuItem_Click;
+            // 
+            // NugetManagerBtn
+            // 
+            NugetManagerBtn.Location = new System.Drawing.Point(124, 344);
+            NugetManagerBtn.Name = "NugetManagerBtn";
+            NugetManagerBtn.Size = new System.Drawing.Size(106, 28);
+            NugetManagerBtn.TabIndex = 3;
+            NugetManagerBtn.Text = "NuGet Manager ";
+            NugetManagerBtn.UseVisualStyleBackColor = true;
+            NugetManagerBtn.Click += NugetManagerBtn_Click;
             // 
             // RefManager
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.CancelButton = this.CancelBtn;
-            this.ClientSize = new System.Drawing.Size(756, 397);
-            this.Controls.Add(this.CancelBtn);
-            this.Controls.Add(this.AddRefFileBtn);
-            this.Controls.Add(this.refLisgGroupBox);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
-            this.Name = "RefManager";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Reference Manager";
-            this.Load += new System.EventHandler(this.RefManager_Load);
-            this.refLisgGroupBox.ResumeLayout(false);
-            this.deleteStrip.ResumeLayout(false);
-            this.ResumeLayout(false);
-
+            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            CancelButton = CancelBtn;
+            ClientSize = new System.Drawing.Size(756, 397);
+            Controls.Add(NugetManagerBtn);
+            Controls.Add(CancelBtn);
+            Controls.Add(AddRefFileBtn);
+            Controls.Add(refLisgGroupBox);
+            FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
+            MaximizeBox = false;
+            Name = "RefManager";
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            Text = "Reference Manager";
+            Load += RefManager_Load;
+            refLisgGroupBox.ResumeLayout(false);
+            deleteStrip.ResumeLayout(false);
+            ResumeLayout(false);
         }
 
         #endregion
@@ -153,5 +160,6 @@
         private System.Windows.Forms.ContextMenuStrip deleteStrip;
         private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem copyNamespaceToolStripMenuItem;
+        private System.Windows.Forms.Button NugetManagerBtn;
     }
 }
