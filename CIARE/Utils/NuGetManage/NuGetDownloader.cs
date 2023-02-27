@@ -35,7 +35,7 @@ namespace CIARE.Utils.NuGetManage
         /// NuGet pacakge downloader
         /// </summary>
         /// <param name="richTextBox"></param>
-        public async Task DownloadPackage(RichTextBox richTextBox)
+        public async Task DownloadPackage()
         {
 
             ILogger logger = NullLogger.Instance;
@@ -74,7 +74,7 @@ namespace CIARE.Utils.NuGetManage
                 bytesDownloaded += packageStream.Length;
                 packageStream.Close();
 
-                await Task.Run(() => ArchiveManager.Extract(fileStore, richTextBox));
+                await Task.Run(() => ArchiveManager.Extract(fileStore));
 
                 using MemoryStream packageStreamDep = new MemoryStream();
 
@@ -85,7 +85,7 @@ namespace CIARE.Utils.NuGetManage
                     cache,
                     logger,
                     cancellationToken);
-                await GetDependencies(packageStreamDep, cancellationToken, richTextBox);
+                await GetDependencies(packageStreamDep, cancellationToken);
             }
         }
 
@@ -93,21 +93,21 @@ namespace CIARE.Utils.NuGetManage
         /// Extract package after download.
         /// </summary>
         /// <param name="richTextBox"></param>
-        public void Extract(RichTextBox richTextBox)
+        public void Extract(List<string> listFramework)
         {
-            Task.Run(() => DownloadPackage(richTextBox));
+            Task.Run(() => DownloadPackage());
             Thread.Sleep(3000);
             foreach (var file in GlobalVariables.downloadPackages)
-                ArchiveManager.Extract(file, richTextBox);
-            GetLatestFrameworkFile(richTextBox);
+                ArchiveManager.Extract(file);
+            GetLatestFrameworkFile(listFramework);
         }
 
 
-        public void GetLatestFrameworkFile(RichTextBox outputLog)
+        public void GetLatestFrameworkFile(List<string> listFramework)
         {
             if (!Directory.Exists(_downloadPath))
                 return;
-            FileManage.SearchFile(_downloadPath, outputLog);
+            FileManage.SearchFile(_downloadPath, listFramework);
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace CIARE.Utils.NuGetManage
         /// <param name="cancellationToken"></param>
         /// <param name="richTextBox"></param>
         /// <returns></returns>
-        private async Task GetDependencies(MemoryStream packageStreamDep, CancellationToken cancellationToken, RichTextBox richTextBox)
+        private async Task GetDependencies(MemoryStream packageStreamDep, CancellationToken cancellationToken)
         {
             using var packageReader = new PackageArchiveReader(packageStreamDep);
             var nuspecReader = await packageReader.GetNuspecReaderAsync(cancellationToken);
@@ -139,7 +139,7 @@ namespace CIARE.Utils.NuGetManage
                         PackageName = pakageName;
                         if (!File.Exists($"{_downloadPath}{pakageName}.zip"))
                         {
-                            DownloadPackage(richTextBox);
+                            DownloadPackage();
                         }
                     }
                 }
