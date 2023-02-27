@@ -21,9 +21,7 @@ using System.Threading.Tasks;
 using CIARE.Utils.OpenAISettings;
 using Button = System.Windows.Forms.Button;
 using CIARE.Model;
-using Microsoft.Win32;
 using System.Collections.Generic;
-using CIARE.Reference;
 using CIARE.Utils.NuGet;
 using CIARE.Utils.NuGetManage;
 
@@ -289,16 +287,16 @@ namespace CIARE
                     find.ShowDialog();
                     return true;
                 case Keys.F5:
-                    Roslyn.RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
+                    RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
                     return true;
                 case Keys.T | Keys.Control:
                     FileManage.LoadCSTemplate(textEditorControl1);
                     return true;
                 case Keys.B | Keys.Control:
-                    Roslyn.RoslynRun.CompileBinaryExe(textEditorControl1, splitContainer1, outputRBT, false);
+                    RoslynRun.CompileBinaryExe(textEditorControl1, splitContainer1, outputRBT, false);
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
-                    Roslyn.RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
+                    RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
                     return true;
                 case Keys.W | Keys.Control:
                     SplitEditorWindow.SplitWindow(textEditorControl1, true);
@@ -325,22 +323,12 @@ namespace CIARE
                     refManager.ShowDialog();
                     return true;
                 case Keys.Z | Keys.Control:
-                    GetNuGetDownload("Konscious.Security.Cryptography.Argon2", GlobalVariables.nugetApi, outputRBT);
+                    GetNuGetSearhed("Newtonsoft.Json", outputRBT, GlobalVariables.nugetApi);
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
         #endregion
-
-        /// <summary>
-        /// TEST: Method for download a specific package by name and id.
-        /// </summary>
-        private void GetNuGetDownload(string packageName, string nugetApi, RichTextBox output)
-        {
-            NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName, nugetApi);
-            nuGetDownloader.Extract(output);
-            nuGetDownloader.GetLatestFrameworkFile(outputRBT);
-        }
 
         /// <summary>
         /// TEST: Method for display on log the version for a NuGet package
@@ -351,7 +339,7 @@ namespace CIARE
             output.Text = $"Searching NuGet for {packageName}\n";
             nSearcher.GetVerions(output);
 
-            foreach (var version in GlobalVariables.packageVersions)
+            foreach (var version in GlobalVariables.nugetPackage)
             {
                 output.Text += $"{packageName} {version}\n";
             }
@@ -364,11 +352,11 @@ namespace CIARE
         {
             NuGetSearcher nSearcher = new NuGetSearcher(packageName, nugetApi);
             output.Text = $"Searching NuGet for {packageName}\n";
-            Task.Run(() => nSearcher.Search(output));
+            Task.Run(() => nSearcher.Search());
 
-            foreach (var version in GlobalVariables.packageVersions)
+            foreach (var version in GlobalVariables.nugetPackage)
             {
-                output.Text += $"{packageName} {version}\n";
+                output.Text += $"{version}\n";
             }
         }
 
