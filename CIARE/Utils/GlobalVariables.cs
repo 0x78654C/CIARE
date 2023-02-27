@@ -81,10 +81,12 @@ namespace CIARE.Utils
         // --Reference----
         public static List<string> customRefAsm = new List<string>(); // Used to store custom asspably path file.
         //- NuGet-
-        public static List<string> packageVersions = new List<string>();
+        public static List<string> nugetPackage = new List<string>();
         public static List<string> downloadPackages = new List<string>();
         public static List<string> depNugetFiles = new List<string>();
         public const string nugetApi="https://api.nuget.org/v3/index.json";
+        public static bool isFrameworkFound = false;
+
         public static readonly string roslynTemplate = @"/*
  * Simple C# code sample for run with Roslyn runtime code compiler and execution.
  * Top-level statements can be used as well.
