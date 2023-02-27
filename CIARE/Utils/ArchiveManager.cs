@@ -12,7 +12,7 @@ namespace CIARE.Utils
         /// </summary>
         /// <param name="zipFileName"></param>
         /// <param name="richTextBox"></param>
-        public static void Extract(string zipFileName, RichTextBox richTextBox)
+        public static void Extract(string zipFileName)
         {
             try
             {
@@ -25,7 +25,7 @@ namespace CIARE.Utils
 
             }catch(Exception e)
             {
-                richTextBox.Text = $"ERROR: {e.Message}";
+                MainForm.Instance.outputRBT.Text = $"ERROR: {e.Message}";
             }
         }
     }
