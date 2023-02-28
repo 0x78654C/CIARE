@@ -107,6 +107,7 @@
             addToReference.Name = "addToReference";
             addToReference.Size = new System.Drawing.Size(184, 22);
             addToReference.Text = "Add to Reference";
+            addToReference.Click += addToReference_Click;
             // 
             // NuGetSearch
             // 
