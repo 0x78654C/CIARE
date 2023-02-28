@@ -322,43 +322,10 @@ namespace CIARE
                     RefManager refManager = new RefManager();
                     refManager.ShowDialog();
                     return true;
-                case Keys.Z | Keys.Control:
-                    GetNuGetSearhed("Newtonsoft.Json", outputRBT, GlobalVariables.nugetApi);
-                    return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
         #endregion
-
-        /// <summary>
-        /// TEST: Method for display on log the version for a NuGet package
-        /// </summary>
-        private void GetNuGetVerions(string packageName, string nugetApi, RichTextBox output)
-        {
-            NuGetVersions nSearcher = new NuGetVersions(packageName, GlobalVariables.nugetApi);
-            output.Text = $"Searching NuGet for {packageName}\n";
-            nSearcher.GetVerions(output);
-
-            foreach (var version in GlobalVariables.nugetPackage)
-            {
-                output.Text += $"{packageName} {version}\n";
-            }
-        }
-
-        /// <summary>
-        /// TEST: Method for display on log the version for a NuGet package
-        /// </summary>
-        private void GetNuGetSearhed(string packageName, RichTextBox output, string nugetApi)
-        {
-            NuGetSearcher nSearcher = new NuGetSearcher(packageName, nugetApi);
-            output.Text = $"Searching NuGet for {packageName}\n";
-            Task.Run(() => nSearcher.Search());
-
-            foreach (var version in GlobalVariables.nugetPackage)
-            {
-                output.Text += $"{version}\n";
-            }
-        }
 
         public void SetHighLighter(string highlight)
         {
