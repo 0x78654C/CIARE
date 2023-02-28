@@ -95,15 +95,14 @@ namespace CIARE.Utils.NuGetManage
         /// <param name="richTextBox"></param>
         public void Extract(List<string> listFramework)
         {
-            Task.Run(() => DownloadPackage());
-            Thread.Sleep(3000);
+            Task.Run(() => DownloadPackage()).Wait();
             foreach (var file in GlobalVariables.downloadPackages)
                 ArchiveManager.Extract(file);
             GetLatestFrameworkFile(listFramework);
         }
 
 
-        public void GetLatestFrameworkFile(List<string> listFramework)
+        private void GetLatestFrameworkFile(List<string> listFramework)
         {
             if (!Directory.Exists(_downloadPath))
                 return;
