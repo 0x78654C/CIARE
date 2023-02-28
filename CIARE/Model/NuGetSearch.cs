@@ -5,17 +5,19 @@ using CIARE.Utils.NuGet;
 using CIARE.Utils.NuGetManage;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Versioning;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CIARE.Model
 {
+    [SupportedOSPlatform("windows")]
+
     public partial class NuGetSearch : Form
     {
-
-        private List<string> net = new List<string>() { "net7.0","net6.0", "net5.0" };
-        private List<string> netStandard = new List<string>() { "netstandard2.1", "netstandard2.0", "netstandard1.6", "netstandard1.5", "netstandard1.4", "netstandard1.3", "netstandard1.2", "netstandard1.1", "netstandard1.0" };
-        private List<string> netFramework = new List<string>() { "net481", "net48", "net472", "net471", "net47", "net462", "net461", "net46", "net452", "net451", "net45", "net40", "net35", "net30", "net20" };
+        private List<string> netFrameworks = new List<string>() { "net7.0", "net6.0", "net5.0", "netstandard2.1", "netstandard2.0", "netstandard1.6", "netstandard1.5", "netstandard1.4", "netstandard1.3", "netstandard1.2", "netstandard1.1", "netstandard1.0", "net481", "net48", "net472", "net471", "net47", "net462", "net461", "net46", "net452", "net451", "net45", "net40", "net35", "net30", "net20" };
 
         public NuGetSearch()
         {
@@ -37,7 +39,7 @@ namespace CIARE.Model
         private void GetNuGetSearhed(string packageName, string nugetApi, ListView refList)
         {
             NuGetSearcher nSearcher = new NuGetSearcher(packageName, nugetApi);
-            Task.Run(() => nSearcher.Search()).Wait(3500);
+            Task.Run(() => nSearcher.Search()).Wait();
             refList.Items.Clear();
             foreach (var version in GlobalVariables.nugetPackage)
                 PopulateList(ref packageList);
@@ -99,17 +101,16 @@ namespace CIARE.Model
         /// <param name="e"></param>
         private void copyPackageName_Click(object sender, EventArgs e) => CopyNamespace(packageList);
 
-        /// <summary>
-        ///Method for download a specific package by name and id.
-        /// </summary>
-        private void GetNuGetDownload(string packageName, string nugetApi, RichTextBox output)
+        private void addToReference_Click(object sender, EventArgs e)
         {
-            NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName, nugetApi);
-
-
-            //nuGetDownloader.Extract(output);
-            //nuGetDownloader.GetLatestFrameworkFile(outputRBT);
+            var packageName = packageList.SelectedItems[0].Text;
+            NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName,GlobalVariables.nugetApi);
+            nuGetDownloader.Extract(netFrameworks);
+            MainForm.Instance.outputRBT.Text += "last"+"\n";
+            foreach (var lib in GlobalVariables.depNugetFiles)
+            {
+                MainForm.Instance.outputRBT.Text += $"{lib}\n";
+            }
         }
-
     }
 }
