@@ -11,6 +11,7 @@ namespace CIARE.Model
     [SupportedOSPlatform("Windows")]
     public partial class RefManager : Form
     {
+        public static RefManager Instance { get; private set; }
         public RefManager()
         {
             InitializeComponent();
@@ -18,25 +19,27 @@ namespace CIARE.Model
 
         private void RefManager_Load(object sender, EventArgs e)
         {
+            //Set instance for usage on cross GUI.
+            Instance = this;
+
             // Set dark mode if enabled.
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
 
             // Populate listview with ref.
-            PopulateList(GlobalVariables.customRefAsm, ref refListView);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, ref refListView);
         }
 
         /// <summary>
         /// Load reference assembly button control event.
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void AddRefFileBtn_Click(object sender, EventArgs e)
         {
             // Add lib's to list dialog.
             FileManage.AddReferenceDialog();
 
             // Repopulate listview with ref. after loading list.
-            PopulateList(GlobalVariables.customRefAsm, ref refListView);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, ref refListView);
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm, MainForm.Instance.outputRBT);
@@ -48,23 +51,6 @@ namespace CIARE.Model
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void CancelBtn_Click(object sender, EventArgs e) => this.Close();
-
-        /// <summary>
-        /// Populate the listview with reference lib path and namespace.
-        /// </summary>
-        /// <param name="libPath"></param>
-        /// <param name="refList"></param>
-        private void PopulateList(List<string> libPath, ref ListView refList)
-        {
-            foreach (var lib in libPath)
-            {
-                string assemblyNamespace = CustomRef.GetAssemblyNamespace(lib);
-                ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
-                var foudItem = refList.FindItemWithText(assemblyNamespace);
-                if (foudItem == null)
-                    refList.Items.Add(item);
-            }
-        }
 
         /// <summary>
         /// Open delete menu for selected item on right click.
