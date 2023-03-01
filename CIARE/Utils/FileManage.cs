@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Application = System.Windows.Forms.Application;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Path = System.IO.Path;
@@ -18,7 +19,6 @@ namespace CIARE.Utils
     {
         private static OpenFileDialog s_openFileDialog = new OpenFileDialog();
         private static SaveFileDialog s_saveFileDialog = new SaveFileDialog();
-
         /// <summary>
         /// Open file dialog.
         /// </summary>
@@ -365,23 +365,26 @@ MessageBoxIcon.Information);
         {
             var dirsList = new List<string>();
             var fileList = new List<string>();
-            GlobalVariables.depNugetFiles.Clear();
             Directory.GetDirectories(directoryName).ToList().ForEach(dir => dirsList.Add(dir));
             Directory.GetFiles(directoryName).ToList().ForEach(file => fileList.Add(file));
-            foreach (var file in fileList)
+            fileList = fileList.OrderByDescending(x => x.Contains(@"\net6")).ToList();
+            foreach (var framework in listFramework)
             {
-                var fileInfo = new FileInfo(file);
-                if (fileInfo.FullName.Contains(@"\lib\") && fileInfo.Extension == ".dll")
+                foreach (var file in fileList)
                 {
-                    foreach (var framework in listFramework)
+                    var fileInfo = new FileInfo(file);
+                    if (fileInfo.FullName.Contains(@"\lib\") && fileInfo.Extension == ".dll")
                     {
-                        if (fileInfo.FullName.Contains(framework))
-                            if (!GlobalVariables.depNugetFiles.Contains(fileInfo.FullName))
+
+                        if (fileInfo.FullName.Contains(@$"\{framework}\"))
+                        {
+                            if (!GlobalVariables.customRefAsm.Any(item => item.Contains(fileInfo.Name)))
                             {
-                                GlobalVariables.depNugetFiles.Add(fileInfo.FullName);
-                                GlobalVariables.isFrameworkFound = true;
+                                // MainForm.Instance.outputRBT.Text += fileInfo.FullName + "\n";
+                                GlobalVariables.customRefAsm.Add(fileInfo.FullName);
                             }
-                        break;
+                            break;
+                        }
                     }
                 }
             }
