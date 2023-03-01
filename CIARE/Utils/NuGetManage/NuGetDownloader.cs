@@ -23,7 +23,7 @@ namespace CIARE.Utils.NuGetManage
         private string NugetApi { get; set; } = string.Empty;
         private List<string> Dependencies = new List<string>();
         private List<string> LocalDependencies = new List<string>();
-        private readonly string _downloadPath = $"{Application.StartupPath}nuget\\";
+        
 
         public NuGetDownloader(string packageName, string nugetApi)
         {
@@ -40,8 +40,8 @@ namespace CIARE.Utils.NuGetManage
 
             ILogger logger = NullLogger.Instance;
             CancellationToken cancellationToken = CancellationToken.None;
-            if (!Directory.Exists(_downloadPath))
-                Directory.CreateDirectory(_downloadPath);
+            if (!Directory.Exists(GlobalVariables.downloadNugetPath))
+                Directory.CreateDirectory(GlobalVariables.downloadNugetPath);
             SourceRepository repository = Repository.Factory.GetCoreV3(NugetApi);
             SourceCacheContext cache = new SourceCacheContext();
             PackageSearchResource packageSearchResource = await repository.GetResourceAsync<PackageSearchResource>();
@@ -62,7 +62,7 @@ namespace CIARE.Utils.NuGetManage
             {
                 var versions = await result.GetVersionsAsync();
                 var version = versions.LastOrDefault();
-                var fileStore = $"{_downloadPath}{result.Identity.Id}.{version.Version}.zip";
+                var fileStore = $"{GlobalVariables.downloadNugetPath}{result.Identity.Id}.{version.Version}.zip";
                 using var packageStream = File.OpenWrite(fileStore);
                 await findPackageByIdResource.CopyNupkgToStreamAsync(
                     result.Identity.Id,
@@ -104,9 +104,9 @@ namespace CIARE.Utils.NuGetManage
 
         private void GetLatestFrameworkFile(List<string> listFramework)
         {
-            if (!Directory.Exists(_downloadPath))
+            if (!Directory.Exists(GlobalVariables.downloadNugetPath))
                 return;
-            FileManage.SearchFile(_downloadPath, listFramework);
+            FileManage.SearchFile(GlobalVariables.downloadNugetPath, listFramework);
         }
 
         /// <summary>
@@ -136,7 +136,7 @@ namespace CIARE.Utils.NuGetManage
 
                         Dependencies.Add(pakageName);
                         PackageName = pakageName;
-                        if (!File.Exists($"{_downloadPath}{pakageName}.zip"))
+                        if (!File.Exists($"{GlobalVariables.downloadNugetPath}{pakageName}.zip"))
                         {
                             DownloadPackage();
                         }
