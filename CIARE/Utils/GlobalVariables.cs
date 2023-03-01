@@ -81,6 +81,7 @@ namespace CIARE.Utils
         // --Reference----
         public static List<string> customRefAsm = new List<string>(); // Used to store custom asspably path file.
         //- NuGet-
+        public static readonly string downloadNugetPath = $"{Application.StartupPath}nuget\\";
         public static List<string> nugetPackage = new List<string>();
         public static List<string> downloadPackages = new List<string>();
         public static List<string> depNugetFiles = new List<string>();
