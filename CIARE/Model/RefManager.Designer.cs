@@ -151,7 +151,7 @@
         #endregion
 
         private System.Windows.Forms.GroupBox refLisgGroupBox;
-        private System.Windows.Forms.ListView refListView;
+        public System.Windows.Forms.ListView refListView;
         private System.Windows.Forms.ColumnHeader @namespace;
         private System.Windows.Forms.ColumnHeader filePath;
         private System.Windows.Forms.Button AddRefFileBtn;
