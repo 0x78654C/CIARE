@@ -101,16 +101,26 @@ namespace CIARE.Model
         /// <param name="e"></param>
         private void copyPackageName_Click(object sender, EventArgs e) => CopyNamespace(packageList);
 
+        /// <summary>
+        /// Add NuGet packages libs to reference list event.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void addToReference_Click(object sender, EventArgs e)
         {
+            MessageBox.Show($"If the NuGet package contains dependencies it will be added to reference list!", "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Warning);
             var packageName = packageList.SelectedItems[0].Text;
             NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName,GlobalVariables.nugetApi);
             nuGetDownloader.Extract(netFrameworks);
-            MainForm.Instance.outputRBT.Text += "last"+"\n";
-            foreach (var lib in GlobalVariables.depNugetFiles)
-            {
-                MainForm.Instance.outputRBT.Text += $"{lib}\n";
-            }
+      
+            // Repopulate listview with ref. after loading list.
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, ref RefManager.Instance.refListView);
+
+            // Load assemblies from list.
+            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm, MainForm.Instance.outputRBT);
+            GlobalVariables.depNugetFiles.Clear();
+
         }
     }
 }
