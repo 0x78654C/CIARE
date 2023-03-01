@@ -206,5 +206,15 @@ namespace CIARE.GUI
             GlobalVariables.sessionId = Utils.Encryption.KeyGenerator.GeneratePassword(20, false, false, false, true);
             GlobalVariables.sessionIdMain = GlobalVariables.sessionId;
         }
+
+        /// <summary>
+        /// Delete NuGet directory.
+        /// </summary>
+        /// <param name="nugetFolder"></param>
+        public static void CleanNugetFolder(string nugetFolder)
+        {
+            if (Directory.Exists(nugetFolder))
+                Directory.Delete(nugetFolder, true);
+        }
     }
 }
