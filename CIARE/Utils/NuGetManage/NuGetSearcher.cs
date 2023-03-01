@@ -44,7 +44,7 @@ namespace CIARE.Utils.NuGet
                 PackageName,
                 searchFilter,
                 skip:0,
-                take:999,
+                take:99,
                 logger,
                 cancellationToken);
             foreach (var result in results)
