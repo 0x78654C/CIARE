@@ -42,7 +42,7 @@ namespace CIARE.Reference
             {
                 foreach (var libPath in refList)
                 {
-                  Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
+                    Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
                 }
                 MainForm.Instance.ReloadRef();
             }
@@ -58,6 +58,58 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="libPath"></param>
         /// <returns></returns>
-        public static string GetAssemblyNamespace(string libPath) => Assembly.LoadFile(libPath).GetTypes().Select(t => t.Namespace).Last();
+        public static string GetAssemblyNamespace(string libPath)
+        {
+            var listNamespaces = Assembly.LoadFile(libPath).GetTypes().Select(t => t.Namespace);
+
+            var counts = new Dictionary<string, int>();
+            listNamespaces = listNamespaces.OrderBy(i => i);
+            foreach (var ns in listNamespaces)
+            {
+                var foundRoot = false;
+                if (ns is "Microsoft.CodeAnalysis" or "System.Runtime.CompilerServices" or null) continue;
+                foreach (var (key, count) in counts)
+                {
+                    if (ns.StartsWith(key))
+                    {
+                        counts[key] = count + 1;
+                        foundRoot = true;
+                        break;
+                    }
+                }
+
+                if (!foundRoot)
+                {
+                    counts.Add(ns, 0);
+                }
+            }
+
+            var rootNamespace = counts.OrderByDescending(kv => kv.Value)
+                .Select(kv => kv.Key)
+                .FirstOrDefault();
+
+            return rootNamespace;
+        }
+
+        /// <summary>
+        /// Populate the listview with reference lib path and namespace.
+        /// </summary>
+        /// <param name="libPath"></param>
+        /// <param name="refList"></param>
+        public static void PopulateList(List<string> libPath, ref ListView refList)
+        {
+            if (libPath == null)
+                return;
+            foreach (var lib in libPath)
+            {
+                string assemblyNamespace = GetAssemblyNamespace(lib);
+                ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
+                if (string.IsNullOrEmpty(assemblyNamespace))
+                    return;
+                var foudItem = refList.FindItemWithText(assemblyNamespace);
+                if (foudItem == null)
+                    refList.Items.Add(item);
+            }
+        }
     }
 }
