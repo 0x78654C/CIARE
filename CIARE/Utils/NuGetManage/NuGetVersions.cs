@@ -44,7 +44,7 @@ namespace CIARE.Utils.NuGet
                 cancellationToken);
             foreach(var version in versions)
             {
-                GlobalVariables.packageVersions.Add(version.Version.ToString());
+                //GlobalVariables.packageVersions.Add(version.Version.ToString());
             }
             richTextBox.Clear();
         }
