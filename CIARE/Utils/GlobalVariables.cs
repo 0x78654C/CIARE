@@ -86,6 +86,7 @@ namespace CIARE.Utils
         public static List<string> downloadPackages = new List<string>();
         public static List<string> depNugetFiles = new List<string>();
         public const string nugetApi="https://api.nuget.org/v3/index.json";
+        public const string nugetApiAddress="api.nuget.org";
         public static bool isFrameworkFound = false;
 
         public static readonly string roslynTemplate = @"/*
