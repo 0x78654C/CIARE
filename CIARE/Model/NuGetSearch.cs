@@ -6,6 +6,8 @@ using CIARE.Utils.NuGetManage;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Packaging;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,8 +19,10 @@ namespace CIARE.Model
 
     public partial class NuGetSearch : Form
     {
-        private List<string> netFrameworks = new List<string>() { "net7.0", "net6.0", "net5.0", "netstandard2.1", "netstandard2.0", "netstandard1.6", "netstandard1.5", "netstandard1.4", "netstandard1.3", "netstandard1.2", "netstandard1.1", "netstandard1.0", "net481", "net48", "net472", "net471", "net47", "net462", "net461", "net46", "net452", "net451", "net45", "net40", "net35", "net30", "net20" };
-
+        private List<string> netFrameworksNet6 = new List<string>() { "net6.0", "net5.0", "netstandard2.1", "netstandard2.0", "netstandard1.6", "netstandard1.5", "netstandard1.4", "netstandard1.3", "netstandard1.2", "netstandard1.1", "netstandard1.0", "net481", "net48", "net472", "net471", "net47", "net462", "net461", "net46", "net452", "net451", "net45", "net40", "net35", "net30", "net20" };
+        private List<string> netFrameworksNet7 = new List<string>() { "net7.0", "net6.0", "net5.0", "netstandard2.1", "netstandard2.0", "netstandard1.6", "netstandard1.5", "netstandard1.4", "netstandard1.3", "netstandard1.2", "netstandard1.1", "netstandard1.0", "net481", "net48", "net472", "net471", "net47", "net462", "net461", "net46", "net452", "net451", "net45", "net40", "net35", "net30", "net20" };
+        private List<string> netFrameworks = new List<string>();
+        private int s_initialSizeForm = 0;
         public NuGetSearch()
         {
             InitializeComponent();
@@ -26,6 +30,25 @@ namespace CIARE.Model
 
         private void NuGetSearch_Load(object sender, EventArgs e)
         {
+            // Get initial width size of form.
+            s_initialSizeForm = this.Size.Width;
+
+            // Check if can access NuGet API website.
+            Network network = new Network(GlobalVariables.nugetApiAddress);
+            if (!network.PingHost())
+            {
+                MessageBox.Show($"NuGet API cannot be reached. Check your internet conneciton!", "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Warning);
+                this.Close();
+            }
+
+            /* TEST: till find solution for use .net7 in assambly load.
+            // Check framework target and add the specified list with it.
+            if (GlobalVariables.Framework.Contains(@"net7.0"))
+                netFrameworks = netFrameworksNet7;
+            else */ 
+                netFrameworks = netFrameworksNet6;
+
             // Set dark mode if enabled.
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
 
@@ -108,19 +131,32 @@ namespace CIARE.Model
         /// <param name="e"></param>
         private void addToReference_Click(object sender, EventArgs e)
         {
-            MessageBox.Show($"If the NuGet package contains dependencies it will be added to reference list!", "CIARE", MessageBoxButtons.OK,
+            var namePackage = packageList.SelectedItems[0].Text;
+            if (GlobalVariables.customRefAsm.Any(x => x.Contains(namePackage)))
+            {
+                MessageBox.Show($"NuGet package {namePackage} is already downloaded and added to reference!", "CIARE", MessageBoxButtons.OK,
 MessageBoxIcon.Warning);
+                return;
+            }
+            MessageBox.Show($"If the NuGet package contains dependencies it will be added to reference list!", "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Information);
             var packageName = packageList.SelectedItems[0].Text;
-            NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName,GlobalVariables.nugetApi);
+            NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName, GlobalVariables.nugetApi);
             nuGetDownloader.Extract(netFrameworks);
-      
+
             // Repopulate listview with ref. after loading list.
             CustomRef.PopulateList(GlobalVariables.customRefAsm, ref RefManager.Instance.refListView);
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm, MainForm.Instance.outputRBT);
             GlobalVariables.depNugetFiles.Clear();
+        }
 
+        private void NuGetSearch_Resize(object sender, EventArgs e)
+        {
+            int changedSize = this.Size.Width - s_initialSizeForm;
+            int descriptionSize = packageList.Columns[2].Width;
+            packageList.Columns[2].Width = descriptionSize + changedSize;
         }
     }
 }

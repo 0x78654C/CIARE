@@ -37,8 +37,8 @@
             versoion = new System.Windows.Forms.ColumnHeader();
             description = new System.Windows.Forms.ColumnHeader();
             ActionNugetMenu = new System.Windows.Forms.ContextMenuStrip(components);
-            copyPackageName = new System.Windows.Forms.ToolStripMenuItem();
             addToReference = new System.Windows.Forms.ToolStripMenuItem();
+            copyPackageName = new System.Windows.Forms.ToolStripMenuItem();
             ActionNugetMenu.SuspendLayout();
             SuspendLayout();
             // 
@@ -91,23 +91,23 @@
             // 
             // ActionNugetMenu
             // 
-            ActionNugetMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { copyPackageName, addToReference });
+            ActionNugetMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { addToReference, copyPackageName });
             ActionNugetMenu.Name = "ActionNugetMenu";
-            ActionNugetMenu.Size = new System.Drawing.Size(185, 70);
-            // 
-            // copyPackageName
-            // 
-            copyPackageName.Name = "copyPackageName";
-            copyPackageName.Size = new System.Drawing.Size(184, 22);
-            copyPackageName.Text = "Copy Package Name";
-            copyPackageName.Click += copyPackageName_Click;
+            ActionNugetMenu.Size = new System.Drawing.Size(291, 70);
             // 
             // addToReference
             // 
             addToReference.Name = "addToReference";
-            addToReference.Size = new System.Drawing.Size(184, 22);
-            addToReference.Text = "Add to Reference";
+            addToReference.Size = new System.Drawing.Size(290, 22);
+            addToReference.Text = "Download Package and add to Reference";
             addToReference.Click += addToReference_Click;
+            // 
+            // copyPackageName
+            // 
+            copyPackageName.Name = "copyPackageName";
+            copyPackageName.Size = new System.Drawing.Size(290, 22);
+            copyPackageName.Text = "Copy Package Name";
+            copyPackageName.Click += copyPackageName_Click;
             // 
             // NuGetSearch
             // 
@@ -123,6 +123,7 @@
             StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             Text = "NuGet package Searcher";
             Load += NuGetSearch_Load;
+            Resize += NuGetSearch_Resize;
             ActionNugetMenu.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
