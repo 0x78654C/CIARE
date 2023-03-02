@@ -649,13 +649,9 @@ namespace CIARE
         /// <param name="e"></param>
         private void outputRBT_TextChanged(object sender, EventArgs e)
         {
-            // Color warning messages.
-            if (outputRBT.Text.Contains("warning"))
-                RichExtColor.MarkWordRtb(outputRBT, "warning", Color.Orange);
-
-            // Color error messages.
-            if (outputRBT.Text.Contains("error"))
-                RichExtColor.MarkWordRtb(outputRBT, "error", Color.Red);
+            //// Color error messages.
+            //if (outputRBT.Text.Contains("error"))
+            //    RichExtColor.MarkWordRtb(outputRBT, "error", Color.Red);
         }
 
         /// <summary>
