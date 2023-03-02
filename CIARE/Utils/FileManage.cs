@@ -19,6 +19,7 @@ namespace CIARE.Utils
     {
         private static OpenFileDialog s_openFileDialog = new OpenFileDialog();
         private static SaveFileDialog s_saveFileDialog = new SaveFileDialog();
+        private static List<string> s_packageLibs = new List<string>();
         /// <summary>
         /// Open file dialog.
         /// </summary>
@@ -363,34 +364,41 @@ MessageBoxIcon.Information);
         /// <param name="directoryName"></param>
         public static void SearchFile(string directoryName, List<string> listFramework)
         {
+            GetLibsFromPacakage(directoryName);
+            foreach (var framework in listFramework)
+            {
+                var pathFile = s_packageLibs.Find(x => x.Contains(@$"\{framework}\") && x.EndsWith(".dll") && x.Contains(@"\lib\"));
+                if (string.IsNullOrEmpty(pathFile)) continue;
+
+                var fileInfo = new FileInfo(pathFile);
+
+                if (!GlobalVariables.customRefAsm.Any(item => item.Contains(fileInfo.Name)))
+                {
+                    GlobalVariables.customRefAsm.Add(fileInfo.FullName);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get libraries from NuGet pacakage.
+        /// </summary>
+        /// <param name="directoryName"></param>
+        private static void GetLibsFromPacakage(string directoryName)
+        {
             var dirsList = new List<string>();
             var fileList = new List<string>();
             Directory.GetDirectories(directoryName).ToList().ForEach(dir => dirsList.Add(dir));
             Directory.GetFiles(directoryName).ToList().ForEach(file => fileList.Add(file));
-            fileList = fileList.OrderByDescending(x => x.Contains(@"\net6")).ToList();
-            foreach (var framework in listFramework)
+            foreach (var file in fileList)
             {
-                foreach (var file in fileList)
-                {
-                    var fileInfo = new FileInfo(file);
-                    if (fileInfo.FullName.Contains(@"\lib\") && fileInfo.Extension == ".dll")
-                    {
-
-                        if (fileInfo.FullName.Contains(@$"\{framework}\"))
-                        {
-                            if (!GlobalVariables.customRefAsm.Any(item => item.Contains(fileInfo.Name)))
-                            {
-                                // MainForm.Instance.outputRBT.Text += fileInfo.FullName + "\n";
-                                GlobalVariables.customRefAsm.Add(fileInfo.FullName);
-                            }
-                            break;
-                        }
-                    }
-                }
+                if (file.EndsWith(".dll") && file.Contains(@"\lib\"))
+                    if (!s_packageLibs.Any(item => item.Contains(file)))
+                        s_packageLibs.Add(file);
             }
             foreach (var dir in dirsList)
             {
-                SearchFile(dir, listFramework);
+                GetLibsFromPacakage(dir);
             }
         }
     }
