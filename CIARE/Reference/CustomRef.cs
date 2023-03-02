@@ -98,17 +98,29 @@ namespace CIARE.Reference
         /// <param name="refList"></param>
         public static void PopulateList(List<string> libPath, ref ListView refList)
         {
-            if (libPath == null)
-                return;
-            foreach (var lib in libPath)
+            try
             {
-                string assemblyNamespace = GetAssemblyNamespace(lib);
-                ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
-                if (string.IsNullOrEmpty(assemblyNamespace))
+                if (libPath == null)
                     return;
-                var foudItem = refList.FindItemWithText(assemblyNamespace);
-                if (foudItem == null)
-                    refList.Items.Add(item);
+                foreach (var lib in libPath)
+                {
+                    // check here
+
+                    string assemblyNamespace = GetAssemblyNamespace(lib);
+                    var foundItem = refList.FindItemWithText(assemblyNamespace);
+                    if (foundItem != null)
+                        return;
+                    ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
+                    if (string.IsNullOrEmpty(assemblyNamespace))
+                        return;
+                    var foundItemIn = refList.FindItemWithText(assemblyNamespace);
+                    if (foundItemIn == null)
+                        refList.Items.Add(item);
+                }
+            }
+            catch
+            {
+                // Ignore.
             }
         }
     }
