@@ -12,6 +12,7 @@ namespace CIARE.Model
     public partial class RefManager : Form
     {
         public static RefManager Instance { get; private set; }
+        private int s_initialSizeForm = 0;
         public RefManager()
         {
             InitializeComponent();
@@ -21,6 +22,9 @@ namespace CIARE.Model
         {
             //Set instance for usage on cross GUI.
             Instance = this;
+
+            // Get initial width size of form.
+            s_initialSizeForm = this.Size.Width;
 
             // Set dark mode if enabled.
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
@@ -118,6 +122,13 @@ MessageBoxIcon.Warning);
         {
             NuGetSearch nuGetSearch = new NuGetSearch();
             nuGetSearch.ShowDialog();
+        }
+
+        private void RefManager_Resize(object sender, EventArgs e)
+        {
+            int changedSize = this.Size.Width - s_initialSizeForm;
+            int descriptionSize = refListView.Columns[1].Width;
+            refListView.Columns[1].Width = descriptionSize + changedSize;
         }
     }
 }

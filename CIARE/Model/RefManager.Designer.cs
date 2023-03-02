@@ -46,20 +46,23 @@
             // 
             // refLisgGroupBox
             // 
+            refLisgGroupBox.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             refLisgGroupBox.Controls.Add(refListView);
             refLisgGroupBox.Location = new System.Drawing.Point(12, 12);
             refLisgGroupBox.Name = "refLisgGroupBox";
-            refLisgGroupBox.Size = new System.Drawing.Size(732, 310);
+            refLisgGroupBox.Size = new System.Drawing.Size(878, 387);
             refLisgGroupBox.TabIndex = 0;
             refLisgGroupBox.TabStop = false;
             refLisgGroupBox.Text = "Reference List";
             // 
             // refListView
             // 
+            refListView.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             refListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { nameSpace, filePath });
+            refListView.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             refListView.Location = new System.Drawing.Point(6, 22);
             refListView.Name = "refListView";
-            refListView.Size = new System.Drawing.Size(720, 282);
+            refListView.Size = new System.Drawing.Size(866, 359);
             refListView.TabIndex = 0;
             refListView.UseCompatibleStateImageBehavior = false;
             refListView.View = System.Windows.Forms.View.Details;
@@ -68,16 +71,17 @@
             // nameSpace
             // 
             nameSpace.Text = "Namespace";
-            nameSpace.Width = 132;
+            nameSpace.Width = 220;
             // 
             // filePath
             // 
             filePath.Text = "File Path";
-            filePath.Width = 580;
+            filePath.Width = 639;
             // 
             // AddRefFileBtn
             // 
-            AddRefFileBtn.Location = new System.Drawing.Point(12, 344);
+            AddRefFileBtn.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
+            AddRefFileBtn.Location = new System.Drawing.Point(12, 421);
             AddRefFileBtn.Name = "AddRefFileBtn";
             AddRefFileBtn.Size = new System.Drawing.Size(106, 28);
             AddRefFileBtn.TabIndex = 1;
@@ -87,7 +91,8 @@
             // 
             // CancelBtn
             // 
-            CancelBtn.Location = new System.Drawing.Point(638, 344);
+            CancelBtn.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
+            CancelBtn.Location = new System.Drawing.Point(784, 421);
             CancelBtn.Name = "CancelBtn";
             CancelBtn.Size = new System.Drawing.Size(106, 28);
             CancelBtn.TabIndex = 2;
@@ -118,7 +123,8 @@
             // 
             // NugetManagerBtn
             // 
-            NugetManagerBtn.Location = new System.Drawing.Point(124, 344);
+            NugetManagerBtn.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
+            NugetManagerBtn.Location = new System.Drawing.Point(124, 421);
             NugetManagerBtn.Name = "NugetManagerBtn";
             NugetManagerBtn.Size = new System.Drawing.Size(106, 28);
             NugetManagerBtn.TabIndex = 3;
@@ -131,18 +137,17 @@
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             CancelButton = CancelBtn;
-            ClientSize = new System.Drawing.Size(756, 397);
+            ClientSize = new System.Drawing.Size(902, 474);
             Controls.Add(NugetManagerBtn);
             Controls.Add(CancelBtn);
             Controls.Add(AddRefFileBtn);
             Controls.Add(refLisgGroupBox);
-            FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
-            MaximizeBox = false;
             Name = "RefManager";
             StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             Text = "Reference Manager";
             Load += RefManager_Load;
+            Resize += RefManager_Resize;
             refLisgGroupBox.ResumeLayout(false);
             deleteStrip.ResumeLayout(false);
             ResumeLayout(false);
