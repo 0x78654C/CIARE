@@ -132,7 +132,9 @@ MessageBoxIcon.Warning);
         private void addToReference_Click(object sender, EventArgs e)
         {
             var namePackage = packageList.SelectedItems[0].Text;
-            if (GlobalVariables.customRefAsm.Any(x => x.Contains(namePackage)))
+            var version = packageList.SelectedItems[0].slee;
+            var fileDownloaded = $"{GlobalVariables.downloadNugetPath}{namePackage}{version}.zip";
+            if (GlobalVariables.customRefAsm.Any(x => x.Contains(namePackage)) && File.Exists(fileDownloaded))
             {
                 MessageBox.Show($"NuGet package {namePackage} is already downloaded and added to reference!", "CIARE", MessageBoxButtons.OK,
 MessageBoxIcon.Warning);
@@ -149,7 +151,6 @@ MessageBoxIcon.Information);
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm, MainForm.Instance.outputRBT);
-            GlobalVariables.depNugetFiles.Clear();
         }
 
         private void NuGetSearch_Resize(object sender, EventArgs e)
