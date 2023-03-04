@@ -23,9 +23,9 @@ namespace CIARE.Utils
                 }
                 ZipFile.ExtractToDirectory(zipFileName, foldername);
 
-            }catch(Exception e)
+            }catch
             {
-                MainForm.Instance.outputRBT.Text = $"ERROR: {e.Message}";
+               // Ignore
             }
         }
     }
