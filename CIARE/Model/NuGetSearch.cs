@@ -154,7 +154,7 @@ MessageBoxIcon.Information);
             nuGetDownloader.Extract(netFrameworks);
 
             // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, ref RefManager.Instance.refListView, packageName, false);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, ref RefManager.Instance.refListView);
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm, MainForm.Instance.outputRBT);
