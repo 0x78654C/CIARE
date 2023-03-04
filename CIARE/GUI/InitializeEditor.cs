@@ -213,8 +213,15 @@ namespace CIARE.GUI
         /// <param name="nugetFolder"></param>
         public static void CleanNugetFolder(string nugetFolder)
         {
-            if (Directory.Exists(nugetFolder))
-                Directory.Delete(nugetFolder, true);
+            try
+            {
+                if (Directory.Exists(nugetFolder))
+                    Directory.Delete(nugetFolder, true);
+                Directory.CreateDirectory(nugetFolder);
+            }
+            catch (Exception)
+            { // Ignore
+            }
         }
     }
 }
