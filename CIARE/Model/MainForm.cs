@@ -321,7 +321,8 @@ namespace CIARE
                     return true;
                 case Keys.R | Keys.Control:
                     RefManager refManager = new RefManager();
-                    refManager.ShowDialog();
+                    if (!refManager.Visible)
+                        refManager.ShowDialog();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
