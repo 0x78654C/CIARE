@@ -362,9 +362,9 @@ MessageBoxIcon.Information);
         /// Search dll file in nuget extracted archive.
         /// </summary>
         /// <param name="directoryName"></param>
-        public static void SearchFile(string directoryName, List<string> listFramework)
+        public static void SearchFile(string directoryName, List<string> listFramework, string packageName)
         {
-            GetLibsFromPacakage(directoryName);
+            GetLibsFromPacakage(directoryName,packageName);
             foreach (var framework in listFramework)
             {
                 var pathFile = s_packageLibs.Find(x => x.Contains(@$"\{framework}\") && x.EndsWith(".dll") && x.Contains(@"\lib\"));
@@ -384,7 +384,7 @@ MessageBoxIcon.Information);
         /// Get libraries from NuGet pacakage.
         /// </summary>
         /// <param name="directoryName"></param>
-        private static void GetLibsFromPacakage(string directoryName)
+        private static void GetLibsFromPacakage(string directoryName, string packageName)
         {
             var dirsList = new List<string>();
             var fileList = new List<string>();
@@ -392,13 +392,13 @@ MessageBoxIcon.Information);
             Directory.GetFiles(directoryName).ToList().ForEach(file => fileList.Add(file));
             foreach (var file in fileList)
             {
-                if (file.EndsWith(".dll") && file.Contains(@"\lib\"))
+                if (file.EndsWith($"{packageName}.dll") && file.Contains(@"\lib\"))
                     if (!s_packageLibs.Any(item => item.Contains(file)))
                         s_packageLibs.Add(file);
             }
             foreach (var dir in dirsList)
             {
-                GetLibsFromPacakage(dir);
+                GetLibsFromPacakage(dir, packageName);
             }
         }
     }
