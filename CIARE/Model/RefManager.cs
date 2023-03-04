@@ -121,7 +121,8 @@ MessageBoxIcon.Warning);
         private void NugetManagerBtn_Click(object sender, EventArgs e)
         {
             NuGetSearch nuGetSearch = new NuGetSearch();
-            nuGetSearch.ShowDialog();
+            if (!nuGetSearch.Visible)
+                nuGetSearch.ShowDialog();
         }
 
         private void RefManager_Resize(object sender, EventArgs e)
