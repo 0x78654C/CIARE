@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Runtime.Versioning;
 using System.Drawing;
 using System.Collections.Generic;
+using System.IO;
 
 namespace CIARE.Reference
 {
@@ -60,8 +61,21 @@ namespace CIARE.Reference
         /// <returns></returns>
         public static string GetAssemblyNamespace(string libPath)
         {
-            var listNamespaces = Assembly.LoadFile(libPath).GetTypes().Select(t => t.Namespace);
-
+            IEnumerable<string> listNamespaces = null;
+            try
+            {
+                listNamespaces = Assembly.LoadFile(libPath).GetTypes().Select(t => t.Namespace);
+            }
+            catch
+            {
+                // Ignore
+            }
+            if (listNamespaces == null)
+            {
+                var fileInfo = new FileInfo(libPath);
+                var fileName = fileInfo.Name[..^4];
+                listNamespaces = new string[] { fileName };
+            }
             var counts = new Dictionary<string, int>();
             listNamespaces = listNamespaces.OrderBy(i => i);
             foreach (var ns in listNamespaces)
@@ -100,19 +114,16 @@ namespace CIARE.Reference
         {
             try
             {
-                if (libPath == null)
-                    return;
                 foreach (var lib in libPath)
                 {
-                    // check here
+                    //if (!refManage)
+                    //    if (!lib.Contains(packageName)) continue;
 
                     string assemblyNamespace = GetAssemblyNamespace(lib);
                     var foundItem = refList.FindItemWithText(assemblyNamespace);
-                    if (foundItem != null)
-                        return;
                     ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
                     if (string.IsNullOrEmpty(assemblyNamespace))
-                        return;
+                        continue;
                     var foundItemIn = refList.FindItemWithText(assemblyNamespace);
                     if (foundItemIn == null)
                         refList.Items.Add(item);
