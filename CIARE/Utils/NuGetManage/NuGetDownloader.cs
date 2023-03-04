@@ -20,6 +20,7 @@ namespace CIARE.Utils.NuGetManage
     public class NuGetDownloader
     {
         private string PackageName { get; set; } = string.Empty;
+        private string PackageNameSearch { get; set; } = string.Empty;
         private string NugetApi { get; set; } = string.Empty;
         private List<string> Dependencies = new List<string>();
         private List<string> LocalDependencies = new List<string>();
@@ -28,6 +29,7 @@ namespace CIARE.Utils.NuGetManage
         public NuGetDownloader(string packageName, string nugetApi)
         {
             PackageName = packageName;
+            PackageNameSearch = packageName;
             NugetApi = nugetApi;
         }
 
@@ -96,7 +98,7 @@ namespace CIARE.Utils.NuGetManage
         public void Extract(List<string> listFramework)
         {
             Task.Run(() => DownloadPackage()).Wait();
-            foreach (var file in GlobalVariables.downloadPackages)
+            foreach (var file in GlobalVariables.customRefAsm)
                 ArchiveManager.Extract(file);
             GetLatestFrameworkFile(listFramework);
         }
@@ -106,7 +108,7 @@ namespace CIARE.Utils.NuGetManage
         {
             if (!Directory.Exists(GlobalVariables.downloadNugetPath))
                 return;
-            FileManage.SearchFile(GlobalVariables.downloadNugetPath, listFramework);
+            FileManage.SearchFile(GlobalVariables.downloadNugetPath, listFramework, PackageNameSearch);
         }
 
         /// <summary>
@@ -138,7 +140,7 @@ namespace CIARE.Utils.NuGetManage
                         PackageName = pakageName;
                         if (!File.Exists($"{GlobalVariables.downloadNugetPath}{pakageName}.zip"))
                         {
-                            DownloadPackage();
+                            Task.Run(()=> DownloadPackage()).Wait(500);
                         }
                     }
                 }
