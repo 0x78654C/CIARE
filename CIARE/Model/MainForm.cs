@@ -643,17 +643,6 @@ namespace CIARE
             }
         }
 
-        /// <summary>
-        /// Events on text change.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void outputRBT_TextChanged(object sender, EventArgs e)
-        {
-            //// Color error messages.
-            //if (outputRBT.Text.Contains("error"))
-            //    RichExtColor.MarkWordRtb(outputRBT, "error", Color.Red);
-        }
 
         /// <summary>
         /// Mark file for auto start event on Windows reboot.
