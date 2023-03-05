@@ -1,6 +1,4 @@
-﻿using System;
-using System.Windows.Forms;
-using System.IO;
+﻿using System.IO;
 using System.IO.Compression;
 
 namespace CIARE.Utils
@@ -16,16 +14,13 @@ namespace CIARE.Utils
         {
             try
             {
-                var foldername = zipFileName.Replace(".zip","");
-                if (Directory.Exists(foldername))
-                {
-                    Directory.Delete(foldername, true);
-                }
-                ZipFile.ExtractToDirectory(zipFileName, foldername);
-
-            }catch
+                var foldername = zipFileName.Replace(".zip", "");
+                if (!Directory.Exists(foldername))
+                    ZipFile.ExtractToDirectory(zipFileName, foldername);
+            }
+            catch
             {
-               // Ignore
+                // Ignore
             }
         }
     }
