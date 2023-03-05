@@ -113,7 +113,6 @@ namespace CIARE
             this.outputRBT.Size = new System.Drawing.Size(1388, 114);
             this.outputRBT.TabIndex = 3;
             this.outputRBT.Text = "";
-            this.outputRBT.TextChanged += new System.EventHandler(this.outputRBT_TextChanged);
             this.outputRBT.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.outputRBT_MouseWheel);
             // 
             // toolTip1
