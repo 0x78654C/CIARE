@@ -3,6 +3,7 @@ using CIARE.Reference;
 using CIARE.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -13,6 +14,7 @@ namespace CIARE.Model
     {
         public static RefManager Instance { get; private set; }
         private int s_initialSizeForm = 0;
+        private bool _isOpen = false;
         public RefManager()
         {
             InitializeComponent();
@@ -30,7 +32,7 @@ namespace CIARE.Model
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
 
             // Populate listview with ref.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, ref refListView);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
         }
 
         /// <summary>
@@ -43,7 +45,7 @@ namespace CIARE.Model
             FileManage.AddReferenceDialog();
 
             // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, ref refListView);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm, MainForm.Instance.outputRBT);
@@ -92,7 +94,7 @@ namespace CIARE.Model
 MessageBoxIcon.Warning);
             if (dialogResult == DialogResult.Yes)
             {
-                GlobalVariables.customRefAsm.Remove(selecItem);
+                GlobalVariables.customRefAsm.RemoveAll(x=>x.Contains(selecItem));
                 refList.SelectedItems[0].Remove();
             }
         }
@@ -121,10 +123,15 @@ MessageBoxIcon.Warning);
         private void NugetManagerBtn_Click(object sender, EventArgs e)
         {
             NuGetSearch nuGetSearch = new NuGetSearch();
-            if (!nuGetSearch.Visible)
-                nuGetSearch.ShowDialog();
+            if (!Application.OpenForms.OfType<NuGetSearch>().Any())
+                nuGetSearch.Show();
         }
 
+        /// <summary>
+        /// Resize column of description on form resize.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void RefManager_Resize(object sender, EventArgs e)
         {
             int changedSize = this.Size.Width - s_initialSizeForm;
