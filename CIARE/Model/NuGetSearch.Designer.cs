@@ -39,6 +39,8 @@
             ActionNugetMenu = new System.Windows.Forms.ContextMenuStrip(components);
             addToReference = new System.Windows.Forms.ToolStripMenuItem();
             copyPackageName = new System.Windows.Forms.ToolStripMenuItem();
+            downloadLbl = new System.Windows.Forms.Label();
+            downloadBar = new System.Windows.Forms.ProgressBar();
             ActionNugetMenu.SuspendLayout();
             SuspendLayout();
             // 
@@ -93,7 +95,7 @@
             // 
             ActionNugetMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { addToReference, copyPackageName });
             ActionNugetMenu.Name = "ActionNugetMenu";
-            ActionNugetMenu.Size = new System.Drawing.Size(291, 70);
+            ActionNugetMenu.Size = new System.Drawing.Size(291, 48);
             // 
             // addToReference
             // 
@@ -109,12 +111,36 @@
             copyPackageName.Text = "Copy Package Name";
             copyPackageName.Click += copyPackageName_Click;
             // 
+            // downloadLbl
+            // 
+            downloadLbl.Anchor = System.Windows.Forms.AnchorStyles.None;
+            downloadLbl.AutoSize = true;
+            downloadLbl.BackColor = System.Drawing.SystemColors.ButtonHighlight;
+            downloadLbl.Location = new System.Drawing.Point(459, 257);
+            downloadLbl.Name = "downloadLbl";
+            downloadLbl.Size = new System.Drawing.Size(140, 15);
+            downloadLbl.TabIndex = 3;
+            downloadLbl.Text = "Downloading package ....";
+            downloadLbl.Visible = false;
+            // 
+            // downloadBar
+            // 
+            downloadBar.Anchor = System.Windows.Forms.AnchorStyles.None;
+            downloadBar.Location = new System.Drawing.Point(398, 294);
+            downloadBar.MarqueeAnimationSpeed = 30;
+            downloadBar.Name = "downloadBar";
+            downloadBar.Size = new System.Drawing.Size(265, 23);
+            downloadBar.TabIndex = 4;
+            downloadBar.Visible = false;
+            // 
             // NuGetSearch
             // 
             AcceptButton = SearchBtn;
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             ClientSize = new System.Drawing.Size(1091, 580);
+            Controls.Add(downloadLbl);
+            Controls.Add(downloadBar);
             Controls.Add(packageList);
             Controls.Add(SearchBtn);
             Controls.Add(SearchBox);
@@ -140,5 +166,7 @@
         private System.Windows.Forms.ContextMenuStrip ActionNugetMenu;
         private System.Windows.Forms.ToolStripMenuItem copyPackageName;
         private System.Windows.Forms.ToolStripMenuItem addToReference;
+        private System.Windows.Forms.Label downloadLbl;
+        private System.Windows.Forms.ProgressBar downloadBar;
     }
 }

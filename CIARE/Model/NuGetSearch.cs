@@ -3,12 +3,10 @@ using CIARE.Reference;
 using CIARE.Utils;
 using CIARE.Utils.NuGet;
 using CIARE.Utils.NuGetManage;
-using NuGet.Protocol;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.IO.Packaging;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -25,7 +23,8 @@ namespace CIARE.Model
         private static List<string> netFrameworksNet7 { get; } = new[] { "net7.0" }.Concat(netFrameworksNet6).ToList();
         private List<string> netFrameworks = new List<string>();
         private int s_initialSizeForm = 0;
-        BackgroundWorker    worker;
+        private string s_packageName { get; set; }
+
         public NuGetSearch()
         {
             InitializeComponent();
@@ -57,6 +56,8 @@ MessageBoxIcon.Warning);
 
             // Set water marg on search textbox.
             WaterMark.TextBoxWaterMark(SearchBox, "Enter package name...");
+
+            downloadBar.Style = ProgressBarStyle.Marquee;
         }
 
         /// <summary>
@@ -65,7 +66,7 @@ MessageBoxIcon.Warning);
         private void GetNuGetSearhed(string packageName, string nugetApi, ListView refList)
         {
             NuGetSearcher nSearcher = new NuGetSearcher(packageName, nugetApi);
-            Task.Run(() => nSearcher.Search()).Wait();
+            nSearcher.Search();
             refList.Items.Clear();
             foreach (var version in GlobalVariables.nugetPackage)
                 PopulateList(ref packageList);
@@ -135,7 +136,6 @@ MessageBoxIcon.Warning);
         private void addToReference_Click(object sender, EventArgs e)
         {
             var packageName = packageList.SelectedItems[0].Text;
-            //GlobalVariables.packageName = namePackage;
             if (GlobalVariables.customRefAsm.Any(x => x.Contains(packageName)))
             {
                 MessageBox.Show($"NuGet package {packageName} is already downloaded and added to reference!", "CIARE", MessageBoxButtons.OK,
@@ -144,22 +144,84 @@ MessageBoxIcon.Warning);
             }
             MessageBox.Show($"If the NuGet package contains dependencies it will be added to reference list!", "CIARE", MessageBoxButtons.OK,
 MessageBoxIcon.Information);
+            s_packageName = packageName;
 
-            Task.Run(() => Download(packageName));
+            HideControlers();
+
+            Task.Run(() => Download(s_packageName));
         }
 
-       private void Download(string packageName)
+        /// <summary>
+        /// Hide controlers and display progress bar.
+        /// </summary>
+        private void HideControlers()
         {
-            NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName, GlobalVariables.nugetApi);
-            nuGetDownloader.Extract(netFrameworks);
+            downloadLbl.Visible = true;
+            downloadBar.Visible = true;
+            packageList.Visible = false;
+            SearchBtn.Visible = false;
+            SearchBox.Visible = false;
+            ControlBox = false;
+        }
+
+        /// <summary>
+        /// Show controlers and hide progress bar.
+        /// </summary>
+        private void ShowControler()
+        {
+            downloadLbl.Visible = false;
+            downloadBar.Visible = false;
+            packageList.Visible = true;
+            SearchBtn.Visible = true;
+            SearchBox.Visible = true;
+            ControlBox = true;
+        }
+
+        private void Download(string packageName)
+        {
+
+            NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName, GlobalVariables.nugetApi, netFrameworks);
+            nuGetDownloader.DownloadPackage();
 
             // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, ref RefManager.Instance.refListView);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, RefManager.Instance.refListView);
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm, MainForm.Instance.outputRBT);
+
+           // Delete downloaded package.
+            DelDownloadedPackage(GlobalVariables.downloadNugetPath);
+
+            // Sow controlers after download.
+            ShowControler();
         }
 
+        /// <summary>
+        /// Function for delete zip file from nuget forlder.
+        /// </summary>
+        /// <param name="pathNugetDir"></param>
+        private void DelDownloadedPackage(string pathNugetDir)
+        {
+            Thread.Sleep(3000);
+            try
+            {
+                if (!Directory.Exists(pathNugetDir)) return;
+
+                var files = Directory.GetFiles(pathNugetDir);
+                foreach (var file in files)
+                {
+                    if (file.EndsWith(".zip"))
+                        File.Delete(file);
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Resize column of description on form resize
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void NuGetSearch_Resize(object sender, EventArgs e)
         {
             int changedSize = this.Size.Width - s_initialSizeForm;
