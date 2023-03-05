@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using NuGet.Protocol;
 using ILogger = NuGet.Common.ILogger;
 using NullLogger = NuGet.Common.NullLogger;
@@ -15,7 +14,7 @@ namespace CIARE.Utils.NuGet
         /// Package name to be searched.
         /// </summary>
         private string PackageName { get; set; } = string.Empty;
-        private string NugetApi { get; set; } = string.Empty;
+        private string NugetApi { get; set; } = string.Empty; 
 
         public NuGetSearcher(string packageName, string nugetApi)
         {
@@ -28,7 +27,7 @@ namespace CIARE.Utils.NuGet
         /// </summary>
         /// <param name="richTextBox"></param>
         /// <returns></returns>
-        public async Task Search()
+        public void Search()
         {
             if (string.IsNullOrEmpty(NugetApi))
                 return;
@@ -37,16 +36,16 @@ namespace CIARE.Utils.NuGet
             CancellationToken cancellationToken = CancellationToken.None;
 
             SourceRepository repository = Repository.Factory.GetCoreV3(NugetApi);
-            PackageSearchResource resource = await repository.GetResourceAsync<PackageSearchResource>();
+            PackageSearchResource resource = Task.Run(() =>repository.GetResourceAsync<PackageSearchResource>()).Result;
             SearchFilter searchFilter = new SearchFilter(includePrerelease: false);
 
-            IEnumerable<IPackageSearchMetadata> results = await resource.SearchAsync(
+            IEnumerable<IPackageSearchMetadata> results = Task.Run(() => resource.SearchAsync(
                 PackageName,
                 searchFilter,
                 skip:0,
                 take:99,
                 logger,
-                cancellationToken);
+                cancellationToken)).Result;
             foreach (var result in results)
             {
                 GlobalVariables.nugetPackage.Add($"{result.Identity.Id} | {result.Identity.Version} | {result.Description} ");
