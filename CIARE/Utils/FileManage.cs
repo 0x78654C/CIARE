@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Application = System.Windows.Forms.Application;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Path = System.IO.Path;
@@ -362,12 +363,15 @@ MessageBoxIcon.Information);
         /// Search dll file in nuget extracted archive.
         /// </summary>
         /// <param name="directoryName"></param>
-        public static void SearchFile(string directoryName, List<string> listFramework, string packageName)
+        public static void SearchFile(string directoryName, List<string> listFramework)
         {
-            GetLibsFromPacakage(directoryName,packageName);
+            GetLibsFromPacakage(directoryName);
             foreach (var framework in listFramework)
             {
-                var pathFile = s_packageLibs.Find(x => x.Contains(@$"\{framework}\") && x.EndsWith(".dll") && x.Contains(@"\lib\"));
+                var pathFile = s_packageLibs.Find(x => x.Contains(@$"\{framework}\") && x.EndsWith(".dll"));
+
+                if (string.IsNullOrEmpty(pathFile))
+                    pathFile = s_packageLibs.Find(x => x.EndsWith(".dll"));
                 if (string.IsNullOrEmpty(pathFile)) continue;
 
                 var fileInfo = new FileInfo(pathFile);
@@ -378,13 +382,14 @@ MessageBoxIcon.Information);
                     break;
                 }
             }
+            s_packageLibs.Clear();
         }
 
         /// <summary>
         /// Get libraries from NuGet pacakage.
         /// </summary>
         /// <param name="directoryName"></param>
-        private static void GetLibsFromPacakage(string directoryName, string packageName)
+        private static void GetLibsFromPacakage(string directoryName)
         {
             var dirsList = new List<string>();
             var fileList = new List<string>();
@@ -392,13 +397,13 @@ MessageBoxIcon.Information);
             Directory.GetFiles(directoryName).ToList().ForEach(file => fileList.Add(file));
             foreach (var file in fileList)
             {
-                if (file.EndsWith($"{packageName}.dll") && file.Contains(@"\lib\"))
+                if (file.EndsWith($".dll"))
                     if (!s_packageLibs.Any(item => item.Contains(file)))
                         s_packageLibs.Add(file);
             }
             foreach (var dir in dirsList)
             {
-                GetLibsFromPacakage(dir, packageName);
+                GetLibsFromPacakage(dir);
             }
         }
     }
