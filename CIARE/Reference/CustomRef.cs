@@ -4,9 +4,9 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Runtime.Versioning;
-using System.Drawing;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 
 namespace CIARE.Reference
 {
@@ -43,14 +43,13 @@ namespace CIARE.Reference
             {
                 foreach (var libPath in refList)
                 {
+                    logOutput.Text += $"{libPath}\n";
                     Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
                 }
                 MainForm.Instance.ReloadRef();
             }
-            catch (Exception ex)
+            catch
             {
-                logOutput.ForeColor = Color.Red;
-                logOutput.Text = $"Error: {ex.Message}";
             }
         }
 
@@ -110,29 +109,42 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="libPath"></param>
         /// <param name="refList"></param>
-        public static void PopulateList(List<string> libPath, ref ListView refList)
+        public static void PopulateList(List<string> libPath, ListView refList)
         {
             try
             {
                 foreach (var lib in libPath)
                 {
-                    //if (!refManage)
-                    //    if (!lib.Contains(packageName)) continue;
-
                     string assemblyNamespace = GetAssemblyNamespace(lib);
-                    var foundItem = refList.FindItemWithText(assemblyNamespace);
                     ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
                     if (string.IsNullOrEmpty(assemblyNamespace))
                         continue;
-                    var foundItemIn = refList.FindItemWithText(assemblyNamespace);
-                    if (foundItemIn == null)
+                    //List<string> list = lvFiles.Items.Cast<ListViewItem>()
+                    //             .Select(item => item.Text)
+                    //             .ToList();
+         
+                    if (!CheckItem(refList,assemblyNamespace))
                         refList.Items.Add(item);
+
                 }
             }
             catch
             {
                 // Ignore.
             }
+        }
+
+
+        private static bool CheckItem(ListView listView, string text)
+        {
+            bool exist = false;
+
+            for (int i = 0; i < listView.Items.Count && exist != true; i++)
+            {
+                if (listView.Items[i].SubItems[0].Text == text)
+                    exist = true;
+            }
+            return exist;
         }
     }
 }
