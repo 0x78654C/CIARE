@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using NuGet.Frameworks;
 using NuGet.Packaging;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
@@ -10,7 +9,6 @@ using System.Linq;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using ILogger = NuGet.Common.ILogger;
 using NullLogger = NuGet.Common.NullLogger;
 
@@ -20,24 +18,24 @@ namespace CIARE.Utils.NuGetManage
     public class NuGetDownloader
     {
         private string PackageName { get; set; } = string.Empty;
-        private string PackageNameSearch { get; set; } = string.Empty;
         private string NugetApi { get; set; } = string.Empty;
         private List<string> Dependencies = new List<string>();
         private List<string> LocalDependencies = new List<string>();
+        private List<string> FrameworkList = new List<string>();
         
 
-        public NuGetDownloader(string packageName, string nugetApi)
+        public NuGetDownloader(string packageName, string nugetApi, List<string> frameworkList)
         {
             PackageName = packageName;
-            PackageNameSearch = packageName;
             NugetApi = nugetApi;
+            FrameworkList = frameworkList;
         }
 
         /// <summary>
         /// NuGet pacakge downloader
         /// </summary>
         /// <param name="richTextBox"></param>
-        public async Task DownloadPackage()
+        public void DownloadPackage()
         {
 
             ILogger logger = NullLogger.Instance;
@@ -46,69 +44,49 @@ namespace CIARE.Utils.NuGetManage
                 Directory.CreateDirectory(GlobalVariables.downloadNugetPath);
             SourceRepository repository = Repository.Factory.GetCoreV3(NugetApi);
             SourceCacheContext cache = new SourceCacheContext();
-            PackageSearchResource packageSearchResource = await repository.GetResourceAsync<PackageSearchResource>();
-            FindPackageByIdResource resource = await repository.GetResourceAsync<FindPackageByIdResource>();
-            FindPackageByIdResource findPackageByIdResource = await repository.GetResourceAsync<FindPackageByIdResource>();
+            PackageSearchResource packageSearchResource = Task.Run(() => repository.GetResourceAsync<PackageSearchResource>()).Result;
+            FindPackageByIdResource resource = Task.Run(() => repository.GetResourceAsync<FindPackageByIdResource>()).Result;
+            FindPackageByIdResource findPackageByIdResource = Task.Run(() => repository.GetResourceAsync<FindPackageByIdResource>()).Result;
             SearchFilter searchFilter = new SearchFilter(includePrerelease: false);
             int skip = 0;
             long bytesDownloaded = 0;
 
-            var results = (await packageSearchResource.SearchAsync(
+            var results = (Task.Run(() => packageSearchResource.SearchAsync(
                 PackageName,
                 searchFilter,
                 skip: skip,
                 take: 1,
                 logger,
-                cancellationToken)).ToList();
+                cancellationToken)).Result).ToList();
             foreach (IPackageSearchMetadata result in results)
             {
-                var versions = await result.GetVersionsAsync();
+                var versions = Task.Run(() => result.GetVersionsAsync()).Result;
                 var version = versions.LastOrDefault();
                 var fileStore = $"{GlobalVariables.downloadNugetPath}{result.Identity.Id}.{version.Version}.zip";
                 using var packageStream = File.OpenWrite(fileStore);
-                await findPackageByIdResource.CopyNupkgToStreamAsync(
+                Task.Run(()=> findPackageByIdResource.CopyNupkgToStreamAsync(
                     result.Identity.Id,
                     version.Version,
                     packageStream,
                     cache,
                     logger,
-                    cancellationToken);
+                    cancellationToken)).Wait();
                 bytesDownloaded += packageStream.Length;
                 packageStream.Close();
 
-                await Task.Run(() => ArchiveManager.Extract(fileStore));
-
+                ArchiveManager.Extract(fileStore);
                 using MemoryStream packageStreamDep = new MemoryStream();
 
-                await resource.CopyNupkgToStreamAsync(
+                Task.Run(() => resource.CopyNupkgToStreamAsync(
                     result.Identity.Id,
                     version.Version,
                     packageStreamDep,
                     cache,
                     logger,
-                    cancellationToken);
-                await GetDependencies(packageStreamDep, cancellationToken);
+                    cancellationToken)).Wait();
+                GetLatestFrameworkFile(FrameworkList);
+                GetDependencies(packageStreamDep, cancellationToken, version.Version.ToString());
             }
-        }
-
-        /// <summary>
-        /// Extract package after download.
-        /// </summary>
-        /// <param name="richTextBox"></param>
-        public void Extract(List<string> listFramework)
-        {
-            Task.Run(() => DownloadPackage()).Wait();
-            foreach (var file in GlobalVariables.customRefAsm)
-                ArchiveManager.Extract(file);
-            GetLatestFrameworkFile(listFramework);
-        }
-
-
-        private void GetLatestFrameworkFile(List<string> listFramework)
-        {
-            if (!Directory.Exists(GlobalVariables.downloadNugetPath))
-                return;
-            FileManage.SearchFile(GlobalVariables.downloadNugetPath, listFramework, PackageNameSearch);
         }
 
         /// <summary>
@@ -118,10 +96,10 @@ namespace CIARE.Utils.NuGetManage
         /// <param name="cancellationToken"></param>
         /// <param name="richTextBox"></param>
         /// <returns></returns>
-        private async Task GetDependencies(MemoryStream packageStreamDep, CancellationToken cancellationToken)
+        private void  GetDependencies(MemoryStream packageStreamDep, CancellationToken cancellationToken, string version)
         {
             using var packageReader = new PackageArchiveReader(packageStreamDep);
-            var nuspecReader = await packageReader.GetNuspecReaderAsync(cancellationToken);
+            var nuspecReader = Task.Run(() => packageReader.GetNuspecReaderAsync(cancellationToken)).Result;
             nuspecReader.GetDescription();
             foreach (var dependencyGroup in nuspecReader.GetDependencyGroups())
             {
@@ -135,17 +113,12 @@ namespace CIARE.Utils.NuGetManage
                     }
                     if (!Dependencies.Contains(pakageName) && !LocalDependencies.Contains(pakageName))
                     {
-
                         Dependencies.Add(pakageName);
                         PackageName = pakageName;
-                        if (!File.Exists($"{GlobalVariables.downloadNugetPath}{pakageName}.zip"))
-                        {
-                            Task.Run(()=> DownloadPackage()).Wait(500);
-                        }
+                        DownloadPackage();
                     }
                 }
             }
-            Dependencies.Clear();
         }
 
         /// <summary>
@@ -166,5 +139,16 @@ namespace CIARE.Utils.NuGetManage
         /// <returns></returns>
         private string GetPackageName(string packageName) => packageName.Split(' ')[0];
 
+
+        /// <summary>
+        /// Get file from downloaded path.
+        /// </summary>
+        /// <param name="listFramework"></param>
+        private void GetLatestFrameworkFile(List<string> listFramework)
+        {
+            if (!Directory.Exists(GlobalVariables.downloadNugetPath))
+                return;
+            FileManage.SearchFile(GlobalVariables.downloadNugetPath, listFramework);
+        }
     }
 }
