@@ -40,7 +40,6 @@ namespace CIARE.Roslyn
 
                 if (string.IsNullOrEmpty(code))
                 {
-                    richTextBox.ForeColor = Color.Red;
                     richTextBox.Text = "ERROR: There is no code in the editor to run!";
                     return;
                 }
@@ -104,7 +103,7 @@ namespace CIARE.Roslyn
                         richTextBox.Text += $"---------------Stack Trace------------------\n";
                     else
                         richTextBox.Text += $"\n--------------Stack Trace-------------------\n";
-                    richTextBox.Text += st.InnerException;
+                    richTextBox.Text += st.Message;
                 }
             }
         }
@@ -125,13 +124,11 @@ namespace CIARE.Roslyn
             {
                 if (!Directory.Exists(roslynDir))
                 {
-                    richTextBox.ForeColor = Color.Red;
                     richTextBox.Text = $"ERROR: Directory does not exist -> {roslynDir}";
                     return;
                 }
                 if (string.IsNullOrEmpty(code))
                 {
-                    richTextBox.ForeColor = Color.Red;
                     richTextBox.Text = "ERROR: There is no code in the editor to compile!";
                     return;
                 }
