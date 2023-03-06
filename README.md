@@ -128,6 +128,8 @@ https://user-images.githubusercontent.com/13780514/208532011-bd2327fd-fcdd-47ad-
 Download NuGet packages directly from https://www.nuget.org/ and use it in CIARE instantly. It will be downloded latest package autmatic. 
 
 
+https://user-images.githubusercontent.com/13780514/223232524-22b1c5a3-795e-4735-b6c0-375e99d9069c.mp4
+
 
 # Sample pictures
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_inteli.png?raw=true)
