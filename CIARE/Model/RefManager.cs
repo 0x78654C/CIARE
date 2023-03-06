@@ -48,7 +48,7 @@ namespace CIARE.Model
             CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
 
             // Load assemblies from list.
-            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm, MainForm.Instance.outputRBT);
+            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
         }
 
         /// <summary>
