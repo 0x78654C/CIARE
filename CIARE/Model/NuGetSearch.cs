@@ -24,7 +24,6 @@ namespace CIARE.Model
         private List<string> netFrameworks = new List<string>();
         private int s_initialSizeForm = 0;
         private string s_packageName { get; set; }
-        private static object s_lock = new object();
         public NuGetSearch()
         {
             InitializeComponent();
