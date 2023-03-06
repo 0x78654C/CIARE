@@ -22,7 +22,7 @@ namespace CIARE.Utils.NuGetManage
         private List<string> Dependencies = new List<string>();
         private List<string> LocalDependencies = new List<string>();
         private List<string> FrameworkList = new List<string>();
-        
+
 
         public NuGetDownloader(string packageName, string nugetApi, List<string> frameworkList)
         {
