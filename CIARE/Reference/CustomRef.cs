@@ -1,11 +1,10 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Runtime.Versioning;
-using System.Drawing;
 using System.Collections.Generic;
+using System.IO;
 
 namespace CIARE.Reference
 {
@@ -36,20 +35,20 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="textEditorControl"></param>
         /// <param name="logOutput"></param>
-        public static void SetCustomRefDirective(List<string> refList, RichTextBox logOutput)
+        public static void SetCustomRefDirective(List<string> refList)
         {
             try
             {
                 foreach (var libPath in refList)
                 {
-                  Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
+                    if(IsManaged(libPath))
+                        Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
                 }
                 MainForm.Instance.ReloadRef();
             }
-            catch (Exception ex)
+            catch
             {
-                logOutput.ForeColor = Color.Red;
-                logOutput.Text = $"Error: {ex.Message}";
+                // ignore
             }
         }
 
@@ -58,6 +57,93 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="libPath"></param>
         /// <returns></returns>
-        public static string GetAssemblyNamespace(string libPath) => Assembly.LoadFile(libPath).GetTypes().Select(t => t.Namespace).Last();
+        public static string GetAssemblyNamespace(string libPath)
+        {
+            IEnumerable<string> listNamespaces = null;
+            try
+            {
+                listNamespaces = Assembly.LoadFile(libPath).GetTypes().Select(t => t.Namespace);
+            }
+            catch
+            {
+                // Ignore
+            }
+            if (listNamespaces == null)
+            {
+                var fileInfo = new FileInfo(libPath);
+                var fileName = fileInfo.Name[..^4];
+                listNamespaces = new string[] { fileName };
+            }
+            var counts = new Dictionary<string, int>();
+            listNamespaces = listNamespaces.OrderBy(i => i);
+            foreach (var ns in listNamespaces)
+            {
+                var foundRoot = false;
+                if (ns is "Microsoft.CodeAnalysis" or "System.Runtime.CompilerServices" or null) continue;
+                foreach (var (key, count) in counts)
+                {
+                    if (ns.StartsWith(key))
+                    {
+                        counts[key] = count + 1;
+                        foundRoot = true;
+                        break;
+                    }
+                }
+
+                if (!foundRoot)
+                {
+                    counts.Add(ns, 0);
+                }
+            }
+
+            var rootNamespace = counts.OrderByDescending(kv => kv.Value)
+                .Select(kv => kv.Key)
+                .FirstOrDefault();
+
+            return rootNamespace;
+        }
+
+        /// <summary>
+        /// Populate the listview with reference lib path and namespace.
+        /// </summary>
+        /// <param name="libPath"></param>
+        /// <param name="refList"></param>
+        public static void PopulateList(List<string> libPath, ListView refList)
+        {
+            try
+            {
+                foreach (var lib in libPath)
+                {
+                    string assemblyNamespace = GetAssemblyNamespace(lib);
+                    ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
+                    if (string.IsNullOrEmpty(assemblyNamespace))
+                        continue;
+                    if (!CheckItem(refList,assemblyNamespace) && (IsManaged(lib)))
+                        refList.Items.Add(item);
+                }
+            }
+            catch
+            {
+                // Ignore
+            }
+        }
+
+        /// <summary>
+        /// Check if listview contins string item.
+        /// </summary>
+        /// <param name="listView"></param>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        private static bool CheckItem(ListView listView, string text)
+        {
+            bool exist = false;
+
+            for (int i = 0; i < listView.Items.Count && exist != true; i++)
+            {
+                if (listView.Items[i].SubItems[0].Text == text)
+                    exist = true;
+            }
+            return exist;
+        }
     }
 }

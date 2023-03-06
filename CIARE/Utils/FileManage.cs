@@ -1,6 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
@@ -16,7 +21,7 @@ namespace CIARE.Utils
     {
         private static OpenFileDialog s_openFileDialog = new OpenFileDialog();
         private static SaveFileDialog s_saveFileDialog = new SaveFileDialog();
-
+        private static List<string> s_packageLibs = new List<string>();
         /// <summary>
         /// Open file dialog.
         /// </summary>
@@ -63,7 +68,7 @@ namespace CIARE.Utils
             {
                 foreach (var lib in s_openFileDialog.FileNames)
                 {
-                    if (CustomRef.IsManaged(lib) )
+                    if (CustomRef.IsManaged(lib))
                     {
                         if (!GlobalVariables.customRefAsm.Contains(lib))
                             GlobalVariables.customRefAsm.Add(lib);
@@ -341,7 +346,7 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void LoadCSTemplate(TextEditorControl textEditor)
         {
-            FileManage.ManageUnsavedData(textEditor);
+            ManageUnsavedData(textEditor);
             DialogResult dr = MessageBox.Show("Do you really want to load C# code template?", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Information);
             if (dr == DialogResult.Yes)
@@ -352,6 +357,67 @@ MessageBoxIcon.Information);
                 else
                     MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
                 textEditor.Text = GlobalVariables.roslynTemplate;
+            }
+        }
+
+        /// <summary>
+        /// Search dll file in nuget extracted archive.
+        /// </summary>
+        /// <param name="directoryName"></param>
+        public static void SearchFile(string directoryName, List<string> listFramework)
+        {
+            GetLibsFromPacakage(directoryName);
+            foreach (var framework in listFramework)
+            {
+                foreach (var file in s_packageLibs)
+                {
+                    if (file.Contains(@$"\{framework}\") && file.EndsWith(".dll"))
+                    {
+                        var fileInfo = new FileInfo(file);
+                        if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
+                        {
+                            GlobalVariables.customRefAsm.Add(file);
+                            break;
+                        }
+                    }
+                }
+                foreach (var file in s_packageLibs)
+                {
+                    if (file.EndsWith(".dll"))
+                    {
+                        var fileInfo = new FileInfo(file);
+                        if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
+                        {
+                            GlobalVariables.customRefAsm.Add(file);
+                            break;
+                        }
+                    }
+                }
+            }
+            s_packageLibs.Clear();
+        }
+
+        /// <summary>
+        /// Get libraries from NuGet pacakage.
+        /// </summary>
+        /// <param name="directoryName"></param>
+        private static void GetLibsFromPacakage(string directoryName)
+        {
+            var dirsList = new List<string>();
+            var fileList = new List<string>();
+            Directory.GetDirectories(directoryName).ToList().ForEach(dir => dirsList.Add(dir));
+            Directory.GetFiles(directoryName).ToList().ForEach(file => fileList.Add(file));
+            foreach (var file in fileList)
+            {
+                if (file.EndsWith($".dll"))
+                {
+                    if (!s_packageLibs.Any(item => item.Contains(file)))
+                        s_packageLibs.Add(file);
+                }
+            }
+            foreach (var dir in dirsList)
+            {
+                GetLibsFromPacakage(dir);
             }
         }
     }

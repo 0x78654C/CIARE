@@ -10,7 +10,6 @@ using NRefactory = ICSharpCode.NRefactory;
 using Dom = ICSharpCode.SharpDevelop.Dom;
 using System.Threading;
 using CIARE.Roslyn;
-using System.Drawing;
 using CIARE.Utils.FilesOpenOS;
 using System.Runtime.Versioning;
 using System.Diagnostics;
@@ -21,9 +20,7 @@ using System.Threading.Tasks;
 using CIARE.Utils.OpenAISettings;
 using Button = System.Windows.Forms.Button;
 using CIARE.Model;
-using Microsoft.Win32;
 using System.Collections.Generic;
-using CIARE.Reference;
 
 namespace CIARE
 {
@@ -73,6 +70,7 @@ namespace CIARE
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
             InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
             InitializeEditor.GenerateLiveSessionId();
+            InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
             Console.SetOut(new ControlWriter(outputRBT));
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
@@ -287,16 +285,16 @@ namespace CIARE
                     find.ShowDialog();
                     return true;
                 case Keys.F5:
-                    Roslyn.RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
+                    RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
                     return true;
                 case Keys.T | Keys.Control:
                     FileManage.LoadCSTemplate(textEditorControl1);
                     return true;
                 case Keys.B | Keys.Control:
-                    Roslyn.RoslynRun.CompileBinaryExe(textEditorControl1, splitContainer1, outputRBT, false);
+                    RoslynRun.CompileBinaryExe(textEditorControl1, splitContainer1, outputRBT, false);
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
-                    Roslyn.RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
+                    RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
                     return true;
                 case Keys.W | Keys.Control:
                     SplitEditorWindow.SplitWindow(textEditorControl1, true);
@@ -320,13 +318,13 @@ namespace CIARE
                     return true;
                 case Keys.R | Keys.Control:
                     RefManager refManager = new RefManager();
-                    refManager.ShowDialog();
+                    if (!refManager.Visible)
+                        refManager.ShowDialog();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
         #endregion
-
 
         public void SetHighLighter(string highlight)
         {
@@ -642,21 +640,6 @@ namespace CIARE
             }
         }
 
-        /// <summary>
-        /// Events on text change.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void outputRBT_TextChanged(object sender, EventArgs e)
-        {
-            // Color warning messages.
-            if (outputRBT.Text.Contains("warning"))
-                RichExtColor.MarkWordRtb(outputRBT, "warning", Color.Orange);
-
-            // Color error messages.
-            if (outputRBT.Text.Contains("error"))
-                RichExtColor.MarkWordRtb(outputRBT, "error", Color.Red);
-        }
 
         /// <summary>
         /// Mark file for auto start event on Windows reboot.

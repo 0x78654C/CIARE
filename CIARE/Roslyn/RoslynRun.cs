@@ -40,7 +40,6 @@ namespace CIARE.Roslyn
 
                 if (string.IsNullOrEmpty(code))
                 {
-                    richTextBox.ForeColor = Color.Red;
                     richTextBox.Text = "ERROR: There is no code in the editor to run!";
                     return;
                 }
@@ -104,7 +103,7 @@ namespace CIARE.Roslyn
                         richTextBox.Text += $"---------------Stack Trace------------------\n";
                     else
                         richTextBox.Text += $"\n--------------Stack Trace-------------------\n";
-                    richTextBox.Text += st.InnerException;
+                    richTextBox.Text += st.Message;
                 }
             }
         }
@@ -125,13 +124,11 @@ namespace CIARE.Roslyn
             {
                 if (!Directory.Exists(roslynDir))
                 {
-                    richTextBox.ForeColor = Color.Red;
                     richTextBox.Text = $"ERROR: Directory does not exist -> {roslynDir}";
                     return;
                 }
                 if (string.IsNullOrEmpty(code))
                 {
-                    richTextBox.ForeColor = Color.Red;
                     richTextBox.Text = "ERROR: There is no code in the editor to compile!";
                     return;
                 }
@@ -219,7 +216,11 @@ namespace CIARE.Roslyn
                 richTextBox.Text += dbze.StackTrace;
                 GlobalVariables.binaryName = string.Empty;
             }
-            catch { GlobalVariables.binaryName = string.Empty; }
+            catch (Exception ex)
+            {
+                GlobalVariables.binaryName = string.Empty;
+                richTextBox.Text = $"Error:{ex.Message}\n";
+            }
         }
 
         /// <summary>
@@ -291,8 +292,6 @@ namespace CIARE.Roslyn
         /// Get binary reference list.
         /// </summary>
         /// <returns></returns>
-        /// TEST: add custom reference
-        /// WIP: test load path for custom lib error 
         private static IEnumerable<MetadataReference> References()
         {
             var refList = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).Select(refs => MetadataReference.CreateFromFile(refs)).Cast<MetadataReference>().ToList();

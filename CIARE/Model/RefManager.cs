@@ -3,6 +3,7 @@ using CIARE.Reference;
 using CIARE.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -11,6 +12,9 @@ namespace CIARE.Model
     [SupportedOSPlatform("Windows")]
     public partial class RefManager : Form
     {
+        public static RefManager Instance { get; private set; }
+        private int s_initialSizeForm = 0;
+        private bool _isOpen = false;
         public RefManager()
         {
             InitializeComponent();
@@ -18,28 +22,33 @@ namespace CIARE.Model
 
         private void RefManager_Load(object sender, EventArgs e)
         {
+            //Set instance for usage on cross GUI.
+            Instance = this;
+
+            // Get initial width size of form.
+            s_initialSizeForm = this.Size.Width;
+
             // Set dark mode if enabled.
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
 
             // Populate listview with ref.
-            PopulateList(GlobalVariables.customRefAsm, ref refListView);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
         }
 
         /// <summary>
         /// Load reference assembly button control event.
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void AddRefFileBtn_Click(object sender, EventArgs e)
         {
             // Add lib's to list dialog.
             FileManage.AddReferenceDialog();
 
             // Repopulate listview with ref. after loading list.
-            PopulateList(GlobalVariables.customRefAsm, ref refListView);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
 
             // Load assemblies from list.
-            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm, MainForm.Instance.outputRBT);
+            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
         }
 
         /// <summary>
@@ -48,23 +57,6 @@ namespace CIARE.Model
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void CancelBtn_Click(object sender, EventArgs e) => this.Close();
-
-        /// <summary>
-        /// Populate the listview with reference lib path and namespace.
-        /// </summary>
-        /// <param name="libPath"></param>
-        /// <param name="refList"></param>
-        private void PopulateList(List<string> libPath, ref ListView refList)
-        {
-            foreach (var lib in libPath)
-            {
-                string assemblyNamespace = CustomRef.GetAssemblyNamespace(lib);
-                ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
-                var foudItem = refList.FindItemWithText(assemblyNamespace);
-                if (foudItem == null)
-                    refList.Items.Add(item);
-            }
-        }
 
         /// <summary>
         /// Open delete menu for selected item on right click.
@@ -102,11 +94,11 @@ namespace CIARE.Model
 MessageBoxIcon.Warning);
             if (dialogResult == DialogResult.Yes)
             {
-                GlobalVariables.customRefAsm.Remove(selecItem);
+                GlobalVariables.customRefAsm.RemoveAll(x=>x.Contains(selecItem));
                 refList.SelectedItems[0].Remove();
             }
         }
-        
+
         /// <summary>
         /// Set namespace to clipborad.
         /// </summary>
@@ -116,11 +108,35 @@ MessageBoxIcon.Warning);
         {
             CopyNamespace(refListView);
         }
-        
+
         /// <summary>
         /// Set text to clipborad from reference list.
         /// </summary>
         /// <param name="refList"></param>
         private void CopyNamespace(ListView refList) => Clipboard.SetText(refList.SelectedItems[0].Text);
+
+        /// <summary>
+        /// Open NuGet manager.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void NugetManagerBtn_Click(object sender, EventArgs e)
+        {
+            NuGetSearch nuGetSearch = new NuGetSearch();
+            if (!Application.OpenForms.OfType<NuGetSearch>().Any())
+                nuGetSearch.Show();
+        }
+
+        /// <summary>
+        /// Resize column of description on form resize.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void RefManager_Resize(object sender, EventArgs e)
+        {
+            int changedSize = this.Size.Width - s_initialSizeForm;
+            int descriptionSize = refListView.Columns[1].Width;
+            refListView.Columns[1].Width = descriptionSize + changedSize;
+        }
     }
 }
