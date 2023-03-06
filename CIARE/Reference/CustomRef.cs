@@ -1,12 +1,10 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Runtime.Versioning;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 
 namespace CIARE.Reference
 {
@@ -37,19 +35,20 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="textEditorControl"></param>
         /// <param name="logOutput"></param>
-        public static void SetCustomRefDirective(List<string> refList, RichTextBox logOutput)
+        public static void SetCustomRefDirective(List<string> refList)
         {
             try
             {
                 foreach (var libPath in refList)
                 {
-                    logOutput.Text += $"{libPath}\n";
-                    Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
+                    if(IsManaged(libPath))
+                        Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
                 }
                 MainForm.Instance.ReloadRef();
             }
             catch
             {
+                // ignore
             }
         }
 
@@ -119,22 +118,22 @@ namespace CIARE.Reference
                     ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
                     if (string.IsNullOrEmpty(assemblyNamespace))
                         continue;
-                    //List<string> list = lvFiles.Items.Cast<ListViewItem>()
-                    //             .Select(item => item.Text)
-                    //             .ToList();
-         
-                    if (!CheckItem(refList,assemblyNamespace))
+                    if (!CheckItem(refList,assemblyNamespace) && (IsManaged(lib)))
                         refList.Items.Add(item);
-
                 }
             }
             catch
             {
-                // Ignore.
+                // Ignore
             }
         }
 
-
+        /// <summary>
+        /// Check if listview contins string item.
+        /// </summary>
+        /// <param name="listView"></param>
+        /// <param name="text"></param>
+        /// <returns></returns>
         private static bool CheckItem(ListView listView, string text)
         {
             bool exist = false;
