@@ -24,7 +24,7 @@ namespace CIARE.Model
         private List<string> netFrameworks = new List<string>();
         private int s_initialSizeForm = 0;
         private string s_packageName { get; set; }
-
+        private static object s_lock = new object();
         public NuGetSearch()
         {
             InitializeComponent();
@@ -187,9 +187,9 @@ MessageBoxIcon.Information);
             CustomRef.PopulateList(GlobalVariables.customRefAsm, RefManager.Instance.refListView);
 
             // Load assemblies from list.
-            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm, MainForm.Instance.outputRBT);
+            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
 
-           // Delete downloaded package.
+            // Delete downloaded package.
             DelDownloadedPackage(GlobalVariables.downloadNugetPath);
 
             // Sow controlers after download.
