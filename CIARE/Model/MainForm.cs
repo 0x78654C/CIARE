@@ -10,7 +10,6 @@ using NRefactory = ICSharpCode.NRefactory;
 using Dom = ICSharpCode.SharpDevelop.Dom;
 using System.Threading;
 using CIARE.Roslyn;
-using System.Drawing;
 using CIARE.Utils.FilesOpenOS;
 using System.Runtime.Versioning;
 using System.Diagnostics;
@@ -22,8 +21,6 @@ using CIARE.Utils.OpenAISettings;
 using Button = System.Windows.Forms.Button;
 using CIARE.Model;
 using System.Collections.Generic;
-using CIARE.Utils.NuGet;
-using CIARE.Utils.NuGetManage;
 
 namespace CIARE
 {
