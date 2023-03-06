@@ -3,7 +3,6 @@ using CIARE.Reference;
 using CIARE.Utils;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
@@ -74,13 +73,16 @@ namespace CIARE.Roslyn
 
             foreach (var item in refList)
             {
-                    var assemblyName = CustomRef.GetAssemblyNamespace(item);
+                var assemblyName = CustomRef.GetAssemblyNamespace(item);
+                if (item != assemblyName && !string.IsNullOrEmpty(assemblyName))
+                {
                     string format = $@"<ItemGroup>
   <Reference Include=""" + assemblyName + @""">
     <HintPath>" + item + @"</HintPath>
   </Reference>
 </ItemGroup>";
-                    outRef += Environment.NewLine + format;
+                outRef += Environment.NewLine + format;
+                }
             }
             return outRef;
         }
@@ -154,10 +156,15 @@ namespace CIARE.Roslyn
                         int pathSplit = fileInfo.FullName.Split(Path.DirectorySeparatorChar).Count();
                         string frameworkPath = fileInfo.FullName.Split(Path.DirectorySeparatorChar)[pathSplit - 2];
                         string parsePlatform = platform.Split('"')[1];
-                        if (fileInfo.Extension == ".exe" && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
+                        if (fileInfo.FullName.EndsWith($"{projectName}.exe") && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
+                        {
                             _exeFilePath = fileInfo.FullName;
-                        if (fileInfo.Extension == ".dll" && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
+                            break;
+                        }
+                        if (fileInfo.FullName.EndsWith($"{projectName}.dll") && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
+                        {
                             _exeFilePath = fileInfo.FullName;
+                        }
                     }
                     PathExe(dir, projectName, framework, platform);
                 }
