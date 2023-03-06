@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -368,18 +369,29 @@ MessageBoxIcon.Information);
             GetLibsFromPacakage(directoryName);
             foreach (var framework in listFramework)
             {
-                var pathFile = s_packageLibs.Find(x => x.Contains(@$"\{framework}\") && x.EndsWith(".dll"));
-
-                if (string.IsNullOrEmpty(pathFile))
-                    pathFile = s_packageLibs.Find(x => x.EndsWith(".dll"));
-                if (string.IsNullOrEmpty(pathFile)) continue;
-
-                var fileInfo = new FileInfo(pathFile);
-
-                if (!GlobalVariables.customRefAsm.Any(item => item.Contains(fileInfo.Name)))
+                foreach (var file in s_packageLibs)
                 {
-                    GlobalVariables.customRefAsm.Add(fileInfo.FullName);
-                    break;
+                    if (file.Contains(@$"\{framework}\") && file.EndsWith(".dll"))
+                    {
+                        var fileInfo = new FileInfo(file);
+                        if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
+                        {
+                            GlobalVariables.customRefAsm.Add(file);
+                            break;
+                        }
+                    }
+                }
+                foreach (var file in s_packageLibs)
+                {
+                    if (file.EndsWith(".dll"))
+                    {
+                        var fileInfo = new FileInfo(file);
+                        if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
+                        {
+                            GlobalVariables.customRefAsm.Add(file);
+                            break;
+                        }
+                    }
                 }
             }
             s_packageLibs.Clear();
@@ -398,8 +410,10 @@ MessageBoxIcon.Information);
             foreach (var file in fileList)
             {
                 if (file.EndsWith($".dll"))
+                {
                     if (!s_packageLibs.Any(item => item.Contains(file)))
                         s_packageLibs.Add(file);
+                }
             }
             foreach (var dir in dirsList)
             {
