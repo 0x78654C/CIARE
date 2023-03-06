@@ -38,6 +38,7 @@ Useful to run code on the fly and get instant result.
  - Live share: share and work in same time at a project/file data.
  - Generate code/data with chatGPT from OpenAI.
  - Add reference to custom managed libraries.
+ - NuGet Manager
 
 ## Requirements:
 
@@ -120,6 +121,13 @@ https://user-images.githubusercontent.com/13780514/201774933-e53d3ba2-95e0-434e-
 # ChatGPT code generator video sample
 
 https://user-images.githubusercontent.com/13780514/208532011-bd2327fd-fcdd-47ad-8818-306739317326.mp4
+
+
+# NuGet Manager
+
+Download NuGet packages directly from https://www.nuget.org/ and use it in CIARE instantly. It will be downloded latest package autmatic. 
+
+
 
 # Sample pictures
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_inteli.png?raw=true)
