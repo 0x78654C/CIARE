@@ -55,7 +55,7 @@ namespace CIARE.Roslyn
                 CSharpCompilation compilation = CSharpCompilation.Create(
                     assemblyName,
                     syntaxTrees: new[] { syntaxTree },
-                    references: References(),
+                    references: References(false),
                     options: new CSharpCompilationOptions(OutputKind.ConsoleApplication));
 
                 using (var ms = new MemoryStream())
@@ -161,17 +161,17 @@ namespace CIARE.Roslyn
                     compilation = CSharpCompilation.Create(
                       assemblyName,
                       syntaxTrees: new[] { syntaxTree },
-                      references: References(),
+                      references: References(true),
                       options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
                       null, null, OptimizationLevel.Debug, false, false, null, null,
-                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
+                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));;
                 }
                 else
                 {
                     compilation = CSharpCompilation.Create(
                      assemblyName,
                      syntaxTrees: new[] { syntaxTree },
-                     references: References(),
+                     references: References(true),
                      options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, true, null, null,
                      null, null, OptimizationLevel.Debug, false, false, null, null,
                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
@@ -292,12 +292,18 @@ namespace CIARE.Roslyn
         /// Get binary reference list.
         /// </summary>
         /// <returns></returns>
-        private static IEnumerable<MetadataReference> References()
+        private static IEnumerable<MetadataReference> References(bool isCompiled)
         {
             var refList = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).Select(refs => MetadataReference.CreateFromFile(refs)).Cast<MetadataReference>().ToList();
             var customRefList = GlobalVariables.customRefAsm;
             foreach (var libPath in customRefList)
             {
+                if (!isCompiled && !string.IsNullOrEmpty(libPath))
+                {
+                    var existAsm = LibLoaded.CheckLoadedAssembly(libPath);
+                    if (existAsm) continue;
+                    Console.WriteLine(libPath);
+                }
                 var stream = File.OpenRead(libPath);
                 AssemblyLoadContext.Default.LoadFromStream(stream);
                 var r = MetadataReference.CreateFromFile(libPath);
