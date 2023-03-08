@@ -5,6 +5,8 @@ using System.Windows.Forms;
 using System.Runtime.Versioning;
 using System.Collections.Generic;
 using System.IO;
+using System;
+using CIARE.Roslyn;
 
 namespace CIARE.Reference
 {
@@ -29,7 +31,6 @@ namespace CIARE.Reference
             }
             return false;
         }
-
         /// <summary>
         /// Loads custom managed library and sets namespace as directive in editor.
         /// </summary>
@@ -41,7 +42,11 @@ namespace CIARE.Reference
             {
                 foreach (var libPath in refList)
                 {
-                    if(IsManaged(libPath))
+                    var checkASM = LibLoaded.CheckLoadedAssembly(libPath);
+
+                    if (checkASM) continue;
+
+                    if (IsManaged(libPath))
                         Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
                 }
                 MainForm.Instance.ReloadRef();
@@ -136,14 +141,10 @@ namespace CIARE.Reference
         /// <returns></returns>
         private static bool CheckItem(ListView listView, string text)
         {
-            bool exist = false;
-
-            for (int i = 0; i < listView.Items.Count && exist != true; i++)
-            {
+            for (int i = 0; i < listView.Items.Count; i++)
                 if (listView.Items[i].SubItems[0].Text == text)
-                    exist = true;
-            }
-            return exist;
+                   return true;
+            return false;
         }
     }
 }
