@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CIARE.Reference;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -47,8 +48,8 @@ namespace CIARE.Roslyn
             if (!File.Exists(libPath))
                 return false;
             FileInfo fileInfo = new FileInfo(libPath);
-            var fileName = fileInfo.Name.Replace(".dll", string.Empty);
-            return _assemblies.Where(key => key.Key == fileName).Any();
+            var NameSpace =CustomRef.GetAssemblyNamespace(libPath);
+            return _assemblies.Where(key => key.Key == NameSpace).Any();
         }
     }
 }
