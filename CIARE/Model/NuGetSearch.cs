@@ -37,7 +37,7 @@ namespace CIARE.Model
             Network network = new Network(GlobalVariables.nugetApiAddress);
             if (!network.PingHost())
             {
-                MessageBox.Show($"NuGet API cannot be reached. Check your internet conneciton!", "CIARE", MessageBoxButtons.OK,
+                MessageBox.Show($"NuGet API cannot be reached. Check your internet connection!", "CIARE", MessageBoxButtons.OK,
 MessageBoxIcon.Warning);
                 this.Close();
             }
