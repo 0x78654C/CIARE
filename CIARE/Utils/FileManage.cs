@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 using CIARE.Reference;
@@ -370,7 +369,7 @@ MessageBoxIcon.Information);
             {
                 foreach (var file in s_packageLibs)
                 {
-                    if (file.Contains(@$"\{framework}\") && file.Contains(@"\lib\")&& file.EndsWith(".dll"))
+                    if (file.Contains(@$"\{framework}\") && file.Contains(@"\lib\") && file.EndsWith(".dll"))
                     {
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
@@ -380,6 +379,20 @@ MessageBoxIcon.Information);
                         }
                     }
                 }
+
+                foreach (var file in s_packageLibs)
+                {
+                    if (file.Contains(@$"\{framework}\") && file.Contains(@"\build\") && file.EndsWith(".dll"))
+                    {
+                        var fileInfo = new FileInfo(file);
+                        if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
+                        {
+                            GlobalVariables.customRefAsm.Add(file);
+                            break;
+                        }
+                    }
+                }
+
                 foreach (var file in s_packageLibs)
                 {
                     if (file.EndsWith(".dll") && file.Contains(@"\dotnet\"))
