@@ -4,8 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Versioning;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
@@ -22,6 +20,7 @@ namespace CIARE.Utils
         private static OpenFileDialog s_openFileDialog = new OpenFileDialog();
         private static SaveFileDialog s_saveFileDialog = new SaveFileDialog();
         private static List<string> s_packageLibs = new List<string>();
+        private static bool s_isLoaded = false;
         /// <summary>
         /// Open file dialog.
         /// </summary>
@@ -371,7 +370,7 @@ MessageBoxIcon.Information);
             {
                 foreach (var file in s_packageLibs)
                 {
-                    if (file.Contains(@$"\{framework}\") && file.EndsWith(".dll"))
+                    if (file.Contains(@$"\{framework}\") && file.Contains(@"\lib\")&& file.EndsWith(".dll"))
                     {
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
@@ -383,7 +382,7 @@ MessageBoxIcon.Information);
                 }
                 foreach (var file in s_packageLibs)
                 {
-                    if (file.EndsWith(".dll"))
+                    if (file.EndsWith(".dll") && file.Contains(@"\dotnet\"))
                     {
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
@@ -412,12 +411,22 @@ MessageBoxIcon.Information);
                 if (file.EndsWith($".dll"))
                 {
                     if (!s_packageLibs.Any(item => item.Contains(file)))
+                    {
                         s_packageLibs.Add(file);
+                        s_isLoaded = true;
+                        continue;
+                    }
                 }
             }
             foreach (var dir in dirsList)
             {
-                GetLibsFromPacakage(dir);
+                if (!s_isLoaded)
+                    GetLibsFromPacakage(dir);
+                else
+                {
+                    s_isLoaded = false;
+                    break;
+                }
             }
         }
     }
