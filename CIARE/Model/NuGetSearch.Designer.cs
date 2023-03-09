@@ -147,7 +147,7 @@
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             Name = "NuGetSearch";
             StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            Text = "NuGet package Searcher";
+            Text = "NuGet Package Manager";
             Load += NuGetSearch_Load;
             Resize += NuGetSearch_Resize;
             ActionNugetMenu.ResumeLayout(false);
