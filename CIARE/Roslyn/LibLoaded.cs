@@ -50,7 +50,7 @@ namespace CIARE.Roslyn
             if (!File.Exists(libPath))
                 return false;
             FileInfo fileInfo = new FileInfo(libPath);
-            var NameSpace =CustomRef.GetAssemblyNamespace(libPath);
+            var NameSpace =fileInfo.Name.Replace(".dll",string.Empty);
             return _assemblies.Where(key => key.Key == NameSpace).Any();
         }
     }
