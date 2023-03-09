@@ -302,7 +302,6 @@ namespace CIARE.Roslyn
                 {
                     var existAsm = LibLoaded.CheckLoadedAssembly(libPath);
                     if (existAsm) continue;
-                    Console.WriteLine(libPath);
                 }
                 var stream = File.OpenRead(libPath);
                 AssemblyLoadContext.Default.LoadFromStream(stream);
