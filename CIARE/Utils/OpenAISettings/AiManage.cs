@@ -52,7 +52,7 @@ namespace CIARE.Utils.OpenAISettings
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error: {ex.Message}. Key period or credit could be expired!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return result;
         }
