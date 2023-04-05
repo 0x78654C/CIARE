@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using OpenAI.Api.Client.Models;
 
 namespace CIARE.Utils.OpenAISettings
 {
@@ -29,21 +30,31 @@ namespace CIARE.Utils.OpenAISettings
         /// <returns></returns>
         private async Task<string> AskOpenAI()
         {
-            if (string.IsNullOrEmpty(ApiKey))
-                return "";
-
-            if (string.IsNullOrEmpty(Qestion))
-                return "";
-            OpenAiApiV1Client client = new OpenAiApiV1Client(HttpClient, ApiKey);
-
-            var resu = await client.PostCompletion(new OpenAI.Api.Client.Models.CompletionRequest
+            var result =string.Empty;
+            try
             {
-                MaxTokens = Int32.Parse(GlobalVariables.aiMaxTokens),
-                Temperature = 0.8m,
-                Model = "text-davinci-003",
-                Prompt = Qestion
-            });
-            return resu.Choices.First().Text;
+                if (string.IsNullOrEmpty(ApiKey))
+                    return "";
+
+                if (string.IsNullOrEmpty(Qestion))
+                    return "";
+                OpenAiApiV1Client client = new OpenAiApiV1Client(HttpClient, ApiKey);
+
+                var resu = await client.PostCompletion(new CompletionRequest
+                {
+                    Max_Tokens = Int32.Parse(GlobalVariables.aiMaxTokens),
+                    Temperature = 0.8m,
+                    Model = GlobalVariables.model,
+                    Prompt = Qestion
+                });
+
+                result= resu.Choices.First().Text;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return result;
         }
 
         /// <summary>
