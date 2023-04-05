@@ -93,6 +93,7 @@ namespace CIARE.Roslyn
             }
             catch (DivideByZeroException dbze)
             {
+                richTextBox.Clear();
                 richTextBox.Text += dbze.StackTrace;
             }
             catch (Exception st)
@@ -100,10 +101,12 @@ namespace CIARE.Roslyn
                 if (!richTextBox.Text.StartsWith("ERROR"))
                 {
                     if (richTextBox.Text.EndsWith("\n"))
+                    {
                         richTextBox.Text += $"---------------Stack Trace------------------\n";
+                    }
                     else
                         richTextBox.Text += $"\n--------------Stack Trace-------------------\n";
-                    richTextBox.Text += st.Message;
+                    richTextBox.Text += st.ToString();
                 }
             }
         }

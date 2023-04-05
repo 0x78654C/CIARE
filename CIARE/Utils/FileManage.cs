@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,6 +8,7 @@ using System.Windows.Forms;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
+using ICSharpCode.TextEditor.Document;
 using Application = System.Windows.Forms.Application;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Path = System.IO.Path;
@@ -251,6 +253,7 @@ MessageBoxIcon.Warning);
         {
             try
             {
+
                 if (GlobalVariables.openedFilePath.Length > 0)
                 {
                     File.WriteAllText(GlobalVariables.openedFilePath, textEditor.Text);
@@ -274,11 +277,23 @@ MessageBoxIcon.Warning);
         }
 
         /// <summary>
+        /// Method for save modified data in a opened file when runing / compiling code.
+        /// </summary>
+        /// <param name="textEditor"></param>
+        public static void CompileRunSaveData(TextEditorControl textEditor)
+        {
+            if (!MainForm.Instance.Text.StartsWith("*"))
+                return;
+            SaveToFileDialog(textEditor);
+        }
+
+        /// <summary>
         /// Save data to a file.
         /// </summary>
         /// <param name="textEditor"></param>
         public static void SaveAsDialog(TextEditorControl textEditor)
         {
+            string title = MainForm.Instance.Text;
             SaveFile(textEditor.Text);
             if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
                 return;

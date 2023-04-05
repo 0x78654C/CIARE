@@ -285,15 +285,18 @@ namespace CIARE
                     find.ShowDialog();
                     return true;
                 case Keys.F5:
+                    FileManage.CompileRunSaveData(textEditorControl1);
                     RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
                     return true;
                 case Keys.T | Keys.Control:
                     FileManage.LoadCSTemplate(textEditorControl1);
                     return true;
                 case Keys.B | Keys.Control:
+                    FileManage.CompileRunSaveData(textEditorControl1);
                     RoslynRun.CompileBinaryExe(textEditorControl1, splitContainer1, outputRBT, false);
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
+                    FileManage.CompileRunSaveData(textEditorControl1);
                     RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
                     return true;
                 case Keys.W | Keys.Control:

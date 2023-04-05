@@ -47,6 +47,7 @@ namespace CIARE
             apiUrlTxt.Text = GlobalVariables.apiUrl;
             apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
+            modelTxt.Text = GlobalVariables.model;
             CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
@@ -155,7 +156,7 @@ namespace CIARE
         private void saveApiUrlBtn_Click(object sender, EventArgs e)
         {
             LiveShare.SetApiLiveShare(apiUrlTxt, GlobalVariables.liveShare);
-            MessageBox.Show("API url was saved!", "CIARE", MessageBoxButtons.OK,MessageBoxIcon.Information);
+            MessageBox.Show("API url was saved!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         /// <summary>
@@ -178,7 +179,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void openAISaveBtn_Click(object sender, EventArgs e)
         {
-            OpenAISetting.SetOpenAIData(apiKeyAiTxtBox, maxTokensTxtBox, GlobalVariables.openAIKey, GlobalVariables.openAIMaxTokens);
+            OpenAISetting.SetOpenAIData(apiKeyAiTxtBox, maxTokensTxtBox, modelTxt, GlobalVariables.openAIKey, GlobalVariables.openAIMaxTokens, GlobalVariables.openModel);
             MessageBox.Show("OpenAI settings are saved!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
@@ -205,7 +206,7 @@ namespace CIARE
             if (!DataManage.IsNumberAllowed(maxTokensTxtBox.Text))
             {
                 MessageBox.Show("Field must contain numbers only!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                maxTokensTxtBox.Text = maxTokensTxtBox.Text.Substring(0,_tokenTxtLen);
+                maxTokensTxtBox.Text = maxTokensTxtBox.Text.Substring(0, _tokenTxtLen);
                 maxTokensTxtBox.SelectionStart = maxTokensTxtBox.Text.Length;
                 maxTokensTxtBox.ScrollToCaret();
                 return;
