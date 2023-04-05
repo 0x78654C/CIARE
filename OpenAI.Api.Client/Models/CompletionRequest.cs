@@ -14,6 +14,6 @@ namespace OpenAI.Api.Client.Models
         public decimal Temperature { get; set; }
 
         [JsonPropertyName("max_tokens")]
-        public int MaxTokens { get; set; }
+        public int Max_Tokens { get; set; }
     }
 }
