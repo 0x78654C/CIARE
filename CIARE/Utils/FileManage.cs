@@ -87,7 +87,7 @@ MessageBoxIcon.Warning);
         /// <param name="data"></param>
         public static void SaveFile(string data)
         {
-            s_saveFileDialog.Filter = "All Files (*.*)|*.*|C# Files (*.cs)|*.cs|Text Files (*.txt)|*.txt";
+            s_saveFileDialog.Filter = "C# Files (*.cs)|*.cs|Text Files (*.txt)|*.txt|All Files (*.*)|*.*";
             s_saveFileDialog.Title = $"Save As... :";
             DialogResult dr = s_saveFileDialog.ShowDialog();
             if (dr == DialogResult.OK)
