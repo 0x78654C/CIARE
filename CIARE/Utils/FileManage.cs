@@ -3,6 +3,7 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 using CIARE.Reference;
@@ -379,50 +380,52 @@ MessageBoxIcon.Information);
         /// <param name="directoryName"></param>
         public static void SearchFile(string directoryName, List<string> listFramework)
         {
+            bool found = false;
             GetLibsFromPacakage(directoryName);
             foreach (var framework in listFramework)
             {
                 foreach (var file in s_packageLibs)
                 {
+                    if (file.Contains(@"\analyzers\")) continue;
                     if (file.Contains(@$"\{framework}\") && file.Contains(@"\lib\") && file.EndsWith(".dll"))
                     {
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
                             GlobalVariables.customRefAsm.Add(file);
+                            found = true;
                             break;
                         }
                     }
-                }
 
-                foreach (var file in s_packageLibs)
-                {
                     if (file.Contains(@$"\{framework}\") && file.Contains(@"\build\") && file.EndsWith(".dll"))
                     {
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
                             GlobalVariables.customRefAsm.Add(file);
+                            found = true;
                             break;
                         }
                     }
-                }
 
-                foreach (var file in s_packageLibs)
-                {
+
                     if (file.EndsWith(".dll") && file.Contains(@"\dotnet\"))
                     {
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
                             GlobalVariables.customRefAsm.Add(file);
+                            found = true;
                             break;
                         }
                     }
                 }
+                if (found) break;
             }
             s_packageLibs.Clear();
         }
+
 
         /// <summary>
         /// Get libraries from NuGet pacakage.
@@ -435,27 +438,12 @@ MessageBoxIcon.Information);
             Directory.GetDirectories(directoryName).ToList().ForEach(dir => dirsList.Add(dir));
             Directory.GetFiles(directoryName).ToList().ForEach(file => fileList.Add(file));
             foreach (var file in fileList)
-            {
                 if (file.EndsWith($".dll"))
-                {
                     if (!s_packageLibs.Any(item => item.Contains(file)))
-                    {
                         s_packageLibs.Add(file);
-                        s_isLoaded = true;
-                        continue;
-                    }
-                }
-            }
+
             foreach (var dir in dirsList)
-            {
-                if (!s_isLoaded)
-                    GetLibsFromPacakage(dir);
-                else
-                {
-                    s_isLoaded = false;
-                    break;
-                }
-            }
+                GetLibsFromPacakage(dir);
         }
     }
 }
