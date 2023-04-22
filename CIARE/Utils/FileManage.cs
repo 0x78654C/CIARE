@@ -380,7 +380,6 @@ MessageBoxIcon.Information);
         /// <param name="directoryName"></param>
         public static void SearchFile(string directoryName, List<string> listFramework)
         {
-            bool found = false;
             GetLibsFromPacakage(directoryName);
             foreach (var framework in listFramework)
             {
@@ -393,7 +392,6 @@ MessageBoxIcon.Information);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
                             GlobalVariables.customRefAsm.Add(file);
-                            found = true;
                             break;
                         }
                     }
@@ -404,11 +402,9 @@ MessageBoxIcon.Information);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
                             GlobalVariables.customRefAsm.Add(file);
-                            found = true;
                             break;
                         }
                     }
-
 
                     if (file.EndsWith(".dll") && file.Contains(@"\dotnet\"))
                     {
@@ -416,12 +412,10 @@ MessageBoxIcon.Information);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
                             GlobalVariables.customRefAsm.Add(file);
-                            found = true;
                             break;
                         }
                     }
                 }
-                if (found) break;
             }
             s_packageLibs.Clear();
         }
