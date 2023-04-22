@@ -1,6 +1,7 @@
 ﻿using CIARE.GUI;
 using CIARE.Reference;
 using CIARE.Utils;
+using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,7 +28,7 @@ namespace CIARE.Roslyn
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='Debug|AnyCPU'"">
+  <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='"+StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
   </PropertyGroup>
 " + SetReference(GlobalVariables.customRefAsm) + @"
@@ -42,7 +43,7 @@ namespace CIARE.Roslyn
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='Debug|AnyCPU'"">
+  <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='"+StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
   </PropertyGroup>
 " + SetReference(GlobalVariables.customRefAsm) + @"
@@ -61,6 +62,11 @@ namespace CIARE.Roslyn
             Code = code;
             Library = library;
         }
+
+        /// <summary>
+        /// Set optimization type.
+        /// </summary>
+        private static string StateCompile => (GlobalVariables.configParam.Contains("Release")) ? "Release" : "Debug";
 
         /// <summary>
         /// Set reference link template for csproj file extension from the loaded list in reference manager.
@@ -156,12 +162,14 @@ namespace CIARE.Roslyn
                         int pathSplit = fileInfo.FullName.Split(Path.DirectorySeparatorChar).Count();
                         string frameworkPath = fileInfo.FullName.Split(Path.DirectorySeparatorChar)[pathSplit - 2];
                         string parsePlatform = platform.Split('"')[1];
-                        if (fileInfo.FullName.EndsWith($"{projectName}.exe") && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
+                        if (fileInfo.FullName.EndsWith($"{projectName}.exe") && frameworkPath.Contains(framework) 
+                            && fileInfo.FullName.Contains(parsePlatform) && GetState(fileInfo.FullName).Contains(StateCompile))
                         {
                             _exeFilePath = fileInfo.FullName;
                             break;
                         }
-                        if (fileInfo.FullName.EndsWith($"{projectName}.dll") && frameworkPath.Contains(framework) && fileInfo.FullName.Contains(parsePlatform))
+                        if (fileInfo.FullName.EndsWith($"{projectName}.dll") && frameworkPath.Contains(framework)
+                            && fileInfo.FullName.Contains(parsePlatform) && GetState(fileInfo.FullName).Contains(StateCompile))
                         {
                             _exeFilePath = fileInfo.FullName;
                         }
@@ -169,6 +177,18 @@ namespace CIARE.Roslyn
                     PathExe(dir, projectName, framework, platform);
                 }
             }
+        }
+
+        /// <summary>
+        /// Get optimization level state from full path after compile.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        private string GetState(string path)
+        {
+            var splitCount = path.Split(Path.DirectorySeparatorChar).Count();
+            var getType = path.Split(Path.DirectorySeparatorChar)[splitCount - 3];
+            return getType;
         }
     }
 }
