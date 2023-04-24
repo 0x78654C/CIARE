@@ -166,7 +166,7 @@ namespace CIARE.Roslyn
                       syntaxTrees: new[] { syntaxTree },
                       references: References(true),
                       options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
-                      null, null, OptimizationLevel.Debug, false, false, null, null,
+                      null, null, OptimizationLevelState(), false, false, null, null,
                       ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));;
                 }
                 else
@@ -176,7 +176,7 @@ namespace CIARE.Roslyn
                      syntaxTrees: new[] { syntaxTree },
                      references: References(true),
                      options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, true, null, null,
-                     null, null, OptimizationLevel.Debug, false, false, null, null,
+                     null, null, OptimizationLevelState(), false, false, null, null,
                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
                 }
 
@@ -313,5 +313,12 @@ namespace CIARE.Roslyn
             }
             return refList;
         }
+
+        /// <summary>
+        /// Set optimizaiton level acording to options data.
+        /// </summary>
+        /// <returns></returns>
+        private static OptimizationLevel OptimizationLevelState() => (GlobalVariables.configParam.Contains("Release")) ? OptimizationLevel.Release : OptimizationLevel.Debug;
+
     }
 }

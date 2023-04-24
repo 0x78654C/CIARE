@@ -1,5 +1,4 @@
 ﻿using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,7 +7,6 @@ using System.Windows.Forms;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
-using ICSharpCode.TextEditor.Document;
 using Application = System.Windows.Forms.Application;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Path = System.IO.Path;
@@ -87,7 +85,7 @@ MessageBoxIcon.Warning);
         /// <param name="data"></param>
         public static void SaveFile(string data)
         {
-            s_saveFileDialog.Filter = "All Files (*.*)|*.*|C# Files (*.cs)|*.cs|Text Files (*.txt)|*.txt";
+            s_saveFileDialog.Filter = "C# Files (*.cs)|*.cs|Text Files (*.txt)|*.txt|All Files (*.*)|*.*";
             s_saveFileDialog.Title = $"Save As... :";
             DialogResult dr = s_saveFileDialog.ShowDialog();
             if (dr == DialogResult.OK)
@@ -384,6 +382,7 @@ MessageBoxIcon.Information);
             {
                 foreach (var file in s_packageLibs)
                 {
+                    if (file.Contains(@"\analyzers\")) continue;
                     if (file.Contains(@$"\{framework}\") && file.Contains(@"\lib\") && file.EndsWith(".dll"))
                     {
                         var fileInfo = new FileInfo(file);
@@ -393,10 +392,7 @@ MessageBoxIcon.Information);
                             break;
                         }
                     }
-                }
 
-                foreach (var file in s_packageLibs)
-                {
                     if (file.Contains(@$"\{framework}\") && file.Contains(@"\build\") && file.EndsWith(".dll"))
                     {
                         var fileInfo = new FileInfo(file);
@@ -406,10 +402,7 @@ MessageBoxIcon.Information);
                             break;
                         }
                     }
-                }
 
-                foreach (var file in s_packageLibs)
-                {
                     if (file.EndsWith(".dll") && file.Contains(@"\dotnet\"))
                     {
                         var fileInfo = new FileInfo(file);
@@ -424,6 +417,7 @@ MessageBoxIcon.Information);
             s_packageLibs.Clear();
         }
 
+
         /// <summary>
         /// Get libraries from NuGet pacakage.
         /// </summary>
@@ -435,27 +429,12 @@ MessageBoxIcon.Information);
             Directory.GetDirectories(directoryName).ToList().ForEach(dir => dirsList.Add(dir));
             Directory.GetFiles(directoryName).ToList().ForEach(file => fileList.Add(file));
             foreach (var file in fileList)
-            {
                 if (file.EndsWith($".dll"))
-                {
                     if (!s_packageLibs.Any(item => item.Contains(file)))
-                    {
                         s_packageLibs.Add(file);
-                        s_isLoaded = true;
-                        continue;
-                    }
-                }
-            }
+
             foreach (var dir in dirsList)
-            {
-                if (!s_isLoaded)
-                    GetLibsFromPacakage(dir);
-                else
-                {
-                    s_isLoaded = false;
-                    break;
-                }
-            }
+                GetLibsFromPacakage(dir);
         }
     }
 }

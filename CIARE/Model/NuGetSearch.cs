@@ -42,12 +42,12 @@ MessageBoxIcon.Warning);
                 this.Close();
             }
 
-            /* TEST: till find solution for use .net7 in assambly load.
+            // TEST: till find solution for use .net7 in assambly load.
             // Check framework target and add the specified list with it.
             if (GlobalVariables.Framework.Contains(@"net7.0"))
                 netFrameworks = netFrameworksNet7;
-            else */
-            netFrameworks = netFrameworksNet6;
+            else
+                netFrameworks = netFrameworksNet6;
 
             // Set dark mode if enabled.
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
