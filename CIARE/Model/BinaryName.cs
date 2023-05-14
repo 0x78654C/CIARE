@@ -21,6 +21,7 @@ namespace CIARE
         {
             GlobalVariables.checkFormOpen = true;
             binaryNameTxt.Text = GlobalVariables.binaryNameStore;
+            binaryNameTxt.Text =binaryNameTxt.Text.Trim();
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             if (GlobalVariables.exeName)
             {
@@ -35,6 +36,7 @@ namespace CIARE
 
         private void ConfirmButton_Click(object sender, EventArgs e)
         {
+            binaryNameTxt.Text = binaryNameTxt.Text.Trim();
             if (binaryNameTxt.Text.Length > 0)
             {
                 if(GlobalVariables.exeName)
