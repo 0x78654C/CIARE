@@ -33,7 +33,7 @@ namespace CIARE.Roslyn
         /// <param name="code"></param>
         /// <param name="param"></param>
         /// <param name="richTextBox"></param>
-        public static void CompileAndRun(string code, RichTextBox richTextBox)
+        public static void CompileAndRun(string code, RichTextBox richTextBox, bool allowUnsafe)
         {
             try
             {
@@ -56,7 +56,9 @@ namespace CIARE.Roslyn
                     assemblyName,
                     syntaxTrees: new[] { syntaxTree },
                     references: References(false),
-                    options: new CSharpCompilationOptions(OutputKind.ConsoleApplication));
+                    options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
+                     null, null, OptimizationLevelState(), false, allowUnsafe, null, null,
+                     ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
 
                 using (var ms = new MemoryStream())
                 {
@@ -119,7 +121,7 @@ namespace CIARE.Roslyn
         /// <param name="exeFile"></param>
         /// <param name="outPut"></param>
         /// <param name="richTextBox"></param>
-        public static void BinaryCompile(string code, bool exeFile, string outPut, RichTextBox richTextBox)
+        public static void BinaryCompile(string code, bool exeFile, string outPut, RichTextBox richTextBox, bool allowUnsafe)
         {
             string pathOutput = Application.StartupPath + "binary\\";
             string roslynDir = Application.StartupPath + "roslyn\\";
@@ -166,7 +168,7 @@ namespace CIARE.Roslyn
                       syntaxTrees: new[] { syntaxTree },
                       references: References(true),
                       options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
-                      null, null, OptimizationLevelState(), false, false, null, null,
+                      null, null, OptimizationLevelState(), false, allowUnsafe, null, null,
                       ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));;
                 }
                 else
@@ -176,7 +178,7 @@ namespace CIARE.Roslyn
                      syntaxTrees: new[] { syntaxTree },
                      references: References(true),
                      options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, true, null, null,
-                     null, null, OptimizationLevelState(), false, false, null, null,
+                     null, null, OptimizationLevelState(), false, allowUnsafe, null, null,
                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
                 }
 
@@ -254,7 +256,7 @@ namespace CIARE.Roslyn
             outLogRtb.Text = "Compile and Runing..\n";
             runCodePb.Image = Properties.Resources.runButton_gray;
             runCodePb.Enabled = false;
-            CompileAndRun(textEditor.Text, outLogRtb);
+            CompileAndRun(textEditor.Text, outLogRtb, GlobalVariables.OUnsafeCode);
             RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             runCodePb.Image = Properties.Resources.runButton21;
             runCodePb.Enabled = true;
@@ -271,7 +273,7 @@ namespace CIARE.Roslyn
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
-            BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb);
+            BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb,GlobalVariables.OUnsafeCode);
             RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             GC.Collect();
         }
@@ -286,7 +288,7 @@ namespace CIARE.Roslyn
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
-            BinaryCompile(textEditor.Text, false, GlobalVariables.binaryName, outLogRtb);
+            BinaryCompile(textEditor.Text, false, GlobalVariables.binaryName, outLogRtb, GlobalVariables.OUnsafeCode);
             RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             GC.Collect();
         }
