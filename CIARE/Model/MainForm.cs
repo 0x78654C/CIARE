@@ -82,6 +82,7 @@ namespace CIARE
             TargetFramework.CheckFramework(GlobalVariables.registryPath);
             LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
             OpenAISetting.CheckOpenAIData(GlobalVariables.registryPath);
+            UnsafeCode.CheckUnsafeStatus(GlobalVariables.registryPath);
             _apiConnectionEvents = new ApiConnectionEvents();
             //------------------------------
 
