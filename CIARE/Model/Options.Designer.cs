@@ -42,6 +42,7 @@ namespace CIARE
             behaveSetLbl = new System.Windows.Forms.Label();
             displaySepLbl = new System.Windows.Forms.Label();
             buildGroup = new System.Windows.Forms.GroupBox();
+            unsafeCkb = new System.Windows.Forms.CheckBox();
             frameworkLbl = new System.Windows.Forms.Label();
             frameWorkCMB = new System.Windows.Forms.ComboBox();
             warningsCkb = new System.Windows.Forms.CheckBox();
@@ -195,6 +196,7 @@ namespace CIARE
             // 
             // buildGroup
             // 
+            buildGroup.Controls.Add(unsafeCkb);
             buildGroup.Controls.Add(frameworkLbl);
             buildGroup.Controls.Add(frameWorkCMB);
             buildGroup.Controls.Add(warningsCkb);
@@ -206,7 +208,18 @@ namespace CIARE
             buildGroup.Size = new System.Drawing.Size(330, 168);
             buildGroup.TabIndex = 16;
             buildGroup.TabStop = false;
-            buildGroup.Text = "Build";
+            buildGroup.Text = "Build/Run";
+            // 
+            // unsafeCkb
+            // 
+            unsafeCkb.AutoSize = true;
+            unsafeCkb.Location = new System.Drawing.Point(15, 85);
+            unsafeCkb.Name = "unsafeCkb";
+            unsafeCkb.Size = new System.Drawing.Size(118, 19);
+            unsafeCkb.TabIndex = 20;
+            unsafeCkb.Text = "Use unsafe code";
+            unsafeCkb.UseVisualStyleBackColor = true;
+            unsafeCkb.CheckedChanged += unsafeCkb_CheckedChanged;
             // 
             // frameworkLbl
             // 
@@ -232,7 +245,7 @@ namespace CIARE
             // warningsCkb
             // 
             warningsCkb.AutoSize = true;
-            warningsCkb.Location = new System.Drawing.Point(15, 66);
+            warningsCkb.Location = new System.Drawing.Point(15, 60);
             warningsCkb.Name = "warningsCkb";
             warningsCkb.Size = new System.Drawing.Size(165, 19);
             warningsCkb.TabIndex = 14;
@@ -464,5 +477,6 @@ namespace CIARE
         private System.Windows.Forms.Button openAISaveBtn;
         private System.Windows.Forms.TextBox modelTxt;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.CheckBox unsafeCkb;
     }
 }

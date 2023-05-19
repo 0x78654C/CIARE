@@ -37,6 +37,7 @@ namespace CIARE.Utils
         public static bool OWarnings = false;
         public static bool OStartUp = false;
         public static bool OWinLoginState = false;
+        public static bool OUnsafeCode = false;
         public static bool compileTime = false;
         public static bool codeWriter = false;
         public static string Framework = "net6.0-windows";
@@ -65,6 +66,7 @@ namespace CIARE.Utils
         public static readonly string warnings = "OWarnings";
         public static readonly string liveShare = "OLiveShare";
         public static readonly string startUp = "OStartUp";
+        public static readonly string unsafeCode = "OUnsafeCode";
         public static readonly string OWinLogin = "OWinLogin";
         public static readonly string activeForm = "activeForm";
         public static readonly string OConfigParam = "OConfigParam";

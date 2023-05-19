@@ -39,6 +39,7 @@ Useful to run code on the fly and get instant result.
  - Generate code/data with chatGPT from OpenAI.
  - Add reference to custom managed libraries.
  - NuGet Manager
+ - Usage of unsafe code.
 
 ## Requirements:
 

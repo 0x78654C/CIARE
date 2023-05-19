@@ -27,8 +27,9 @@ namespace CIARE.Roslyn
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
+<AllowUnsafeBlocks>"+GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='"+StateCompile+@"|AnyCPU'"">
+  <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
   </PropertyGroup>
 " + SetReference(GlobalVariables.customRefAsm) + @"
@@ -42,8 +43,9 @@ namespace CIARE.Roslyn
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
+<AllowUnsafeBlocks>"+GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='"+StateCompile+@"|AnyCPU'"">
+  <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
   </PropertyGroup>
 " + SetReference(GlobalVariables.customRefAsm) + @"

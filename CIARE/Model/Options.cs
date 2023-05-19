@@ -11,11 +11,6 @@ namespace CIARE
     [SupportedOSPlatform("windows")]
     public partial class Options : Form
     {
-        /// <summary>
-        /// TODO: add compile param /p:Platform=
-        /// </summary>
-
-
         int _tokenTxtLen = 0;
         public Options()
         {
@@ -43,6 +38,7 @@ namespace CIARE
             warningsCkb.Checked = GlobalVariables.OWarnings;
             startBehaveCkb.Checked = GlobalVariables.OStartUp;
             winLoginCkb.Checked = GlobalVariables.OWinLoginState;
+            unsafeCkb.Checked = GlobalVariables.OUnsafeCode;
             apiUrlTxt.Text = GlobalVariables.apiUrl;
             apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
@@ -210,6 +206,16 @@ namespace CIARE
                 maxTokensTxtBox.ScrollToCaret();
                 return;
             }
+        }
+
+        /// <summary>
+        /// Enable unsafe code use.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void unsafeCkb_CheckedChanged(object sender, EventArgs e)
+        {
+            UnsafeCode.SetUnsafeStatus(unsafeCkb, GlobalVariables.unsafeCode);
         }
     }
 }
