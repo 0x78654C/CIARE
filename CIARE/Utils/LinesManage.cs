@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 
 namespace CIARE.Utils
 {
+    [SupportedOSPlatform("Windows")]
     public class LinesManage
     {
         /// <summary>
