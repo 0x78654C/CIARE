@@ -129,7 +129,7 @@ namespace CIARE.Utils.OpenAISettings
             }
             dataList.Insert(result, insertedData);
             outData = string.Join("\n", dataList);
-            s_line = result + insertedData.Length;
+            s_line = result + insertedData.Split('\n').Count()+10;
             return outData;
         }
     }
