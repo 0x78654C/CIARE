@@ -40,7 +40,7 @@ namespace CIARE.Utils
         public static bool OUnsafeCode = false;
         public static bool compileTime = false;
         public static bool codeWriter = false;
-        public static string Framework = "net6.0-windows";
+        public static string Framework { get; set; } = "net6.0-windows";
         public static bool noClear = false;
         public static string binaryName = string.Empty;
         public static string livePassword = string.Empty;
