@@ -25,6 +25,14 @@ namespace CIARE.Utils.Options
         public static void SetFramework(ComboBox framework, string regKeyName)
         {
             GlobalVariables.selectedIndex = framework.SelectedIndex;
+
+            if (!SdkVersion.CheckSdk(framework.Text[^1..]))
+            {
+                MessageBox.Show("The targeted framework is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                framework.SelectedIndex = GlobalVariables.selectedIndex - 1; //TODO: make it more dynamic for upcoming frameworks
+                return;
+            }
+
             if (framework.Text == ".NET 6")
             {
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net6.0-windows");
@@ -32,15 +40,16 @@ namespace CIARE.Utils.Options
                 return;
             }
 
-            if (!SdkVersion.CheckSdk(framework.Text[^1..]))
+
+            if (framework.Text == ".NET 7")
             {
-                MessageBox.Show("The targeted framework is not installed!","CIARE",MessageBoxButtons.OK, MessageBoxIcon.Error);
-                framework.SelectedIndex = GlobalVariables.selectedIndex - 1; //TODO: make it more dynamic for upcoming frameworks
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net7.0-windows");
+                GlobalVariables.Framework = "net7.0-windows";
                 return;
             }
 
-            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net7.0-windows");
-            GlobalVariables.Framework = "net7.0-windows";
+            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net8.0-windows");
+            GlobalVariables.Framework = "net8.0-windows";
         }
 
         /// <summary>
@@ -54,6 +63,12 @@ namespace CIARE.Utils.Options
             if (regFramework.Length > 0)
             {
                 framework.SelectedIndex = regFramework.StartsWith("net6") ? 0 : 1;
+                if(regFramework.StartsWith("net6"))
+                    framework.SelectedIndex = 0;
+                else if(regFramework.StartsWith("net7"))
+                    framework.SelectedIndex = 1;
+                else
+                    framework.SelectedIndex = 2;
                 return;
             }
             framework.SelectedIndex = 0;
