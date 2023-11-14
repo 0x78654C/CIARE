@@ -125,7 +125,7 @@ namespace CIARE
             // 
             closeBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             closeBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            closeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            closeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             closeBtn.Location = new System.Drawing.Point(603, 485);
             closeBtn.Name = "closeBtn";
             closeBtn.Size = new System.Drawing.Size(75, 23);
@@ -177,7 +177,7 @@ namespace CIARE
             // behaveSetLbl
             // 
             behaveSetLbl.AutoSize = true;
-            behaveSetLbl.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline, System.Drawing.GraphicsUnit.Point);
+            behaveSetLbl.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline);
             behaveSetLbl.Location = new System.Drawing.Point(15, 220);
             behaveSetLbl.Name = "behaveSetLbl";
             behaveSetLbl.Size = new System.Drawing.Size(243, 15);
@@ -187,7 +187,7 @@ namespace CIARE
             // displaySepLbl
             // 
             displaySepLbl.AutoSize = true;
-            displaySepLbl.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline, System.Drawing.GraphicsUnit.Point);
+            displaySepLbl.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline);
             displaySepLbl.Location = new System.Drawing.Point(15, 35);
             displaySepLbl.Name = "displaySepLbl";
             displaySepLbl.Size = new System.Drawing.Size(234, 15);
@@ -234,7 +234,7 @@ namespace CIARE
             // 
             frameWorkCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             frameWorkCMB.FormattingEnabled = true;
-            frameWorkCMB.Items.AddRange(new object[] { ".NET 6", ".NET 7" });
+            frameWorkCMB.Items.AddRange(new object[] { ".NET 6", ".NET 7", ".NET 8" });
             frameWorkCMB.Location = new System.Drawing.Point(172, 112);
             frameWorkCMB.Name = "frameWorkCMB";
             frameWorkCMB.Size = new System.Drawing.Size(93, 23);
@@ -302,7 +302,7 @@ namespace CIARE
             // 
             saveApiUrlBtn.Enabled = false;
             saveApiUrlBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            saveApiUrlBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            saveApiUrlBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             saveApiUrlBtn.Location = new System.Drawing.Point(237, 124);
             saveApiUrlBtn.Name = "saveApiUrlBtn";
             saveApiUrlBtn.Size = new System.Drawing.Size(75, 23);
@@ -367,7 +367,7 @@ namespace CIARE
             // 
             openAISaveBtn.Enabled = false;
             openAISaveBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            openAISaveBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            openAISaveBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             openAISaveBtn.Location = new System.Drawing.Point(573, 75);
             openAISaveBtn.Name = "openAISaveBtn";
             openAISaveBtn.Size = new System.Drawing.Size(75, 23);
@@ -426,7 +426,7 @@ namespace CIARE
             Controls.Add(buildGroup);
             Controls.Add(displayGroup);
             Controls.Add(closeBtn);
-            Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
