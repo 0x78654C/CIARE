@@ -1,4 +1,5 @@
-﻿using System.Runtime.Versioning;
+﻿using System;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.Utils.Options
@@ -26,15 +27,17 @@ namespace CIARE.Utils.Options
         {
             GlobalVariables.selectedIndex = framework.SelectedIndex;
 
-            if (!SdkVersion.CheckSdk(framework.Text[^1..]))
-            {
-                MessageBox.Show("The targeted framework is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                framework.SelectedIndex = GlobalVariables.selectedIndex - 1; //TODO: make it more dynamic for upcoming frameworks
-                return;
-            }
 
             if (framework.Text == ".NET 6")
             {
+
+                if (!SdkVersion.CheckSdk(framework.Text[^1..]))
+                {
+                    MessageBox.Show("The targeted framework (.NET 6) is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    framework.SelectedIndex = GlobalVariables.selectedIndex - 1; //TODO: make it more dynamic for upcoming frameworks
+                    return;
+                }
+
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net6.0-windows");
                 GlobalVariables.Framework = "net6.0-windows";
                 return;
@@ -43,8 +46,22 @@ namespace CIARE.Utils.Options
 
             if (framework.Text == ".NET 7")
             {
+
+                if (!SdkVersion.CheckSdk(framework.Text[^1..]))
+                {
+                    MessageBox.Show("The targeted framework (.NET 7) is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    framework.SelectedIndex = GlobalVariables.selectedIndex - 1; //TODO: make it more dynamic for upcoming frameworks
+                    return;
+                }
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net7.0-windows");
                 GlobalVariables.Framework = "net7.0-windows";
+                return;
+            }
+
+            if (!SdkVersion.CheckSdk(framework.Text[^1..]))
+            {
+                MessageBox.Show("The targeted framework (.NET 8) is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                framework.SelectedIndex = GlobalVariables.selectedIndex - 1; //TODO: make it more dynamic for upcoming frameworks
                 return;
             }
 
@@ -62,7 +79,7 @@ namespace CIARE.Utils.Options
             string regFramework = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.OFramework);
             if (regFramework.Length > 0)
             {
-                framework.SelectedIndex = regFramework.StartsWith("net6") ? 0 : 1;
+                //framework.SelectedIndex = regFramework.StartsWith("net6") ? 0 : 1; 
                 if(regFramework.StartsWith("net6"))
                     framework.SelectedIndex = 0;
                 else if(regFramework.StartsWith("net7"))
