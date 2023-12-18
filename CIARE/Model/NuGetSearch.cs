@@ -20,6 +20,7 @@ namespace CIARE.Model
     {
         private static List<string> netFrameworksNet6 { get; } = new List<string>() { "net6.0", "net5.0", "netcoreapp3.1", "netcoreapp3.0", "netcoreapp2.2", "netcoreapp2.1", "netcoreapp2.0", "netcoreapp1.1", "netcoreapp1.0", "netstandard2.1", "netstandard2.0", "netstandard1.6", "netstandard1.5", "netstandard1.4", "netstandard1.3", "netstandard1.2", "netstandard1.1", "netstandard1.0", "netstandard1.6", "netstandard1.5", "netstandard1.4", "netstandard1.3", "netstandard1.2", "netstandard1.1", "netstandard1.0", "net481", "net48", "net472", "net471", "net47", "net462", "net461", "net46", "net452", "net451", "net45", "net40", "net35", "net30", "net20" };
         private static List<string> netFrameworksNet7 { get; } = new[] { "net7.0" }.Concat(netFrameworksNet6).ToList(); //For future tests
+        private static List<string> netFrameworksNet8 { get; } = new[] { "net8.0" }.Concat(netFrameworksNet7).ToList(); //For future tests
         private List<string> netFrameworks = new List<string>();
         private int s_initialSizeForm = 0;
         private string s_packageName { get; set; }
@@ -46,6 +47,8 @@ MessageBoxIcon.Warning);
             // Check framework target and add the specified list with it.
             if (GlobalVariables.Framework.Contains(@"net7.0"))
                 netFrameworks = netFrameworksNet7;
+            else if (GlobalVariables.Framework.Contains(@"net8.0"))
+                netFrameworks = netFrameworksNet8;
             else
                 netFrameworks = netFrameworksNet6;
 

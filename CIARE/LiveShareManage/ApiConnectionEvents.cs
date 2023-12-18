@@ -230,7 +230,6 @@ namespace CIARE.LiveShareManage
                         connectBtn.BackColor = Color.Gray;
 
                     MessageBox.Show("Live Share started!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    form.Close();
                 }
                 catch (Exception ex)
                 {
