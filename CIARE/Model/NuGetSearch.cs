@@ -130,21 +130,32 @@ MessageBoxIcon.Warning);
         private void copyPackageName_Click(object sender, EventArgs e) => CopyNamespace(packageList);
 
         /// <summary>
-        /// Add NuGet packages libs to reference list event.
+        /// Add NuGet packages libs to reference list event on right click.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void addToReference_Click(object sender, EventArgs e)
+        private void addToReference_Click(object sender, EventArgs e) => AddNuGetPackageToRef(packageList);
+
+
+        /// <summary>
+        /// Add nuget package to 
+        /// </summary>
+        /// <param name="nugetListView"></param>
+        private void AddNuGetPackageToRef(ListView nugetListView)
         {
-            var packageName = packageList.SelectedItems[0].Text;
+            var packageName = nugetListView.SelectedItems[0].Text;
             if (GlobalVariables.customRefAsm.Any(x => x.Contains(packageName)))
             {
                 MessageBox.Show($"NuGet package {packageName} is already downloaded and added to reference!", "CIARE", MessageBoxButtons.OK,
 MessageBoxIcon.Warning);
                 return;
             }
-            MessageBox.Show($"If the NuGet package contains dependencies it will be added to reference list!", "CIARE", MessageBoxButtons.OK,
+          var dialog = MessageBox.Show($"If the NuGet package contains dependencies it will be added to reference list!\nDo you want to download the package?", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Information);
+
+            if (dialog == DialogResult.No)
+                return;
+
             s_packageName = packageName;
 
             HideControlers();
@@ -229,5 +240,12 @@ MessageBoxIcon.Information);
             int descriptionSize = packageList.Columns[2].Width;
             packageList.Columns[2].Width = descriptionSize + changedSize;
         }
+
+        /// <summary>
+        /// Action nuget package add to reference on double click.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void packageList_DoubleClick(object sender, EventArgs e) => AddNuGetPackageToRef(packageList);
     }
 }

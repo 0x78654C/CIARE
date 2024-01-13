@@ -55,7 +55,7 @@
             // SearchBtn
             // 
             SearchBtn.Anchor = System.Windows.Forms.AnchorStyles.Top;
-            SearchBtn.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            SearchBtn.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             SearchBtn.Location = new System.Drawing.Point(714, 15);
             SearchBtn.Name = "SearchBtn";
             SearchBtn.Size = new System.Drawing.Size(92, 23);
@@ -68,13 +68,14 @@
             // 
             packageList.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             packageList.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { packageName, versoion, description });
-            packageList.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            packageList.Font = new System.Drawing.Font("Segoe UI", 9.75F);
             packageList.Location = new System.Drawing.Point(12, 56);
             packageList.Name = "packageList";
             packageList.Size = new System.Drawing.Size(1067, 512);
             packageList.TabIndex = 2;
             packageList.UseCompatibleStateImageBehavior = false;
             packageList.View = System.Windows.Forms.View.Details;
+            packageList.DoubleClick += packageList_DoubleClick;
             packageList.MouseClick += packageList_MouseClick;
             // 
             // packageName
