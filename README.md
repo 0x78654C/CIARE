@@ -34,7 +34,7 @@ Useful to run code on the fly and get instant result.
  - Build options(Debug/Release - Any CPU/x64)
  - Enable/disable warnings messages on compile.
  - Mark files for open on next application start or Windows logon.
- - Target desired framework(.NET6 or .NET 7) for use when a application is compiled.
+ - Target desired framework(.NET6, .NET 7 or .NET 8) for use when a application is compiled.
  - Live share: share and work in same time at a project/file data.
  - Generate code/data with chatGPT from OpenAI.
  - Add reference to custom managed libraries.
