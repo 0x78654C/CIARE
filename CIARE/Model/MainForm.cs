@@ -729,5 +729,11 @@ namespace CIARE
                 this.EditorTabControl.SelectedIndex = lastIndex+tabCount;
             }
         }
+
+        private void EditorTabControl_HandleCreated(object sender, EventArgs e)
+        {
+            SendMessage(this.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
+        }
+
     }
 }

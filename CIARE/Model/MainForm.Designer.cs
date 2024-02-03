@@ -463,6 +463,7 @@ namespace CIARE
             EditorTabControl.Size = new System.Drawing.Size(1403, 683);
             EditorTabControl.TabIndex = 1;
             EditorTabControl.MouseDown += EditorTabControl_MouseDown;
+            EditorTabControl.HandleCreated += EditorTabControl_HandleCreated;
             // 
             // tabPage1
             // 
