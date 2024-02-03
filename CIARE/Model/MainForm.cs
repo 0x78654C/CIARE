@@ -48,7 +48,7 @@ namespace CIARE
         Thread parserThread;
         private string s_args = SplitArguments.GetCommandLineArgs();
         private ApiConnectionEvents _apiConnectionEvents;
-        TextEditorControl selectedEditor;
+        public TextEditorControl selectedEditor;
 
         // Used for tab's auto-resize
         [DllImport("user32.dll")]
@@ -66,18 +66,43 @@ namespace CIARE
             InitializeComponent();
         }
 
+
+        private void Initiliaze(int index)
+        {
+            
+            this.EditorTabControl.SelectedIndex = index;
+            int selectedTab = EditorTabControl.SelectedIndex;
+            if (selectedTab == 0)
+                selectedTab = 1;
+            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab].Controls[0];
+            selectedEditor = ctrl as TextEditorControl;
+            selectedEditor.TextEditorProperties.StoreZoomSize = true;
+            selectedEditor.TextEditorProperties.RegPath = GlobalVariables.registryPath;
+            InitializeEditor.ReadEditorWindowSize(this, GlobalVariables.registryPath);
+            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, selectedEditor);
+            InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, selectedEditor);
+            InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
+            InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
+            //InitializeEditor.GenerateLiveSessionId();
+            //InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
+            FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
+            // CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
+            LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
+        }
         private void MainForm_Load(object sender, EventArgs e)
         {
             Instance = this;
+            versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            versionName = versionName.Substring(0, versionName.Length - 2);
+            this.Text = $"CIARE {versionName}";
             this.EditorTabControl.SelectedIndex = 1;
             int selectedTab = EditorTabControl.SelectedIndex;
             System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab].Controls[0];
             selectedEditor = ctrl as TextEditorControl;
             selectedEditor.TextEditorProperties.StoreZoomSize = true;
             selectedEditor.TextEditorProperties.RegPath = GlobalVariables.registryPath;
-            versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            versionName = versionName.Substring(0, versionName.Length - 2);
-            this.Text = $"CIARE {versionName}";
+            Console.SetOut(new ControlWriter(outputRBT));
+
             InitializeEditor.ReadEditorWindowSize(this, GlobalVariables.registryPath);
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, selectedEditor);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, selectedEditor);
@@ -85,7 +110,6 @@ namespace CIARE
             InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
             InitializeEditor.GenerateLiveSessionId();
             InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
-            Console.SetOut(new ControlWriter(outputRBT));
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
             LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
@@ -757,7 +781,14 @@ namespace CIARE
 
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
+            if (!EditorTabControl.SelectedTab.Controls.ContainsKey("Editor"))
+            {
+                dynamicTextEdtior = new ICSharpCode.TextEditor.TextEditorControl();
 
+                TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
+                SetDesignEditor(dynamicTextEdtior);
+                tabPage.Controls.Add(dynamicTextEdtior);
+            }
         }
 
         private void SetDesignEditor(TextEditorControl dynamicTextEdtior)
@@ -779,20 +810,12 @@ namespace CIARE
             dynamicTextEdtior.Resize += textEditorControl1_Resize;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
-            SetHighLighter(dynamicTextEdtior, "C#-Dark");
+            Initiliaze(tabCount);
         }
 
         private void EditorTabControl_Selected(object sender, TabControlEventArgs e)
         {
-            if (!EditorTabControl.SelectedTab.Controls.ContainsKey("Editor"))
-            {
-                dynamicTextEdtior = new ICSharpCode.TextEditor.TextEditorControl();
 
-                TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
-                SetDesignEditor(dynamicTextEdtior);
-                tabPage.Controls.Add(dynamicTextEdtior);
-                SetDesignEditor(dynamicTextEdtior);
-            }
         }
     }
 }
