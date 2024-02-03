@@ -21,6 +21,7 @@ using CIARE.Utils.OpenAISettings;
 using Button = System.Windows.Forms.Button;
 using CIARE.Model;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace CIARE
 {
@@ -45,6 +46,9 @@ namespace CIARE
         Thread parserThread;
         private string s_args = SplitArguments.GetCommandLineArgs();
         private ApiConnectionEvents _apiConnectionEvents;
+        [DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);
+        private const int TCM_SETMINTABWIDTH = 0x1300 + 49;
 
         public MainForm()
         {
@@ -714,6 +718,16 @@ namespace CIARE
         /// <param name="e"></param>
         private void outputRBT_MouseWheel(object sender, MouseEventArgs e) => GlobalVariables.zoomFactor = outputRBT.ZoomFactor;
 
-
+        private void EditorTabControl_MouseDown(object sender, MouseEventArgs e)
+        {
+            var tabCount = this.EditorTabControl.TabCount;
+            var lastIndex = this.EditorTabControl.SelectedIndex;
+            if (lastIndex == 0)
+            {
+                //int tabCalc = tabCount - lastIndex;
+                this.EditorTabControl.TabPages.Insert(tabCount, $"New Tab ({tabCount})");
+                this.EditorTabControl.SelectedIndex = lastIndex+tabCount;
+            }
+        }
     }
 }
