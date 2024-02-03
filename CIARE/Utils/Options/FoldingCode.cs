@@ -16,7 +16,7 @@ namespace CIARE.Utils.Options
             if (regHighlight.Length > 0)
             {
                 GlobalVariables.OFoldingCode = bool.Parse(regHighlight);
-                MainForm.Instance.textEditorControl1.EnableFolding = GlobalVariables.OFoldingCode;
+                MainForm.Instance.selectedEditor.EnableFolding = GlobalVariables.OFoldingCode;
             }
         }
 
@@ -28,7 +28,7 @@ namespace CIARE.Utils.Options
         public static void SetFoldingCodeStatus(CheckBox status, string regKeyName)
         {
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, status.Checked.ToString());
-            MainForm.Instance.textEditorControl1.EnableFolding = status.Checked;
+            MainForm.Instance.selectedEditor.EnableFolding = status.Checked;
             GlobalVariables.OFoldingCode = status.Checked;
         }
     }

@@ -15,9 +15,9 @@ namespace CIARE.Utils
         /// <param name="e"></param>
         public static void GetCaretPositon(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(MainForm.Instance.textEditorControl1.Text))
+            if (!string.IsNullOrEmpty(MainForm.Instance.selectedEditor.Text))
                 MainForm.Instance.linesPositionLbl.Text =
-                    $"[Line {MainForm.Instance.textEditorControl1.ActiveTextAreaControl.TextArea.Caret.Position.Line + 1}, Col {MainForm.Instance.textEditorControl1.ActiveTextAreaControl.TextArea.Caret.Column}]";
+                    $"[Line {MainForm.Instance.selectedEditor.ActiveTextAreaControl.TextArea.Caret.Position.Line + 1}, Col {MainForm.Instance.selectedEditor.ActiveTextAreaControl.TextArea.Caret.Column}]";
             else
                 MainForm.Instance.linesPositionLbl.Text = string.Empty;
         }

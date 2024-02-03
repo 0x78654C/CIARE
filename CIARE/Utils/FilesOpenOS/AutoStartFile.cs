@@ -195,7 +195,7 @@ namespace CIARE.Utils.FilesOpenOS
             //TODO: This is nasty. I know. I will remake it.
             try
             {
-                if (string.IsNullOrEmpty(MainForm.Instance.textEditorControl1.Text))
+                if (string.IsNullOrEmpty(MainForm.Instance.selectedEditor.Text))
                     Environment.Exit(0);
             }
             catch

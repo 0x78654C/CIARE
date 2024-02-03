@@ -118,12 +118,12 @@ MessageBoxIcon.Warning);
             if (data.Contains(":\\"))
             {
                 if (!File.Exists(data))
-                    return ManageCommandFileParam(MainForm.Instance.textEditorControl1, data);
+                    return ManageCommandFileParam(MainForm.Instance.selectedEditor, data);
                 return data;
             }
             else
             {
-                return ManageCommandFileParam(MainForm.Instance.textEditorControl1, data);
+                return ManageCommandFileParam(MainForm.Instance.selectedEditor, data);
             }
         }
 

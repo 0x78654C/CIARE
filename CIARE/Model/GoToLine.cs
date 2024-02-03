@@ -42,7 +42,7 @@ namespace CIARE
             try
             {
                 int lineNumber = Int32.Parse(goToLineNumberTxt.Text);
-                GoToLineNumber.GoToLine(MainForm.Instance.textEditorControl1, lineNumber);
+                GoToLineNumber.GoToLine(MainForm.Instance.selectedEditor, lineNumber);
                 this.Close();
             }
             catch { }

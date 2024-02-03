@@ -321,10 +321,10 @@ MessageBoxIcon.Warning);
             {
                 if (GlobalVariables.typeConnection)
                     await StartShare(new Form(),hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
-               fakeButton, fakeButton, MainForm.Instance.textEditorControl1);
+               fakeButton, fakeButton, MainForm.Instance.selectedEditor);
                 else
                     await Connect(new Form(),hubConnection, fakeButton, fakeButton,
-GlobalVariables.livePassword, GlobalVariables.sessionId, MainForm.Instance.textEditorControl1); ;
+GlobalVariables.livePassword, GlobalVariables.sessionId, MainForm.Instance.selectedEditor); ;
             }
             else
             {
