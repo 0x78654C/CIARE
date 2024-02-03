@@ -120,14 +120,14 @@ namespace CIARE.GUI
                 if (regHighlight == _defaultHighLight)
                 {
                     GlobalVariables.darkColor = true;
-                    MainForm.Instance.SetHighLighter(regHighlight);
+                    MainForm.Instance.SetHighLighter(MainForm.Instance.textEditorControl1, regHighlight);
                 }
                 textEditor.SetHighlighting(regHighlight);
                 return;
             }
             RegistryManagement.RegKey_CreateKey(regKeyName, _regName, _defaultHighLight);
             GlobalVariables.darkColor = true;
-            MainForm.Instance.SetHighLighter(_defaultHighLight);
+            MainForm.Instance.SetHighLighter(MainForm.Instance.textEditorControl1,_defaultHighLight);
         }
 
 
