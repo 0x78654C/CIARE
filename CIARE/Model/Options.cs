@@ -52,7 +52,7 @@ namespace CIARE
 
         private void highlightCMB_SelectedIndexChanged(object sender, EventArgs e)
         {
-            MainForm.Instance.SetHighLighter(highlightCMB.Text);
+            MainForm.Instance.SetHighLighter(MainForm.Instance.textEditorControl1, highlightCMB.Text);
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
         }
 

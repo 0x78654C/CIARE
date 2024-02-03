@@ -80,6 +80,7 @@ namespace CIARE
             splitContainer1 = new System.Windows.Forms.SplitContainer();
             EditorTabControl = new System.Windows.Forms.TabControl();
             tabPage1 = new System.Windows.Forms.TabPage();
+            tabPage2 = new System.Windows.Forms.TabPage();
             textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
             label2 = new System.Windows.Forms.Label();
             label3 = new System.Windows.Forms.Label();
@@ -96,7 +97,7 @@ namespace CIARE
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             EditorTabControl.SuspendLayout();
-            tabPage1.SuspendLayout();
+            tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).BeginInit();
             SuspendLayout();
             // 
@@ -112,7 +113,7 @@ namespace CIARE
             outputRBT.Name = "outputRBT";
             outputRBT.ReadOnly = true;
             outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            outputRBT.Size = new System.Drawing.Size(1388, 110);
+            outputRBT.Size = new System.Drawing.Size(1388, 106);
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
             outputRBT.MouseWheel += outputRBT_MouseWheel;
@@ -428,7 +429,7 @@ namespace CIARE
             groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBox1.Size = new System.Drawing.Size(1402, 134);
+            groupBox1.Size = new System.Drawing.Size(1402, 130);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
             groupBox1.Text = "Output:";
@@ -457,17 +458,19 @@ namespace CIARE
             // 
             EditorTabControl.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             EditorTabControl.Controls.Add(tabPage1);
+            EditorTabControl.Controls.Add(tabPage2);
             EditorTabControl.Location = new System.Drawing.Point(3, 3);
             EditorTabControl.Name = "EditorTabControl";
             EditorTabControl.SelectedIndex = 0;
             EditorTabControl.Size = new System.Drawing.Size(1403, 683);
             EditorTabControl.TabIndex = 1;
-            EditorTabControl.MouseDown += EditorTabControl_MouseDown;
+            EditorTabControl.Selecting += EditorTabControl_Selecting;
+            EditorTabControl.Selected += EditorTabControl_Selected;
             EditorTabControl.HandleCreated += EditorTabControl_HandleCreated;
+            EditorTabControl.MouseDown += EditorTabControl_MouseDown;
             // 
             // tabPage1
             // 
-            tabPage1.Controls.Add(textEditorControl1);
             tabPage1.Location = new System.Drawing.Point(4, 24);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new System.Windows.Forms.Padding(3);
@@ -476,6 +479,16 @@ namespace CIARE
             tabPage1.Text = "+";
             tabPage1.UseVisualStyleBackColor = true;
             // 
+            // tabPage2
+            // 
+            tabPage2.Controls.Add(textEditorControl1);
+            tabPage2.Location = new System.Drawing.Point(4, 24);
+            tabPage2.Name = "tabPage2";
+            tabPage2.Size = new System.Drawing.Size(1395, 655);
+            tabPage2.TabIndex = 1;
+            tabPage2.Text = "New Tab (1)";
+            tabPage2.UseVisualStyleBackColor = true;
+            // 
             // textEditorControl1
             // 
             textEditorControl1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
@@ -483,11 +496,11 @@ namespace CIARE
             textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F);
             textEditorControl1.Highlighting = null;
-            textEditorControl1.Location = new System.Drawing.Point(4, 5);
+            textEditorControl1.Location = new System.Drawing.Point(0, 0);
             textEditorControl1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             textEditorControl1.Name = "textEditorControl1";
             textEditorControl1.Size = new System.Drawing.Size(1394, 654);
-            textEditorControl1.TabIndex = 0;
+            textEditorControl1.TabIndex = 1;
             textEditorControl1.VRulerRow = 0;
             textEditorControl1.TextChanged += textEditorControl1_TextChanged;
             textEditorControl1.Enter += textEditorControl1_Enter;
@@ -651,7 +664,7 @@ namespace CIARE
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
             EditorTabControl.ResumeLayout(false);
-            tabPage1.ResumeLayout(false);
+            tabPage2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -714,6 +727,7 @@ namespace CIARE
         public System.Windows.Forms.ToolStripMenuItem referenceAddToolStripMenuItem;
         private System.Windows.Forms.TabControl EditorTabControl;
         private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.TabPage tabPage2;
         public ICSharpCode.TextEditor.TextEditorControl textEditorControl1;
     }
 }

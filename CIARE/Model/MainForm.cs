@@ -22,6 +22,8 @@ using Button = System.Windows.Forms.Button;
 using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
+using System.Windows.Controls;
 
 namespace CIARE
 {
@@ -46,9 +48,13 @@ namespace CIARE
         Thread parserThread;
         private string s_args = SplitArguments.GetCommandLineArgs();
         private ApiConnectionEvents _apiConnectionEvents;
+        TextEditorControl selectedEditor;
+
+        // Used for tab's auto-resize
         [DllImport("user32.dll")]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);
         private const int TCM_SETMINTABWIDTH = 0x1300 + 49;
+        //----------------------------
 
         public MainForm()
         {
@@ -63,14 +69,18 @@ namespace CIARE
         private void MainForm_Load(object sender, EventArgs e)
         {
             Instance = this;
-            textEditorControl1.TextEditorProperties.StoreZoomSize = true;
-            textEditorControl1.TextEditorProperties.RegPath = GlobalVariables.registryPath;
+            this.EditorTabControl.SelectedIndex = 1;
+            int selectedTab = EditorTabControl.SelectedIndex;
+            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab].Controls[0];
+            selectedEditor = ctrl as TextEditorControl;
+            selectedEditor.TextEditorProperties.StoreZoomSize = true;
+            selectedEditor.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             versionName = versionName.Substring(0, versionName.Length - 2);
             this.Text = $"CIARE {versionName}";
             InitializeEditor.ReadEditorWindowSize(this, GlobalVariables.registryPath);
-            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl1);
-            InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl1);
+            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, selectedEditor);
+            InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, selectedEditor);
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
             InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
             InitializeEditor.GenerateLiveSessionId();
@@ -94,8 +104,8 @@ namespace CIARE
             if (GlobalVariables.OCodeCompletion)
             {
                 HostCallbackImplementation.Register(this);
-                CodeCompletionKeyHandler.Attach(this, textEditorControl1);
-                ToolTipProvider.Attach(this, textEditorControl1);
+                CodeCompletionKeyHandler.Attach(this, selectedEditor);
+                ToolTipProvider.Attach(this, selectedEditor);
 
                 pcRegistry = new Dom.ProjectContentRegistry();
                 if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
@@ -108,13 +118,13 @@ namespace CIARE
             myProjectContent.Language = CurrentLanguageProperties;
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
-            textEditorControl1.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
+            selectedEditor.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
 
             //File open via parameters(Open with option..)
             try
             {
                 string arg = ReadArgs(s_args);
-                LoadParamFile(arg, textEditorControl1);
+                LoadParamFile(arg, selectedEditor);
                 if (!GlobalVariables.noPath)
                 {
                     GlobalVariables.openedFilePath = arg;
@@ -168,7 +178,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
-            RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
+            RoslynRun.RunCode(outputRBT, runCodePb, selectedEditor, splitContainer1, true);
         }
 
         /// <summary>
@@ -189,7 +199,10 @@ namespace CIARE
         /// <param name="e"></param>
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            FileManage.OpenFileDialog(textEditorControl1);
+            int selectedTab = EditorTabControl.SelectedIndex;
+            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab].Controls[0];
+            selectedEditor = ctrl as TextEditorControl;
+            FileManage.OpenFileDialog(selectedEditor);
         }
 
         /// <summary>
@@ -199,7 +212,10 @@ namespace CIARE
         /// <param name="e"></param>
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            FileManage.SaveToFileDialog(textEditorControl1);
+            int selectedTab = EditorTabControl.SelectedIndex;
+            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab].Controls[0];
+            selectedEditor = ctrl as TextEditorControl;
+            FileManage.SaveToFileDialog(selectedEditor);
         }
 
         /// <summary>
@@ -212,7 +228,7 @@ namespace CIARE
             data = FileManage.PathCheck(data);
             if (File.Exists(data))
             {
-                textEditorControl1.Clear();
+                selectedEditor.Clear();
                 textEditorControl.Text = File.ReadAllText(data);
             }
         }
@@ -224,7 +240,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void saveAsStripMenuItem_Click(object sender, EventArgs e)
         {
-            FileManage.SaveAsDialog(textEditorControl1);
+            FileManage.SaveAsDialog(selectedEditor);
         }
 
         /// <summary>
@@ -236,9 +252,9 @@ namespace CIARE
         {
             if (GlobalVariables.openedFilePath.Length > 0)
                 this.Text = $"*{GlobalVariables.openedFileName} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
-            LinesManage.GetTotalLinesCount(textEditorControl1, linesCountLbl);
-            textEditorControl1.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
-            textEditorControl1.Document.FoldingManager.UpdateFoldings(null, null);
+            LinesManage.GetTotalLinesCount(selectedEditor, linesCountLbl);
+            selectedEditor.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
+            selectedEditor.Document.FoldingManager.UpdateFoldings(null, null);
 
             // Send live share data to api.
             SendData();
@@ -251,7 +267,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            textEditorControl1.Clear();
+            selectedEditor.Clear();
             GlobalVariables.openedFilePath = string.Empty;
             this.Text = $"CIARE {versionName}";
         }
@@ -268,7 +284,7 @@ namespace CIARE
             switch (keyData)
             {
                 case Keys.N | Keys.Control:
-                    FileManage.NewFile(textEditorControl1, outputRBT);
+                    FileManage.NewFile(selectedEditor, outputRBT);
                     return true;
                 case Keys.H | Keys.Control:
                     GlobalVariables.findTabOpen = false;
@@ -276,13 +292,13 @@ namespace CIARE
                     findAndReplace.Show();
                     return true;
                 case Keys.S | Keys.Control:
-                    FileManage.SaveToFileDialog(textEditorControl1);
+                    FileManage.SaveToFileDialog(selectedEditor);
                     return true;
                 case Keys.S | Keys.Control | Keys.Shift:
-                    FileManage.SaveAsDialog(textEditorControl1);
+                    FileManage.SaveAsDialog(selectedEditor);
                     return true;
                 case Keys.O | Keys.Control:
-                    FileManage.OpenFileDialog(textEditorControl1);
+                    FileManage.OpenFileDialog(selectedEditor);
                     return true;
                 case Keys.F | Keys.Control:
                     GlobalVariables.findTabOpen = true;
@@ -290,25 +306,25 @@ namespace CIARE
                     find.ShowDialog();
                     return true;
                 case Keys.F5:
-                    FileManage.CompileRunSaveData(textEditorControl1);
-                    RoslynRun.RunCode(outputRBT, runCodePb, textEditorControl1, splitContainer1, true);
+                    FileManage.CompileRunSaveData(selectedEditor);
+                    RoslynRun.RunCode(outputRBT, runCodePb, selectedEditor, splitContainer1, true);
                     return true;
                 case Keys.T | Keys.Control:
-                    FileManage.LoadCSTemplate(textEditorControl1);
+                    FileManage.LoadCSTemplate(selectedEditor);
                     return true;
                 case Keys.B | Keys.Control:
-                    FileManage.CompileRunSaveData(textEditorControl1);
-                    RoslynRun.CompileBinaryExe(textEditorControl1, splitContainer1, outputRBT, false);
+                    FileManage.CompileRunSaveData(selectedEditor);
+                    RoslynRun.CompileBinaryExe(selectedEditor, splitContainer1, outputRBT, false);
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
-                    FileManage.CompileRunSaveData(textEditorControl1);
-                    RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
+                    FileManage.CompileRunSaveData(selectedEditor);
+                    RoslynRun.CompileBinaryDll(selectedEditor, splitContainer1, outputRBT, false);
                     return true;
                 case Keys.W | Keys.Control:
-                    SplitEditorWindow.SplitWindow(textEditorControl1, true);
+                    SplitEditorWindow.SplitWindow(selectedEditor, true);
                     return true;
                 case Keys.W | Keys.Control | Keys.Shift:
-                    SplitEditorWindow.SplitWindow(textEditorControl1, false);
+                    SplitEditorWindow.SplitWindow(selectedEditor, false);
                     return true;
                 case Keys.K | Keys.Control:
                     OutputWindowManage.SetOutputWindowState(outputRBT, splitContainer1);
@@ -322,7 +338,7 @@ namespace CIARE
                     cmdLineArgs.ShowDialog();
                     return true;
                 case Keys.P | Keys.Control | Keys.Shift:
-                    AiManage.GetDataAI(textEditorControl1, GlobalVariables.aiKey);
+                    AiManage.GetDataAI(selectedEditor, GlobalVariables.aiKey);
                     return true;
                 case Keys.R | Keys.Control:
                     RefManager refManager = new RefManager();
@@ -334,11 +350,11 @@ namespace CIARE
         }
         #endregion
 
-        public void SetHighLighter(string highlight)
+        public void SetHighLighter(TextEditorControl textEditorControl, string highlight)
         {
             if (highlight.Length > 0)
             {
-                textEditorControl1.SetHighlighting(highlight);
+                textEditorControl.SetHighlighting(highlight);
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlight);
             }
             if (highlight == "C#-Dark")
@@ -362,7 +378,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void LoadCStripMenuItem_Click(object sender, EventArgs e)
         {
-            FileManage.LoadCSTemplate(textEditorControl1);
+            FileManage.LoadCSTemplate(selectedEditor);
         }
 
 
@@ -385,7 +401,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            RoslynRun.CompileBinaryExe(textEditorControl1, splitContainer1, outputRBT, false);
+            RoslynRun.CompileBinaryExe(selectedEditor, splitContainer1, outputRBT, false);
         }
 
         /// <summary>
@@ -395,7 +411,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToDLLCtrlSfitBToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            RoslynRun.CompileBinaryDll(textEditorControl1, splitContainer1, outputRBT, false);
+            RoslynRun.CompileBinaryDll(selectedEditor, splitContainer1, outputRBT, false);
         }
 
 
@@ -406,7 +422,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            FileManage.ManageUnsavedData(textEditorControl1);
+            FileManage.ManageUnsavedData(selectedEditor);
             if (GlobalVariables.noClear)
                 e.Cancel = true;
             else
@@ -445,7 +461,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_Activated(object sender, EventArgs e)
         {
-            FileManage.CheckFileExternalEdited(GlobalVariables.openedFilePath, openedFileLength, textEditorControl1);
+            FileManage.CheckFileExternalEdited(GlobalVariables.openedFilePath, openedFileLength, selectedEditor);
         }
 
 
@@ -492,7 +508,7 @@ namespace CIARE
 
         private void splitVEditorToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SplitEditorWindow.SplitWindow(textEditorControl1, false);
+            SplitEditorWindow.SplitWindow(selectedEditor, false);
         }
 
         private void showHideSCToolStripMenuItem_Click(object sender, EventArgs e)
@@ -524,7 +540,7 @@ namespace CIARE
 
         private void chatGPTCTRLShiftPToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            AiManage.GetDataAI(textEditorControl1, GlobalVariables.aiKey);
+            AiManage.GetDataAI(selectedEditor, GlobalVariables.aiKey);
         }
 
         private void referenceAddToolStripMenuItem_Click(object sender, EventArgs e)
@@ -597,7 +613,7 @@ namespace CIARE
             string code = null;
             Invoke(new MethodInvoker(delegate
             {
-                code = textEditorControl1.Text;
+                code = selectedEditor.Text;
             }));
             TextReader textReader = new StringReader(code);
             Dom.ICompilationUnit newCompilationUnit;
@@ -669,7 +685,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void textEditorControl1_Resize(object sender, EventArgs e)
         {
-            SplitEditorWindow.SetSplitWindowSize(textEditorControl1, GlobalVariables.splitWindowPosition);
+            SplitEditorWindow.SetSplitWindowSize(selectedEditor, GlobalVariables.splitWindowPosition);
         }
 
         /// <summary>
@@ -694,7 +710,7 @@ namespace CIARE
                 return;
 
             await Task.Delay(10);
-            await _apiConnectionEvents.SendData(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, textEditorControl1);
+            await _apiConnectionEvents.SendData(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, selectedEditor);
         }
 
         /// <summary>
@@ -718,22 +734,65 @@ namespace CIARE
         /// <param name="e"></param>
         private void outputRBT_MouseWheel(object sender, MouseEventArgs e) => GlobalVariables.zoomFactor = outputRBT.ZoomFactor;
 
+
         private void EditorTabControl_MouseDown(object sender, MouseEventArgs e)
         {
             var tabCount = this.EditorTabControl.TabCount;
             var lastIndex = this.EditorTabControl.SelectedIndex;
             if (lastIndex == 0)
             {
-                //int tabCalc = tabCount - lastIndex;
                 this.EditorTabControl.TabPages.Insert(tabCount, $"New Tab ({tabCount})");
-                this.EditorTabControl.SelectedIndex = lastIndex+tabCount;
+                this.EditorTabControl.SelectedIndex = lastIndex + tabCount;
             }
         }
 
-        private void EditorTabControl_HandleCreated(object sender, EventArgs e)
-        {
+        /// <summary>
+        /// Autoresize tab names.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void EditorTabControl_HandleCreated(object sender, EventArgs e) =>
             SendMessage(this.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
+        ICSharpCode.TextEditor.TextEditorControl dynamicTextEdtior;
+
+        private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
+        {
+
         }
 
+        private void SetDesignEditor(TextEditorControl dynamicTextEdtior)
+        {
+            var tabCount = this.EditorTabControl.TabCount;
+            dynamicTextEdtior.Name = $"textEditorControl{tabCount + 1}";
+            dynamicTextEdtior.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dynamicTextEdtior.BackColor = System.Drawing.SystemColors.Window;
+            dynamicTextEdtior.BorderStyle = BorderStyle.FixedSingle;
+            dynamicTextEdtior.Font = new System.Drawing.Font("Consolas", 9.75F);
+            dynamicTextEdtior.Highlighting = null;
+            dynamicTextEdtior.Location =  new System.Drawing.Point(0, 0);
+            dynamicTextEdtior.Margin = new Padding(4, 3, 4, 3);
+            dynamicTextEdtior.Size = new System.Drawing.Size(1394, 654);
+            dynamicTextEdtior.TabIndex = 1;
+            dynamicTextEdtior.VRulerRow = 0;
+            dynamicTextEdtior.TextChanged += textEditorControl1_TextChanged;
+            dynamicTextEdtior.Enter += textEditorControl1_Enter;
+            dynamicTextEdtior.Resize += textEditorControl1_Resize;
+            dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
+            dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
+            SetHighLighter(dynamicTextEdtior, "C#-Dark");
+        }
+
+        private void EditorTabControl_Selected(object sender, TabControlEventArgs e)
+        {
+            if (!EditorTabControl.SelectedTab.Controls.ContainsKey("Editor"))
+            {
+                dynamicTextEdtior = new ICSharpCode.TextEditor.TextEditorControl();
+
+                TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
+                SetDesignEditor(dynamicTextEdtior);
+                tabPage.Controls.Add(dynamicTextEdtior);
+                SetDesignEditor(dynamicTextEdtior);
+            }
+        }
     }
 }
