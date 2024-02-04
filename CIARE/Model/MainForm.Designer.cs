@@ -113,7 +113,7 @@ namespace CIARE
             outputRBT.Name = "outputRBT";
             outputRBT.ReadOnly = true;
             outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            outputRBT.Size = new System.Drawing.Size(1388, 106);
+            outputRBT.Size = new System.Drawing.Size(1388, 105);
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
             outputRBT.MouseWheel += outputRBT_MouseWheel;
@@ -429,7 +429,7 @@ namespace CIARE
             groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBox1.Size = new System.Drawing.Size(1402, 130);
+            groupBox1.Size = new System.Drawing.Size(1402, 129);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
             groupBox1.Text = "Output:";
@@ -465,7 +465,6 @@ namespace CIARE
             EditorTabControl.Size = new System.Drawing.Size(1403, 683);
             EditorTabControl.TabIndex = 1;
             EditorTabControl.Selecting += EditorTabControl_Selecting;
-            EditorTabControl.Selected += EditorTabControl_Selected;
             EditorTabControl.HandleCreated += EditorTabControl_HandleCreated;
             EditorTabControl.MouseDown += EditorTabControl_MouseDown;
             // 

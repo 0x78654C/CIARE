@@ -72,9 +72,8 @@ namespace CIARE
             
             this.EditorTabControl.SelectedIndex = index;
             int selectedTab = EditorTabControl.SelectedIndex;
-            if (selectedTab == 0)
-                selectedTab = 1;
-            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab].Controls[0];
+            int countTabs = EditorTabControl.TabCount-1;
+            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[countTabs].Controls[0];
             selectedEditor = ctrl as TextEditorControl;
             selectedEditor.TextEditorProperties.StoreZoomSize = true;
             selectedEditor.TextEditorProperties.RegPath = GlobalVariables.registryPath;
@@ -95,13 +94,14 @@ namespace CIARE
             versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             versionName = versionName.Substring(0, versionName.Length - 2);
             this.Text = $"CIARE {versionName}";
+            Console.SetOut(new ControlWriter(outputRBT));
+
             this.EditorTabControl.SelectedIndex = 1;
             int selectedTab = EditorTabControl.SelectedIndex;
             System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab].Controls[0];
             selectedEditor = ctrl as TextEditorControl;
             selectedEditor.TextEditorProperties.StoreZoomSize = true;
             selectedEditor.TextEditorProperties.RegPath = GlobalVariables.registryPath;
-            Console.SetOut(new ControlWriter(outputRBT));
 
             InitializeEditor.ReadEditorWindowSize(this, GlobalVariables.registryPath);
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, selectedEditor);
@@ -109,8 +109,10 @@ namespace CIARE
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
             InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
             InitializeEditor.GenerateLiveSessionId();
+
             InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
+
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
             LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
             Warnings.CheckWarnings(GlobalVariables.registryPath);
@@ -237,7 +239,7 @@ namespace CIARE
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
             int selectedTab = EditorTabControl.SelectedIndex;
-            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab].Controls[0];
+            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab-1].Controls[0];
             selectedEditor = ctrl as TextEditorControl;
             FileManage.SaveToFileDialog(selectedEditor);
         }
@@ -777,24 +779,26 @@ namespace CIARE
         /// <param name="e"></param>
         private void EditorTabControl_HandleCreated(object sender, EventArgs e) =>
             SendMessage(this.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
-        ICSharpCode.TextEditor.TextEditorControl dynamicTextEdtior;
+        TextEditorControl dynamicTextEdtior;
 
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
             if (!EditorTabControl.SelectedTab.Controls.ContainsKey("Editor"))
             {
-                dynamicTextEdtior = new ICSharpCode.TextEditor.TextEditorControl();
+                dynamicTextEdtior = new TextEditorControl();
 
                 TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
                 SetDesignEditor(dynamicTextEdtior);
                 tabPage.Controls.Add(dynamicTextEdtior);
+                var tabCount = this.EditorTabControl.TabCount;
+                Initiliaze(tabCount);
             }
         }
 
         private void SetDesignEditor(TextEditorControl dynamicTextEdtior)
         {
             var tabCount = this.EditorTabControl.TabCount;
-            dynamicTextEdtior.Name = $"textEditorControl{tabCount + 1}";
+            dynamicTextEdtior.Name = $"textEditorControl{tabCount}";
             dynamicTextEdtior.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dynamicTextEdtior.BackColor = System.Drawing.SystemColors.Window;
             dynamicTextEdtior.BorderStyle = BorderStyle.FixedSingle;
@@ -802,7 +806,7 @@ namespace CIARE
             dynamicTextEdtior.Highlighting = null;
             dynamicTextEdtior.Location =  new System.Drawing.Point(0, 0);
             dynamicTextEdtior.Margin = new Padding(4, 3, 4, 3);
-            dynamicTextEdtior.Size = new System.Drawing.Size(1394, 654);
+            dynamicTextEdtior.Size = new System.Drawing.Size(this.Width, this.Height);
             dynamicTextEdtior.TabIndex = 1;
             dynamicTextEdtior.VRulerRow = 0;
             dynamicTextEdtior.TextChanged += textEditorControl1_TextChanged;
@@ -810,12 +814,6 @@ namespace CIARE
             dynamicTextEdtior.Resize += textEditorControl1_Resize;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
-            Initiliaze(tabCount);
-        }
-
-        private void EditorTabControl_Selected(object sender, TabControlEventArgs e)
-        {
-
         }
     }
 }
