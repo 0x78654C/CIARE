@@ -239,6 +239,7 @@ MessageBoxIcon.Warning);
             GlobalVariables.openedFileName = fileInfo.Name;
             MainForm.Instance.openedFileLength = fileInfo.Length;
             MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
             AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
             autoStartFile.CheckFilePath();
         }
@@ -251,13 +252,16 @@ MessageBoxIcon.Warning);
         {
             try
             {
+                string titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text;
+                bool isSameTitleName = titleTab.Contains(GlobalVariables.openedFilePath);
 
-                if (GlobalVariables.openedFilePath.Length > 0)
+                if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page") && !isSameTitleName)
                 {
                     File.WriteAllText(GlobalVariables.openedFilePath, textEditor.Text);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     MainForm.Instance.openedFileLength = fileInfo.Length;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
                     return;
                 }
                 SaveFile(textEditor.Text);
@@ -266,6 +270,7 @@ MessageBoxIcon.Warning);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     MainForm.Instance.openedFileLength = fileInfo.Length;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
                 }
             }
             catch (Exception ex)
@@ -280,7 +285,7 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void CompileRunSaveData(TextEditorControl textEditor)
         {
-            if (!MainForm.Instance.Text.StartsWith("*"))
+            if (!MainForm.Instance.Text.StartsWith("*") || !MainForm.Instance.EditorTabControl.SelectedTab.Text.StartsWith("*"))
                 return;
             SaveToFileDialog(textEditor);
         }
@@ -364,7 +369,10 @@ MessageBoxIcon.Information);
             {
                 string path = GlobalVariables.openedFilePath;
                 if (!string.IsNullOrEmpty(path))
+                {
                     MainForm.Instance.Text = $"*{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"*{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
+                }
                 else
                     MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
                 textEditor.Text = GlobalVariables.roslynTemplate;
@@ -435,6 +443,30 @@ MessageBoxIcon.Information);
 
             foreach (var dir in dirsList)
                 GetLibsFromPacakage(dir);
+        }
+
+        /// <summary>
+        /// Open file dialog for dynamic text editor.
+        /// </summary>
+        /// <param name="textEditorControl"></param>
+        public static void OpenFileTab(TabControl tabControl, TextEditorControl textEditorControl)
+        {
+            int selectedTab = tabControl.SelectedIndex;
+            Control ctrl = tabControl.Controls[selectedTab].Controls[0];
+            textEditorControl = ctrl as TextEditorControl;
+            OpenFileDialog(textEditorControl);
+        }
+
+        /// <summary>
+        /// Save file dilaog from dynamic text editor.
+        /// </summary>
+        /// <param name="textEditorControl"></param>
+        public static void SaveFileTab(TabControl tabControl, TextEditorControl textEditorControl)
+        {
+            int selectedTab = tabControl.SelectedIndex;
+            Control ctrl = tabControl.Controls[selectedTab].Controls[0];
+            textEditorControl = ctrl as TextEditorControl;
+            FileManage.SaveToFileDialog(textEditorControl);
         }
     }
 }
