@@ -22,8 +22,7 @@ using Button = System.Windows.Forms.Button;
 using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Security.Principal;
-using System.Windows.Controls;
+
 
 namespace CIARE
 {
@@ -66,8 +65,11 @@ namespace CIARE
             InitializeComponent();
         }
 
-
-        private void Initiliaze(int index)
+        /// <summary>
+        /// Initiliaze settings for dynamic text edtior.
+        /// </summary>
+        /// <param name="index"></param>
+        private void Initiliaze(int index=1)
         {
             
             this.EditorTabControl.SelectedIndex = index;
@@ -82,10 +84,7 @@ namespace CIARE
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, selectedEditor);
             InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
             InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
-            //InitializeEditor.GenerateLiveSessionId();
-            //InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
-            // CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
             LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
         }
         private void MainForm_Load(object sender, EventArgs e)
@@ -95,26 +94,10 @@ namespace CIARE
             versionName = versionName.Substring(0, versionName.Length - 2);
             this.Text = $"CIARE {versionName}";
             Console.SetOut(new ControlWriter(outputRBT));
-
-            this.EditorTabControl.SelectedIndex = 1;
-            int selectedTab = EditorTabControl.SelectedIndex;
-            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab].Controls[0];
-            selectedEditor = ctrl as TextEditorControl;
-            selectedEditor.TextEditorProperties.StoreZoomSize = true;
-            selectedEditor.TextEditorProperties.RegPath = GlobalVariables.registryPath;
-
-            InitializeEditor.ReadEditorWindowSize(this, GlobalVariables.registryPath);
-            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, selectedEditor);
-            InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, selectedEditor);
-            InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
-            InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
             InitializeEditor.GenerateLiveSessionId();
-
             InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
-            FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
-
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
-            LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
+            Initiliaze();
             Warnings.CheckWarnings(GlobalVariables.registryPath);
             StartFilesOS.CheckOSStartFile(GlobalVariables.registryPath);
             BuildConfig.CheckConfig(GlobalVariables.registryPath);
@@ -223,26 +206,19 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void openToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            int selectedTab = EditorTabControl.SelectedIndex;
-            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab].Controls[0];
-            selectedEditor = ctrl as TextEditorControl;
-            FileManage.OpenFileDialog(selectedEditor);
-        }
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)=>
+            FileManage.OpenFileTab(EditorTabControl, selectedEditor);
+
 
         /// <summary>
         /// Save data from text editor. (Save)
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            int selectedTab = EditorTabControl.SelectedIndex;
-            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[selectedTab-1].Controls[0];
-            selectedEditor = ctrl as TextEditorControl;
-            FileManage.SaveToFileDialog(selectedEditor);
-        }
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)=>
+            FileManage.SaveFileTab(EditorTabControl, selectedEditor);
+
+
 
         /// <summary>
         /// Load data to text editor and sanitize path of file.
@@ -276,8 +252,13 @@ namespace CIARE
         /// <param name="e"></param>
         private void textEditorControl1_TextChanged(object sender, EventArgs e)
         {
-            if (GlobalVariables.openedFilePath.Length > 0)
+            string titleTab = EditorTabControl.SelectedTab.Text;
+            if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page"))
+            {
                 this.Text = $"*{GlobalVariables.openedFileName} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*",string.Empty);
+                EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
+            }
             LinesManage.GetTotalLinesCount(selectedEditor, linesCountLbl);
             selectedEditor.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
             selectedEditor.Document.FoldingManager.UpdateFoldings(null, null);
@@ -321,10 +302,10 @@ namespace CIARE
                     FileManage.SaveToFileDialog(selectedEditor);
                     return true;
                 case Keys.S | Keys.Control | Keys.Shift:
-                    FileManage.SaveAsDialog(selectedEditor);
+                    FileManage.SaveFileTab(EditorTabControl, selectedEditor);
                     return true;
                 case Keys.O | Keys.Control:
-                    FileManage.OpenFileDialog(selectedEditor);
+                    FileManage.OpenFileTab(EditorTabControl, selectedEditor);
                     return true;
                 case Keys.F | Keys.Control:
                     GlobalVariables.findTabOpen = true;
@@ -767,7 +748,7 @@ namespace CIARE
             var lastIndex = this.EditorTabControl.SelectedIndex;
             if (lastIndex == 0)
             {
-                this.EditorTabControl.TabPages.Insert(tabCount, $"New Tab ({tabCount})");
+                this.EditorTabControl.TabPages.Insert(tabCount, $"New Page ({tabCount})");
                 this.EditorTabControl.SelectedIndex = lastIndex + tabCount;
             }
         }
@@ -777,12 +758,22 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void EditorTabControl_HandleCreated(object sender, EventArgs e) =>
-            SendMessage(this.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
+        //private void EditorTabControl_HandleCreated(object sender, EventArgs e) =>
+        //    SendMessage(this.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
         TextEditorControl dynamicTextEdtior;
 
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
+            string titleTab = EditorTabControl.SelectedTab.Text;
+            if(!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
+            {
+                this.Text = $"{titleTab} - CIARE {MainForm.Instance.versionName}";
+            }
+            else
+            {
+                this.Text = $"CIARE {MainForm.Instance.versionName}";
+            }
+
             if (!EditorTabControl.SelectedTab.Controls.ContainsKey("Editor"))
             {
                 dynamicTextEdtior = new TextEditorControl();

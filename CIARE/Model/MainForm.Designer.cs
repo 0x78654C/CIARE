@@ -113,7 +113,7 @@ namespace CIARE
             outputRBT.Name = "outputRBT";
             outputRBT.ReadOnly = true;
             outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            outputRBT.Size = new System.Drawing.Size(1388, 105);
+            outputRBT.Size = new System.Drawing.Size(1388, 103);
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
             outputRBT.MouseWheel += outputRBT_MouseWheel;
@@ -429,7 +429,7 @@ namespace CIARE
             groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBox1.Size = new System.Drawing.Size(1402, 129);
+            groupBox1.Size = new System.Drawing.Size(1402, 127);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
             groupBox1.Text = "Output:";
@@ -465,17 +465,17 @@ namespace CIARE
             EditorTabControl.Size = new System.Drawing.Size(1403, 683);
             EditorTabControl.TabIndex = 1;
             EditorTabControl.Selecting += EditorTabControl_Selecting;
-            EditorTabControl.HandleCreated += EditorTabControl_HandleCreated;
             EditorTabControl.MouseDown += EditorTabControl_MouseDown;
             // 
             // tabPage1
             // 
+            tabPage1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
             tabPage1.Location = new System.Drawing.Point(4, 24);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new System.Windows.Forms.Padding(3);
             tabPage1.Size = new System.Drawing.Size(1395, 655);
             tabPage1.TabIndex = 0;
-            tabPage1.Text = "+";
+            tabPage1.Text = "    +";
             tabPage1.UseVisualStyleBackColor = true;
             // 
             // tabPage2
@@ -485,7 +485,7 @@ namespace CIARE
             tabPage2.Name = "tabPage2";
             tabPage2.Size = new System.Drawing.Size(1395, 655);
             tabPage2.TabIndex = 1;
-            tabPage2.Text = "New Tab (1)";
+            tabPage2.Text = "New Page (1)";
             tabPage2.UseVisualStyleBackColor = true;
             // 
             // textEditorControl1
@@ -724,7 +724,7 @@ namespace CIARE
         public System.Windows.Forms.ToolStripMenuItem chatGPTCTRLShiftPToolStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
         public System.Windows.Forms.ToolStripMenuItem referenceAddToolStripMenuItem;
-        private System.Windows.Forms.TabControl EditorTabControl;
+        public System.Windows.Forms.TabControl EditorTabControl;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabPage tabPage2;
         public ICSharpCode.TextEditor.TextEditorControl textEditorControl1;
