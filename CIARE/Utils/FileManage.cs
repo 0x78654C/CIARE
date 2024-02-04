@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
+using Newtonsoft.Json.Bson;
 using Application = System.Windows.Forms.Application;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Path = System.IO.Path;
@@ -197,21 +198,44 @@ MessageBoxIcon.Warning);
         public static void ManageUnsavedData(TextEditorControl textEditorControl)
         {
             DialogResult dr = DialogResult.No;
-            if (MainForm.Instance.Text.StartsWith("*"))
+            //            if (MainForm.Instance.Text.StartsWith("*"))
+            //            {
+            //                dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
+            //MessageBoxIcon.Warning);
+            //            }
+            //            else if (!MainForm.Instance.Text.Contains("-"))
+            //            {
+            //                if (!string.IsNullOrEmpty(textEditorControl.Text))
+            //                    dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
+            //    MessageBoxIcon.Warning);
+            //            }
+
+            // Check if any tab has unsaved data.
+            foreach (TabPage tab in MainForm.Instance.EditorTabControl.TabPages)
             {
-                dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
-MessageBoxIcon.Warning);
-            }
-            else if (!MainForm.Instance.Text.Contains("-"))
-            {
-                if (!string.IsNullOrEmpty(textEditorControl.Text))
-                    dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
-    MessageBoxIcon.Warning);
+                if (tab.Text.StartsWith("*") || tab.Text.Contains("New Page"))
+                {
+                    if (!string.IsNullOrEmpty(textEditorControl.Text))
+                        dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
+        MessageBoxIcon.Warning);
+                    MainForm.Instance.EditorTabControl.SelectTab(tab);
+                    DialogResultAction(dr, textEditorControl);
+                }
             }
 
-            if (dr == DialogResult.Yes)
+            //DialogResultAction(dr, textEditorControl);
+        }
+
+        /// <summary>
+        /// Save data by dialog result.
+        /// </summary>
+        /// <param name="dialogResult"></param>
+        /// <param name="textEditorControl"></param>
+        private static void DialogResultAction(DialogResult dialogResult, TextEditorControl textEditorControl)
+        {
+            if (dialogResult == DialogResult.Yes)
                 SaveToFileDialog(textEditorControl);
-            if (dr == DialogResult.Cancel)
+            if (dialogResult == DialogResult.Cancel)
                 GlobalVariables.noClear = true;
             else
                 GlobalVariables.noClear = false;
