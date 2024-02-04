@@ -253,15 +253,27 @@ MessageBoxIcon.Warning);
             try
             {
                 string titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text;
+                string fileName = "";
+                string filePath = "";
+                string fullPath = "";
+                if (titleTab.Contains(":")) {
+                    fileName = titleTab.SplitByText(" : ", 0).Replace("*","");
+                    filePath = titleTab.SplitByText(" : ", 1);
+                    fullPath = $"{filePath}\\{fileName}";
+                    GlobalVariables.openedFileName = fileName;
+                    GlobalVariables.openedFilePath = fullPath;
+                }
+
+               
                 bool isSameTitleName = titleTab.Contains(GlobalVariables.openedFilePath);
 
-                if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page") && !isSameTitleName)
+                if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page"))
                 {
                     File.WriteAllText(GlobalVariables.openedFilePath, textEditor.Text);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     MainForm.Instance.openedFileLength = fileInfo.Length;
+                    MainForm.Instance.EditorTabControl.SelectedTab.Text = titleTab.Replace("*", "");
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
-                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
                     return;
                 }
                 SaveFile(textEditor.Text);
@@ -269,8 +281,8 @@ MessageBoxIcon.Warning);
                 {
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     MainForm.Instance.openedFileLength = fileInfo.Length;
-                    MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
                     MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
+                    MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
                 }
             }
             catch (Exception ex)
@@ -305,6 +317,7 @@ MessageBoxIcon.Warning);
             if (GlobalVariables.savedFile)
             {
                 MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
             }
         }
 
@@ -348,6 +361,7 @@ MessageBoxIcon.Warning);
                         textEditorControl.Clear();
                         textEditorControl.Text = reader.ReadToEnd();
                         MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                        MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)}";
                         MainForm.Instance.openedFileLength = fileInfo.Length;
                     }
                     return;
@@ -466,7 +480,7 @@ MessageBoxIcon.Information);
             int selectedTab = tabControl.SelectedIndex;
             Control ctrl = tabControl.Controls[selectedTab].Controls[0];
             textEditorControl = ctrl as TextEditorControl;
-            FileManage.SaveToFileDialog(textEditorControl);
+            SaveToFileDialog(textEditorControl);
         }
     }
 }
