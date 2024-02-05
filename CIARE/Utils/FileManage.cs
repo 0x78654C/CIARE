@@ -21,6 +21,7 @@ namespace CIARE.Utils
         private static SaveFileDialog s_saveFileDialog = new SaveFileDialog();
         private static List<string> s_packageLibs = new List<string>();
         private static bool s_isLoaded = false;
+        private static int s_lastIndex = 0;
         /// <summary>
         /// Open file dialog.
         /// </summary>
@@ -247,10 +248,11 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void OpenFileDialog(TextEditorControl textEditor)
         {
+            s_lastIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
             ManageUnsavedData(textEditor);
             if (GlobalVariables.noClear)
                 return;
-
+            MainForm.Instance.EditorTabControl.SelectedIndex = s_lastIndex;
             string openedData = OpenFile();
             if (GlobalVariables.noFileSelected)
             {
