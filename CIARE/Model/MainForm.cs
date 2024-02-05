@@ -86,6 +86,25 @@ namespace CIARE
             InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
             LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
+            //Code completion initialize.
+            if (GlobalVariables.OCodeCompletion)
+            {
+                HostCallbackImplementation.Register(this);
+                CodeCompletionKeyHandler.Attach(this, selectedEditor);
+                ToolTipProvider.Attach(this, selectedEditor);
+
+                pcRegistry = new Dom.ProjectContentRegistry();
+                if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
+                    Directory.CreateDirectory((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion")));
+
+                pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"));
+            }
+            //-------------------------------
+            myProjectContent = new Dom.DefaultProjectContent();
+            myProjectContent.Language = CurrentLanguageProperties;
+            linesCountLbl.Text = string.Empty;
+            linesPositionLbl.Text = string.Empty;
+            selectedEditor.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
@@ -108,7 +127,6 @@ namespace CIARE
             UnsafeCode.CheckUnsafeStatus(GlobalVariables.registryPath);
             _apiConnectionEvents = new ApiConnectionEvents();
             //------------------------------
-
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
             {
@@ -128,6 +146,7 @@ namespace CIARE
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             selectedEditor.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
+
 
             //File open via parameters(Open with option..)
             try

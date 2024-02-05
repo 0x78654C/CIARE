@@ -7,7 +7,6 @@ using System.Windows.Forms;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using Application = System.Windows.Forms.Application;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Path = System.IO.Path;
