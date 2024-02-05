@@ -36,7 +36,7 @@ namespace CIARE
             runCodePb = new System.Windows.Forms.PictureBox();
             menuStrip1 = new System.Windows.Forms.MenuStrip();
             fIleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            newFileStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             saveAsStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -113,7 +113,7 @@ namespace CIARE
             outputRBT.Name = "outputRBT";
             outputRBT.ReadOnly = true;
             outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            outputRBT.Size = new System.Drawing.Size(1388, 103);
+            outputRBT.Size = new System.Drawing.Size(1388, 102);
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
             outputRBT.MouseWheel += outputRBT_MouseWheel;
@@ -147,17 +147,17 @@ namespace CIARE
             // 
             // fIleToolStripMenuItem
             // 
-            fIleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { toolStripMenuItem1, openToolStripMenuItem, saveToolStripMenuItem, saveAsStripMenuItem, toolStripSeparator1, LoadCStripMenuItem, toolStripSeparator2, exitToolStripMenuItem });
+            fIleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { newFileStripMenuItem, openToolStripMenuItem, saveToolStripMenuItem, saveAsStripMenuItem, toolStripSeparator1, LoadCStripMenuItem, toolStripSeparator2, exitToolStripMenuItem });
             fIleToolStripMenuItem.Name = "fIleToolStripMenuItem";
             fIleToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             fIleToolStripMenuItem.Text = "File";
             // 
-            // toolStripMenuItem1
+            // newFileStripMenuItem
             // 
-            toolStripMenuItem1.Name = "toolStripMenuItem1";
-            toolStripMenuItem1.Size = new System.Drawing.Size(273, 22);
-            toolStripMenuItem1.Text = "New         ( CTRL + N )";
-            toolStripMenuItem1.Click += toolStripMenuItem1_Click;
+            newFileStripMenuItem.Name = "newFileStripMenuItem";
+            newFileStripMenuItem.Size = new System.Drawing.Size(273, 22);
+            newFileStripMenuItem.Text = "New         ( CTRL + N )";
+            newFileStripMenuItem.Click += toolStripMenuItem1_Click;
             // 
             // openToolStripMenuItem
             // 
@@ -429,7 +429,7 @@ namespace CIARE
             groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBox1.Size = new System.Drawing.Size(1402, 127);
+            groupBox1.Size = new System.Drawing.Size(1402, 126);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
             groupBox1.Text = "Output:";
@@ -680,7 +680,7 @@ namespace CIARE
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.SplitContainer splitContainer1;
         public System.Windows.Forms.ToolStripMenuItem saveAsStripMenuItem;
-        public System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
+        public System.Windows.Forms.ToolStripMenuItem newFileStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         public System.Windows.Forms.ToolStripMenuItem LoadCStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator2;

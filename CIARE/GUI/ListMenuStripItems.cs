@@ -19,7 +19,7 @@ namespace CIARE.GUI
             listToosStripM.Add(MainForm.Instance.saveToolStripMenuItem);
             listToosStripM.Add(MainForm.Instance.exitToolStripMenuItem);
             listToosStripM.Add(MainForm.Instance.saveAsStripMenuItem);
-            listToosStripM.Add(MainForm.Instance.toolStripMenuItem1);
+            listToosStripM.Add(MainForm.Instance.newFileStripMenuItem);
             listToosStripM.Add(MainForm.Instance.LoadCStripMenuItem);
             listToosStripM.Add(MainForm.Instance.helpToolStripMenuItem);
             listToosStripM.Add(MainForm.Instance.aboutToolStripMenuItem);

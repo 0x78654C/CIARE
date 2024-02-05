@@ -274,9 +274,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            selectedEditor.Clear();
-            GlobalVariables.openedFilePath = string.Empty;
-            this.Text = $"CIARE {versionName}";
+            FileManage.NewFile(selectedEditor, outputRBT);
         }
 
         #region HotKeys Actions
@@ -429,7 +427,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            FileManage.ManageUnsavedData(selectedEditor);
+            FileManage.ManageUnsavedData(selectedEditor, 0, true);
             if (GlobalVariables.noClear)
                 e.Cancel = true;
             else
