@@ -7,7 +7,7 @@ using System.Windows.Forms;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
-using Newtonsoft.Json.Bson;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using Application = System.Windows.Forms.Application;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Path = System.IO.Path;
@@ -20,8 +20,6 @@ namespace CIARE.Utils
         private static OpenFileDialog s_openFileDialog = new OpenFileDialog();
         private static SaveFileDialog s_saveFileDialog = new SaveFileDialog();
         private static List<string> s_packageLibs = new List<string>();
-        private static bool s_isLoaded = false;
-        private static int s_lastIndex = 0;
         /// <summary>
         /// Open file dialog.
         /// </summary>
@@ -193,39 +191,63 @@ MessageBoxIcon.Warning);
         }
 
         /// <summary>
+        /// Check if editor on selected tab is empty.
+        /// </summary>
+        /// <param name="selectedIndex"></param>
+        /// <returns></returns>
+        private static bool IsEditorEmpty(int selectedIndex)
+        {
+            if (selectedIndex == 0)
+                return false;
+            Control ctrl = MainForm.Instance.EditorTabControl.Controls[selectedIndex].Controls[0];
+            var textEditor = ctrl as TextEditorControl;
+            return string.IsNullOrEmpty(textEditor.Text);
+        }
+
+        /// <summary>
         /// Handle unsaved data from editor on from closing event.
         /// </summary>
         /// <param name="textEditorControl"></param>
-        public static void ManageUnsavedData(TextEditorControl textEditorControl)
+        /// <param name="selectedIndex"></param>
+        /// <param name="checkAll"></param>
+        public static void ManageUnsavedData(TextEditorControl textEditorControl, int selectedIndex = 0, bool checkAll = false)
         {
             DialogResult dr = DialogResult.No;
-            //            if (MainForm.Instance.Text.StartsWith("*"))
-            //            {
-            //                dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
-            //MessageBoxIcon.Warning);
-            //            }
-            //            else if (!MainForm.Instance.Text.Contains("-"))
-            //            {
-            //                if (!string.IsNullOrEmpty(textEditorControl.Text))
-            //                    dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
-            //    MessageBoxIcon.Warning);
-            //            }
-
-            // Check if any tab has unsaved data.
+            int countTabs = 0;
             foreach (TabPage tab in MainForm.Instance.EditorTabControl.TabPages)
             {
-                if (tab.Text.StartsWith("*") || tab.Text.Contains("New Page"))
+                countTabs++;
+                bool isSelectedTab = countTabs-1 == selectedIndex;
+                
+                // Check if editor is empty.
+                if (IsEditorEmpty(countTabs-1)) continue;
+
+                if (checkAll)
                 {
-                    if (!string.IsNullOrEmpty(textEditorControl.Text))
-                        dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
-        MessageBoxIcon.Warning);
-                    MainForm.Instance.EditorTabControl.SelectTab(tab);
-                    DialogResultAction(dr, textEditorControl);
+                    if (tab.Text.StartsWith("*") || tab.Text.Contains("New Page") )
+                    {
+                        if (!string.IsNullOrEmpty(textEditorControl.Text))
+                            dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
+            MessageBoxIcon.Warning);
+                        MainForm.Instance.EditorTabControl.SelectTab(tab);
+                        DialogResultAction(dr, textEditorControl);
+                    }
+                }
+                else
+                {
+                    if (tab.Text.StartsWith("*") || tab.Text.Contains("New Page") && isSelectedTab)
+                    {
+                        if (!string.IsNullOrEmpty(textEditorControl.Text))
+                            dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
+            MessageBoxIcon.Warning);
+                        MainForm.Instance.EditorTabControl.SelectTab(tab);
+                        DialogResultAction(dr, textEditorControl);
+                        break;
+                    }
                 }
             }
-
-            //DialogResultAction(dr, textEditorControl);
         }
+
 
         /// <summary>
         /// Save data by dialog result.
@@ -248,11 +270,10 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void OpenFileDialog(TextEditorControl textEditor)
         {
-            s_lastIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
-            ManageUnsavedData(textEditor);
+            var index = MainForm.Instance.EditorTabControl.SelectedIndex;
+            ManageUnsavedData(textEditor, index);
             if (GlobalVariables.noClear)
                 return;
-            MainForm.Instance.EditorTabControl.SelectedIndex = s_lastIndex;
             string openedData = OpenFile();
             if (GlobalVariables.noFileSelected)
             {
@@ -353,19 +374,18 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void NewFile(TextEditorControl textEditor, RichTextBox logOutput)
         {
-            s_lastIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
-            ManageUnsavedData(textEditor);
+            var index = MainForm.Instance.EditorTabControl.SelectedIndex;
+            ManageUnsavedData(textEditor, index);
             if (GlobalVariables.noClear)
                 return;
-            MainForm.Instance.EditorTabControl.SelectedIndex = s_lastIndex;
-            int selectedTab = MainForm.Instance.EditorTabControl.SelectedIndex;
-            Control ctrl = MainForm.Instance.EditorTabControl.Controls[selectedTab].Controls[0];
+            Control ctrl = MainForm.Instance.EditorTabControl.Controls[index].Controls[0];
             textEditor = ctrl as TextEditorControl;
             textEditor.Clear();
             logOutput.Clear();
             GlobalVariables.openedFilePath = string.Empty;
             GlobalVariables.savedFile = false;
             MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
+            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page ({index})";
             MainForm.Instance.markStartFileChk.Checked = false;
         }
 
@@ -407,7 +427,8 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void LoadCSTemplate(TextEditorControl textEditor)
         {
-            ManageUnsavedData(textEditor);
+            var index = MainForm.Instance.EditorTabControl.SelectedIndex;
+            ManageUnsavedData(textEditor, index);
             DialogResult dr = MessageBox.Show("Do you really want to load C# code template?", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Information);
             if (dr == DialogResult.Yes)
