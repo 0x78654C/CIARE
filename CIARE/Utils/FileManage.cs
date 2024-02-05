@@ -353,9 +353,14 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void NewFile(TextEditorControl textEditor, RichTextBox logOutput)
         {
+            s_lastIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
             ManageUnsavedData(textEditor);
             if (GlobalVariables.noClear)
                 return;
+            MainForm.Instance.EditorTabControl.SelectedIndex = s_lastIndex;
+            int selectedTab = MainForm.Instance.EditorTabControl.SelectedIndex;
+            Control ctrl = MainForm.Instance.EditorTabControl.Controls[selectedTab].Controls[0];
+            textEditor = ctrl as TextEditorControl;
             textEditor.Clear();
             logOutput.Clear();
             GlobalVariables.openedFilePath = string.Empty;
