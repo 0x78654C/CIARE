@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
-using ICSharpCode.TextEditor;
+using CIARE.GUI;
 
 namespace CIARE.Utils
 {
@@ -15,12 +15,10 @@ namespace CIARE.Utils
         /// <param name="e"></param>
         public static void GetCaretPositon(object sender, EventArgs e)
         {
-            int selectedTab = MainForm.Instance.EditorTabControl.SelectedIndex;
-            Control ctrl = MainForm.Instance.EditorTabControl.Controls[selectedTab].Controls[0];
-            var textEditor = ctrl as TextEditorControl;
-            if (!string.IsNullOrEmpty(textEditor.Text))
+            SelectedEditor.GetSelectedEditor();
+            if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
                 MainForm.Instance.linesPositionLbl.Text =
-                    $"[Line {textEditor.ActiveTextAreaControl.TextArea.Caret.Position.Line + 1}, Col {textEditor.ActiveTextAreaControl.TextArea.Caret.Column}]";
+                    $"[Line {SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Position.Line + 1}, Col {SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Column}]";
             else
                 MainForm.Instance.linesPositionLbl.Text = string.Empty;
         }
@@ -32,11 +30,8 @@ namespace CIARE.Utils
         /// <param name="totalLinesCountLbl"></param>
         public static void GetTotalLinesCount(Label totalLinesCountLbl)
         {
-            int selectedTab = MainForm.Instance.EditorTabControl.SelectedIndex;
-            Control ctrl = MainForm.Instance.EditorTabControl.Controls[selectedTab].Controls[0];
-            var textEditor = ctrl as TextEditorControl;
-            if (!string.IsNullOrEmpty(textEditor.Text))
-                totalLinesCountLbl.Text = $"Lines: {textEditor.Document.TotalNumberOfLines}";
+            if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
+                totalLinesCountLbl.Text = $"Lines: {SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines}";
             else
                 totalLinesCountLbl.Text = string.Empty;
         }
