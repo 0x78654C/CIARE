@@ -22,6 +22,7 @@ using Button = System.Windows.Forms.Button;
 using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using CIARE.GUI;
 
 
 namespace CIARE
@@ -48,6 +49,8 @@ namespace CIARE
         private string s_args = SplitArguments.GetCommandLineArgs();
         private ApiConnectionEvents _apiConnectionEvents;
         public TextEditorControl selectedEditor;
+        TextEditorControl dynamicTextEdtior;
+
 
         // Used for tab's auto-resize
         [DllImport("user32.dll")]
@@ -89,9 +92,9 @@ namespace CIARE
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
             {
-                HostCallbackImplementation.Register(this);
-                CodeCompletionKeyHandler.Attach(this, selectedEditor);
-                ToolTipProvider.Attach(this, selectedEditor);
+                //HostCallbackImplementation.Register(this);
+                CodeCompletionKeyHandler.Attach(this, SelectedEditor.GetSelectedEditor());
+                ToolTipProvider.Attach(this, SelectedEditor.GetSelectedEditor());
 
                 pcRegistry = new Dom.ProjectContentRegistry();
                 if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
@@ -131,8 +134,8 @@ namespace CIARE
             if (GlobalVariables.OCodeCompletion)
             {
                 HostCallbackImplementation.Register(this);
-                CodeCompletionKeyHandler.Attach(this, selectedEditor);
-                ToolTipProvider.Attach(this, selectedEditor);
+                CodeCompletionKeyHandler.Attach(this, SelectedEditor.GetSelectedEditor());
+                ToolTipProvider.Attach(this, SelectedEditor.GetSelectedEditor());
 
                 pcRegistry = new Dom.ProjectContentRegistry();
                 if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
@@ -758,7 +761,11 @@ namespace CIARE
         /// <param name="e"></param>
         private void outputRBT_MouseWheel(object sender, MouseEventArgs e) => GlobalVariables.zoomFactor = outputRBT.ZoomFactor;
 
-
+        /// <summary>
+        /// Create new tab with new editor.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void EditorTabControl_MouseDown(object sender, MouseEventArgs e)
         {
             var tabCount = this.EditorTabControl.TabCount;
@@ -770,14 +777,16 @@ namespace CIARE
             }
         }
 
+
+        //private void EditorTabControl_HandleCreated(object sender, EventArgs e) =>
+        //    SendMessage(this.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
+
+
         /// <summary>
         /// Autoresize tab names.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        //private void EditorTabControl_HandleCreated(object sender, EventArgs e) =>
-        //    SendMessage(this.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
-        TextEditorControl dynamicTextEdtior;
 
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
@@ -803,6 +812,10 @@ namespace CIARE
             }
         }
 
+        /// <summary>
+        /// Set design for every new editor controler.
+        /// </summary>
+        /// <param name="dynamicTextEdtior"></param>
         private void SetDesignEditor(TextEditorControl dynamicTextEdtior)
         {
             var tabCount = this.EditorTabControl.TabCount;
