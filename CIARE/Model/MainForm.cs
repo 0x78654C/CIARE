@@ -333,7 +333,7 @@ namespace CIARE
                     find.ShowDialog();
                     return true;
                 case Keys.F5:
-                    FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor();
+                    FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
                     RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
                     return true;
                 case Keys.T | Keys.Control:
