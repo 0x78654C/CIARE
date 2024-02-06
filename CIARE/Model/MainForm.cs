@@ -92,7 +92,7 @@ namespace CIARE
             //Code completion initialize.
             if (GlobalVariables.OCodeCompletion)
             {
-                //HostCallbackImplementation.Register(this);
+                HostCallbackImplementation.Register(this);
                 CodeCompletionKeyHandler.Attach(this, SelectedEditor.GetSelectedEditor());
                 ToolTipProvider.Attach(this, SelectedEditor.GetSelectedEditor());
 
@@ -143,7 +143,7 @@ namespace CIARE
 
                 pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"));
             }
-            //-------------------------------
+            ////-------------------------------
             myProjectContent = new Dom.DefaultProjectContent();
             myProjectContent.Language = CurrentLanguageProperties;
             linesCountLbl.Text = string.Empty;
@@ -209,7 +209,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
-            RoslynRun.RunCode(outputRBT, runCodePb, selectedEditor, splitContainer1, true);
+            RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
         }
 
         /// <summary>
@@ -333,8 +333,8 @@ namespace CIARE
                     find.ShowDialog();
                     return true;
                 case Keys.F5:
-                    FileManage.CompileRunSaveData(selectedEditor);
-                    RoslynRun.RunCode(outputRBT, runCodePb, selectedEditor, splitContainer1, true);
+                    FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor();
+                    RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
                     return true;
                 case Keys.T | Keys.Control:
                     FileManage.LoadCSTemplate(selectedEditor);
@@ -344,8 +344,8 @@ namespace CIARE
                     RoslynRun.CompileBinaryExe(selectedEditor, splitContainer1, outputRBT, false);
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
-                    FileManage.CompileRunSaveData(selectedEditor);
-                    RoslynRun.CompileBinaryDll(selectedEditor, splitContainer1, outputRBT, false);
+                    FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
+                    RoslynRun.CompileBinaryDll(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false);
                     return true;
                 case Keys.W | Keys.Control:
                     SplitEditorWindow.SplitWindow(selectedEditor, true);
@@ -365,7 +365,7 @@ namespace CIARE
                     cmdLineArgs.ShowDialog();
                     return true;
                 case Keys.P | Keys.Control | Keys.Shift:
-                    AiManage.GetDataAI(selectedEditor, GlobalVariables.aiKey);
+                    AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey);
                     return true;
                 case Keys.R | Keys.Control:
                     RefManager refManager = new RefManager();
@@ -428,7 +428,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            RoslynRun.CompileBinaryExe(selectedEditor, splitContainer1, outputRBT, false);
+            RoslynRun.CompileBinaryExe(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false);
         }
 
         /// <summary>
@@ -438,7 +438,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToDLLCtrlSfitBToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            RoslynRun.CompileBinaryDll(selectedEditor, splitContainer1, outputRBT, false);
+            RoslynRun.CompileBinaryDll(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false);
         }
 
 
@@ -567,7 +567,7 @@ namespace CIARE
 
         private void chatGPTCTRLShiftPToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            AiManage.GetDataAI(selectedEditor, GlobalVariables.aiKey);
+            AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey);
         }
 
         private void referenceAddToolStripMenuItem_Click(object sender, EventArgs e)
@@ -640,7 +640,7 @@ namespace CIARE
             string code = null;
             Invoke(new MethodInvoker(delegate
             {
-                code = selectedEditor.Text;
+                code = SelectedEditor.GetSelectedEditor().Text;
             }));
             TextReader textReader = new StringReader(code);
             Dom.ICompilationUnit newCompilationUnit;
@@ -737,7 +737,7 @@ namespace CIARE
                 return;
 
             await Task.Delay(10);
-            await _apiConnectionEvents.SendData(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, selectedEditor);
+            await _apiConnectionEvents.SendData(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor());
         }
 
         /// <summary>
