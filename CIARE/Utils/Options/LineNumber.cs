@@ -1,4 +1,5 @@
-﻿using System.Runtime.Versioning;
+﻿using ICSharpCode.TextEditor;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.Utils.Options
@@ -16,7 +17,7 @@ namespace CIARE.Utils.Options
             if (regHighlight.Length > 0)
             {
                 GlobalVariables.OLineNumber = bool.Parse(regHighlight);
-                MainForm.Instance.selectedEditor.ShowLineNumbers = GlobalVariables.OLineNumber;
+                SetLineNumbersTabEditors();
             }
         }
 
@@ -28,8 +29,31 @@ namespace CIARE.Utils.Options
         public static void SetLineNumberStatus(CheckBox status, string regKeyName)
         {
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, status.Checked.ToString());
-            MainForm.Instance.selectedEditor.ShowLineNumbers = status.Checked;
+            SetLineNumbersTabEditors(status,true);
             GlobalVariables.OLineNumber = status.Checked;
+        }
+
+        /// <summary>
+        /// Set line numbers function for editor controler in all tabs.
+        /// </summary>
+        /// <param name="status"></param>
+        /// <param name="isCheckBox"></param>
+        private static void SetLineNumbersTabEditors(CheckBox status = null, bool isCheckBox = false)
+        {
+            int count = 0;
+            foreach (TabPage tab in MainForm.Instance.EditorTabControl.TabPages)
+            {
+                if (count > 0)
+                {
+                    Control ctrl = MainForm.Instance.EditorTabControl.Controls[count].Controls[0];
+                    var textEditor = ctrl as TextEditorControl;
+                    if (isCheckBox)
+                        textEditor.ShowLineNumbers = status.Checked;
+                    else
+                        textEditor.ShowLineNumbers = GlobalVariables.OLineNumber;
+                }
+                count++;
+            }
         }
     }
 }
