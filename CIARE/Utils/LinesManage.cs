@@ -15,9 +15,12 @@ namespace CIARE.Utils
         /// <param name="e"></param>
         public static void GetCaretPositon(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(MainForm.Instance.selectedEditor.Text))
+            int selectedTab = MainForm.Instance.EditorTabControl.SelectedIndex;
+            Control ctrl = MainForm.Instance.EditorTabControl.Controls[selectedTab].Controls[0];
+            var textEditor = ctrl as TextEditorControl;
+            if (!string.IsNullOrEmpty(textEditor.Text))
                 MainForm.Instance.linesPositionLbl.Text =
-                    $"[Line {MainForm.Instance.selectedEditor.ActiveTextAreaControl.TextArea.Caret.Position.Line + 1}, Col {MainForm.Instance.selectedEditor.ActiveTextAreaControl.TextArea.Caret.Column}]";
+                    $"[Line {textEditor.ActiveTextAreaControl.TextArea.Caret.Position.Line + 1}, Col {textEditor.ActiveTextAreaControl.TextArea.Caret.Column}]";
             else
                 MainForm.Instance.linesPositionLbl.Text = string.Empty;
         }
@@ -27,10 +30,13 @@ namespace CIARE.Utils
         /// </summary>
         /// <param name="mainEditor"></param>
         /// <param name="totalLinesCountLbl"></param>
-        public static void GetTotalLinesCount(TextEditorControl mainEditor, Label totalLinesCountLbl)
+        public static void GetTotalLinesCount(Label totalLinesCountLbl)
         {
-            if (!string.IsNullOrEmpty(mainEditor.Text))
-                totalLinesCountLbl.Text = $"Lines: {mainEditor.Document.TotalNumberOfLines}";
+            int selectedTab = MainForm.Instance.EditorTabControl.SelectedIndex;
+            Control ctrl = MainForm.Instance.EditorTabControl.Controls[selectedTab].Controls[0];
+            var textEditor = ctrl as TextEditorControl;
+            if (!string.IsNullOrEmpty(textEditor.Text))
+                totalLinesCountLbl.Text = $"Lines: {textEditor.Document.TotalNumberOfLines}";
             else
                 totalLinesCountLbl.Text = string.Empty;
         }

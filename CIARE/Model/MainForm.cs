@@ -278,7 +278,7 @@ namespace CIARE
                 string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*",string.Empty);
                 EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
             }
-            LinesManage.GetTotalLinesCount(selectedEditor, linesCountLbl);
+            LinesManage.GetTotalLinesCount(linesCountLbl);
             selectedEditor.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
             selectedEditor.Document.FoldingManager.UpdateFoldings(null, null);
 
