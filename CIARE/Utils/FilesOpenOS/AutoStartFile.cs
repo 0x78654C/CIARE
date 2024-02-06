@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CIARE.GUI;
+using System;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -195,7 +196,7 @@ namespace CIARE.Utils.FilesOpenOS
             //TODO: This is nasty. I know. I will remake it.
             try
             {
-                if (string.IsNullOrEmpty(MainForm.Instance.selectedEditor.Text))
+                if (string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
                     Environment.Exit(0);
             }
             catch

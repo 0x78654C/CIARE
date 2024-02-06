@@ -30,7 +30,7 @@ namespace CIARE
 
         private void Options_Load(object sender, EventArgs e)
         {
-            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, MainForm.Instance.selectedEditor, highlightCMB);
+            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, SelectedEditor.GetSelectedEditor(), highlightCMB);
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             codeCompletionCkb.Checked = GlobalVariables.OCodeCompletion;
             lineNumberCkb.Checked = GlobalVariables.OLineNumber;
@@ -52,7 +52,7 @@ namespace CIARE
 
         private void highlightCMB_SelectedIndexChanged(object sender, EventArgs e)
         {
-            MainForm.Instance.SetHighLighter(MainForm.Instance.selectedEditor, highlightCMB.Text);
+            MainForm.Instance.SetHighLighter(SelectedEditor.GetSelectedEditor(), highlightCMB.Text);
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
         }
 
