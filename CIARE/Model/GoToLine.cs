@@ -3,9 +3,11 @@ using CIARE.GUI;
 using System;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using System.Runtime.Versioning;
 
 namespace CIARE
 {
+    [SupportedOSPlatform("Windows")]
     /*
      Go to line class.
      */
@@ -42,7 +44,7 @@ namespace CIARE
             try
             {
                 int lineNumber = Int32.Parse(goToLineNumberTxt.Text);
-                GoToLineNumber.GoToLine(MainForm.Instance.selectedEditor, lineNumber);
+                GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), lineNumber);
                 this.Close();
             }
             catch { }
