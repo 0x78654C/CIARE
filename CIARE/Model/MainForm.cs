@@ -348,10 +348,10 @@ namespace CIARE
                     RoslynRun.CompileBinaryDll(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false);
                     return true;
                 case Keys.W | Keys.Control:
-                    SplitEditorWindow.SplitWindow(selectedEditor, true);
+                    SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), true);
                     return true;
                 case Keys.W | Keys.Control | Keys.Shift:
-                    SplitEditorWindow.SplitWindow(selectedEditor, false);
+                    SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), false);
                     return true;
                 case Keys.K | Keys.Control:
                     OutputWindowManage.SetOutputWindowState(outputRBT, splitContainer1);
@@ -535,7 +535,7 @@ namespace CIARE
 
         private void splitVEditorToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SplitEditorWindow.SplitWindow(selectedEditor, false);
+            SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), false);
         }
 
         private void showHideSCToolStripMenuItem_Click(object sender, EventArgs e)

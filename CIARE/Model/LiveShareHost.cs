@@ -126,7 +126,6 @@ namespace CIARE
         private void GeneratePassword(TextBox password, string livePassword, bool apiRemoteConnected)
         {
             password.Text = (string.IsNullOrEmpty(livePassword) || apiRemoteConnected) ? Utils.Encryption.KeyGenerator.GeneratePassword(15, true, true, false) : livePassword;
-
         }
 
         /// <summary>
