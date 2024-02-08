@@ -22,7 +22,7 @@ namespace CIARE.GUI
             for (int i = 0; i < tabControl.TabPages.Count; i++)
             {
                 Rectangle r = tabControl.GetTabRect(i);
-                Rectangle closeButton = new Rectangle(r.Right - 15, r.Top + 4, 9, 7);
+                Rectangle closeButton = new Rectangle(r.Right - 16, r.Top + 3, 9, 7);
                 if (closeButton.Contains(e.Location))
                 {
                     FileManage.ManageUnsavedData(textEditorControl, index, true);
@@ -32,7 +32,5 @@ namespace CIARE.GUI
                 }
             }
         }
-
-
     }
 }
