@@ -32,5 +32,20 @@ namespace CIARE.GUI
                 }
             }
         }
+
+        /// <summary>
+        /// Add new tab with editor.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        /// <param name="textEditorControl"></param>
+        /// <param name="e"></param>
+        public static void AddNewTab(ref TabControl tabControl)
+        {
+            tabControl.SelectedIndex = 0;
+            var tabCount = tabControl.TabCount;
+            var lastIndex = tabControl.SelectedIndex;
+            tabControl.TabPages.Insert(tabCount, $"New Page ({tabCount})          ");
+            tabControl.SelectedIndex = lastIndex + tabCount;
+        }
     }
 }

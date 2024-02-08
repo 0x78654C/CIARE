@@ -314,6 +314,9 @@ namespace CIARE
         {
             switch (keyData)
             {
+                case Keys.Tab | Keys.Control:
+                    TabControllerManage.AddNewTab(ref EditorTabControl);
+                    return true;
                 case Keys.N | Keys.Control:
                     FileManage.NewFile(selectedEditor, outputRBT);
                     return true;
@@ -772,16 +775,16 @@ namespace CIARE
         /// <param name="e"></param>
         private void EditorTabControl_MouseDown(object sender, MouseEventArgs e)
         {
-            var tabCount = this.EditorTabControl.TabCount;
-            var lastIndex = this.EditorTabControl.SelectedIndex;
+            var tabCount = EditorTabControl.TabCount;
+            var lastIndex = EditorTabControl.SelectedIndex;
             if (lastIndex == 0)
             {
-                this.EditorTabControl.TabPages.Insert(tabCount, $"New Page ({tabCount})          ");
-                this.EditorTabControl.SelectedIndex = lastIndex + tabCount;
+                EditorTabControl.TabPages.Insert(tabCount, $"New Page ({tabCount})          ");
+                EditorTabControl.SelectedIndex = lastIndex + tabCount;
             }
             else
             {
-                TabControllerManage.CloseTabEvent(EditorTabControl,selectedEditor, e);
+                TabControllerManage.CloseTabEvent(EditorTabControl, selectedEditor, e);
             }
         }
 
