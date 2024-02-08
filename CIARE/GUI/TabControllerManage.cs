@@ -25,21 +25,6 @@ namespace CIARE.GUI
                 Rectangle closeButton = new Rectangle(r.Right - 15, r.Top + 4, 9, 7);
                 if (closeButton.Contains(e.Location))
                 {
-                    //bool isNotSaved = tabControl.SelectedTab.Text.StartsWith("*")
-                    //if (isNotSaved)
-                    //{
-                    //    FileManage.ManageUnsavedData(textEditorControl, index, true);
-                    //    tabControl.TabPages.RemoveAt(i);
-                    //    tabControl.SelectTab(index - 1);
-                    //    break;
-                    //}
-                    //else
-                    //{
-                    //    FileManage.ManageUnsavedData(textEditorControl, index, true);
-                    //    tabControl.TabPages.RemoveAt(i);
-                    //    tabControl.SelectTab(index - 1);
-                    //    break;
-                    //}
                     FileManage.ManageUnsavedData(textEditorControl, index, true);
                     tabControl.TabPages.RemoveAt(i);
                     tabControl.SelectTab(index - 1);
