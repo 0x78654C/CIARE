@@ -285,7 +285,8 @@ MessageBoxIcon.Warning);
             GlobalVariables.openedFileName = fileInfo.Name;
             MainForm.Instance.openedFileLength = fileInfo.Length;
             MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
-            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
+            MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
+            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}      ";
             AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
             autoStartFile.CheckFilePath();
         }
