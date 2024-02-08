@@ -776,7 +776,7 @@ namespace CIARE
             var lastIndex = this.EditorTabControl.SelectedIndex;
             if (lastIndex == 0)
             {
-                this.EditorTabControl.TabPages.Insert(tabCount, $"New Page ({tabCount})");
+                this.EditorTabControl.TabPages.Insert(tabCount, $"New Page ({tabCount})          ");
                 this.EditorTabControl.SelectedIndex = lastIndex + tabCount;
             }
             else
@@ -786,8 +786,8 @@ namespace CIARE
         }
 
 
-        //private void EditorTabControl_HandleCreated(object sender, EventArgs e) =>
-        //    SendMessage(this.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
+        private void EditorTabControl_HandleCreated(object sender, EventArgs e) =>
+            SendMessage(this.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
 
 
         /// <summary>

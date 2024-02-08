@@ -429,7 +429,7 @@ namespace CIARE
             groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBox1.Size = new System.Drawing.Size(1402, 112);
+            groupBox1.Size = new System.Drawing.Size(1402, 99);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
             groupBox1.Text = "Output:";
@@ -460,15 +460,16 @@ namespace CIARE
             EditorTabControl.Controls.Add(tabPage1);
             EditorTabControl.Controls.Add(tabPage2);
             EditorTabControl.DrawMode = System.Windows.Forms.TabDrawMode.OwnerDrawFixed;
-            EditorTabControl.ItemSize = new System.Drawing.Size(120, 20);
+            EditorTabControl.ItemSize = new System.Drawing.Size(130, 20);
             EditorTabControl.Location = new System.Drawing.Point(3, 3);
             EditorTabControl.Name = "EditorTabControl";
             EditorTabControl.SelectedIndex = 0;
+            EditorTabControl.ShowToolTips = true;
             EditorTabControl.Size = new System.Drawing.Size(1403, 679);
-            EditorTabControl.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             EditorTabControl.TabIndex = 1;
             EditorTabControl.DrawItem += EditorTabControl_DrawItem;
             EditorTabControl.Selecting += EditorTabControl_Selecting;
+            EditorTabControl.HandleCreated += EditorTabControl_HandleCreated;
             EditorTabControl.MouseDown += EditorTabControl_MouseDown;
             // 
             // tabPage1
@@ -479,7 +480,7 @@ namespace CIARE
             tabPage1.Padding = new System.Windows.Forms.Padding(3);
             tabPage1.Size = new System.Drawing.Size(1395, 651);
             tabPage1.TabIndex = 0;
-            tabPage1.Text = "   +";
+            tabPage1.Text = "  +        ";
             tabPage1.UseVisualStyleBackColor = true;
             // 
             // tabPage2
@@ -489,7 +490,7 @@ namespace CIARE
             tabPage2.Name = "tabPage2";
             tabPage2.Size = new System.Drawing.Size(1395, 651);
             tabPage2.TabIndex = 1;
-            tabPage2.Text = "New Page (1)";
+            tabPage2.Text = "New Page (1)          ";
             tabPage2.UseVisualStyleBackColor = true;
             // 
             // textEditorControl1
