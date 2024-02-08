@@ -801,7 +801,7 @@ namespace CIARE
             string titleTab = EditorTabControl.SelectedTab.Text;
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
-                this.Text = $"{titleTab} - CIARE {MainForm.Instance.versionName}";
+                this.Text = $"{titleTab.Trim()} - CIARE {MainForm.Instance.versionName}";
             }
             else
             {
