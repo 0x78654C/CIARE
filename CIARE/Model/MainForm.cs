@@ -23,6 +23,9 @@ using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using CIARE.GUI;
+using System.Windows.Controls;
+using System.Drawing;
+
 
 
 namespace CIARE
@@ -50,6 +53,7 @@ namespace CIARE
         private ApiConnectionEvents _apiConnectionEvents;
         public TextEditorControl selectedEditor;
         TextEditorControl dynamicTextEdtior;
+        private int HoverIndex = -1;
 
 
         // Used for tab's auto-resize
@@ -72,12 +76,12 @@ namespace CIARE
         /// Initiliaze settings for dynamic text edtior.
         /// </summary>
         /// <param name="index"></param>
-        private void Initiliaze(int index=1)
+        private void Initiliaze(int index = 1)
         {
-            
+
             this.EditorTabControl.SelectedIndex = index;
             int selectedTab = EditorTabControl.SelectedIndex;
-            int countTabs = EditorTabControl.TabCount-1;
+            int countTabs = EditorTabControl.TabCount - 1;
             System.Windows.Forms.Control ctrl = EditorTabControl.Controls[countTabs].Controls[0];
             selectedEditor = ctrl as TextEditorControl;
             selectedEditor.TextEditorProperties.StoreZoomSize = true;
@@ -228,7 +232,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void openToolStripMenuItem_Click(object sender, EventArgs e)=>
+        private void openToolStripMenuItem_Click(object sender, EventArgs e) =>
             FileManage.OpenFileTab(EditorTabControl, selectedEditor);
 
 
@@ -237,7 +241,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void saveToolStripMenuItem_Click(object sender, EventArgs e)=>
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e) =>
             FileManage.SaveFileTab(EditorTabControl, selectedEditor);
 
 
@@ -278,7 +282,7 @@ namespace CIARE
             if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page"))
             {
                 this.Text = $"*{GlobalVariables.openedFileName} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
-                string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*",string.Empty);
+                string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
                 EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
             }
             LinesManage.GetTotalLinesCount(linesCountLbl);
@@ -775,6 +779,10 @@ namespace CIARE
                 this.EditorTabControl.TabPages.Insert(tabCount, $"New Page ({tabCount})");
                 this.EditorTabControl.SelectedIndex = lastIndex + tabCount;
             }
+            else
+            {
+                TabControllerManage.CloseTabEvent(EditorTabControl,selectedEditor, e);
+            }
         }
 
 
@@ -791,7 +799,7 @@ namespace CIARE
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
             string titleTab = EditorTabControl.SelectedTab.Text;
-            if(!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
+            if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
                 this.Text = $"{titleTab} - CIARE {MainForm.Instance.versionName}";
             }
@@ -825,7 +833,7 @@ namespace CIARE
             dynamicTextEdtior.BorderStyle = BorderStyle.FixedSingle;
             dynamicTextEdtior.Font = new System.Drawing.Font("Consolas", 9.75F);
             dynamicTextEdtior.Highlighting = null;
-            dynamicTextEdtior.Location =  new System.Drawing.Point(0, 0);
+            dynamicTextEdtior.Location = new System.Drawing.Point(0, 0);
             dynamicTextEdtior.Margin = new Padding(4, 3, 4, 3);
             dynamicTextEdtior.Size = new System.Drawing.Size(this.Width, this.Height);
             dynamicTextEdtior.TabIndex = 1;
@@ -835,6 +843,43 @@ namespace CIARE
             dynamicTextEdtior.Resize += textEditorControl1_Resize;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
+        }
+
+        /// <summary>
+        /// Draw new tab with X for close after.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void EditorTabControl_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            var g = e.Graphics;
+
+            var tp = EditorTabControl.TabPages[e.Index];
+            var rt = e.Bounds;
+            var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
+
+            if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
+            {
+                rx.Offset(0, 2);
+            }
+
+            rt.Inflate(-rx.Width, 0);
+            rt.Offset(-(rx.Width / 2), 0);
+
+            using (Font f = new Font("Marlett", 8f))
+            using (StringFormat sf = new StringFormat()
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center,
+                Trimming = StringTrimming.EllipsisCharacter,
+                FormatFlags = StringFormatFlags.NoWrap,
+            })
+            {
+                g.DrawString(tp.Text, tp.Font ?? Font, Brushes.Black, rt, sf);
+                if (e.Index > 1)
+                    g.DrawString("r", f, HoverIndex == e.Index ? Brushes.Black : Brushes.LightGray, rx, sf);
+            }
+            tp.Tag = rx;
         }
     }
 }

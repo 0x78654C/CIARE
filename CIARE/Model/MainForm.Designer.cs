@@ -113,7 +113,7 @@ namespace CIARE
             outputRBT.Name = "outputRBT";
             outputRBT.ReadOnly = true;
             outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            outputRBT.Size = new System.Drawing.Size(1388, 102);
+            outputRBT.Size = new System.Drawing.Size(1388, 88);
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
             outputRBT.MouseWheel += outputRBT_MouseWheel;
@@ -429,7 +429,7 @@ namespace CIARE
             groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBox1.Size = new System.Drawing.Size(1402, 126);
+            groupBox1.Size = new System.Drawing.Size(1402, 112);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
             groupBox1.Text = "Output:";
@@ -450,7 +450,7 @@ namespace CIARE
             // 
             splitContainer1.Panel2.Controls.Add(groupBox1);
             splitContainer1.Size = new System.Drawing.Size(1410, 838);
-            splitContainer1.SplitterDistance = 689;
+            splitContainer1.SplitterDistance = 685;
             splitContainer1.SplitterWidth = 5;
             splitContainer1.TabIndex = 6;
             // 
@@ -459,23 +459,27 @@ namespace CIARE
             EditorTabControl.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             EditorTabControl.Controls.Add(tabPage1);
             EditorTabControl.Controls.Add(tabPage2);
+            EditorTabControl.DrawMode = System.Windows.Forms.TabDrawMode.OwnerDrawFixed;
+            EditorTabControl.ItemSize = new System.Drawing.Size(120, 20);
             EditorTabControl.Location = new System.Drawing.Point(3, 3);
             EditorTabControl.Name = "EditorTabControl";
             EditorTabControl.SelectedIndex = 0;
-            EditorTabControl.Size = new System.Drawing.Size(1403, 683);
+            EditorTabControl.Size = new System.Drawing.Size(1403, 679);
+            EditorTabControl.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             EditorTabControl.TabIndex = 1;
+            EditorTabControl.DrawItem += EditorTabControl_DrawItem;
             EditorTabControl.Selecting += EditorTabControl_Selecting;
             EditorTabControl.MouseDown += EditorTabControl_MouseDown;
             // 
             // tabPage1
             // 
-            tabPage1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+            tabPage1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, 0);
             tabPage1.Location = new System.Drawing.Point(4, 24);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            tabPage1.Size = new System.Drawing.Size(1395, 655);
+            tabPage1.Size = new System.Drawing.Size(1395, 651);
             tabPage1.TabIndex = 0;
-            tabPage1.Text = "    +";
+            tabPage1.Text = "   +";
             tabPage1.UseVisualStyleBackColor = true;
             // 
             // tabPage2
@@ -483,7 +487,7 @@ namespace CIARE
             tabPage2.Controls.Add(textEditorControl1);
             tabPage2.Location = new System.Drawing.Point(4, 24);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new System.Drawing.Size(1395, 655);
+            tabPage2.Size = new System.Drawing.Size(1395, 651);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "New Page (1)";
             tabPage2.UseVisualStyleBackColor = true;
@@ -498,7 +502,7 @@ namespace CIARE
             textEditorControl1.Location = new System.Drawing.Point(0, 0);
             textEditorControl1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             textEditorControl1.Name = "textEditorControl1";
-            textEditorControl1.Size = new System.Drawing.Size(1394, 654);
+            textEditorControl1.Size = new System.Drawing.Size(1394, 650);
             textEditorControl1.TabIndex = 1;
             textEditorControl1.VRulerRow = 0;
             textEditorControl1.TextChanged += textEditorControl1_TextChanged;
@@ -668,6 +672,7 @@ namespace CIARE
             ResumeLayout(false);
             PerformLayout();
         }
+
 
         #endregion
         private System.Windows.Forms.PictureBox runCodePb;
