@@ -22,7 +22,7 @@ namespace CIARE.GUI
             for (int i = 0; i < tabControl.TabPages.Count; i++)
             {
                 Rectangle r = tabControl.GetTabRect(i);
-                Rectangle closeButton = new Rectangle(r.Right - 16, r.Top + 3, 9, 7);
+                Rectangle closeButton = new Rectangle(r.Right - 16, r.Top + 3, 9, 9);
                 if (closeButton.Contains(e.Location))
                 {
                     FileManage.ManageUnsavedData(textEditorControl, index, true);
@@ -46,6 +46,26 @@ namespace CIARE.GUI
             var lastIndex = tabControl.SelectedIndex;
             tabControl.TabPages.Insert(tabCount, $"New Page ({tabCount})          ");
             tabControl.SelectedIndex = lastIndex + tabCount;
+        }
+
+        /// <summary>
+        /// Swith between tabs with ctrl + left/right key.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        /// <param name="left"></param>
+        public static void SwitchTabs(ref TabControl tabControl,bool left)
+        {
+            var tabCount = tabControl.TabCount;
+            var tabIndex = tabControl.SelectedIndex;
+
+            if (left)
+            {
+                if (tabIndex > 1)
+                    tabControl.SelectTab(tabIndex - 1);
+            }
+            else
+                if (tabIndex <= tabCount - 2)
+                    tabControl.SelectTab(tabIndex + 1);
         }
     }
 }

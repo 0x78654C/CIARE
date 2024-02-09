@@ -22,8 +22,6 @@ using Button = System.Windows.Forms.Button;
 using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using CIARE.GUI;
-using System.Windows.Controls;
 using System.Drawing;
 
 
@@ -314,6 +312,12 @@ namespace CIARE
         {
             switch (keyData)
             {
+                case Keys.Left | Keys.Control:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
+                    return true;
+                case Keys.Right | Keys.Control:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
+                    return true;
                 case Keys.Tab | Keys.Control:
                     TabControllerManage.AddNewTab(ref EditorTabControl);
                     return true;
