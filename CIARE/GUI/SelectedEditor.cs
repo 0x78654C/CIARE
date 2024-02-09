@@ -18,5 +18,17 @@ namespace CIARE.GUI
             var textEditor = ctrl as TextEditorControl;
             return textEditor;
         }
+
+        /// <summary>
+        /// Get editor controler from selected tab by index.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public static TextEditorControl GetSelectedEditor(int index)
+        {
+            Control ctrl = MainForm.Instance.EditorTabControl.Controls[index].Controls[0];
+            var textEditor = ctrl as TextEditorControl;
+            return textEditor;
+        }
     }
 }
