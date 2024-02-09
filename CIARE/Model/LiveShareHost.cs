@@ -71,9 +71,10 @@ namespace CIARE
             GlobalVariables.typeConnection = true;
             try
             {
-                HubConnectionBuild();
+                GlobalVariables.liveTabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
+                HubConnectionBuild(GlobalVariables.liveTabIndex);
                 await ApiConnectionEvents.StartShare(this, MainForm.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
-                    startLiveBtn, connectHostBtn, SelectedEditor.GetSelectedEditor());
+                    startLiveBtn, connectHostBtn, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
             }
             catch (Exception ex)
             {
@@ -175,9 +176,10 @@ namespace CIARE
             GlobalVariables.typeConnection = false;
             try
             {
-                HubConnectionBuild();
+                GlobalVariables.liveTabIndex =  MainForm.Instance.EditorTabControl.SelectedIndex;
+                HubConnectionBuild(GlobalVariables.liveTabIndex);
                 await ApiConnectionEvents.Connect(this, MainForm.Instance.hubConnection, connectHostBtn, startLiveBtn,
-                    GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor());
+                    GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
             }
             catch (Exception ex)
             {
@@ -205,7 +207,7 @@ namespace CIARE
         /// <summary>
         /// Hub connection builder.
         /// </summary>
-        private void HubConnectionBuild()
+        private void HubConnectionBuild(int index)
         {
             if (!GlobalVariables.connected)
             {
@@ -213,7 +215,7 @@ namespace CIARE
       .WithUrl(GlobalVariables.apiUrl)
       .Build();
 
-                ApiConnectionEvents.ApiConnection(MainForm.Instance.hubConnection, SelectedEditor.GetSelectedEditor(),
+                ApiConnectionEvents.ApiConnection(MainForm.Instance.hubConnection, SelectedEditor.GetSelectedEditor(index),
                     GlobalVariables.connected, GlobalVariables.apiUrl);
             }
         }
