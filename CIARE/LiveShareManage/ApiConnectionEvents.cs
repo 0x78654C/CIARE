@@ -20,7 +20,7 @@ namespace CIARE.LiveShareManage
         /// <param name="updateCode"></param>
         /// <param name="writer"></param>
         /// <param name="connected"></param>
-        public static void ApiConnection(HubConnection hubConnection, TextEditorControl textEditorControl, bool connected, string apiUrl)
+        public static void ApiConnection(HubConnection hubConnection, string apiUrl)
         {
             if (string.IsNullOrEmpty(apiUrl))
                 return;
