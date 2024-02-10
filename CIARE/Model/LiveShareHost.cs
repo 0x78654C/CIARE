@@ -215,8 +215,7 @@ namespace CIARE
       .WithUrl(GlobalVariables.apiUrl)
       .Build();
 
-                ApiConnectionEvents.ApiConnection(MainForm.Instance.hubConnection, SelectedEditor.GetSelectedEditor(index),
-                    GlobalVariables.connected, GlobalVariables.apiUrl);
+                ApiConnectionEvents.ApiConnection(MainForm.Instance.hubConnection, GlobalVariables.apiUrl);
             }
         }
 
