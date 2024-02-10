@@ -23,6 +23,7 @@ using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
+using ICSharpCode.NRefactory.Ast;
 
 
 
@@ -230,8 +231,11 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void openToolStripMenuItem_Click(object sender, EventArgs e) =>
-            FileManage.OpenFileTab(EditorTabControl, selectedEditor);
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            int indexTab = EditorTabControl.SelectedIndex;
+            FileManage.OpenFileTab(EditorTabControl, SelectedEditor.GetSelectedEditor(indexTab));
+        }
 
 
         /// <summary>
@@ -336,7 +340,8 @@ namespace CIARE
                     FileManage.SaveFileTab(EditorTabControl, selectedEditor);
                     return true;
                 case Keys.O | Keys.Control:
-                    FileManage.OpenFileTab(EditorTabControl, selectedEditor);
+                    int indexTab = EditorTabControl.SelectedIndex;
+                    FileManage.OpenFileTab(EditorTabControl, SelectedEditor.GetSelectedEditor(indexTab));
                     return true;
                 case Keys.F | Keys.Control:
                     GlobalVariables.findTabOpen = true;
