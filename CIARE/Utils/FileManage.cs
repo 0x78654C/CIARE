@@ -4,9 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+using CIARE.GUI;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Application = System.Windows.Forms.Application;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Path = System.IO.Path;
@@ -518,9 +520,15 @@ MessageBoxIcon.Information);
         public static void OpenFileTab(TabControl tabControl, TextEditorControl textEditorControl)
         {
             int selectedTab = tabControl.SelectedIndex;
-            Control ctrl = tabControl.Controls[selectedTab].Controls[0];
-            textEditorControl = ctrl as TextEditorControl;
-            OpenFileDialog(textEditorControl);
+            int liveIndex = GlobalVariables.liveTabIndex;
+            if (GlobalVariables.isConnected && selectedTab == liveIndex)
+                OpenFileDialog(SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
+            else
+            {
+                Control ctrl = tabControl.Controls[selectedTab].Controls[0];
+                textEditorControl = ctrl as TextEditorControl;
+                OpenFileDialog(textEditorControl);
+            }
         }
 
         /// <summary>
