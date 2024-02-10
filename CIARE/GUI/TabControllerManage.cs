@@ -18,6 +18,8 @@ namespace CIARE.GUI
         public static void CloseTabEvent(TabControl tabControl, TextEditorControl textEditorControl, MouseEventArgs e)
         {
             var index = tabControl.SelectedIndex;
+            var indexLive = GlobalVariables.liveTabIndex;
+            bool isLiveIndex = index == indexLive;
             if (index <= 1) return;
             for (int i = 0; i < tabControl.TabPages.Count; i++)
             {
@@ -25,10 +27,13 @@ namespace CIARE.GUI
                 Rectangle closeButton = new Rectangle(r.Right - 16, r.Top + 3, 9, 9);
                 if (closeButton.Contains(e.Location))
                 {
-                    FileManage.ManageUnsavedData(textEditorControl, index, true);
-                    tabControl.TabPages.RemoveAt(i);
-                    tabControl.SelectTab(index - 1);
-                    break;
+                    if (!isLiveIndex && !GlobalVariables.apiConnected)
+                    {
+                        FileManage.ManageUnsavedData(textEditorControl, index, true);
+                        tabControl.TabPages.RemoveAt(i);
+                        tabControl.SelectTab(index - 1);
+                        break;
+                    }
                 }
             }
         }
