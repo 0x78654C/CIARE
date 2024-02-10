@@ -521,7 +521,7 @@ MessageBoxIcon.Information);
         {
             int selectedTab = tabControl.SelectedIndex;
             int liveIndex = GlobalVariables.liveTabIndex;
-            if (GlobalVariables.isConnected && selectedTab == liveIndex)
+            if (GlobalVariables.apiConnected && selectedTab == liveIndex)
                 OpenFileDialog(SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
             else
             {
