@@ -387,7 +387,7 @@ MessageBoxIcon.Warning);
             GlobalVariables.openedFilePath = string.Empty;
             GlobalVariables.savedFile = false;
             MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
-            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page ({index})";
+            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page ({index})          ";
             MainForm.Instance.markStartFileChk.Checked = false;
         }
 
@@ -524,11 +524,7 @@ MessageBoxIcon.Information);
             if (GlobalVariables.apiConnected && selectedTab == liveIndex)
                 OpenFileDialog(SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
             else
-            {
-                Control ctrl = tabControl.Controls[selectedTab].Controls[0];
-                textEditorControl = ctrl as TextEditorControl;
                 OpenFileDialog(textEditorControl);
-            }
         }
 
         /// <summary>
