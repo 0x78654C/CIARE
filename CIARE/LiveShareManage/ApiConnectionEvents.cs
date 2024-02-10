@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CIARE.GUI;
 using CIARE.Utils;
 using CIARE.Utils.Encryption;
 using ICSharpCode.TextEditor;
@@ -321,10 +322,10 @@ MessageBoxIcon.Warning);
             {
                 if (GlobalVariables.typeConnection)
                     await StartShare(new Form(),hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
-               fakeButton, fakeButton, MainForm.Instance.selectedEditor);
+               fakeButton, fakeButton, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
                 else
                     await Connect(new Form(),hubConnection, fakeButton, fakeButton,
-GlobalVariables.livePassword, GlobalVariables.sessionId, MainForm.Instance.selectedEditor); ;
+GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex)); ;
             }
             else
             {
