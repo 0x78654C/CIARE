@@ -30,6 +30,7 @@ namespace CIARE.LiveShareManage
             {
                 GlobalVariables.liveDisconnected = true;
                 MainForm.Instance.liveStatusPb.Image = Properties.Resources.orange_dot;
+                MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
                 return Task.CompletedTask;
             };
         }
@@ -71,8 +72,7 @@ namespace CIARE.LiveShareManage
                 liveShareBtn.Enabled = true;
                 if (GlobalVariables.darkColor)
                     liveShareBtn.BackColor = Color.FromArgb(30, 30, 30);
-                int index = MainForm.Instance.EditorTabControl.SelectedIndex;
-                MainForm.Instance.EditorTabControl.SelectTab(index);
+                MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
             }
             else
             {
@@ -112,8 +112,7 @@ namespace CIARE.LiveShareManage
                         liveShareBtn.BackColor = Color.Gray;
                     MessageBox.Show("Connected to remote session!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     form.Close();
-                    int index = MainForm.Instance.EditorTabControl.SelectedIndex;
-                    MainForm.Instance.EditorTabControl.SelectTab(index);
+                    MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
                 }
                 catch (Exception ex)
                 {
@@ -203,8 +202,7 @@ namespace CIARE.LiveShareManage
                 GlobalVariables.liveDisconnected = false;
                 GlobalVariables.isConnected = false;
                 MessageBox.Show("Live Share stopped!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                int index = MainForm.Instance.EditorTabControl.SelectedIndex;
-                MainForm.Instance.EditorTabControl.SelectTab(index);
+                MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
             }
             else
             {
@@ -237,6 +235,7 @@ namespace CIARE.LiveShareManage
                     if (GlobalVariables.darkColor)
                         connectBtn.BackColor = Color.Gray;
                     MessageBox.Show("Live Share started!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
                 }
                 catch (Exception ex)
                 {
