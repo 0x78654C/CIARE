@@ -23,9 +23,6 @@ using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
-using ICSharpCode.NRefactory.Ast;
-
-
 
 namespace CIARE
 {
@@ -52,7 +49,6 @@ namespace CIARE
         private ApiConnectionEvents _apiConnectionEvents;
         public TextEditorControl selectedEditor;
         TextEditorControl dynamicTextEdtior;
-        private int hoverIndex = -1;
         private int countTabs = 0;
 
         // Used for tab's auto-resize
@@ -823,7 +819,7 @@ namespace CIARE
             if (tabCount != countTabs)
             {
                 countTabs = tabCount;
-                dynamicTextEdtior = new ICSharpCode.TextEditor.TextEditorControl();
+                dynamicTextEdtior = new TextEditorControl();
                 TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
                 tabPage.Controls.Add(dynamicTextEdtior);
                 SetDesignEditor(dynamicTextEdtior);
@@ -837,7 +833,7 @@ namespace CIARE
         /// <param name="dynamicTextEdtior"></param>
         private void SetDesignEditor(TextEditorControl dynamicTextEdtior)
         {
-            
+
             var tabCount = this.EditorTabControl.TabCount;
             var tabIndex = this.EditorTabControl.SelectedIndex;
             dynamicTextEdtior.Name = $"textEditorControl{tabCount}";
@@ -865,40 +861,17 @@ namespace CIARE
         /// <param name="e"></param>
         private void EditorTabControl_DrawItem(object sender, DrawItemEventArgs e)
         {
-                var g = e.Graphics;
-                var tp = EditorTabControl.TabPages[e.Index];
-                var rt = e.Bounds;
-                var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
+            // Draw tab on initialize.
+            TabControllerManage.DrawTabControl(EditorTabControl, e);
 
-                if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
-                {
-                    rx.Offset(0, 2);
-                }
+            // Set transparent header bar.
+            TabControllerManage.SetTransparentTabBar(EditorTabControl, e);
 
-                rt.Inflate(-rx.Width, 0);
-                rt.Offset(-(rx.Width / 2), 0);
-
-                using (Font f = new Font("Marlett", 8f))
-                using (StringFormat sf = new StringFormat()
-                {
-                    Alignment = StringAlignment.Center,
-                    LineAlignment = StringAlignment.Center,
-                    Trimming = StringTrimming.EllipsisCharacter,
-                    FormatFlags = StringFormatFlags.NoWrap,
-                })
-                {
-                    g.DrawString(tp.Text, tp.Font ?? Font, Brushes.Black, rt, sf);
-                    if (e.Index > 1)
-                        g.DrawString("r", f, hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
-                }
-                tp.Tag = rx;
-
-                // Set transparent header bar.
-                TabControllerManage.SetTransparentTabBar(EditorTabControl, e);
-
-                // Color tab to red if live shared started on that index.
-                if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
-                    TabControllerManage.ColorTab(EditorTabControl, GlobalVariables.liveTabIndex, e, Color.Red);
+            // Color tab to red if live shared started on that index.
+            if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
+                TabControllerManage.ColorTab(EditorTabControl, GlobalVariables.liveTabIndex, e, Color.Red);
+            var taBindex = EditorTabControl.SelectedIndex;
+            TabControllerManage.ColorTab(EditorTabControl, taBindex, e, Color.LightGray);
         }
     }
 }
