@@ -25,7 +25,7 @@ namespace CIARE.GUI
                 Rectangle r = tabControl.GetTabRect(index);
                 Rectangle closeButton = new Rectangle(r.Right - 16, r.Top + 3, 9, 9);
                 if (closeButton.Contains(e.Location))
-                    if (!GlobalVariables.apiConnected || !GlobalVariables.apiRemoteConnected)
+                    if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
                         CloseSelectedIndex(textEditorControl, tabControl, index,false);
                 return;
         }
@@ -48,7 +48,7 @@ namespace CIARE.GUI
             tabControl.SelectedIndex = 0;
             var tabCount = tabControl.TabCount;
             var lastIndex = tabControl.SelectedIndex;
-            tabControl.TabPages.Insert(tabCount, $"New Page ({tabCount})          ");
+            tabControl.TabPages.Insert(tabCount, $"New Page            ");
             tabControl.SelectedIndex = lastIndex + tabCount;
         }
 
