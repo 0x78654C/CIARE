@@ -894,20 +894,11 @@ namespace CIARE
             tp.Tag = rx;
 
             // Set transparent header bar.
-            bool dark = GlobalVariables.darkColor;
-            Color BackGroundColorForm = dark ? Color.FromArgb(51, 51, 51) : SystemColors.Window; 
-            SolidBrush fillbrush = new SolidBrush(BackGroundColorForm);
-            Rectangle lasttabrect = EditorTabControl.GetTabRect(EditorTabControl.TabPages.Count - 1);
-            Rectangle background = new Rectangle();
-            background.Location = new Point(lasttabrect.Right, 0);
-            background.Size = new Size(EditorTabControl.Right - background.Left, lasttabrect.Height + 1);
-            e.Graphics.FillRectangle(fillbrush, background);
-            //-------------------------------
+            TabControllerManage.SetTransparentTabBar(EditorTabControl, e);
 
-            if (GlobalVariables.apiConnected)
-            {
-                TabControllerManage.ColorTab(EditorTabControl, GlobalVariables.liveTabIndex, e);
-            }
+            // Color tab to red if live shared started on that index.
+            if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
+                TabControllerManage.ColorTab(EditorTabControl, GlobalVariables.liveTabIndex, e, Color.Red);
         }
     }
 }
