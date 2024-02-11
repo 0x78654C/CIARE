@@ -75,14 +75,12 @@ namespace CIARE
                 HubConnectionBuild();
                 await ApiConnectionEvents.StartShare(MainForm.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
                     startLiveBtn, connectHostBtn, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
-
-
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
+            MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
         }
 
         /// <summary>
@@ -183,12 +181,12 @@ namespace CIARE
                 HubConnectionBuild();
                 await ApiConnectionEvents.Connect(this, MainForm.Instance.hubConnection, connectHostBtn, startLiveBtn,
                     GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
-                MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
         }
 
         /// <summary>

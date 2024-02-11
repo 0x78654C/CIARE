@@ -30,7 +30,6 @@ namespace CIARE.LiveShareManage
             {
                 GlobalVariables.liveDisconnected = true;
                 MainForm.Instance.liveStatusPb.Image = Properties.Resources.orange_dot;
-                MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
                 return Task.CompletedTask;
             };
         }
@@ -111,8 +110,8 @@ namespace CIARE.LiveShareManage
                     if (GlobalVariables.darkColor)
                         liveShareBtn.BackColor = Color.Gray;
                     MessageBox.Show("Connected to remote session!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    form.Close();
                     MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
+                    form.Close();
                 }
                 catch (Exception ex)
                 {

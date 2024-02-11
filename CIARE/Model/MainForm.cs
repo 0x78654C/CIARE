@@ -52,8 +52,7 @@ namespace CIARE
         private ApiConnectionEvents _apiConnectionEvents;
         public TextEditorControl selectedEditor;
         TextEditorControl dynamicTextEdtior;
-        private int HoverIndex = -1;
-
+        private int hoverIndex = -1;
 
         // Used for tab's auto-resize
         [DllImport("user32.dll")]
@@ -864,41 +863,40 @@ namespace CIARE
         /// <param name="e"></param>
         private void EditorTabControl_DrawItem(object sender, DrawItemEventArgs e)
         {
-            var g = e.Graphics;
+                var g = e.Graphics;
+                var tp = EditorTabControl.TabPages[e.Index];
+                var rt = e.Bounds;
+                var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
 
-            var tp = EditorTabControl.TabPages[e.Index];
-            var rt = e.Bounds;
-            var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
+                if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
+                {
+                    rx.Offset(0, 2);
+                }
 
-            if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
-            {
-                rx.Offset(0, 2);
-            }
+                rt.Inflate(-rx.Width, 0);
+                rt.Offset(-(rx.Width / 2), 0);
 
-            rt.Inflate(-rx.Width, 0);
-            rt.Offset(-(rx.Width / 2), 0);
+                using (Font f = new Font("Marlett", 8f))
+                using (StringFormat sf = new StringFormat()
+                {
+                    Alignment = StringAlignment.Center,
+                    LineAlignment = StringAlignment.Center,
+                    Trimming = StringTrimming.EllipsisCharacter,
+                    FormatFlags = StringFormatFlags.NoWrap,
+                })
+                {
+                    g.DrawString(tp.Text, tp.Font ?? Font, Brushes.Black, rt, sf);
+                    if (e.Index > 1)
+                        g.DrawString("r", f, hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
+                }
+                tp.Tag = rx;
 
-            using (Font f = new Font("Marlett", 8f))
-            using (StringFormat sf = new StringFormat()
-            {
-                Alignment = StringAlignment.Center,
-                LineAlignment = StringAlignment.Center,
-                Trimming = StringTrimming.EllipsisCharacter,
-                FormatFlags = StringFormatFlags.NoWrap,
-            })
-            {
-                g.DrawString(tp.Text, tp.Font ?? Font, Brushes.Black, rt, sf);
-                if (e.Index > 1)
-                    g.DrawString("r", f, HoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
-            }
-            tp.Tag = rx;
+                // Set transparent header bar.
+                TabControllerManage.SetTransparentTabBar(EditorTabControl, e);
 
-            // Set transparent header bar.
-            TabControllerManage.SetTransparentTabBar(EditorTabControl, e);
-
-            // Color tab to red if live shared started on that index.
-            if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
-                TabControllerManage.ColorTab(EditorTabControl, GlobalVariables.liveTabIndex, e, Color.Red);
+                // Color tab to red if live shared started on that index.
+                if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
+                    TabControllerManage.ColorTab(EditorTabControl, GlobalVariables.liveTabIndex, e, Color.Red);
         }
     }
 }
