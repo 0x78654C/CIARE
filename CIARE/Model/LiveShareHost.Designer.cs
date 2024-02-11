@@ -186,7 +186,6 @@
             Name = "LiveShareHost";
             StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             Text = "Live Share Management";
-            FormClosing += LiveShareHost_FormClosing;
             Load += LiveShareHost_Load;
             liveShareStartGrp.ResumeLayout(false);
             liveShareStartGrp.PerformLayout();

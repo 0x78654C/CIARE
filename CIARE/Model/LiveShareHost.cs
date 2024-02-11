@@ -258,10 +258,5 @@ namespace CIARE
                     this.Close();
             }
         }
-
-        private void LiveShareHost_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
-        }
     }
 }
