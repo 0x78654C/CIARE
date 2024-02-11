@@ -1,5 +1,6 @@
 ﻿using CIARE.Utils;
 using ICSharpCode.TextEditor;
+using System;
 using System.Drawing;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -18,26 +19,22 @@ namespace CIARE.GUI
         public static void CloseTabEvent(TabControl tabControl, TextEditorControl textEditorControl, MouseEventArgs e)
         {
             var index = tabControl.SelectedIndex;
-            var indexLive = GlobalVariables.liveTabIndex;
-            bool isLiveIndex = index == indexLive;
             if (index <= 1) return;
-            for (int i = 0; i < tabControl.TabPages.Count; i++)
-            {
-                Rectangle r = tabControl.GetTabRect(i);
+                Rectangle r = tabControl.GetTabRect(index);
                 Rectangle closeButton = new Rectangle(r.Right - 16, r.Top + 3, 9, 9);
                 if (closeButton.Contains(e.Location))
-                {
-                    if (!isLiveIndex && !GlobalVariables.apiConnected)
-                    {
-                        FileManage.ManageUnsavedData(textEditorControl, index, true);
-                        tabControl.TabPages.RemoveAt(i);
-                        tabControl.SelectTab(index - 1);
-                        break;
-                    }
-                }
-            }
+                    if (!GlobalVariables.apiConnected || !GlobalVariables.apiRemoteConnected)
+                        CloseSelectedIndex(textEditorControl, tabControl, index,false);
+                return;
         }
 
+
+        private static void CloseSelectedIndex(TextEditorControl textEditorControl, TabControl tabControl, int index, bool checkAll)
+        {
+            FileManage.ManageUnsavedData(textEditorControl, index, checkAll);
+            tabControl.TabPages.RemoveAt(index);
+            tabControl.SelectTab(index - 1);
+        }
         /// <summary>
         /// Add new tab with editor.
         /// </summary>
@@ -73,29 +70,43 @@ namespace CIARE.GUI
                 tabControl.SelectTab(tabIndex + 1);
         }
 
-        public static void ColorTab(TabControl tabControl, int index, DrawItemEventArgs e)
+        /// <summary>
+        /// Set color for selected tab.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        /// <param name="index"></param>
+        /// <param name="e"></param>
+        public static void ColorTab(TabControl tabControl, int index, DrawItemEventArgs e, Color color)
         {
-            //Get the working area of the TabControl main control
             Rectangle rec = tabControl.ClientRectangle;
-            //Create a StringFormat object to set the layout of the label text
             StringFormat StrFormat = new StringFormat();
-            StrFormat.LineAlignment = StringAlignment.Center;// Set the text to be centered vertically
-            StrFormat.Alignment = StringAlignment.Center;// Set the text to be centered horizontally
-
-            // The background fill color of the label, it can also be a picture (e.Graphics.DrawImage)
-            //SolidBrush backColor = new SolidBrush(Color.Gray);
-            SolidBrush fontColor;// Label font color
-                                 //Draw the background of the main control
-            //e.Graphics.FillRectangle(backColor, rec);
-
-            //Draw label style
+            StrFormat.LineAlignment = StringAlignment.Center;
+            StrFormat.Alignment = StringAlignment.Center;
+            SolidBrush fontColor;
             Font fntTab = e.Font;
-            Brush bshBack = new SolidBrush(Color.Red);
+            Brush bshBack = new SolidBrush(color);
             Rectangle recBounds = tabControl.GetTabRect(index);
             RectangleF tabTextArea = (RectangleF)tabControl.GetTabRect(index);
             e.Graphics.FillRectangle(bshBack, recBounds);
             fontColor = new SolidBrush(Color.Black);
             e.Graphics.DrawString(tabControl.TabPages[index].Text, fntTab, fontColor, tabTextArea, StrFormat);
+        }
+
+        /// <summary>
+        /// Set Transparent tab bar.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        /// <param name="e"></param>
+        public static void SetTransparentTabBar(TabControl tabControl, DrawItemEventArgs e)
+        {
+            bool dark = GlobalVariables.darkColor;
+            Color BackGroundColorForm = dark ? Color.FromArgb(51, 51, 51) : SystemColors.Window;
+            SolidBrush fillbrush = new SolidBrush(BackGroundColorForm);
+            Rectangle lasttabrect = tabControl.GetTabRect(tabControl.TabPages.Count - 1);
+            Rectangle background = new Rectangle();
+            background.Location = new Point(lasttabrect.Right, 0);
+            background.Size = new Size(tabControl.Right - background.Left, lasttabrect.Height + 1);
+            e.Graphics.FillRectangle(fillbrush, background);
         }
     }
 }
