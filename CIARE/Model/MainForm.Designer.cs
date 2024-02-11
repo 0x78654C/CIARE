@@ -505,7 +505,6 @@ namespace CIARE
             textEditorControl1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             textEditorControl1.Name = "textEditorControl1";
             textEditorControl1.Size = new System.Drawing.Size(1394, 650);
-            textEditorControl1.TabIndex = 1;
             textEditorControl1.VRulerRow = 0;
             textEditorControl1.TextChanged += textEditorControl1_TextChanged;
             textEditorControl1.Enter += textEditorControl1_Enter;
