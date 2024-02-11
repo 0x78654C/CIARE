@@ -903,6 +903,11 @@ namespace CIARE
             background.Size = new Size(EditorTabControl.Right - background.Left, lasttabrect.Height + 1);
             e.Graphics.FillRectangle(fillbrush, background);
             //-------------------------------
+
+            if (GlobalVariables.apiConnected)
+            {
+                TabControllerManage.ColorTab(EditorTabControl, GlobalVariables.liveTabIndex, e);
+            }
         }
     }
 }
