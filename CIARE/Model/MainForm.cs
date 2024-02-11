@@ -500,7 +500,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_Activated(object sender, EventArgs e)
         {
-            FileManage.CheckFileExternalEdited(GlobalVariables.openedFilePath, openedFileLength, selectedEditor);
+            FileManage.CheckFileExternalEdited(GlobalVariables.openedFilePath, openedFileLength, SelectedEditor.GetSelectedEditor());
         }
 
 
