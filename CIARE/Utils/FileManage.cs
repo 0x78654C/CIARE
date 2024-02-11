@@ -281,7 +281,6 @@ MessageBoxIcon.Warning);
                 GlobalVariables.noFileSelected = false;
                 return;
             }
-            textEditor.Clear();
             textEditor.Text = openedData;
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
             GlobalVariables.openedFileName = fileInfo.Name;
