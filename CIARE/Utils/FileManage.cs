@@ -8,7 +8,6 @@ using CIARE.GUI;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Application = System.Windows.Forms.Application;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Path = System.IO.Path;
@@ -412,7 +411,8 @@ MessageBoxIcon.Warning);
                         textEditorControl.Clear();
                         textEditorControl.Text = reader.ReadToEnd();
                         MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
-                        MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)}";
+                        MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
+                        MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)}";
                         MainForm.Instance.openedFileLength = fileInfo.Length;
                     }
                     return;
