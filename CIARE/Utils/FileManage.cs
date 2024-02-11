@@ -385,7 +385,7 @@ MessageBoxIcon.Warning);
             GlobalVariables.openedFilePath = string.Empty;
             GlobalVariables.savedFile = false;
             MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
-            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page ({index})          ";
+            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page             ";
             MainForm.Instance.markStartFileChk.Checked = false;
         }
 

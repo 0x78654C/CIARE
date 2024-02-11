@@ -491,7 +491,7 @@ namespace CIARE
             tabPage2.Name = "tabPage2";
             tabPage2.Size = new System.Drawing.Size(1395, 651);
             tabPage2.TabIndex = 1;
-            tabPage2.Text = "New Page (1)          ";
+            tabPage2.Text = "New Page             ";
             tabPage2.UseVisualStyleBackColor = true;
             // 
             // textEditorControl1

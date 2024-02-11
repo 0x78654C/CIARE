@@ -784,7 +784,7 @@ namespace CIARE
             var lastIndex = EditorTabControl.SelectedIndex;
             if (lastIndex == 0)
             {
-                EditorTabControl.TabPages.Insert(tabCount, $"New Page ({tabCount})          ");
+                EditorTabControl.TabPages.Insert(tabCount, $"New Page             ");
                 EditorTabControl.SelectedIndex = lastIndex + tabCount;
             }
             else
