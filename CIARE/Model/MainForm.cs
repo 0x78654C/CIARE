@@ -53,6 +53,7 @@ namespace CIARE
         public TextEditorControl selectedEditor;
         TextEditorControl dynamicTextEdtior;
         private int hoverIndex = -1;
+        private int countTabs = 0;
 
         // Used for tab's auto-resize
         [DllImport("user32.dll")]
@@ -117,11 +118,11 @@ namespace CIARE
             versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             versionName = versionName.Substring(0, versionName.Length - 2);
             this.Text = $"CIARE {versionName}";
+            Initiliaze();
             Console.SetOut(new ControlWriter(outputRBT));
             InitializeEditor.GenerateLiveSessionId();
             InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
-            Initiliaze();
             Warnings.CheckWarnings(GlobalVariables.registryPath);
             StartFilesOS.CheckOSStartFile(GlobalVariables.registryPath);
             BuildConfig.CheckConfig(GlobalVariables.registryPath);
@@ -812,21 +813,20 @@ namespace CIARE
             string titleTab = EditorTabControl.SelectedTab.Text;
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
-                this.Text = $"{titleTab.Trim()} - CIARE {MainForm.Instance.versionName}";
+                this.Text = $"{titleTab.Trim()} - CIARE {versionName}";
             }
             else
             {
-                this.Text = $"CIARE {MainForm.Instance.versionName}";
+                this.Text = $"CIARE {versionName}";
             }
-
-            if (!EditorTabControl.SelectedTab.Controls.ContainsKey("Editor"))
+            var tabCount = this.EditorTabControl.TabCount;
+            if (tabCount != countTabs)
             {
-                dynamicTextEdtior = new TextEditorControl();
-
+                countTabs = tabCount;
+                dynamicTextEdtior = new ICSharpCode.TextEditor.TextEditorControl();
                 TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
-                SetDesignEditor(dynamicTextEdtior);
                 tabPage.Controls.Add(dynamicTextEdtior);
-                var tabCount = this.EditorTabControl.TabCount;
+                SetDesignEditor(dynamicTextEdtior);
                 Initiliaze(tabCount);
             }
         }
@@ -837,17 +837,19 @@ namespace CIARE
         /// <param name="dynamicTextEdtior"></param>
         private void SetDesignEditor(TextEditorControl dynamicTextEdtior)
         {
+            
             var tabCount = this.EditorTabControl.TabCount;
+            var tabIndex = this.EditorTabControl.SelectedIndex;
             dynamicTextEdtior.Name = $"textEditorControl{tabCount}";
             dynamicTextEdtior.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            dynamicTextEdtior.BackColor = System.Drawing.SystemColors.Window;
+            dynamicTextEdtior.BackColor = SystemColors.Window;
             dynamicTextEdtior.BorderStyle = BorderStyle.FixedSingle;
-            dynamicTextEdtior.Font = new System.Drawing.Font("Consolas", 9.75F);
+            dynamicTextEdtior.Font = new Font("Consolas", 9.75F);
             dynamicTextEdtior.Highlighting = null;
-            dynamicTextEdtior.Location = new System.Drawing.Point(0, 0);
+            dynamicTextEdtior.Location = new Point(0, 0);
             dynamicTextEdtior.Margin = new Padding(4, 3, 4, 3);
-            dynamicTextEdtior.Size = new System.Drawing.Size(this.Width, this.Height);
-            dynamicTextEdtior.TabIndex = 1;
+            dynamicTextEdtior.Size = new Size(this.Width, this.Height);
+            dynamicTextEdtior.TabIndex = tabIndex;
             dynamicTextEdtior.VRulerRow = 0;
             dynamicTextEdtior.TextChanged += textEditorControl1_TextChanged;
             dynamicTextEdtior.Enter += textEditorControl1_Enter;
