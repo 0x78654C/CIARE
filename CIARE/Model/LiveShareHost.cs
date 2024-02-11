@@ -261,7 +261,7 @@ namespace CIARE
             }
         }
 
-        private void LiveShareHost_FormClosed(object sender, FormClosedEventArgs e)
+        private void LiveShareHost_FormClosing(object sender, FormClosingEventArgs e)
         {
             MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
         }
