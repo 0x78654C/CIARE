@@ -71,6 +71,8 @@ namespace CIARE.LiveShareManage
                 liveShareBtn.Enabled = true;
                 if (GlobalVariables.darkColor)
                     liveShareBtn.BackColor = Color.FromArgb(30, 30, 30);
+                int index = MainForm.Instance.EditorTabControl.SelectedIndex;
+                MainForm.Instance.EditorTabControl.SelectTab(index);
             }
             else
             {
@@ -110,6 +112,8 @@ namespace CIARE.LiveShareManage
                         liveShareBtn.BackColor = Color.Gray;
                     MessageBox.Show("Connected to remote session!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     form.Close();
+                    int index = MainForm.Instance.EditorTabControl.SelectedIndex;
+                    MainForm.Instance.EditorTabControl.SelectTab(index);
                 }
                 catch (Exception ex)
                 {
@@ -199,6 +203,8 @@ namespace CIARE.LiveShareManage
                 GlobalVariables.liveDisconnected = false;
                 GlobalVariables.isConnected = false;
                 MessageBox.Show("Live Share stopped!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                int index = MainForm.Instance.EditorTabControl.SelectedIndex;
+                MainForm.Instance.EditorTabControl.SelectTab(index);
             }
             else
             {
@@ -230,7 +236,6 @@ namespace CIARE.LiveShareManage
                     connectBtn.Enabled = false;
                     if (GlobalVariables.darkColor)
                         connectBtn.BackColor = Color.Gray;
-
                     MessageBox.Show("Live Share started!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
