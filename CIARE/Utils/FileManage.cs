@@ -236,12 +236,11 @@ MessageBoxIcon.Warning);
                 }
                 else
                 {
-                    if (tab.Text.StartsWith("*") || tab.Text.Contains("New Page") && isSelectedTab)
+                    if ((tab.Text.StartsWith("*") || tab.Text.Contains("New Page")))
                     {
                         if (!string.IsNullOrEmpty(textEditorControl.Text))
                             dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
             MessageBoxIcon.Warning);
-                        MainForm.Instance.EditorTabControl.SelectTab(tab);
                         DialogResultAction(dr, textEditorControl);
                         break;
                     }
@@ -272,7 +271,7 @@ MessageBoxIcon.Warning);
         public static void OpenFileDialog(TextEditorControl textEditor)
         {
             var index = MainForm.Instance.EditorTabControl.SelectedIndex;
-            ManageUnsavedData(textEditor, index);
+            ManageUnsavedData(textEditor, index, false);
             if (GlobalVariables.noClear)
                 return;
             string openedData = OpenFile();
@@ -376,7 +375,7 @@ MessageBoxIcon.Warning);
         public static void NewFile(TextEditorControl textEditor, RichTextBox logOutput)
         {
             var index = MainForm.Instance.EditorTabControl.SelectedIndex;
-            ManageUnsavedData(textEditor, index);
+            ManageUnsavedData(textEditor, index, false);
             if (GlobalVariables.noClear)
                 return;
             Control ctrl = MainForm.Instance.EditorTabControl.Controls[index].Controls[0];
