@@ -158,7 +158,8 @@ namespace CIARE.LiveShareManage
                     await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted, $"{lineNumber}|{columnNumber}");
                 }
             }
-            catch { }
+            catch{
+            }
         }
 
         /// <summary>
@@ -180,7 +181,7 @@ namespace CIARE.LiveShareManage
         /// <param name="connectBtn"></param>
         /// <param name="output"></param>
         /// <returns></returns>
-        public static async Task StartShare(Form form,HubConnection hubConnection, string password, string sessionId, Button startShareBtn,
+        public static async Task StartShare(HubConnection hubConnection, string password, string sessionId, Button startShareBtn,
             Button connectBtn, TextEditorControl textEditorControl)
         {
             if (GlobalVariables.apiConnected)
@@ -207,7 +208,7 @@ namespace CIARE.LiveShareManage
                     MessageBox.Show("No password provied!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-
+                
                 hubConnection.On<string, string, string>("GetSend", (code, position, remoteConnectionId) =>
                 {
                     GlobalVariables.remoteConnectionId = remoteConnectionId;
@@ -321,7 +322,7 @@ MessageBoxIcon.Warning);
             if (dr == DialogResult.Yes)
             {
                 if (GlobalVariables.typeConnection)
-                    await StartShare(new Form(),hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
+                    await StartShare(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
                fakeButton, fakeButton, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
                 else
                     await Connect(new Form(),hubConnection, fakeButton, fakeButton,
