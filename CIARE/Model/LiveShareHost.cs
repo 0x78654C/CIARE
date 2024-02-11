@@ -72,8 +72,8 @@ namespace CIARE
             try
             {
                 GlobalVariables.liveTabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
-                HubConnectionBuild(GlobalVariables.liveTabIndex);
-                await ApiConnectionEvents.StartShare(this, MainForm.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
+                HubConnectionBuild();
+                await ApiConnectionEvents.StartShare(MainForm.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
                     startLiveBtn, connectHostBtn, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
             }
             catch (Exception ex)
@@ -177,7 +177,7 @@ namespace CIARE
             try
             {
                 GlobalVariables.liveTabIndex =  MainForm.Instance.EditorTabControl.SelectedIndex;
-                HubConnectionBuild(GlobalVariables.liveTabIndex);
+                HubConnectionBuild();
                 await ApiConnectionEvents.Connect(this, MainForm.Instance.hubConnection, connectHostBtn, startLiveBtn,
                     GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
             }
@@ -207,13 +207,19 @@ namespace CIARE
         /// <summary>
         /// Hub connection builder.
         /// </summary>
-        private void HubConnectionBuild(int index)
+        private void HubConnectionBuild()
         {
             if (!GlobalVariables.connected)
             {
                 MainForm.Instance.hubConnection = new HubConnectionBuilder()
-      .WithUrl(GlobalVariables.apiUrl)
+      .WithUrl(GlobalVariables.apiUrl,opts =>
+        {
+            opts.TransportMaxBufferSize = 100000000; //100mb
+            opts.ApplicationMaxBufferSize = 100000000; //100mb
+        }
+      )
       .Build();
+                
 
                 ApiConnectionEvents.ApiConnection(MainForm.Instance.hubConnection, GlobalVariables.apiUrl);
             }
