@@ -10,6 +10,8 @@ namespace CIARE.GUI
     [SupportedOSPlatform("windows")]
     public class TabControllerManage
     {
+        private static int s_hoverIndex = -1;
+
         /// <summary>
         /// Manage event on close tab.
         /// </summary>
@@ -90,6 +92,70 @@ namespace CIARE.GUI
             e.Graphics.FillRectangle(bshBack, recBounds);
             fontColor = new SolidBrush(Color.Black);
             e.Graphics.DrawString(tabControl.TabPages[index].Text, fntTab, fontColor, tabTextArea, StrFormat);
+
+            var g = e.Graphics;
+            var tp = tabControl.TabPages[e.Index];
+            var rt = e.Bounds;
+            var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
+
+            if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
+            {
+                rx.Offset(0, 2);
+            }
+
+            rt.Inflate(-rx.Width, 0);
+            rt.Offset(-(rx.Width / 2), 0);
+
+            using (Font f = new Font("Marlett", 8f))
+            using (StringFormat sf = new StringFormat()
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center,
+                Trimming = StringTrimming.EllipsisCharacter,
+                FormatFlags = StringFormatFlags.NoWrap,
+            })
+            {
+                //g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, Brushes.Black, rt, sf);
+                if (e.Index > 1)
+                    g.DrawString("r", f, s_hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
+            }
+            tp.Tag = rx;
+        }
+
+        /// <summary>
+        /// Draw tab in tabcontrl and set x pointer for close.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        /// <param name="e"></param>
+        public static void DrawTabControl(TabControl tabControl, DrawItemEventArgs e)
+        {
+            var g = e.Graphics;
+            var tp = tabControl.TabPages[e.Index];
+            var rt = e.Bounds;
+            var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
+
+            if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
+            {
+                rx.Offset(0, 2);
+            }
+
+            rt.Inflate(-rx.Width, 0);
+            rt.Offset(-(rx.Width / 2), 0);
+
+            using (Font f = new Font("Marlett", 8f))
+            using (StringFormat sf = new StringFormat()
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center,
+                Trimming = StringTrimming.EllipsisCharacter,
+                FormatFlags = StringFormatFlags.NoWrap,
+            })
+            {
+                g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, Brushes.Black, rt, sf);
+                if (e.Index > 1)
+                    g.DrawString("r", f, s_hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
+            }
+            tp.Tag = rx;
         }
 
         /// <summary>
@@ -97,6 +163,7 @@ namespace CIARE.GUI
         /// </summary>
         /// <param name="tabControl"></param>
         /// <param name="e"></param>
+        /// 
         public static void SetTransparentTabBar(TabControl tabControl, DrawItemEventArgs e)
         {
             bool dark = GlobalVariables.darkColor;
