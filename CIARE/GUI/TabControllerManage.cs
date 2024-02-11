@@ -58,7 +58,7 @@ namespace CIARE.GUI
         /// </summary>
         /// <param name="tabControl"></param>
         /// <param name="left"></param>
-        public static void SwitchTabs(ref TabControl tabControl,bool left)
+        public static void SwitchTabs(ref TabControl tabControl, bool left)
         {
             var tabCount = tabControl.TabCount;
             var tabIndex = tabControl.SelectedIndex;
@@ -70,7 +70,32 @@ namespace CIARE.GUI
             }
             else
                 if (tabIndex <= tabCount - 2)
-                    tabControl.SelectTab(tabIndex + 1);
+                tabControl.SelectTab(tabIndex + 1);
+        }
+
+        public static void ColorTab(TabControl tabControl, int index, DrawItemEventArgs e)
+        {
+            //Get the working area of the TabControl main control
+            Rectangle rec = tabControl.ClientRectangle;
+            //Create a StringFormat object to set the layout of the label text
+            StringFormat StrFormat = new StringFormat();
+            StrFormat.LineAlignment = StringAlignment.Center;// Set the text to be centered vertically
+            StrFormat.Alignment = StringAlignment.Center;// Set the text to be centered horizontally
+
+            // The background fill color of the label, it can also be a picture (e.Graphics.DrawImage)
+            //SolidBrush backColor = new SolidBrush(Color.Gray);
+            SolidBrush fontColor;// Label font color
+                                 //Draw the background of the main control
+            //e.Graphics.FillRectangle(backColor, rec);
+
+            //Draw label style
+            Font fntTab = e.Font;
+            Brush bshBack = new SolidBrush(Color.Red);
+            Rectangle recBounds = tabControl.GetTabRect(index);
+            RectangleF tabTextArea = (RectangleF)tabControl.GetTabRect(index);
+            e.Graphics.FillRectangle(bshBack, recBounds);
+            fontColor = new SolidBrush(Color.Black);
+            e.Graphics.DrawString(tabControl.TabPages[index].Text, fntTab, fontColor, tabTextArea, StrFormat);
         }
     }
 }
