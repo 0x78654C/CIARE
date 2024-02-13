@@ -23,6 +23,7 @@ using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
+using System.Windows.Controls;
 
 namespace CIARE
 {
@@ -312,13 +313,17 @@ namespace CIARE
         {
             switch (keyData)
             {
-                case Keys.Left | Keys.Control:
-                    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
-                    return true;
-                case Keys.Right | Keys.Control:
-                    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
-                    return true;
+                //case Keys.Left | Keys.Control:
+                //    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
+                //    return true;
+                //case Keys.Right | Keys.Control:
+                //    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
+                //    return true;
+
                 case Keys.Tab | Keys.Control:
+                    TabControllerManage.SwitchTabs2(ref EditorTabControl, true);
+                    return true;
+                case Keys.Q | Keys.Control:
                     TabControllerManage.AddNewTab(ref EditorTabControl);
                     return true;
                 case Keys.N | Keys.Control:
@@ -851,6 +856,7 @@ namespace CIARE
             dynamicTextEdtior.Resize += textEditorControl1_Resize;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
+            dynamicTextEdtior.Focus();
         }
 
         /// <summary>
