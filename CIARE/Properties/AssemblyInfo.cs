@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("CIARE")]
-[assembly: AssemblyCopyright("Copyright (c) 2023 x_coding")]
+[assembly: AssemblyCopyright("Copyright (c) 2024 x_coding")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
