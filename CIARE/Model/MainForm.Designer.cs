@@ -81,7 +81,6 @@ namespace CIARE
             EditorTabControl = new System.Windows.Forms.TabControl();
             tabPage1 = new System.Windows.Forms.TabPage();
             tabPage2 = new System.Windows.Forms.TabPage();
-            textEditorControl1 = new ICSharpCode.TextEditor.TextEditorControl();
             label2 = new System.Windows.Forms.Label();
             label3 = new System.Windows.Forms.Label();
             linesCountLbl = new System.Windows.Forms.Label();
@@ -486,29 +485,12 @@ namespace CIARE
             // 
             // tabPage2
             // 
-            tabPage2.Controls.Add(textEditorControl1);
             tabPage2.Location = new System.Drawing.Point(4, 24);
             tabPage2.Name = "tabPage2";
             tabPage2.Size = new System.Drawing.Size(1395, 651);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "New Page             ";
             tabPage2.UseVisualStyleBackColor = true;
-            // 
-            // textEditorControl1
-            // 
-            textEditorControl1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            textEditorControl1.BackColor = System.Drawing.SystemColors.Window;
-            textEditorControl1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F);
-            textEditorControl1.Highlighting = null;
-            textEditorControl1.Location = new System.Drawing.Point(0, 0);
-            textEditorControl1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            textEditorControl1.Name = "textEditorControl1";
-            textEditorControl1.Size = new System.Drawing.Size(1394, 650);
-            textEditorControl1.VRulerRow = 0;
-            textEditorControl1.TextChanged += textEditorControl1_TextChanged;
-            textEditorControl1.Enter += textEditorControl1_Enter;
-            textEditorControl1.Resize += textEditorControl1_Resize;
             // 
             // label2
             // 
@@ -733,7 +715,6 @@ namespace CIARE
         public System.Windows.Forms.TabControl EditorTabControl;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabPage tabPage2;
-        public ICSharpCode.TextEditor.TextEditorControl textEditorControl1;
     }
 }
 

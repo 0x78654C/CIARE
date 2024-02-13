@@ -724,7 +724,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void textEditorControl1_Resize(object sender, EventArgs e)
         {
-            SplitEditorWindow.SetSplitWindowSize(selectedEditor, GlobalVariables.splitWindowPosition);
+            SplitEditorWindow.SetSplitWindowSize(SelectedEditor.GetSelectedEditor(), GlobalVariables.splitWindowPosition);
         }
 
         /// <summary>
@@ -821,9 +821,9 @@ namespace CIARE
                 countTabs = tabCount;
                 dynamicTextEdtior = new TextEditorControl();
                 TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
+                SetDesignEditor(ref dynamicTextEdtior);
                 tabPage.Controls.Add(dynamicTextEdtior);
-                SetDesignEditor(dynamicTextEdtior);
-                Initiliaze(tabCount);
+                Initiliaze(EditorTabControl.SelectedIndex);
             }
         }
 
@@ -831,20 +831,19 @@ namespace CIARE
         /// Set design for every new editor controler.
         /// </summary>
         /// <param name="dynamicTextEdtior"></param>
-        private void SetDesignEditor(TextEditorControl dynamicTextEdtior)
+        private void SetDesignEditor(ref TextEditorControl dynamicTextEdtior)
         {
-
             var tabCount = this.EditorTabControl.TabCount;
             var tabIndex = this.EditorTabControl.SelectedIndex;
             dynamicTextEdtior.Name = $"textEditorControl{tabCount}";
             dynamicTextEdtior.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dynamicTextEdtior.Dock = DockStyle.Fill;
             dynamicTextEdtior.BackColor = SystemColors.Window;
             dynamicTextEdtior.BorderStyle = BorderStyle.FixedSingle;
-            dynamicTextEdtior.Font = new Font("Consolas", 9.75F);
+            dynamicTextEdtior.Font = new Font("Cascadia Mono", 10F);
             dynamicTextEdtior.Highlighting = null;
             dynamicTextEdtior.Location = new Point(0, 0);
             dynamicTextEdtior.Margin = new Padding(4, 3, 4, 3);
-            dynamicTextEdtior.Size = new Size(this.Width, this.Height);
             dynamicTextEdtior.TabIndex = tabIndex;
             dynamicTextEdtior.VRulerRow = 0;
             dynamicTextEdtior.TextChanged += textEditorControl1_TextChanged;
