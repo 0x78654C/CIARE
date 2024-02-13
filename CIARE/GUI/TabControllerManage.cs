@@ -22,12 +22,12 @@ namespace CIARE.GUI
         {
             var index = tabControl.SelectedIndex;
             if (index <= 1) return;
-                Rectangle r = tabControl.GetTabRect(index);
-                Rectangle closeButton = new Rectangle(r.Right - 16, r.Top + 3, 9, 9);
-                if (closeButton.Contains(e.Location))
-                    if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
-                        CloseSelectedIndex(textEditorControl, tabControl, index,false);
-                return;
+            Rectangle r = tabControl.GetTabRect(index);
+            Rectangle closeButton = new Rectangle(r.Right - 16, r.Top + 3, 9, 9);
+            if (closeButton.Contains(e.Location))
+                if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
+                    CloseSelectedIndex(textEditorControl, tabControl, index, false);
+            return;
         }
 
 
@@ -71,6 +71,21 @@ namespace CIARE.GUI
                 if (tabIndex <= tabCount - 2)
                 tabControl.SelectTab(tabIndex + 1);
         }
+
+        public static void SwitchTabs2(ref TabControl tabControl, bool left)
+        {
+            var tabCount = tabControl.TabCount;
+            var tabIndex = tabControl.SelectedIndex;
+
+
+            if (tabIndex > 1)
+                tabControl.SelectTab(tabIndex - 1);
+            else
+            if (tabIndex <= tabCount - 2)
+                tabControl.SelectTab(tabIndex + 1);
+        }
+
+
 
         /// <summary>
         /// Set color for selected tab.

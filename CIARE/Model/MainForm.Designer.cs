@@ -96,7 +96,6 @@ namespace CIARE
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             EditorTabControl.SuspendLayout();
-            tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).BeginInit();
             SuspendLayout();
             // 
@@ -650,7 +649,6 @@ namespace CIARE
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
             EditorTabControl.ResumeLayout(false);
-            tabPage2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).EndInit();
             ResumeLayout(false);
             PerformLayout();
