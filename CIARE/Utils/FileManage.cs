@@ -217,14 +217,14 @@ MessageBoxIcon.Warning);
             foreach (TabPage tab in MainForm.Instance.EditorTabControl.TabPages)
             {
                 countTabs++;
-                bool isSelectedTab = countTabs-1 == selectedIndex;
-                
+                bool isSelectedTab = countTabs - 1 == selectedIndex;
+
                 // Check if editor is empty.
-                if (IsEditorEmpty(countTabs-1)) continue;
+                if (IsEditorEmpty(countTabs - 1)) continue;
 
                 if (checkAll)
                 {
-                    if (tab.Text.StartsWith("*") || tab.Text.Contains("New Page") )
+                    if (tab.Text.StartsWith("*") || tab.Text.Contains("New Page"))
                     {
                         if (!string.IsNullOrEmpty(textEditorControl.Text))
                             dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
@@ -302,15 +302,16 @@ MessageBoxIcon.Warning);
                 string fileName = "";
                 string filePath = "";
                 string fullPath = "";
-                if (titleTab.Contains(":")) {
-                    fileName = titleTab.SplitByText(" : ", 0).Replace("*","");
+                if (titleTab.Contains(":"))
+                {
+                    fileName = titleTab.SplitByText(" : ", 0).Replace("*", "");
                     filePath = titleTab.SplitByText(" : ", 1);
                     fullPath = $"{filePath}\\{fileName}";
                     GlobalVariables.openedFileName = fileName;
                     GlobalVariables.openedFilePath = fullPath;
                 }
 
-               
+
                 bool isSameTitleName = titleTab.Contains(GlobalVariables.openedFilePath);
 
                 if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page"))
@@ -396,29 +397,52 @@ MessageBoxIcon.Warning);
         /// <param name="textEditorControl"></param>
         public static void CheckFileExternalEdited(string filePath, long fileSize, TextEditorControl textEditorControl)
         {
-            if (!File.Exists(filePath))
+            //        if (!File.Exists(filePath))
+            //            return;
+
+            //        FileInfo fileInfo = new FileInfo(filePath);
+            //        if (fileSize != fileInfo.Length)
+            //        {
+            //            DialogResult dr = MessageBox.Show("The opened file content was changed.\nDo you want to reload it?", "CIARE", MessageBoxButtons.YesNo,
+            //MessageBoxIcon.Warning);
+            //            if (dr == DialogResult.Yes)
+            //            {
+            //                using (var reader = new StreamReader(filePath))
+            //                {
+            //                    textEditorControl.Clear();
+            //                    textEditorControl.Text = reader.ReadToEnd();
+            //                    MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+            //                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
+            //                    MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)}";
+            //                    MainForm.Instance.openedFileLength = fileInfo.Length;
+            //                }
+            //                return;
+            //            }
+            //            MainForm.Instance.openedFileLength = fileInfo.Length;
+            //        }
+
+
+        }
+
+        /// <summary>
+        /// Funtiction to store tabs file size.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="tempDir"></param>
+        /// <param name="fileTabStore"></param>
+        private static void StoreFileSize(string filePath, string tempDir, string fileTabStore)
+        {
+            if (!Directory.Exists(tempDir))
                 return;
 
+            if (!File.Exists(fileTabStore))
+                File.WriteAllText(fileTabStore, string.Empty);
+
             FileInfo fileInfo = new FileInfo(filePath);
-            if (fileSize != fileInfo.Length)
-            {
-                DialogResult dr = MessageBox.Show("The opened file content was changed.\nDo you want to reload it?", "CIARE", MessageBoxButtons.YesNo,
-    MessageBoxIcon.Warning);
-                if (dr == DialogResult.Yes)
-                {
-                    using (var reader = new StreamReader(filePath))
-                    {
-                        textEditorControl.Clear();
-                        textEditorControl.Text = reader.ReadToEnd();
-                        MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
-                        MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
-                        MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)}";
-                        MainForm.Instance.openedFileLength = fileInfo.Length;
-                    }
-                    return;
-                }
-                MainForm.Instance.openedFileLength = fileInfo.Length;
-            }
+
+            var fileSize = fileInfo.Length;
+            var line = $"{filePath}|{fileSize}\n";
+            File.AppendAllText(fileTabStore, line);
         }
 
         /// <summary>
