@@ -48,7 +48,7 @@ namespace CIARE.GUI
             tabControl.SelectedIndex = 0;
             var tabCount = tabControl.TabCount;
             var lastIndex = tabControl.SelectedIndex;
-            tabControl.TabPages.Insert(tabCount, $"New Page            ");
+            tabControl.TabPages.Insert(tabCount, $"New Page              ");
             tabControl.SelectedIndex = lastIndex + tabCount;
         }
 
