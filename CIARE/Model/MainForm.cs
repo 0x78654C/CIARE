@@ -827,6 +827,7 @@ namespace CIARE
                 dynamicTextEdtior = new TextEditorControl();
                 TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
                 SetDesignEditor(ref dynamicTextEdtior);
+                tabPage.AllowDrop = true;
                 tabPage.Controls.Add(dynamicTextEdtior);
                 Initiliaze(EditorTabControl.SelectedIndex);
             }
@@ -854,9 +855,42 @@ namespace CIARE
             dynamicTextEdtior.TextChanged += textEditorControl1_TextChanged;
             dynamicTextEdtior.Enter += textEditorControl1_Enter;
             dynamicTextEdtior.Resize += textEditorControl1_Resize;
+            dynamicTextEdtior.AllowDrop = true;
+            dynamicTextEdtior.DragEnter += DynamicTextEdtior_DragEnter;
+            dynamicTextEdtior.DragDrop += DynamicTextEdtior_DragDrop;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             dynamicTextEdtior.Focus();
+        }
+
+        /// <summary>
+        /// Drag enter event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DynamicTextEdtior_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy;
+            outputRBT.Text += "enter";
+        }
+
+        /// <summary>
+        /// OpenFile in drag drop.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DynamicTextEdtior_DragDrop(object sender, DragEventArgs e)
+        {
+            outputRBT.Text += "drop";
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files.Count() > 1)
+            {
+                MessageBox.Show("Only one file can be opened with drag & drop!", "CIARE", MessageBoxButtons.OK,
+           MessageBoxIcon.Warning);
+                return;
+            }
+            foreach (var file in files)
+                FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), file);
         }
 
         /// <summary>

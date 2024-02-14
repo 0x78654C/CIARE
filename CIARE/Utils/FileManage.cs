@@ -293,6 +293,29 @@ MessageBoxIcon.Warning);
         }
 
         /// <summary>
+        /// Open file in drag drop
+        /// </summary>
+        /// <param name="textEditor"></param>
+        /// <param name="filePath"></param>
+        public static void OpenFileDragDrop(TextEditorControl textEditor, string filePath)
+        {
+            var index = MainForm.Instance.EditorTabControl.SelectedIndex;
+            ManageUnsavedData(textEditor, index, false);
+            if (GlobalVariables.noClear)
+                return;
+            FileInfo fileInfo = new FileInfo(filePath);
+            using (var reader = new StreamReader(filePath))
+            {
+                MainForm.Instance.EditorTabControl.SelectTab(index);
+                textEditor.Clear();
+                textEditor.Text = reader.ReadToEnd();
+                MainForm.Instance.Text = $"{fileInfo.Name} : {filePath} - CIARE {MainForm.Instance.versionName}";
+                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
+                MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
+            }
+        }
+
+        /// <summary>
         /// Save data from editor to a existing file/other file name if no path is found as opened.
         /// </summary>
         /// <param name="textEditor"></param>
