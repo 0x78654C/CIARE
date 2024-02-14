@@ -284,8 +284,10 @@ MessageBoxIcon.Warning);
             GlobalVariables.openedFileName = fileInfo.Name;
             MainForm.Instance.openedFileLength = fileInfo.Length;
             MainForm.Instance.Text = $"{GlobalVariables.openedFileName} - CIARE {MainForm.Instance.versionName}";
-            MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{GlobalVariables.openedFileName}";
+            var filePath = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{GlobalVariables.openedFileName}";
+            MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}      ";
+            StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
             AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
             autoStartFile.CheckFilePath();
         }
@@ -395,33 +397,42 @@ MessageBoxIcon.Warning);
         /// <param name="filePath"></param>
         /// <param name="fileSize"></param>
         /// <param name="textEditorControl"></param>
-        public static void CheckFileExternalEdited(string filePath, long fileSize, TextEditorControl textEditorControl)
+        public static void CheckFileExternalEdited(string fileTabStore)
         {
-            //        if (!File.Exists(filePath))
-            //            return;
+            if (!File.Exists(fileTabStore))
+                return;
 
-            //        FileInfo fileInfo = new FileInfo(filePath);
-            //        if (fileSize != fileInfo.Length)
-            //        {
-            //            DialogResult dr = MessageBox.Show("The opened file content was changed.\nDo you want to reload it?", "CIARE", MessageBoxButtons.YesNo,
-            //MessageBoxIcon.Warning);
-            //            if (dr == DialogResult.Yes)
-            //            {
-            //                using (var reader = new StreamReader(filePath))
-            //                {
-            //                    textEditorControl.Clear();
-            //                    textEditorControl.Text = reader.ReadToEnd();
-            //                    MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
-            //                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
-            //                    MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)}";
-            //                    MainForm.Instance.openedFileLength = fileInfo.Length;
-            //                }
-            //                return;
-            //            }
-            //            MainForm.Instance.openedFileLength = fileInfo.Length;
-            //        }
+            var readTabsLines = File.ReadAllLines(fileTabStore);
 
+            if (readTabsLines.Count() == 0)
+                return;
 
+            foreach (var line in readTabsLines)
+            {
+                string filePath = line.Split('|')[0];
+                long fileSize = long.Parse(line.Split('|')[1]);
+                int tabIndex = Int32.Parse(line.Split('|')[2]);
+                FileInfo fileInfo = new FileInfo(filePath);
+                if (fileSize != fileInfo.Length)
+                {
+                    DialogResult dr = MessageBox.Show($"{fileInfo.Name} was changed.\nDo you want to reload it?", "CIARE", MessageBoxButtons.YesNo,
+        MessageBoxIcon.Warning);
+                    if (dr == DialogResult.Yes)
+                    {
+                        using (var reader = new StreamReader(filePath))
+                        {
+                            MainForm.Instance.EditorTabControl.SelectTab(tabIndex);
+                            SelectedEditor.GetSelectedEditor(tabIndex).Clear();
+                            SelectedEditor.GetSelectedEditor(tabIndex).Text = reader.ReadToEnd();
+                            MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
+                            MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{fileInfo.Name}";
+                            MainForm.Instance.openedFileLength = fileInfo.Length;
+                            StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -430,20 +441,35 @@ MessageBoxIcon.Warning);
         /// <param name="filePath"></param>
         /// <param name="tempDir"></param>
         /// <param name="fileTabStore"></param>
-        private static void StoreFileSize(string filePath, string tempDir, string fileTabStore)
+        private static void StoreFileSize(string filePath, string tempDir, string fileTabStore, int tabIndex)
         {
             if (!Directory.Exists(tempDir))
                 return;
 
             if (!File.Exists(fileTabStore))
-                File.WriteAllText(fileTabStore, string.Empty);
+                File.WriteAllText(fileTabStore, "");
 
             FileInfo fileInfo = new FileInfo(filePath);
 
             var fileSize = fileInfo.Length;
-            var line = $"{filePath}|{fileSize}\n";
-            File.AppendAllText(fileTabStore, line);
+            var line = $"{filePath}|{fileSize}|{tabIndex}";
+            List<string> lines = File.ReadAllLines(fileTabStore).ToList();
+
+            for (int i =0; i< lines.Count(); i++)
+            {
+                if (lines[i].EndsWith($"|{tabIndex}"))
+                    lines.Remove(lines[i]);
+            }
+
+            lines.Add(line);
+            File.WriteAllText(fileTabStore, string.Join("\n", lines));
         }
+
+        /// <summary>
+        /// Clean file size file.
+        /// </summary>
+        /// <param name="fileTabStore"></param>
+        public static void CleanFileSizeStoreFile(string fileTabStore) => File.WriteAllText(fileTabStore, string.Empty);
 
         /// <summary>
         /// Load C# code sample method.
