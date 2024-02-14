@@ -116,6 +116,7 @@ namespace CIARE
             versionName = versionName.Substring(0, versionName.Length - 2);
             this.Text = $"CIARE {versionName}";
             Initiliaze();
+            FileManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
             Console.SetOut(new ControlWriter(outputRBT));
             InitializeEditor.GenerateLiveSessionId();
             InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
@@ -313,13 +314,12 @@ namespace CIARE
         {
             switch (keyData)
             {
-                //case Keys.Left | Keys.Control:
-                //    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
-                //    return true;
-                //case Keys.Right | Keys.Control:
-                //    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
-                //    return true;
-
+                case Keys.Left | Keys.Control:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
+                    return true;
+                case Keys.Right | Keys.Control:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
+                    return true;
                 case Keys.Tab | Keys.Control:
                     TabControllerManage.SwitchTabs2(ref EditorTabControl, true);
                     return true;
@@ -505,7 +505,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_Activated(object sender, EventArgs e)
         {
-            FileManage.CheckFileExternalEdited(GlobalVariables.openedFilePath, openedFileLength, SelectedEditor.GetSelectedEditor());
+            FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath);
         }
 
 
