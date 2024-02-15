@@ -14,6 +14,7 @@ namespace CIARE.Utils
         public static readonly string markFile = $"{userProfileDirectory}markedFiles.cDat";
         public static readonly string markFileTemp = $"{userProfileDirectory}markedFiles_tmp.cDat";
         public static readonly string tabsFilePath = $"{userProfileDirectory}tabsFilePath.cDat";
+        public static readonly string tabsFilePathAll = $"{userProfileDirectory}tabsFilePathAll.cDat";
         public static string openedFilePath = string.Empty;
         public static string openedFileName = string.Empty;
         public static string commandLineArguments = string.Empty;
