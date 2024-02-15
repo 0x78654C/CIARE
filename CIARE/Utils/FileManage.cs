@@ -307,7 +307,6 @@ MessageBoxIcon.Warning);
             using (var reader = new StreamReader(filePath))
             {
                 MainForm.Instance.EditorTabControl.SelectTab(index);
-                textEditor.Clear();
                 textEditor.Text = reader.ReadToEnd();
                 MainForm.Instance.Text = $"{fileInfo.Name} : {filePath} - CIARE {MainForm.Instance.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
@@ -445,7 +444,6 @@ MessageBoxIcon.Warning);
                         using (var reader = new StreamReader(filePath))
                         {
                             MainForm.Instance.EditorTabControl.SelectTab(tabIndex);
-                            SelectedEditor.GetSelectedEditor(tabIndex).Clear();
                             SelectedEditor.GetSelectedEditor(tabIndex).Text = reader.ReadToEnd();
                             MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
                             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
