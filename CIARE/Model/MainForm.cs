@@ -871,7 +871,6 @@ namespace CIARE
         private void DynamicTextEdtior_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy;
-            outputRBT.Text += "enter";
         }
 
         /// <summary>
