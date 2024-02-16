@@ -161,17 +161,15 @@ namespace CIARE
             try
             {
                 string arg = ReadArgs(s_args);
-                LoadParamFile(arg, selectedEditor);
+                LoadParamFile(arg, SelectedEditor.GetSelectedEditor(1));
                 if (!GlobalVariables.noPath)
                 {
                     GlobalVariables.openedFilePath = arg;
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     GlobalVariables.openedFileName = fileInfo.Name;
                     if (arg.Length > 1)
-                        this.Text = $"{fileInfo.Name} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                        this.Text = $"{fileInfo.Name} - CIARE {versionName}";
                     openedFileLength = fileInfo.Length;
-                    var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
-                    autoStartFile.CheckFilePath();
                 }
             }
             catch { }
@@ -263,6 +261,12 @@ namespace CIARE
             {
                 selectedEditor.Clear();
                 textEditorControl.Text = File.ReadAllText(data);
+                FileInfo fileInfo = new FileInfo(data);
+                EditorTabControl.SelectTab(1);
+                EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
+                EditorTabControl.SelectedTab.ToolTipText = data;
+                if (GlobalVariables.OStartUp)
+                  TabControllerManage.StoreDeleteTabs(EditorTabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, EditorTabControl.SelectedTab.ToolTipText);
             }
         }
 
