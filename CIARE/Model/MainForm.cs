@@ -286,8 +286,8 @@ namespace CIARE
                 EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
             }
             LinesManage.GetTotalLinesCount(linesCountLbl);
-            selectedEditor.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
-            selectedEditor.Document.FoldingManager.UpdateFoldings(null, null);
+            SelectedEditor.GetSelectedEditor().Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
+            SelectedEditor.GetSelectedEditor().Document.FoldingManager.UpdateFoldings(null, null);
 
             // Send live share data to api.
             SendData();
