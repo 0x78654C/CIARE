@@ -1,7 +1,10 @@
 ﻿using CIARE.Utils;
 using ICSharpCode.TextEditor;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -34,6 +37,8 @@ namespace CIARE.GUI
         private static void CloseSelectedIndex(TextEditorControl textEditorControl, TabControl tabControl, int index, bool checkAll)
         {
             FileManage.ManageUnsavedData(textEditorControl, index, checkAll);
+            if (GlobalVariables.OStartUp)
+                StoreDeleteTabs(tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, tabControl.SelectedTab.ToolTipText);
             tabControl.TabPages.RemoveAt(index);
             tabControl.SelectTab(index - 1);
         }
@@ -43,14 +48,147 @@ namespace CIARE.GUI
         /// <param name="tabControl"></param>
         /// <param name="textEditorControl"></param>
         /// <param name="e"></param>
-        public static void AddNewTab(ref TabControl tabControl)
+        public static void AddNewTab(ref TabControl tabControl, int index = 0)
         {
-            tabControl.SelectedIndex = 0;
+            tabControl.SelectedIndex = index;
             var tabCount = tabControl.TabCount;
             var lastIndex = tabControl.SelectedIndex;
             tabControl.TabPages.Insert(tabCount, $"New Page              ");
             tabControl.SelectedIndex = lastIndex + tabCount;
         }
+
+        /// <summary>
+        /// Funtiction to store tabs file size.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="tempDir"></param>
+        /// <param name="fileTabStore"></param>
+        public static void StoreFileSize(string filePath, string tempDir, string fileTabStore, int tabIndex)
+        {
+            if (!Directory.Exists(tempDir))
+                return;
+
+            if (!File.Exists(fileTabStore))
+                File.WriteAllText(fileTabStore, "");
+
+            FileInfo fileInfo = new FileInfo(filePath);
+
+            var fileSize = fileInfo.Length;
+            var line = $"{filePath}|{fileSize}|{tabIndex}";
+            List<string> lines = File.ReadAllLines(fileTabStore).ToList();
+
+            for (int i = 0; i < lines.Count(); i++)
+            {
+                if (lines[i].EndsWith($"|{tabIndex}"))
+                    lines.Remove(lines[i]);
+            }
+
+            lines.Add(line);
+            File.WriteAllText(fileTabStore, string.Join("\n", lines));
+        }
+
+        /// <summary>
+        /// Clean file size file.
+        /// </summary>
+        /// <param name="fileTabStore"></param>
+        public static void CleanFileSizeStoreFile(string fileTabStore) => File.WriteAllText(fileTabStore, string.Empty);
+
+        /// <summary>
+        /// Store/delete Tabs title and index.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="tempDir"></param>
+        /// <param name="fileTabStore"></param>
+        /// <param name="tabIndex"></param>
+        public static void StoreDeleteTabs(string filePath, string tempDir, string fileTabStore, int tabIndex, bool remove = false, string pathRmove="")
+        {
+            if (!Directory.Exists(tempDir))
+                return;
+
+            if (!File.Exists(fileTabStore))
+                File.WriteAllText(fileTabStore, "");
+
+            var line = $"{filePath}|{tabIndex}";
+            List<string> lines = File.ReadAllLines(fileTabStore).ToList();
+            if (!remove)
+            {
+                if (!lines.Any(i => i.Contains(filePath)))
+                    lines.Add(line);
+            }
+            else
+            {
+                if (lines.Any(i=>i.Contains(pathRmove)))
+                    lines.RemoveAll(i=>i.Contains(pathRmove));
+            }
+            File.WriteAllText(fileTabStore, string.Join("\n", lines));
+        }
+
+        /// <summary>
+        /// Clean stored tabs for reopen. Session clean on startup.
+        /// </summary>
+        /// <param name="fileTabStore"></param>
+        /// <param name="isSeesionActive"></param>
+        public static void CleanStoredTabs(string tempDir, string fileTabStore)
+        {
+            if (!Directory.Exists(tempDir))
+                return;
+
+            if (File.Exists(fileTabStore))
+                File.WriteAllText(fileTabStore, "");
+        }
+
+        /// <summary>
+        /// Read tabs title and index from local file stored file.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="tempDir"></param>
+        /// <param name="fileTabStore"></param>
+        public static void ReadTabs(TabControl tabControl,TextEditorControl textEditor, string tempDir, string fileTabStore)
+        {
+            if (!Directory.Exists(tempDir))
+                return;
+
+            if (!File.Exists(fileTabStore))
+                return;
+
+            var lines = File.ReadAllLines(fileTabStore);
+            List<KeyValuePair<string, int>> list = new List<KeyValuePair<string, int>>();
+            foreach(var line in lines)
+            {
+                if (!string.IsNullOrEmpty(line))
+                {
+                    var path = line.Split('|')[0].Trim();
+                    int index = Int32.Parse(line.Split('|')[1].Trim());
+                    list.Add(new KeyValuePair<string,int>(path, index));
+                }
+            }
+
+            // Sort by value
+            list = list.OrderBy(x => x.Value).ToList();
+
+            foreach (var item in list)
+            {
+                if (File.Exists(item.Key))
+                {
+                    FileInfo fileInfo = new FileInfo(item.Key);
+
+                    using (var reader = new StreamReader(item.Key))
+                    {
+                        AddNewTab(ref tabControl);
+                        SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
+                        MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {MainForm.Instance.versionName}";
+                        MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
+                        MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = item.Key;
+                    }
+                }
+                else
+                {
+                    StoreDeleteTabs(tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, item.Key);
+                }
+            }
+            GlobalVariables.isStoringTabs = true;
+        }
+
 
         /// <summary>
         /// Swith between tabs with ctrl + left/right key.
