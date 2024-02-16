@@ -157,9 +157,9 @@ namespace CIARE
             winLoginCkb.AutoSize = true;
             winLoginCkb.Location = new System.Drawing.Point(18, 292);
             winLoginCkb.Name = "winLoginCkb";
-            winLoginCkb.Size = new System.Drawing.Size(226, 19);
+            winLoginCkb.Size = new System.Drawing.Size(139, 19);
             winLoginCkb.TabIndex = 17;
-            winLoginCkb.Text = "Open marked files on Windows login";
+            winLoginCkb.Text = "Open Windows login";
             winLoginCkb.UseVisualStyleBackColor = true;
             winLoginCkb.CheckedChanged += winLoginCkb_CheckedChanged;
             // 
@@ -168,9 +168,9 @@ namespace CIARE
             startBehaveCkb.AutoSize = true;
             startBehaveCkb.Location = new System.Drawing.Point(18, 257);
             startBehaveCkb.Name = "startBehaveCkb";
-            startBehaveCkb.Size = new System.Drawing.Size(230, 19);
+            startBehaveCkb.Size = new System.Drawing.Size(228, 19);
             startBehaveCkb.TabIndex = 16;
-            startBehaveCkb.Text = "Activate mark files for start on next run";
+            startBehaveCkb.Text = "Keep current work sesion on next run";
             startBehaveCkb.UseVisualStyleBackColor = true;
             startBehaveCkb.CheckedChanged += startBehaveCkb_CheckedChanged;
             // 
@@ -180,9 +180,9 @@ namespace CIARE
             behaveSetLbl.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline);
             behaveSetLbl.Location = new System.Drawing.Point(15, 220);
             behaveSetLbl.Name = "behaveSetLbl";
-            behaveSetLbl.Size = new System.Drawing.Size(243, 15);
+            behaveSetLbl.Size = new System.Drawing.Size(310, 15);
             behaveSetLbl.TabIndex = 15;
-            behaveSetLbl.Text = "Behaviour                                           ";
+            behaveSetLbl.Text = "Behaviour (requires application restart)             ";
             // 
             // displaySepLbl
             // 
@@ -190,9 +190,9 @@ namespace CIARE
             displaySepLbl.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline);
             displaySepLbl.Location = new System.Drawing.Point(15, 35);
             displaySepLbl.Name = "displaySepLbl";
-            displaySepLbl.Size = new System.Drawing.Size(234, 15);
+            displaySepLbl.Size = new System.Drawing.Size(310, 15);
             displaySepLbl.TabIndex = 14;
-            displaySepLbl.Text = "Display                                             ";
+            displaySepLbl.Text = "Display                                                                ";
             // 
             // buildGroup
             // 
