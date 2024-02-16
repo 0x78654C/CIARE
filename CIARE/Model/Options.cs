@@ -128,14 +128,14 @@ namespace CIARE
             //    return;
             //}
 
-            //var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
+            var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
             //if (!autoStartFile.CheckFileContent(GlobalVariables.markFile))
             //{
             //    winLoginCkb.Checked = false;
             //    return;
             //}
             //StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
-           // autoStartFile.SetRegistryRunApp(winLoginCkb);
+            autoStartFile.SetRegistryRunApp(winLoginCkb);
             StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
         }
 
