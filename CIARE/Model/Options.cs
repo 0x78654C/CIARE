@@ -43,6 +43,7 @@ namespace CIARE
             apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
+            CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
@@ -127,14 +128,15 @@ namespace CIARE
             //    return;
             //}
 
-            var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
+            //var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
             //if (!autoStartFile.CheckFileContent(GlobalVariables.markFile))
             //{
             //    winLoginCkb.Checked = false;
             //    return;
             //}
             //StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
-            autoStartFile.SetRegistryRunApp(winLoginCkb);
+           // autoStartFile.SetRegistryRunApp(winLoginCkb);
+            StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
         }
 
         private void frameWorkCMB_SelectedIndexChanged(object sender, EventArgs e)

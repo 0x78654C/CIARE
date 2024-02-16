@@ -173,7 +173,7 @@ namespace CIARE.GUI
             }
             RegistryManagement.RegKey_CreateKey(regKeyName, "OutWState", "True");
         }
-
+        
         /// <summary>
         /// Check/Create user data directory on CIARE start up.
         /// </summary>

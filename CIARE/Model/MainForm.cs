@@ -123,6 +123,7 @@ namespace CIARE
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
             Warnings.CheckWarnings(GlobalVariables.registryPath);
             StartFilesOS.CheckOSStartFile(GlobalVariables.registryPath);
+            StartFilesOS.CheckWinLoginState(GlobalVariables.registryPath);
             BuildConfig.CheckConfig(GlobalVariables.registryPath);
             BuildConfig.CheckPlatform(GlobalVariables.registryPath);
             TargetFramework.CheckFramework(GlobalVariables.registryPath);

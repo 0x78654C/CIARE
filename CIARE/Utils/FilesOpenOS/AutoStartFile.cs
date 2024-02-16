@@ -126,6 +126,7 @@ namespace CIARE.Utils.FilesOpenOS
             GlobalVariables.OWinLoginState = checkBox.Checked;
         }
 
+
         /// <summary>
         /// Set CIARE to start on windows login if there are marked files for open.
         /// </summary>

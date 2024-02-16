@@ -157,9 +157,9 @@ namespace CIARE
             winLoginCkb.AutoSize = true;
             winLoginCkb.Location = new System.Drawing.Point(18, 292);
             winLoginCkb.Name = "winLoginCkb";
-            winLoginCkb.Size = new System.Drawing.Size(139, 19);
+            winLoginCkb.Size = new System.Drawing.Size(193, 19);
             winLoginCkb.TabIndex = 17;
-            winLoginCkb.Text = "Open Windows login";
+            winLoginCkb.Text = "Open application on user login";
             winLoginCkb.UseVisualStyleBackColor = true;
             winLoginCkb.CheckedChanged += winLoginCkb_CheckedChanged;
             // 

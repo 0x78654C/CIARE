@@ -43,5 +43,15 @@ namespace CIARE.Utils.Options
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, status.Checked.ToString());
             GlobalVariables.OWinLoginState = status.Checked;
         }
+
+        public static void CheckWinLoginState(string regKeyName)
+        {
+            string regOSStartFile = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.OWinLogin);
+            if (regOSStartFile.Length > 0)
+            {
+                bool regParse = bool.Parse(regOSStartFile);
+                GlobalVariables.OWinLoginState = bool.Parse(regOSStartFile);
+            }
+        }
     }
 }
