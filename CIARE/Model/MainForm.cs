@@ -116,7 +116,7 @@ namespace CIARE
             versionName = versionName.Substring(0, versionName.Length - 2);
             this.Text = $"CIARE {versionName}";
             Initiliaze();
-            FileManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
+            TabControllerManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
             Console.SetOut(new ControlWriter(outputRBT));
             InitializeEditor.GenerateLiveSessionId();
             InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
@@ -129,6 +129,10 @@ namespace CIARE
             LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
             OpenAISetting.CheckOpenAIData(GlobalVariables.registryPath);
             UnsafeCode.CheckUnsafeStatus(GlobalVariables.registryPath);
+            if (GlobalVariables.OStartUp)
+                TabControllerManage.ReadTabs(EditorTabControl, SelectedEditor.GetSelectedEditor(), GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+            else
+                TabControllerManage.CleanStoredTabs(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
             _apiConnectionEvents = new ApiConnectionEvents();
             //------------------------------
             //Code completion initialize.
