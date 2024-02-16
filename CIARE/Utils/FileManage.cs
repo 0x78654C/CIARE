@@ -287,7 +287,9 @@ MessageBoxIcon.Warning);
             var filePath = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{GlobalVariables.openedFileName}";
             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}      ";
-            StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
+            TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
+            if (GlobalVariables.OStartUp)
+                TabControllerManage.StoreDeleteTabs(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, index);  // Store tabs title and index.
             AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
             autoStartFile.CheckFilePath();
         }
@@ -449,48 +451,12 @@ MessageBoxIcon.Warning);
                             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
                             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{fileInfo.Name}";
                             MainForm.Instance.openedFileLength = fileInfo.Length;
-                            StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                            TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                         }
                     }
                 }
             }
         }
-
-        /// <summary>
-        /// Funtiction to store tabs file size.
-        /// </summary>
-        /// <param name="filePath"></param>
-        /// <param name="tempDir"></param>
-        /// <param name="fileTabStore"></param>
-        private static void StoreFileSize(string filePath, string tempDir, string fileTabStore, int tabIndex)
-        {
-            if (!Directory.Exists(tempDir))
-                return;
-
-            if (!File.Exists(fileTabStore))
-                File.WriteAllText(fileTabStore, "");
-
-            FileInfo fileInfo = new FileInfo(filePath);
-
-            var fileSize = fileInfo.Length;
-            var line = $"{filePath}|{fileSize}|{tabIndex}";
-            List<string> lines = File.ReadAllLines(fileTabStore).ToList();
-
-            for (int i =0; i< lines.Count(); i++)
-            {
-                if (lines[i].EndsWith($"|{tabIndex}"))
-                    lines.Remove(lines[i]);
-            }
-
-            lines.Add(line);
-            File.WriteAllText(fileTabStore, string.Join("\n", lines));
-        }
-
-        /// <summary>
-        /// Clean file size file.
-        /// </summary>
-        /// <param name="fileTabStore"></param>
-        public static void CleanFileSizeStoreFile(string fileTabStore) => File.WriteAllText(fileTabStore, string.Empty);
 
         /// <summary>
         /// Load C# code sample method.
