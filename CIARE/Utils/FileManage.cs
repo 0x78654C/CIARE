@@ -285,11 +285,12 @@ MessageBoxIcon.Warning);
             MainForm.Instance.openedFileLength = fileInfo.Length;
             MainForm.Instance.Text = $"{GlobalVariables.openedFileName} - CIARE {MainForm.Instance.versionName}";
             var filePath = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{GlobalVariables.openedFileName}";
+            var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}      ";
             TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
             if (GlobalVariables.OStartUp)
-                TabControllerManage.StoreDeleteTabs(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, index);  // Store tabs title and index.
+                TabControllerManage.StoreDeleteTabs(previousTabPath, filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, index);  // Store tabs title and index.
             AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
             autoStartFile.CheckFilePath();
         }

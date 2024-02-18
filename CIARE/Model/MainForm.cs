@@ -262,11 +262,12 @@ namespace CIARE
                 selectedEditor.Clear();
                 textEditorControl.Text = File.ReadAllText(data);
                 FileInfo fileInfo = new FileInfo(data);
+                var previousTabPath = EditorTabControl.SelectedTab.ToolTipText;
                 EditorTabControl.SelectTab(1);
                 EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
                 EditorTabControl.SelectedTab.ToolTipText = data;
                 if (GlobalVariables.OStartUp)
-                  TabControllerManage.StoreDeleteTabs(EditorTabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, EditorTabControl.SelectedTab.ToolTipText);
+                  TabControllerManage.StoreDeleteTabs(previousTabPath, data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, EditorTabControl.SelectedTab.ToolTipText);
             }
         }
 

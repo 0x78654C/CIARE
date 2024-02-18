@@ -38,9 +38,13 @@ namespace CIARE.GUI
         {
             FileManage.ManageUnsavedData(textEditorControl, index, checkAll);
             if (GlobalVariables.OStartUp)
-                StoreDeleteTabs(tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, tabControl.SelectedTab.ToolTipText);
+                StoreDeleteTabs("", tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, tabControl.SelectedTab.ToolTipText);
             tabControl.TabPages.RemoveAt(index);
-            tabControl.SelectTab(index - 1);
+            if (index >= tabControl.TabCount)
+                tabControl.SelectTab(index-1);
+            else
+                tabControl.SelectTab(index);
+
         }
         /// <summary>
         /// Add new tab with editor.
@@ -100,7 +104,7 @@ namespace CIARE.GUI
         /// <param name="tempDir"></param>
         /// <param name="fileTabStore"></param>
         /// <param name="tabIndex"></param>
-        public static void StoreDeleteTabs(string filePath, string tempDir, string fileTabStore, int tabIndex, bool remove = false, string pathRmove="")
+        public static void StoreDeleteTabs(string previewTabPath, string filePath, string tempDir, string fileTabStore, int tabIndex, bool remove = false, string pathRmove = "")
         {
             if (!Directory.Exists(tempDir))
                 return;
@@ -112,13 +116,15 @@ namespace CIARE.GUI
             List<string> lines = File.ReadAllLines(fileTabStore).ToList();
             if (!remove)
             {
+                if (lines.Any(i => i.Contains(previewTabPath)) && !string.IsNullOrEmpty(previewTabPath))
+                    lines.RemoveAll(i => i.Contains(previewTabPath));
                 if (!lines.Any(i => i.Contains(filePath)))
                     lines.Add(line);
             }
             else
             {
-                if (lines.Any(i=>i.Contains(pathRmove)))
-                    lines.RemoveAll(i=>i.Contains(pathRmove));
+                if (lines.Any(i => i.Contains(pathRmove)))
+                    lines.RemoveAll(i => i.Contains(pathRmove));
             }
             File.WriteAllText(fileTabStore, string.Join("\n", lines));
         }
@@ -143,7 +149,7 @@ namespace CIARE.GUI
         /// <param name="filePath"></param>
         /// <param name="tempDir"></param>
         /// <param name="fileTabStore"></param>
-        public static void ReadTabs(TabControl tabControl,TextEditorControl textEditor, string tempDir, string fileTabStore)
+        public static void ReadTabs(TabControl tabControl, TextEditorControl textEditor, string tempDir, string fileTabStore)
         {
             if (!Directory.Exists(tempDir))
                 return;
@@ -153,13 +159,13 @@ namespace CIARE.GUI
 
             var lines = File.ReadAllLines(fileTabStore);
             List<KeyValuePair<string, int>> list = new List<KeyValuePair<string, int>>();
-            foreach(var line in lines)
+            foreach (var line in lines)
             {
                 if (!string.IsNullOrEmpty(line))
                 {
                     var path = line.Split('|')[0].Trim();
                     int index = Int32.Parse(line.Split('|')[1].Trim());
-                    list.Add(new KeyValuePair<string,int>(path, index));
+                    list.Add(new KeyValuePair<string, int>(path, index));
                 }
             }
 
@@ -183,7 +189,7 @@ namespace CIARE.GUI
                 }
                 else
                 {
-                    StoreDeleteTabs(tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, item.Key);
+                    StoreDeleteTabs("", tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, item.Key);
                 }
             }
             GlobalVariables.isStoringTabs = true;
