@@ -1,5 +1,6 @@
 ﻿using CIARE.Utils;
 using ICSharpCode.TextEditor;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -41,7 +42,7 @@ namespace CIARE.GUI
                 StoreDeleteTabs("", tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, tabControl.SelectedTab.ToolTipText);
             tabControl.TabPages.RemoveAt(index);
             if (index >= tabControl.TabCount)
-                tabControl.SelectTab(index-1);
+                tabControl.SelectTab(index - 1);
             else
                 tabControl.SelectTab(index);
 
@@ -52,13 +53,17 @@ namespace CIARE.GUI
         /// <param name="tabControl"></param>
         /// <param name="textEditorControl"></param>
         /// <param name="e"></param>
-        public static void AddNewTab(ref TabControl tabControl, int index = 0)
+        public static void AddNewTab(TabControl tabControl, int index = 0)
         {
-            tabControl.SelectedIndex = index;
-            var tabCount = tabControl.TabCount;
-            var lastIndex = tabControl.SelectedIndex;
-            tabControl.TabPages.Insert(tabCount, $"New Page              ");
-            tabControl.SelectedIndex = lastIndex + tabCount;
+            try
+            {
+                tabControl.SelectedIndex = index;
+                var tabCount = tabControl.TabCount;
+                var lastIndex = tabControl.SelectedIndex;
+                tabControl.TabPages.Insert(tabCount, $"New Page              ");
+                tabControl.SelectedIndex = lastIndex + tabCount;
+            }
+            catch (Exception e) { MessageBox.Show(e.ToString()); }
         }
 
         /// <summary>
@@ -116,7 +121,7 @@ namespace CIARE.GUI
             List<string> lines = File.ReadAllLines(fileTabStore).ToList();
             if (!remove)
             {
-                if (lines.Any(i => i.Contains(previewTabPath)) && !string.IsNullOrEmpty(previewTabPath))
+                if (lines.Any(i => i.Contains(previewTabPath)) && MainForm.Instance.EditorTabControl.SelectedIndex != 1)
                     lines.RemoveAll(i => i.Contains(previewTabPath));
                 if (!lines.Any(i => i.Contains(filePath)))
                     lines.Add(line);
@@ -180,7 +185,7 @@ namespace CIARE.GUI
 
                     using (var reader = new StreamReader(item.Key))
                     {
-                        AddNewTab(ref tabControl);
+                        AddNewTab(tabControl);
                         SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
                         MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {MainForm.Instance.versionName}";
                         MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
