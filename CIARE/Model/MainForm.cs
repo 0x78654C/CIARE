@@ -23,7 +23,6 @@ using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
-using System.Windows.Controls;
 
 namespace CIARE
 {
@@ -32,7 +31,6 @@ namespace CIARE
     {
         public HubConnection hubConnection;
         public string versionName;
-        public long openedFileLength = 0;
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
         public bool isLoaded = false;
@@ -51,6 +49,7 @@ namespace CIARE
         public TextEditorControl selectedEditor;
         TextEditorControl dynamicTextEdtior;
         private int countTabs = 0;
+
 
         // Used for tab's auto-resize
         [DllImport("user32.dll")]
@@ -158,22 +157,10 @@ namespace CIARE
 
 
             //File open via parameters(Open with option..)
-            try
-            {
-                string arg = ReadArgs(s_args);
-                LoadParamFile(arg, SelectedEditor.GetSelectedEditor(1));
-                if (!GlobalVariables.noPath)
-                {
-                    GlobalVariables.openedFilePath = arg;
-                    FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    GlobalVariables.openedFileName = fileInfo.Name;
-                    if (arg.Length > 1)
-                        this.Text = $"{fileInfo.Name} - CIARE {versionName}";
-                    openedFileLength = fileInfo.Length;
-                }
-            }
-            catch { }
+            string arg = ReadArgs(s_args);
+            FileManage.OpenFileFromArgs(arg);
             //----------------------------------
+
             ReloadRef();
         }
 
@@ -248,29 +235,6 @@ namespace CIARE
             FileManage.SaveFileTab(EditorTabControl, selectedEditor);
 
 
-
-        /// <summary>
-        /// Load data to text editor and sanitize path of file.
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="textEditorControl"></param>
-        private void LoadParamFile(string data, TextEditorControl textEditorControl)
-        {
-            data = FileManage.PathCheck(data);
-            if (File.Exists(data))
-            {
-                selectedEditor.Clear();
-                textEditorControl.Text = File.ReadAllText(data);
-                FileInfo fileInfo = new FileInfo(data);
-                var previousTabPath = EditorTabControl.SelectedTab.ToolTipText;
-                EditorTabControl.SelectTab(1);
-                EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
-                EditorTabControl.SelectedTab.ToolTipText = data;
-                if (GlobalVariables.OStartUp)
-                  TabControllerManage.StoreDeleteTabs(previousTabPath, data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, EditorTabControl.SelectedTab.ToolTipText);
-            }
-        }
-
         /// <summary>
         /// Save data from text editor. (Save As)
         /// </summary>
@@ -334,7 +298,7 @@ namespace CIARE
                     TabControllerManage.SwitchTabs2(ref EditorTabControl, true);
                     return true;
                 case Keys.Q | Keys.Control:
-                    TabControllerManage.AddNewTab(ref EditorTabControl);
+                    TabControllerManage.AddNewTab(EditorTabControl);
                     return true;
                 case Keys.N | Keys.Control:
                     FileManage.NewFile(selectedEditor, outputRBT);
@@ -839,7 +803,7 @@ namespace CIARE
                 SetDesignEditor(ref dynamicTextEdtior);
                 tabPage.AllowDrop = true;
                 tabPage.Controls.Add(dynamicTextEdtior);
-                Initiliaze(EditorTabControl.SelectedIndex);
+                Initiliaze(EditorTabControl.SelectedIndex);       
             }
         }
 
