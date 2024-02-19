@@ -1,4 +1,5 @@
-﻿using CIARE.Utils;
+﻿using CIARE.GUI;
+using CIARE.Utils;
 using Microsoft.VisualBasic.ApplicationServices;
 using Newtonsoft.Json.Bson;
 using System;
@@ -21,26 +22,7 @@ namespace CIARE
         [STAThread]
         static void Main()
         {
-
             SingleInstanceApplication.Run(new MainForm(), NewInstanceHandler);
-
-            //Mutex mutex = new Mutex(false, "97740883-d1df-43e6-9bea-f4639907687c");
-            //try
-            //{
-            //    // Run only one instance of the application.
-            //    if (mutex.WaitOne(0, false))
-            //    {
-            //        // Run the application
-            //        Application.EnableVisualStyles();
-            //        Application.SetCompatibleTextRenderingDefault(false);
-            //        Application.Run(new MainForm());
-            //    }
-            //}
-            //finally
-            //{
-            //    if (mutex != null)
-            //        mutex.Close();
-            //}
         }
 
         public static void NewInstanceHandler(object sender, StartupNextInstanceEventArgs e)
@@ -48,14 +30,13 @@ namespace CIARE
             s_arg = $"cli|{e.CommandLine[1]}";
             e.BringToForeground = true;
             GlobalVariables.processArg = s_arg;
-            FileManage.OpenFileFromArgs(s_arg);
-        //    worker = new BackgroundWorker();
-        //    worker.DoWork += Worker;
-        //    worker.RunWorkerAsync();
+            worker = new BackgroundWorker();
+            worker.DoWork += Worker;
+            worker.RunWorkerAsync();
         }
 
         private static void Worker(object sender, DoWorkEventArgs e) =>
-            FileManage.OpenFileFromArgs(s_arg);
+            FileManage.OpenFileFromArgs(s_arg, MainForm.Instance.EditorTabControl);
 
 
         public class SingleInstanceApplication : WindowsFormsApplicationBase
