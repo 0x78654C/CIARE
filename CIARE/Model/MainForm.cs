@@ -23,6 +23,7 @@ using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
+using Microsoft.Win32;
 
 namespace CIARE
 {
@@ -789,6 +790,9 @@ namespace CIARE
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
             string titleTab = EditorTabControl.SelectedTab.Text;
+            GlobalVariables.openedFilePath = titleTab;
+            var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+            GlobalVariables.openedFileName = fileInfo.Name;
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
                 this.Text = $"{titleTab.Trim()} - CIARE {versionName}";
