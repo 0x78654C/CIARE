@@ -150,6 +150,7 @@ MessageBoxIcon.Warning);
                     GlobalVariables.openedFileName = fileInfo1.Name;
                     GlobalVariables.noPath = true;
                     GlobalVariables.savedFile = true;
+                    File.WriteAllText(fileName, "");
                 }
                 if (dr == DialogResult.No)
                     GlobalVariables.noPath = true;
@@ -633,13 +634,14 @@ MessageBoxIcon.Information);
 
             if (File.Exists(data))
             {
+                MainForm.Instance.EditorTabControl.SelectTab(1);
                 SelectedEditor.GetSelectedEditor(1).Clear();
                 SelectedEditor.GetSelectedEditor(1).Text = File.ReadAllText(data);
                 FileInfo fileInfo = new FileInfo(data);
                 var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
-                MainForm.Instance.EditorTabControl.SelectTab(1);
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = data;
+                TabControllerManage.StoreFileSize(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, 1);
                 if (GlobalVariables.OStartUp)
                     TabControllerManage.StoreDeleteTabs(previousTabPath, data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
             }
