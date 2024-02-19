@@ -119,11 +119,11 @@ MessageBoxIcon.Warning);
             if (data.Contains(":\\"))
             {
                 if (!File.Exists(data))
-                    return ManageCommandFileParam(SelectedEditor.GetSelectedEditor(0), data);
+                    return ManageCommandFileParam(data);
                 return data;
             }
             else
-                return ManageCommandFileParam(SelectedEditor.GetSelectedEditor(0), data);
+                return ManageCommandFileParam(data);
         }
 
         /// <summary>
@@ -132,7 +132,7 @@ MessageBoxIcon.Warning);
         /// <param name="textEditorControl"></param>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public static string ManageCommandFileParam(TextEditorControl textEditorControl, string fileName)
+        public static string ManageCommandFileParam(string fileName)
         {
             if (string.IsNullOrEmpty(fileName))
                 return string.Empty;
@@ -150,7 +150,6 @@ MessageBoxIcon.Warning);
                     GlobalVariables.openedFileName = fileInfo1.Name;
                     GlobalVariables.noPath = true;
                     GlobalVariables.savedFile = true;
-                    SaveAsDialog(textEditorControl);
                 }
                 if (dr == DialogResult.No)
                     GlobalVariables.noPath = true;
@@ -161,6 +160,37 @@ MessageBoxIcon.Warning);
             GlobalVariables.openedFileName = fileInfo.Name;
             return fileName;
         }
+
+        public static bool ManageCommandFileParam(string fileName, bool isFromForm)
+        {
+            fileName = fileName.Split('|')[1];
+            if (string.IsNullOrEmpty(fileName))
+                return false;
+
+            fileName = GetCiarePath(fileName);
+            if (!File.Exists(fileName))
+            {
+                DialogResult dr;
+                if(isFromForm)
+                    dr = MessageBox.Show($"File '{fileName}' does not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                else
+                    dr = MessageBox.Show($"File '{fileName}' does not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+
+                if (dr == DialogResult.Cancel)
+                    Environment.Exit(1);
+                if (dr == DialogResult.Yes)
+                    File.WriteAllText(fileName, "");
+                if (dr == DialogResult.No)
+                    GlobalVariables.noPath = true;
+                return true;
+            }
+            GlobalVariables.openedFilePath = fileName;
+            var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+            GlobalVariables.openedFileName = fileInfo.Name;
+            return false;
+        }
+
+
 
         /// <summary>
         /// Sanitize fileName path with CIARE applicatin
@@ -591,14 +621,16 @@ MessageBoxIcon.Information);
                         MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {MainForm.Instance.versionName}";
                         tabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
                         tabControl.SelectedTab.ToolTipText = file;
+                        if (GlobalVariables.OStartUp)
+                            TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
+
                     });
-                    if (GlobalVariables.OStartUp)
-                        TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
                 }
                 return;
             }
 
             data = PathCheck(data);
+
             if (File.Exists(data))
             {
                 SelectedEditor.GetSelectedEditor(1).Clear();
@@ -617,7 +649,7 @@ MessageBoxIcon.Information);
         /// Load files from arguments on cli.
         /// </summary>
         /// <param name="arg"></param>
-        public static void OpenFileFromArgs(string arg, TabControl tabControl)
+        public static void OpenFileFromArgs(string arg, TabControl tabControl, bool isFromForm=false)
         {
             try
             {

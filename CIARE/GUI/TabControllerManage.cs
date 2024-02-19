@@ -1,6 +1,5 @@
 ﻿using CIARE.Utils;
 using ICSharpCode.TextEditor;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -65,7 +64,7 @@ namespace CIARE.GUI
                 tabControl.SelectedIndex = lastIndex + tabCount;
                 });
             }
-            catch (Exception e) { MessageBox.Show(e.ToString()); }
+            catch {  }
         }
 
         /// <summary>
@@ -123,6 +122,8 @@ namespace CIARE.GUI
             List<string> lines = File.ReadAllLines(fileTabStore).ToList();
             if (!remove)
             {
+                if (string.IsNullOrEmpty(previewTabPath))
+                    previewTabPath = "!@#$$#@%^&\\@#$@#$"; // I din't think I need to do this.
                 if (lines.Any(i => i.Contains(previewTabPath)) && MainForm.Instance.EditorTabControl.SelectedIndex != 1)
                     lines.RemoveAll(i => i.Contains(previewTabPath));
                 if (!lines.Any(i => i.Contains(filePath)))
@@ -172,7 +173,8 @@ namespace CIARE.GUI
                 {
                     var path = line.Split('|')[0].Trim();
                     int index = Int32.Parse(line.Split('|')[1].Trim());
-                    list.Add(new KeyValuePair<string, int>(path, index));
+                    if(File.Exists(path))
+                        list.Add(new KeyValuePair<string, int>(path, index));
                 }
             }
 
@@ -192,6 +194,8 @@ namespace CIARE.GUI
                         MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {MainForm.Instance.versionName}";
                         MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
                         MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = item.Key;
+                        var tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
+                        StoreFileSize(item.Key, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                     }
                 }
                 else

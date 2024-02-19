@@ -29,10 +29,14 @@ namespace CIARE
         {
             s_arg = $"cli|{e.CommandLine[1]}";
             e.BringToForeground = true;
-            GlobalVariables.processArg = s_arg;
-            worker = new BackgroundWorker();
-            worker.DoWork += Worker;
-            worker.RunWorkerAsync();
+            bool isCreated = FileManage.ManageCommandFileParam(s_arg,true);
+            if (isCreated)
+            {
+                GlobalVariables.processArg = s_arg;
+                worker = new BackgroundWorker();
+                worker.DoWork += Worker;
+                worker.RunWorkerAsync();
+            }
         }
 
         private static void Worker(object sender, DoWorkEventArgs e) =>

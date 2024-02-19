@@ -77,7 +77,7 @@ namespace CIARE
             this.EditorTabControl.SelectedIndex = index;
             int selectedTab = EditorTabControl.SelectedIndex;
             int countTabs = EditorTabControl.TabCount - 1;
-            System.Windows.Forms.Control ctrl = EditorTabControl.Controls[countTabs].Controls[0];
+            Control ctrl = EditorTabControl.Controls[countTabs].Controls[0];
             selectedEditor = ctrl as TextEditorControl;
             selectedEditor.TextEditorProperties.StoreZoomSize = true;
             selectedEditor.TextEditorProperties.RegPath = GlobalVariables.registryPath;
