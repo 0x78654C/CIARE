@@ -110,6 +110,7 @@ namespace CIARE
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
+            this.Hide();
             Instance = this;
             versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             versionName = versionName.Substring(0, versionName.Length - 2);
@@ -133,6 +134,8 @@ namespace CIARE
                 TabControllerManage.ReadTabs(EditorTabControl, SelectedEditor.GetSelectedEditor(), GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
             else
                 TabControllerManage.CleanStoredTabs(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+            this.Show();
+
             _apiConnectionEvents = new ApiConnectionEvents();
             //------------------------------
             //Code completion initialize.
@@ -158,7 +161,7 @@ namespace CIARE
 
             //File open via parameters(Open with option..)
             string arg = ReadArgs(s_args);
-            FileManage.OpenFileFromArgs(arg);
+            FileManage.OpenFileFromArgs(arg, EditorTabControl);
             //----------------------------------
 
             ReloadRef();
