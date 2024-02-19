@@ -575,7 +575,7 @@ MessageBoxIcon.Information);
         /// </summary>
         /// <param name="data"></param>
         /// <param name="textEditorControl"></param>
-        private static void LoadParamFile(string data)
+        private static void LoadParamFile(string data, TabControl tabControl)
         {
             if (data.StartsWith("cli|"))
             {
@@ -584,14 +584,16 @@ MessageBoxIcon.Information);
 
                 using (var reader = new StreamReader(file))
                 {
-                    MainForm.Instance.EditorTabControl.SelectTab(0);
-
-                    //MainForm.Instance.EditorTabControl.TabPages.Insert(MainForm.Instance.EditorTabControl.TabCount, $"New Page              ");
-                    TabControllerManage.AddNewTab(MainForm.Instance.EditorTabControl);
-                    //SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
-                    //MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {MainForm.Instance.versionName}";
-                   // MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
-                    //MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = file;
+                    TabControllerManage.AddNewTab(tabControl);
+                    tabControl.Invoke(delegate
+                    {
+                        SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
+                        MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {MainForm.Instance.versionName}";
+                        tabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
+                        tabControl.SelectedTab.ToolTipText = file;
+                    });
+                    if (GlobalVariables.OStartUp)
+                        TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
                 }
                 return;
             }
@@ -612,14 +614,14 @@ MessageBoxIcon.Information);
         }
 
         /// <summary>
-        /// 
+        /// Load files from arguments on cli.
         /// </summary>
         /// <param name="arg"></param>
-        public static void OpenFileFromArgs(string arg)
+        public static void OpenFileFromArgs(string arg, TabControl tabControl)
         {
             try
             {
-                LoadParamFile(arg);
+                LoadParamFile(arg, tabControl);
                 if (!GlobalVariables.noPath)
                 {
                     GlobalVariables.openedFilePath = arg;
