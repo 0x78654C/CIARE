@@ -57,11 +57,13 @@ namespace CIARE.GUI
         {
             try
             {
-                tabControl.SelectedIndex = index;
+
+                tabControl.Invoke(delegate { tabControl.SelectedIndex = index; 
                 var tabCount = tabControl.TabCount;
                 var lastIndex = tabControl.SelectedIndex;
                 tabControl.TabPages.Insert(tabCount, $"New Page              ");
                 tabControl.SelectedIndex = lastIndex + tabCount;
+                });
             }
             catch (Exception e) { MessageBox.Show(e.ToString()); }
         }
