@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 using CIARE.GUI;
@@ -436,11 +437,17 @@ MessageBoxIcon.Warning);
             textEditor = ctrl as TextEditorControl;
             textEditor.Clear();
             logOutput.Clear();
+            string path = GlobalVariables.openedFilePath;
             GlobalVariables.openedFilePath = string.Empty;
             GlobalVariables.savedFile = false;
             MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page             ";
             MainForm.Instance.markStartFileChk.Checked = false;
+            if (GlobalVariables.OStartUp)
+            {
+                TabControllerManage.StoreDeleteTabs("", MainForm.Instance.EditorTabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, path);
+                TabControllerManage.DeleteFileSize(path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
+            }
         }
 
         /// <summary>

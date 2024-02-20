@@ -98,6 +98,33 @@ namespace CIARE.GUI
         }
 
         /// <summary>
+        ///  Funtiction to store tabs file size.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="tempDir"></param>
+        /// <param name="fileTabStore"></param>
+        public static void DeleteFileSize(string filePath, string tempDir, string fileTabStore)
+        {
+            if (!Directory.Exists(tempDir))
+                return;
+
+            if (!File.Exists(fileTabStore))
+                File.WriteAllText(fileTabStore, "");
+
+            FileInfo fileInfo = new FileInfo(filePath);
+
+            var fileSize = fileInfo.Length;
+            List<string> lines = File.ReadAllLines(fileTabStore).ToList();
+
+            for (int i = 0; i < lines.Count(); i++)
+            {
+                if (lines[i].StartsWith(filePath))
+                    lines.Remove(lines[i]);
+            }
+            File.WriteAllText(fileTabStore, string.Join("\n", lines));
+        }
+
+        /// <summary>
         /// Clean file size file.
         /// </summary>
         /// <param name="fileTabStore"></param>

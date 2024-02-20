@@ -298,12 +298,11 @@ namespace CIARE
                 case Keys.Right | Keys.Control:
                     TabControllerManage.SwitchTabs(ref EditorTabControl, false);
                     return true;
-                case Keys.Tab | Keys.Control:
-                    TabControllerManage.SwitchTabs2(ref EditorTabControl, true);
-                    return true;
-                case Keys.Q | Keys.Control:
-                    TabControllerManage.AddNewTab(EditorTabControl);
-                    return true;
+                //case Keys.Tab | Keys.Control:
+                //    EditorTabControl.SelectTab(1);
+                //    var tabCount = EditorTabControl.TabCount;
+                //    EditorTabControl.TabPages.Insert(tabCount, $"New Page               ");
+                   // return true;
                 case Keys.N | Keys.Control:
                     FileManage.NewFile(selectedEditor, outputRBT);
                     return true;
@@ -814,7 +813,7 @@ namespace CIARE
                 SetDesignEditor(ref dynamicTextEdtior);
                 tabPage.AllowDrop = true;
                 tabPage.Controls.Add(dynamicTextEdtior);
-                Initiliaze(EditorTabControl.SelectedIndex);       
+                Initiliaze(EditorTabControl.SelectedIndex);
             }
         }
 
