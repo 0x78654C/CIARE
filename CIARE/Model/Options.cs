@@ -43,7 +43,6 @@ namespace CIARE
             apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
-            CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
