@@ -298,11 +298,12 @@ namespace CIARE
                 case Keys.Right | Keys.Control:
                     TabControllerManage.SwitchTabs(ref EditorTabControl, false);
                     return true;
-                //case Keys.Tab | Keys.Control:
-                //    EditorTabControl.SelectTab(1);
-                //    var tabCount = EditorTabControl.TabCount;
-                //    EditorTabControl.TabPages.Insert(tabCount, $"New Page               ");
-                // return true;
+                case Keys.Tab | Keys.Control:
+                   // TabControllerManage.SwitchTabs(ref EditorTabControl, false);
+                    return true;
+                case Keys.Tab | Keys.Control | Keys.Shift:
+                    //TabControllerManage.SwitchTabs(ref EditorTabControl, true);
+                    return true;
                 case Keys.N | Keys.Control:
                     FileManage.NewFile(selectedEditor, outputRBT);
                     return true;
