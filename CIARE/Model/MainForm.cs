@@ -799,7 +799,7 @@ namespace CIARE
             }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
-                this.Text = $"{titleTab.Trim()} : {GlobalVariables.openedFilePath} - CIARE {versionName}";
+                this.Text = $"{titleTab.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
             }
             else
             {
