@@ -22,6 +22,8 @@ namespace CIARE
         [STAThread]
         static void Main()
         {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
             SingleInstanceApplication.Run(new MainForm(), NewInstanceHandler);
         }
 
