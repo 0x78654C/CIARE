@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+using System.Windows.Shapes;
 using CIARE.GUI;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
@@ -412,14 +413,21 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void SaveAsDialog(TextEditorControl textEditor)
         {
-            string title = MainForm.Instance.Text;
             SaveFile(textEditor.Text);
             if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
                 return;
             if (GlobalVariables.savedFile)
             {
                 MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
-                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
+                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}             ";
+                MainForm.Instance.EditorTabControl.SelectedTab.Text =GlobalVariables.openedFilePath;
+                if (GlobalVariables.OStartUp)
+                {
+                    int tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
+                    string titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text.Trim();
+                    TabControllerManage.StoreDeleteTabs(titleTab, GlobalVariables.openedFileName, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabIndex);
+                    TabControllerManage.StoreFileSize(GlobalVariables.openedFileName, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                }
             }
         }
 
@@ -508,7 +516,11 @@ MessageBoxIcon.Information);
                 if (!string.IsNullOrEmpty(path))
                 {
                     MainForm.Instance.Text = $"*{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
-                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"*{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
+                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"*{GlobalVariables.openedFileName}             ";
+                    if (GlobalVariables.OStartUp)
+                    {
+                        TabControllerManage.StoreFileSize(path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index);
+                    }
                 }
                 else
                     MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";

@@ -302,7 +302,7 @@ namespace CIARE
                 //    EditorTabControl.SelectTab(1);
                 //    var tabCount = EditorTabControl.TabCount;
                 //    EditorTabControl.TabPages.Insert(tabCount, $"New Page               ");
-                   // return true;
+                // return true;
                 case Keys.N | Keys.Control:
                     FileManage.NewFile(selectedEditor, outputRBT);
                     return true;
@@ -315,7 +315,7 @@ namespace CIARE
                     FileManage.SaveToFileDialog();
                     return true;
                 case Keys.S | Keys.Control | Keys.Shift:
-                    FileManage.SaveFileTab(EditorTabControl, selectedEditor);
+                    FileManage.SaveAsDialog(selectedEditor);
                     return true;
                 case Keys.O | Keys.Control:
                     int indexTab = EditorTabControl.SelectedIndex;
