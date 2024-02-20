@@ -311,7 +311,7 @@ MessageBoxIcon.Warning);
             textEditor.Text = openedData;
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
             GlobalVariables.openedFileName = fileInfo.Name;
-            MainForm.Instance.Text = $"{GlobalVariables.openedFileName} - CIARE {MainForm.Instance.versionName}";
+            MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
             var filePath = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{GlobalVariables.openedFileName}";
             var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
