@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
-using System.Security.Principal;
 using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Reference;
@@ -286,7 +285,7 @@ MessageBoxIcon.Warning);
         private static void DialogResultAction(DialogResult dialogResult, TextEditorControl textEditorControl)
         {
             if (dialogResult == DialogResult.Yes)
-                SaveToFileDialog(textEditorControl);
+                SaveToFileDialog();
             if (dialogResult == DialogResult.Cancel)
                 GlobalVariables.noClear = true;
             else
@@ -350,45 +349,48 @@ MessageBoxIcon.Warning);
         /// Save data from editor to a existing file/other file name if no path is found as opened.
         /// </summary>
         /// <param name="textEditor"></param>
-        public static void SaveToFileDialog(TextEditorControl textEditor)
+        public static void SaveToFileDialog()
         {
             try
             {
-                string titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text;
-                string fileName = "";
-                string filePath = "";
-                string fullPath = "";
-                if (titleTab.Contains(":"))
-                {
-                    fileName = titleTab.SplitByText(" : ", 0).Replace("*", "");
-                    filePath = titleTab.SplitByText(" : ", 1);
-                    fullPath = $"{filePath}\\{fileName}";
-                    GlobalVariables.openedFileName = fileName;
-                    GlobalVariables.openedFilePath = fullPath;
-                }
-
-
+                string titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text.Trim();
                 bool isSameTitleName = titleTab.Contains(GlobalVariables.openedFilePath);
 
                 if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page"))
                 {
-                    File.WriteAllText(GlobalVariables.openedFilePath, textEditor.Text);
+                    File.WriteAllText(GlobalVariables.openedFilePath, SelectedEditor.GetSelectedEditor().Text);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    MainForm.Instance.EditorTabControl.SelectedTab.Text = titleTab.Replace("*", "");
+                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{titleTab.Replace("*", "")}               ";
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                    StoreTabs(GlobalVariables.openedFilePath);
                     return;
                 }
-                SaveFile(textEditor.Text);
+                SaveFile(SelectedEditor.GetSelectedEditor().Text);
                 if (GlobalVariables.savedFile)
                 {
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)}";
+                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}               ";
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                    StoreTabs(GlobalVariables.openedFilePath);
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Store tabs if set in options on save.
+        /// </summary>
+        /// <param name="path"></param>
+        private static void StoreTabs(string path)
+        {
+            if (GlobalVariables.OStartUp)
+            {
+                int tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
+                TabControllerManage.StoreDeleteTabs("", path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabIndex);
+                TabControllerManage.StoreFileSize(path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
             }
         }
 
@@ -400,7 +402,7 @@ MessageBoxIcon.Warning);
         {
             if (!MainForm.Instance.Text.StartsWith("*") || !MainForm.Instance.EditorTabControl.SelectedTab.Text.StartsWith("*"))
                 return;
-            SaveToFileDialog(textEditor);
+            SaveToFileDialog();
         }
 
         /// <summary>
@@ -413,7 +415,6 @@ MessageBoxIcon.Warning);
             SaveFile(textEditor.Text);
             if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
                 return;
-            FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
             if (GlobalVariables.savedFile)
             {
                 MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
@@ -597,7 +598,7 @@ MessageBoxIcon.Information);
             int selectedTab = tabControl.SelectedIndex;
             Control ctrl = tabControl.Controls[selectedTab].Controls[0];
             textEditorControl = ctrl as TextEditorControl;
-            SaveToFileDialog(textEditorControl);
+            SaveToFileDialog();
         }
 
 

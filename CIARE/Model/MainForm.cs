@@ -23,7 +23,7 @@ using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
-using Microsoft.Win32;
+
 
 namespace CIARE
 {
@@ -259,7 +259,7 @@ namespace CIARE
             string titleTab = EditorTabControl.SelectedTab.Text;
             if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page"))
             {
-                this.Text = $"*{GlobalVariables.openedFileName} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
                 string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
                 EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
             }
@@ -313,7 +313,7 @@ namespace CIARE
                     findAndReplace.Show();
                     return true;
                 case Keys.S | Keys.Control:
-                    FileManage.SaveToFileDialog(selectedEditor);
+                    FileManage.SaveToFileDialog();
                     return true;
                 case Keys.S | Keys.Control | Keys.Shift:
                     FileManage.SaveFileTab(EditorTabControl, selectedEditor);
@@ -789,13 +789,17 @@ namespace CIARE
 
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
-            string titleTab = EditorTabControl.SelectedTab.Text;
-            GlobalVariables.openedFilePath = titleTab;
-            var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-            GlobalVariables.openedFileName = fileInfo.Name;
+            string titleTab = EditorTabControl.SelectedTab.Text.Trim();
+            string filePath = EditorTabControl.SelectedTab.ToolTipText.Trim();
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                GlobalVariables.openedFilePath = filePath;
+                var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                GlobalVariables.openedFileName = fileInfo.Name;
+            }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
-                this.Text = $"{titleTab.Trim()} - CIARE {versionName}";
+                this.Text = $"{titleTab.Trim()} : {GlobalVariables.openedFilePath} - CIARE {versionName}";
             }
             else
             {

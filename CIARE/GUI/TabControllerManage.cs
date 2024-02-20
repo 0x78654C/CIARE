@@ -124,7 +124,7 @@ namespace CIARE.GUI
             {
                 if (string.IsNullOrEmpty(previewTabPath))
                     previewTabPath = "!@#$$#@%^&\\@#$@#$"; // I din't think I need to do this.
-                if (lines.Any(i => i.Contains(previewTabPath)) && MainForm.Instance.EditorTabControl.SelectedIndex != 1)
+                if (lines.Any(i => i.Contains(previewTabPath)))
                     lines.RemoveAll(i => i.Contains(previewTabPath));
                 if (!lines.Any(i => i.Contains(filePath)))
                     lines.Add(line);
@@ -192,7 +192,7 @@ namespace CIARE.GUI
                         AddNewTab(tabControl);
                         SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
                         MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {MainForm.Instance.versionName}";
-                        MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
+                        MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                         MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = item.Key;
                         var tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
                         StoreFileSize(item.Key, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
@@ -203,6 +203,7 @@ namespace CIARE.GUI
                     StoreDeleteTabs("", tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, item.Key);
                 }
             }
+            MainForm.Instance.EditorTabControl.SelectTab(1);
             GlobalVariables.isStoringTabs = true;
         }
 
