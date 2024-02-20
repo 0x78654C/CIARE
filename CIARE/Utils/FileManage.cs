@@ -421,14 +421,14 @@ MessageBoxIcon.Warning);
             {
                 MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}             ";
-                MainForm.Instance.EditorTabControl.SelectedTab.Text =GlobalVariables.openedFilePath;
+                MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText =GlobalVariables.openedFilePath;
                 int tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
                 if (GlobalVariables.OStartUp)
                 {
                     string titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text.Trim();
-                    TabControllerManage.StoreDeleteTabs(titleTab, GlobalVariables.openedFileName, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabIndex);
+                    TabControllerManage.StoreDeleteTabs(titleTab, GlobalVariables.openedFilePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabIndex);
                 }
-                TabControllerManage.StoreFileSize(GlobalVariables.openedFileName, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                TabControllerManage.StoreFileSize(GlobalVariables.openedFilePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
             }
         }
 
