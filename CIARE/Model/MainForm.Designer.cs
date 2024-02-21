@@ -387,7 +387,7 @@ namespace CIARE
             // 
             liveShareToolStripMenuItem.Name = "liveShareToolStripMenuItem";
             liveShareToolStripMenuItem.Size = new System.Drawing.Size(173, 22);
-            liveShareToolStripMenuItem.Text = "Live Share Manage";
+            liveShareToolStripMenuItem.Text = "Live Share Manage ( CTRL + Q )";
             liveShareToolStripMenuItem.Click += liveShareHostToolStripMenuItem_Click;
             // 
             // settingsToolStripMenuItem
@@ -479,7 +479,7 @@ namespace CIARE
             tabPage1.Size = new System.Drawing.Size(1395, 651);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "   +        ";
-            tabPage1.ToolTipText = "Add Tab (CTRL + Tab)";
+           // tabPage1.ToolTipText = "Add Tab (CTRL + Tab)";
             tabPage1.UseVisualStyleBackColor = true;
             // 
             // tabPage2

@@ -74,8 +74,7 @@ namespace CIARE
         /// <param name="index"></param>
         private void Initiliaze(int index = 1)
         {
-
-            this.EditorTabControl.SelectedIndex = index;
+            EditorTabControl.SelectedIndex = index;
             int selectedTab = EditorTabControl.SelectedIndex;
             int countTabs = EditorTabControl.TabCount - 1;
             Control ctrl = EditorTabControl.Controls[countTabs].Controls[0];
@@ -246,7 +245,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void saveAsStripMenuItem_Click(object sender, EventArgs e)
         {
-            FileManage.SaveAsDialog(selectedEditor);
+            FileManage.SaveAsDialog(SelectedEditor.GetSelectedEditor());
         }
 
         /// <summary>
@@ -292,6 +291,10 @@ namespace CIARE
         {
             switch (keyData)
             {
+                case Keys.Q | Keys.Control:
+                    LiveShareHost liveShareHost = new LiveShareHost();
+                    liveShareHost.ShowDialog();
+                    return true;
                 case Keys.Left | Keys.Control:
                     TabControllerManage.SwitchTabs(ref EditorTabControl, true);
                     return true;
@@ -316,7 +319,7 @@ namespace CIARE
                     FileManage.SaveToFileDialog();
                     return true;
                 case Keys.S | Keys.Control | Keys.Shift:
-                    FileManage.SaveAsDialog(selectedEditor);
+                    FileManage.SaveAsDialog(SelectedEditor.GetSelectedEditor());
                     return true;
                 case Keys.O | Keys.Control:
                     int indexTab = EditorTabControl.SelectedIndex;
