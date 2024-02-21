@@ -57,14 +57,16 @@ namespace CIARE.GUI
             try
             {
 
-                tabControl.Invoke(delegate { tabControl.SelectedIndex = index; 
-                var tabCount = tabControl.TabCount;
-                var lastIndex = tabControl.SelectedIndex;
-                tabControl.TabPages.Insert(tabCount, $"New Page              ");
-                tabControl.SelectedIndex = lastIndex + tabCount;
+                tabControl.Invoke(delegate
+                {
+                    tabControl.SelectedIndex = index;
+                    var tabCount = tabControl.TabCount;
+                    var lastIndex = tabControl.SelectedIndex;
+                    tabControl.TabPages.Insert(tabCount, $"New Page              ");
+                    tabControl.SelectedIndex = lastIndex + tabCount;
                 });
             }
-            catch {  }
+            catch { }
         }
 
         /// <summary>
@@ -200,7 +202,7 @@ namespace CIARE.GUI
                 {
                     var path = line.Split('|')[0].Trim();
                     int index = Int32.Parse(line.Split('|')[1].Trim());
-                    if(File.Exists(path))
+                    if (File.Exists(path))
                         list.Add(new KeyValuePair<string, int>(path, index));
                 }
             }
