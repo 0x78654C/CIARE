@@ -46,7 +46,8 @@ namespace CIARE.GUI
                 MainForm.Instance.optionsToolStripMenuItem,
                 MainForm.Instance.liveShareToolStripMenuItem,
                 MainForm.Instance.chatGPTCTRLShiftPToolStripMenuItem,
-                MainForm.Instance.referenceAddToolStripMenuItem
+                MainForm.Instance.referenceAddToolStripMenuItem,
+                MainForm.Instance.hotKeyToolStripMenuItem,
             };
             return listToosStripM;
         }
