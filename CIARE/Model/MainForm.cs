@@ -24,7 +24,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
-using System.Windows.Controls.Primitives;
 
 
 namespace CIARE
