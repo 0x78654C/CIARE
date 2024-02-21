@@ -369,6 +369,7 @@ MessageBoxIcon.Warning);
                     File.WriteAllText(GlobalVariables.openedFilePath, SelectedEditor.GetSelectedEditor().Text);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{titleTab.Replace("*", "")}               ";
+                    MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
                     StoreTabs(GlobalVariables.openedFilePath);
                     return;
@@ -378,6 +379,7 @@ MessageBoxIcon.Warning);
                 {
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}               ";
+                    MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
                     StoreTabs(GlobalVariables.openedFilePath);
                 }
