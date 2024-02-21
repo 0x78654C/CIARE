@@ -637,7 +637,7 @@ MessageBoxIcon.Information);
                     {
                         SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
                         MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {MainForm.Instance.versionName}";
-                        tabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
+                        tabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                         tabControl.SelectedTab.ToolTipText = file;
                         if (GlobalVariables.OStartUp)
                             TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
