@@ -302,13 +302,10 @@ namespace CIARE
                     TabControllerManage.SwitchTabs(ref EditorTabControl, false);
                     return true;
                 case Keys.Tab | Keys.Control:
-                   // TabControllerManage.SwitchTabs(ref EditorTabControl, false);
-                    return true;
-                case Keys.Tab | Keys.Control | Keys.Shift:
-                    //TabControllerManage.SwitchTabs(ref EditorTabControl, true);
+                    TabControllerManage.AddNewTab(EditorTabControl);
                     return true;
                 case Keys.N | Keys.Control:
-                    FileManage.NewFile(selectedEditor, outputRBT);
+                    FileManage.NewFile(SelectedEditor.GetSelectedEditor(), outputRBT);
                     return true;
                 case Keys.H | Keys.Control:
                     GlobalVariables.findTabOpen = false;
@@ -335,11 +332,11 @@ namespace CIARE
                     RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
                     return true;
                 case Keys.T | Keys.Control:
-                    FileManage.LoadCSTemplate(selectedEditor);
+                    FileManage.LoadCSTemplate(SelectedEditor.GetSelectedEditor());
                     return true;
                 case Keys.B | Keys.Control:
-                    FileManage.CompileRunSaveData(selectedEditor);
-                    RoslynRun.CompileBinaryExe(selectedEditor, splitContainer1, outputRBT, false);
+                    FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
+                    RoslynRun.CompileBinaryExe(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false);
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
@@ -418,6 +415,16 @@ namespace CIARE
             aboutBox.ShowDialog();
         }
 
+        /// <summary>
+        /// Show hotkeys info
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="System.NotImplementedException"></exception>
+        private void HotKeyToolStripMenuItem_Click(object sender, System.EventArgs e)
+        {
+            HotKeys.ShowHotKeys();
+        }
 
         /// <summary>
         /// Compile code to binary exe file.

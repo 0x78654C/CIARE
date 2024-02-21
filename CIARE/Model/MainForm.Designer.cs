@@ -76,6 +76,7 @@ namespace CIARE
             optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            hotKeyToolStripMenuItem= new System.Windows.Forms.ToolStripMenuItem();
             groupBox1 = new System.Windows.Forms.GroupBox();
             splitContainer1 = new System.Windows.Forms.SplitContainer();
             EditorTabControl = new System.Windows.Forms.TabControl();
@@ -407,6 +408,7 @@ namespace CIARE
             // helpToolStripMenuItem
             // 
             helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { aboutToolStripMenuItem });
+            helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { hotKeyToolStripMenuItem });
             helpToolStripMenuItem.Name = "helpToolStripMenuItem";
             helpToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             helpToolStripMenuItem.Text = "Help";
@@ -417,6 +419,13 @@ namespace CIARE
             aboutToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
             aboutToolStripMenuItem.Text = "About";
             aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
+            // 
+            // hotKeyToolStripMenuItem
+            // 
+            hotKeyToolStripMenuItem.Name = "hotKeyToolStripMenuItem";
+            hotKeyToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
+            hotKeyToolStripMenuItem.Text = "Hot Keys";
+            hotKeyToolStripMenuItem.Click += HotKeyToolStripMenuItem_Click; ;
             // 
             // groupBox1
             // 
@@ -674,6 +683,7 @@ namespace CIARE
         private System.Windows.Forms.Label label2;
         public System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
+        public System.Windows.Forms.ToolStripMenuItem hotKeyToolStripMenuItem;
         private System.Windows.Forms.Label label3;
         public System.Windows.Forms.ToolStripMenuItem compileToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem compileToexeCtrlShiftBToolStripMenuItem;
