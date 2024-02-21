@@ -11,7 +11,6 @@ namespace CIARE
     [SupportedOSPlatform("windows")]
     static class Program
     {
-        static BackgroundWorker worker;
         static string s_arg = "";
 
         /// <summary>
@@ -31,14 +30,8 @@ namespace CIARE
             e.BringToForeground = true;
             bool isCreated = FileManage.ManageCommandFileParam(s_arg, true);
             GlobalVariables.processArg = s_arg;
-            worker = new BackgroundWorker();
-            worker.DoWork += Worker;
-            worker.RunWorkerAsync();
-        }
-
-        private static void Worker(object sender, DoWorkEventArgs e) =>
             FileManage.OpenFileFromArgs(s_arg, MainForm.Instance.EditorTabControl);
-
+        }
 
         public class SingleInstanceApplication : WindowsFormsApplicationBase
         {
