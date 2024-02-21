@@ -337,13 +337,19 @@ MessageBoxIcon.Warning);
             if (GlobalVariables.noClear)
                 return;
             FileInfo fileInfo = new FileInfo(filePath);
+            GlobalVariables.openedFilePath = filePath;
+            GlobalVariables.openedFileName = fileInfo.Name;
             using (var reader = new StreamReader(filePath))
             {
                 MainForm.Instance.EditorTabControl.SelectTab(index);
                 textEditor.Text = reader.ReadToEnd();
+                var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
                 MainForm.Instance.Text = $"{fileInfo.Name} : {filePath} - CIARE {MainForm.Instance.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
+                TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
+                if (GlobalVariables.OStartUp)
+                    TabControllerManage.StoreDeleteTabs(previousTabPath, filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, index);  // Store tabs title and index.
             }
         }
 
