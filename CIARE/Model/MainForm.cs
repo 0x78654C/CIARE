@@ -23,6 +23,7 @@ using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
+using System.ComponentModel;
 
 
 namespace CIARE
@@ -50,6 +51,7 @@ namespace CIARE
         public TextEditorControl selectedEditor;
         TextEditorControl dynamicTextEdtior;
         private int countTabs = 0;
+        BackgroundWorker worker;
 
 
         // Used for tab's auto-resize
@@ -280,6 +282,22 @@ namespace CIARE
             FileManage.NewFile(selectedEditor, outputRBT);
         }
 
+        private void NewHotKeyTab (object sender, DoWorkEventArgs e)
+        {
+            TabControllerManage.AddNewTab(EditorTabControl);
+        }
+
+        private void SplitWindowHorizontally(object sender, DoWorkEventArgs e)
+        {
+            SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), true);
+        }
+
+        private void SplitWindowVertically(object sender, DoWorkEventArgs e)
+        {
+            SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), false);
+        }
+
+
         #region HotKeys Actions
         /// <summary>
         /// Override the key combination listener for file management events.
@@ -302,7 +320,9 @@ namespace CIARE
                     TabControllerManage.SwitchTabs(ref EditorTabControl, false);
                     return true;
                 case Keys.Tab | Keys.Control:
-                    TabControllerManage.AddNewTab(EditorTabControl);
+                    worker = new BackgroundWorker();
+                    worker.DoWork += NewHotKeyTab;
+                    worker.RunWorkerAsync();
                     return true;
                 case Keys.N | Keys.Control:
                     FileManage.NewFile(SelectedEditor.GetSelectedEditor(), outputRBT);
@@ -343,10 +363,14 @@ namespace CIARE
                     RoslynRun.CompileBinaryDll(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false);
                     return true;
                 case Keys.W | Keys.Control:
-                    SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), true);
+                    worker = new BackgroundWorker();
+                    worker.DoWork += SplitWindowHorizontally;
+                    worker.RunWorkerAsync();
                     return true;
                 case Keys.W | Keys.Control | Keys.Shift:
-                    SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), false);
+                    worker = new BackgroundWorker();
+                    worker.DoWork += SplitWindowVertically;
+                    worker.RunWorkerAsync();
                     return true;
                 case Keys.K | Keys.Control:
                     OutputWindowManage.SetOutputWindowState(outputRBT, splitContainer1);

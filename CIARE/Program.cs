@@ -1,8 +1,6 @@
-﻿using CIARE.GUI;
-using CIARE.Utils;
+﻿using CIARE.Utils;
 using Microsoft.VisualBasic.ApplicationServices;
 using System;
-using System.ComponentModel;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -28,7 +26,6 @@ namespace CIARE
         {
             s_arg = $"cli|{e.CommandLine[1]}";
             e.BringToForeground = true;
-            bool isCreated = FileManage.ManageCommandFileParam(s_arg, true);
             GlobalVariables.processArg = s_arg;
             FileManage.OpenFileFromArgs(s_arg, MainForm.Instance.EditorTabControl);
         }
