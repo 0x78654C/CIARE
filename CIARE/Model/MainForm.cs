@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
+using System.Windows.Controls.Primitives;
 
 
 namespace CIARE
@@ -79,6 +80,9 @@ namespace CIARE
             EditorTabControl.SelectedIndex = index;
             int selectedTab = EditorTabControl.SelectedIndex;
             int countTabs = EditorTabControl.TabCount - 1;
+            EditorTabControl.AllowDrop = true; //test
+            EditorTabControl.DragEnter += DynamicTextEdtior_DragEnter;//test
+            EditorTabControl.DragDrop += DynamicTextEdtior_DragDrop;//tes
             Control ctrl = EditorTabControl.Controls[countTabs].Controls[0];
             selectedEditor = ctrl as TextEditorControl;
             selectedEditor.TextEditorProperties.StoreZoomSize = true;
@@ -117,6 +121,10 @@ namespace CIARE
             versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             versionName = versionName.Substring(0, versionName.Length - 2);
             this.Text = $"CIARE {versionName}";
+            this.AllowDrop = true;
+            DragEnter += DynamicTextEdtior_DragEnter;//test
+            DragDrop += DynamicTextEdtior_DragDrop;//test
+
             Initiliaze();
             TabControllerManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
             Console.SetOut(new ControlWriter(outputRBT));
@@ -447,7 +455,8 @@ namespace CIARE
         /// <exception cref="System.NotImplementedException"></exception>
         private void HotKeyToolStripMenuItem_Click(object sender, System.EventArgs e)
         {
-            HotKeys.ShowHotKeys();
+            HotKeys hotKeys = new HotKeys();
+            hotKeys.Show();
         }
 
         /// <summary>
@@ -899,7 +908,6 @@ namespace CIARE
         /// <param name="e"></param>
         private void DynamicTextEdtior_DragDrop(object sender, DragEventArgs e)
         {
-            outputRBT.Text += "drop";
             var files = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (files.Count() > 1)
             {

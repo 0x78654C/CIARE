@@ -424,7 +424,7 @@ namespace CIARE
             // 
             hotKeyToolStripMenuItem.Name = "hotKeyToolStripMenuItem";
             hotKeyToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
-            hotKeyToolStripMenuItem.Text = "Hot Keys";
+            hotKeyToolStripMenuItem.Text = "HotKeys";
             hotKeyToolStripMenuItem.Click += HotKeyToolStripMenuItem_Click; ;
             // 
             // groupBox1
