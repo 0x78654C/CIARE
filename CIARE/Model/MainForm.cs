@@ -289,19 +289,38 @@ namespace CIARE
             FileManage.NewFile(selectedEditor, outputRBT);
         }
 
+        /// <summary>
+        /// Add new tab.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void NewHotKeyTab (object sender, DoWorkEventArgs e)
         {
             TabControllerManage.AddNewTab(EditorTabControl);
         }
 
+        /// <summary>
+        /// Split window horizontaly.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void SplitWindowHorizontally(object sender, DoWorkEventArgs e)
         {
-            SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), true);
+            this.Invoke(delegate { 
+                SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), true);
+            });
         }
 
+        /// <summary>
+        /// Split window verticaly.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void SplitWindowVertically(object sender, DoWorkEventArgs e)
         {
-            SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), false);
+            this.Invoke(delegate {
+                SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), false);
+            });
         }
 
 
@@ -572,7 +591,9 @@ namespace CIARE
 
         private void splitVEditorToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), false);
+            worker = new BackgroundWorker();
+            worker.DoWork += SplitWindowVertically;
+            worker.RunWorkerAsync();
         }
 
         private void showHideSCToolStripMenuItem_Click(object sender, EventArgs e)
