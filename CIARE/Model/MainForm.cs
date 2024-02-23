@@ -474,7 +474,7 @@ namespace CIARE
         private void HotKeyToolStripMenuItem_Click(object sender, System.EventArgs e)
         {
             HotKeys hotKeys = new HotKeys();
-            hotKeys.Show();
+            hotKeys.ShowDialog();
         }
 
         /// <summary>
