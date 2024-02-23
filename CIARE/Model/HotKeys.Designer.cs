@@ -34,7 +34,8 @@
             // 
             // textEditorControl1
             // 
-            textEditorControl1.Font = new System.Drawing.Font("Consolas", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+            textEditorControl1.AllowDrop = true;
+            textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
             textEditorControl1.Highlighting = "C#-Dark";
             textEditorControl1.Location = new System.Drawing.Point(12, 12);
             textEditorControl1.Name = "textEditorControl1";
