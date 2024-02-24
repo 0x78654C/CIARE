@@ -5,6 +5,7 @@ using CIARE.GUI;
 using CIARE.Utils;
 using CIARE.Utils.FilesOpenOS;
 using CIARE.Utils.Options;
+using ICSharpCode.TextEditor;
 
 namespace CIARE
 {
@@ -49,9 +50,25 @@ namespace CIARE
             _tokenTxtLen = maxTokensTxtBox.Text.Length;
         }
 
+        /// <summary>
+        /// Hightlight set for text editor.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void highlightCMB_SelectedIndexChanged(object sender, EventArgs e)
         {
-            MainForm.Instance.SetHighLighter(SelectedEditor.GetSelectedEditor(), highlightCMB.Text);
+            var tabs = MainForm.Instance.EditorTabControl;
+            int count = 0;
+            foreach(TabPage tab in tabs.TabPages)
+            {
+                if (count > 0)
+                {
+                    Control ctrl = MainForm.Instance.EditorTabControl.Controls[count].Controls[0];
+                    var textEditor = ctrl as TextEditorControl;
+                    MainForm.Instance.SetHighLighter(textEditor, highlightCMB.Text);
+                }
+                count++;
+            }
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
         }
 
