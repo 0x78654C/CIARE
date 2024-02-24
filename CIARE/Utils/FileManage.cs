@@ -642,7 +642,7 @@ MessageBoxIcon.Information);
                     tabControl.Invoke(delegate
                     {
                         SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
-                        MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {MainForm.Instance.versionName}";
+                        MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {MainForm.Instance.versionName}";
                         tabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                         tabControl.SelectedTab.ToolTipText = file;
                         if (GlobalVariables.OStartUp)
@@ -662,8 +662,9 @@ MessageBoxIcon.Information);
                 SelectedEditor.GetSelectedEditor(1).Text = File.ReadAllText(data);
                 FileInfo fileInfo = new FileInfo(data);
                 var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
+                MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {MainForm.Instance.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
-                MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = data;
+                MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = fileInfo.FullName;
                 TabControllerManage.StoreFileSize(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, 1);
                 if (GlobalVariables.OStartUp)
                     TabControllerManage.StoreDeleteTabs(previousTabPath, data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
