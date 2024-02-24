@@ -79,9 +79,6 @@ namespace CIARE
             EditorTabControl.SelectedIndex = index;
             int selectedTab = EditorTabControl.SelectedIndex;
             int countTabs = EditorTabControl.TabCount - 1;
-            EditorTabControl.AllowDrop = true; //test
-            EditorTabControl.DragEnter += DynamicTextEdtior_DragEnter;//test
-            EditorTabControl.DragDrop += DynamicTextEdtior_DragDrop;//tes
             Control ctrl = EditorTabControl.Controls[countTabs].Controls[0];
             selectedEditor = ctrl as TextEditorControl;
             selectedEditor.TextEditorProperties.StoreZoomSize = true;
@@ -120,10 +117,6 @@ namespace CIARE
             versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             versionName = versionName.Substring(0, versionName.Length - 2);
             this.Text = $"CIARE {versionName}";
-            this.AllowDrop = true;
-            DragEnter += DynamicTextEdtior_DragEnter;//test
-            DragDrop += DynamicTextEdtior_DragDrop;//test
-
             Initiliaze();
             TabControllerManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
             Console.SetOut(new ControlWriter(outputRBT));
@@ -839,7 +832,11 @@ namespace CIARE
             }
         }
 
-
+        /// <summary>
+        /// Handler for resize tab.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void EditorTabControl_HandleCreated(object sender, EventArgs e) =>
             SendMessage(this.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
 
@@ -875,7 +872,6 @@ namespace CIARE
                 dynamicTextEdtior = new TextEditorControl();
                 TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
                 SetDesignEditor(ref dynamicTextEdtior);
-                tabPage.AllowDrop = true;
                 tabPage.Controls.Add(dynamicTextEdtior);
                 Initiliaze(EditorTabControl.SelectedIndex);
             }
@@ -903,9 +899,10 @@ namespace CIARE
             dynamicTextEdtior.TextChanged += textEditorControl1_TextChanged;
             dynamicTextEdtior.Enter += textEditorControl1_Enter;
             dynamicTextEdtior.Resize += textEditorControl1_Resize;
-            dynamicTextEdtior.AllowDrop = true;
-            dynamicTextEdtior.DragEnter += DynamicTextEdtior_DragEnter;
-            dynamicTextEdtior.DragDrop += DynamicTextEdtior_DragDrop;
+            dynamicTextEdtior.ActiveTextAreaControl.TextArea.DragDrop += DynamicTextEdtior_DragDrop;
+            dynamicTextEdtior.ActiveTextAreaControl.TextArea.DragOver += DynamicTextEdtior_DragEnter;
+            dynamicTextEdtior.ActiveTextAreaControl.TextArea.AllowDrop = true;
+            dynamicTextEdtior.TextEditorProperties.AutoInsertCurlyBracket = true;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             dynamicTextEdtior.Focus();
