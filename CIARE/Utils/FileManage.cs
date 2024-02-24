@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
-using System.Windows.Shapes;
 using CIARE.GUI;
 using CIARE.Reference;
 using CIARE.Utils.FilesOpenOS;
