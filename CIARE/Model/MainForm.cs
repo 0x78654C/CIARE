@@ -287,7 +287,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void NewHotKeyTab (object sender, DoWorkEventArgs e)
+        private void NewHotKeyTab(object sender, DoWorkEventArgs e)
         {
             TabControllerManage.AddNewTab(EditorTabControl);
         }
@@ -299,7 +299,8 @@ namespace CIARE
         /// <param name="e"></param>
         private void SplitWindowHorizontally(object sender, DoWorkEventArgs e)
         {
-            this.Invoke(delegate { 
+            this.Invoke(delegate
+            {
                 SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), true);
             });
         }
@@ -311,7 +312,8 @@ namespace CIARE
         /// <param name="e"></param>
         private void SplitWindowVertically(object sender, DoWorkEventArgs e)
         {
-            this.Invoke(delegate {
+            this.Invoke(delegate
+            {
                 SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), false);
             });
         }
@@ -945,7 +947,7 @@ namespace CIARE
             TabControllerManage.DrawTabControl(EditorTabControl, e);
 
             // Set transparent header bar.
-            TabControllerManage.SetTransparentTabBar(EditorTabControl, e);
+            TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 51, 51, 51);
 
             // Color tab to red if live shared started on that index.
             if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)

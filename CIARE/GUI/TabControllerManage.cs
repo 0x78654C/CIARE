@@ -374,10 +374,10 @@ namespace CIARE.GUI
         /// <param name="tabControl"></param>
         /// <param name="e"></param>
         /// 
-        public static void SetTransparentTabBar(TabControl tabControl, DrawItemEventArgs e)
+        public static void SetTransparentTabBar(TabControl tabControl, DrawItemEventArgs e, int red=0, int green=0, int blue = 0)
         {
             bool dark = GlobalVariables.darkColor;
-            Color BackGroundColorForm = dark ? Color.FromArgb(51, 51, 51) : SystemColors.Window;
+            Color BackGroundColorForm = dark ? Color.FromArgb(red,green,blue) : SystemColors.Window;
             SolidBrush fillbrush = new SolidBrush(BackGroundColorForm);
             Rectangle lasttabrect = tabControl.GetTabRect(tabControl.TabPages.Count - 1);
             Rectangle background = new Rectangle();
