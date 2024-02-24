@@ -43,11 +43,12 @@ namespace CIARE.GUI
         private static void CloseSelectedIndex(TextEditorControl textEditorControl, TabControl tabControl, int index, bool checkAll)
         {
             FileManage.ManageUnsavedData(textEditorControl, index, checkAll);
+            if (GlobalVariables.OStartUp)
+                StoreDeleteTabs(tabControl.SelectedTab.ToolTipText, tabControl.SelectedTab.ToolTipText, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, tabControl.SelectedTab.ToolTipText);
+  
             if (!GlobalVariables.noClear)
             {
-                if (GlobalVariables.OStartUp)
-                    StoreDeleteTabs("", tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, tabControl.SelectedTab.ToolTipText);
-                tabControl.TabPages.RemoveAt(index);
+                 tabControl.TabPages.RemoveAt(index);
                 if (index >= tabControl.TabCount)
                     tabControl.SelectTab(index - 1);
                 else
