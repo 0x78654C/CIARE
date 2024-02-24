@@ -504,8 +504,6 @@ namespace CIARE
             else
                 e.Cancel = false;
 
-
-
             // Delete temp mark file.
             if (GetCiareProcesses() == 1)
             {
@@ -828,7 +826,7 @@ namespace CIARE
             }
             else
             {
-                TabControllerManage.CloseTabEvent(EditorTabControl, selectedEditor, e);
+                TabControllerManage.CloseTabEvent(EditorTabControl, SelectedEditor.GetSelectedEditor(), e);
             }
         }
 
