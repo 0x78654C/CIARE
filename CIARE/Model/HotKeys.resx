@@ -130,7 +130,7 @@ CTRL + Z         : Undo last modifications.
 CTRL + X         : Cut selection.
 CTRL + C         : Copy selection.
 CTRL + V         : Paste selection.
-Del              : Delete Selection.
+DEL              : Delete Selection.
 CTRL + F         : Find text in current tab.
 CTRL + H         : Replace text in current tab.
 CTRL + G         : Go to line number in current tab.
