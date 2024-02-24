@@ -33,18 +33,27 @@ namespace CIARE.GUI
             return;
         }
 
-
+        /// <summary>
+        /// Close selected index is right dialog result.
+        /// </summary>
+        /// <param name="textEditorControl"></param>
+        /// <param name="tabControl"></param>
+        /// <param name="index"></param>
+        /// <param name="checkAll"></param>
         private static void CloseSelectedIndex(TextEditorControl textEditorControl, TabControl tabControl, int index, bool checkAll)
         {
             FileManage.ManageUnsavedData(textEditorControl, index, checkAll);
-            if (GlobalVariables.OStartUp)
-                StoreDeleteTabs("", tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, tabControl.SelectedTab.ToolTipText);
-            tabControl.TabPages.RemoveAt(index);
-            if (index >= tabControl.TabCount)
-                tabControl.SelectTab(index - 1);
-            else
-                tabControl.SelectTab(index);
-
+            if (!GlobalVariables.noClear)
+            {
+                if (GlobalVariables.OStartUp)
+                    StoreDeleteTabs("", tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, tabControl.SelectedTab.ToolTipText);
+                tabControl.TabPages.RemoveAt(index);
+                if (index >= tabControl.TabCount)
+                    tabControl.SelectTab(index - 1);
+                else
+                    tabControl.SelectTab(index);
+            }
+            GlobalVariables.noClear = false;
         }
         /// <summary>
         /// Add new tab with editor.
