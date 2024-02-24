@@ -258,7 +258,7 @@ MessageBoxIcon.Warning);
                     if (tab.Text.StartsWith("*") || tab.Text.Contains("New Page"))
                     {
                         if (!string.IsNullOrEmpty(textEditorControl.Text))
-                            dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
+                            dr = MessageBox.Show($"There is unsaved data in {MainForm.Instance.EditorTabControl.SelectedTab.Text.Trim()}. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
             MessageBoxIcon.Warning);
                         MainForm.Instance.EditorTabControl.SelectTab(tab);
                         DialogResultAction(dr, textEditorControl);
@@ -266,10 +266,10 @@ MessageBoxIcon.Warning);
                 }
                 else
                 {
-                    if ((tab.Text.StartsWith("*") || tab.Text.Contains("New Page")))
+                    if ((tab.Text.StartsWith("*") || tab.Text.Contains("New Page")) && isSelectedTab)
                     {
                         if (!string.IsNullOrEmpty(textEditorControl.Text))
-                            dr = MessageBox.Show("There is unsaved data. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
+                            dr = MessageBox.Show($"There is unsaved data in {MainForm.Instance.EditorTabControl.SelectedTab.Text.Trim()}. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
             MessageBoxIcon.Warning);
                         DialogResultAction(dr, textEditorControl);
                         break;
@@ -302,8 +302,8 @@ MessageBoxIcon.Warning);
         {
             var index = MainForm.Instance.EditorTabControl.SelectedIndex;
             ManageUnsavedData(textEditor, index, false);
-            if (GlobalVariables.noClear)
-                return;
+            //if (GlobalVariables.noClear)
+            //    return;
             string openedData = OpenFile();
             if (GlobalVariables.noFileSelected)
             {
@@ -334,8 +334,8 @@ MessageBoxIcon.Warning);
         {
             var index = MainForm.Instance.EditorTabControl.SelectedIndex;
             ManageUnsavedData(textEditor, index, false);
-            if (GlobalVariables.noClear)
-                return;
+            //if (GlobalVariables.noClear)
+            //    return;
             FileInfo fileInfo = new FileInfo(filePath);
             GlobalVariables.openedFilePath = filePath;
             GlobalVariables.openedFileName = fileInfo.Name;
