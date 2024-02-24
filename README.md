@@ -91,9 +91,11 @@ Useful to run code on the fly and get instant result.
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_start.png?raw=true)
 
- When live share is started and connection to API message box will be prompted a red notification bubble will appear in right-up corner that notify you that is broadcasting.
+ When live share is started and connection to API message box will be prompted a red notification bubble will appear in right-up corner that notify you that is broadcasting and current tab is colored red aswel. 
+ In the process of live share tabs cannot be closed.
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_notify.png?raw=true)
+![live2](https://github.com/0x78654C/CIARE/assets/13780514/fc1a8915-4439-4b5c-88f4-d957ece90f2e)
 
  3. To start a remote connection go to Live tab -> Live Share Manage and add your given session id and password 
     and add them to 'Remote Session Id/Password' text boxes. After click on 'Remote Connect' button.
