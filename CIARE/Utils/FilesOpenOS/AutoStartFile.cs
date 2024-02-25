@@ -9,6 +9,7 @@ namespace CIARE.Utils.FilesOpenOS
     [SupportedOSPlatform("windows")]
     public class AutoStartFile
     {
+        //TODO: requires refecetor and removele of unused code.
 
         public string UserRunRegistryPath { get; set; }
         public string UserAppdataFile { get; set; }
