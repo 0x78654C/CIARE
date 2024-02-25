@@ -1,4 +1,19 @@
-﻿using CIARE.Utils;
+﻿/*
+       Description: Simple text editor for Windows with C# runtime compiler and code execution using Roslyn. 
+       Useful to run code on the fly and get instant result.
+
+       This app is distributed under the MIT License.
+       Copyright © 2024 x_coding. All rights reserved.
+
+       THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+       IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+       FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
+       AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+       LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+       SOFTWARE.
+*/
+using CIARE.Utils;
 using CIARE.GUI;
 using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
