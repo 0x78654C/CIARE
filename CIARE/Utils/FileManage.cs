@@ -498,7 +498,7 @@ MessageBoxIcon.Warning);
                             MainForm.Instance.EditorTabControl.SelectTab(tabIndex);
                             SelectedEditor.GetSelectedEditor(tabIndex).Text = reader.ReadToEnd();
                             MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
-                            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}              ";
+                            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{fileInfo.Name}";
                             TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                         }
