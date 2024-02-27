@@ -43,18 +43,23 @@ namespace CIARE.GUI
         private static void CloseSelectedIndex(TextEditorControl textEditorControl, TabControl tabControl, int index, bool checkAll)
         {
             FileManage.ManageUnsavedData(textEditorControl, index, checkAll);
-            if (GlobalVariables.OStartUp)
-                StoreDeleteTabs(tabControl.SelectedTab.ToolTipText, tabControl.SelectedTab.ToolTipText, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, tabControl.SelectedTab.ToolTipText);
-  
+
+            var pathFile = tabControl.SelectedTab.ToolTipText;
             if (!GlobalVariables.noClear)
             {
-                 tabControl.TabPages.RemoveAt(index);
+                tabControl.TabPages.RemoveAt(index);
                 if (index >= tabControl.TabCount)
                     tabControl.SelectTab(index - 1);
                 else
                     tabControl.SelectTab(index);
+
+                if (GlobalVariables.OStartUp)
+                    StoreDeleteTabs(pathFile, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, pathFile);
+
+                if (GlobalVariables.OStartUp)
+                    DeleteFileSize(tabControl, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index.ToString());
+                GlobalVariables.noClear = false;
             }
-            GlobalVariables.noClear = false;
         }
         /// <summary>
         /// Add new tab with editor.
@@ -115,7 +120,7 @@ namespace CIARE.GUI
         /// <param name="filePath"></param>
         /// <param name="tempDir"></param>
         /// <param name="fileTabStore"></param>
-        public static void DeleteFileSize(string filePath, string tempDir, string fileTabStore)
+        public static void DeleteFileSize(TabControl tabControl, string filePath, string tempDir, string fileTabStore, string index)
         {
             if (!Directory.Exists(tempDir))
                 return;
@@ -124,15 +129,16 @@ namespace CIARE.GUI
                 File.WriteAllText(fileTabStore, "");
 
             FileInfo fileInfo = new FileInfo(filePath);
-
             var fileSize = fileInfo.Length;
+            var line = $"{filePath}|{fileSize}";
             List<string> lines = File.ReadAllLines(fileTabStore).ToList();
 
-            for (int i = 0; i < lines.Count(); i++)
+            for (int i = 1; i < lines.Count(); i++)
             {
-                if (lines[i].StartsWith(filePath))
+                if (lines[i].StartsWith(filePath) && lines[i].EndsWith(index))
                     lines.Remove(lines[i]);
             }
+            
             File.WriteAllText(fileTabStore, string.Join("\n", lines));
         }
 
@@ -159,6 +165,15 @@ namespace CIARE.GUI
 
             var line = $"{filePath}|{tabIndex}";
             List<string> lines = File.ReadAllLines(fileTabStore).ToList();
+            bool isLine = false;
+            foreach (TabPage tabPage in MainForm.Instance.EditorTabControl.TabPages)
+            {
+                if (tabPage.ToolTipText.Contains(filePath))
+                {
+                    isLine = true;
+                    break;
+                }
+            }
             if (!remove)
             {
                 if (string.IsNullOrEmpty(previewTabPath))
@@ -170,7 +185,7 @@ namespace CIARE.GUI
             }
             else
             {
-                if (lines.Any(i => i.Contains(pathRmove)))
+                if (lines.Any(i => i.Contains(pathRmove)) && !isLine)
                     lines.RemoveAll(i => i.Contains(pathRmove));
             }
             File.WriteAllText(fileTabStore, string.Join("\n", lines));
@@ -374,10 +389,10 @@ namespace CIARE.GUI
         /// <param name="tabControl"></param>
         /// <param name="e"></param>
         /// 
-        public static void SetTransparentTabBar(TabControl tabControl, DrawItemEventArgs e, int red=0, int green=0, int blue = 0)
+        public static void SetTransparentTabBar(TabControl tabControl, DrawItemEventArgs e, int red = 0, int green = 0, int blue = 0)
         {
             bool dark = GlobalVariables.darkColor;
-            Color BackGroundColorForm = dark ? Color.FromArgb(red,green,blue) : SystemColors.Window;
+            Color BackGroundColorForm = dark ? Color.FromArgb(red, green, blue) : SystemColors.Window;
             SolidBrush fillbrush = new SolidBrush(BackGroundColorForm);
             Rectangle lasttabrect = tabControl.GetTabRect(tabControl.TabPages.Count - 1);
             Rectangle background = new Rectangle();

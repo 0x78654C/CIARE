@@ -461,7 +461,7 @@ MessageBoxIcon.Warning);
             if (GlobalVariables.OStartUp)
             {
                 TabControllerManage.StoreDeleteTabs("", MainForm.Instance.EditorTabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, path);
-                TabControllerManage.DeleteFileSize(path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
+                TabControllerManage.DeleteFileSize(MainForm.Instance.EditorTabControl, path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index.ToString());
             }
         }
 
@@ -498,7 +498,7 @@ MessageBoxIcon.Warning);
                             MainForm.Instance.EditorTabControl.SelectTab(tabIndex);
                             SelectedEditor.GetSelectedEditor(tabIndex).Text = reader.ReadToEnd();
                             MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
-                            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
+                            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}              ";
                             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{fileInfo.Name}";
                             TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                         }
@@ -646,8 +646,10 @@ MessageBoxIcon.Information);
                         tabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                         tabControl.SelectedTab.ToolTipText = file;
                         if (GlobalVariables.OStartUp)
+                        {
                             TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
-
+                            TabControllerManage.StoreFileSize(file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
+                        }
                     });
                 }
                 return;
@@ -682,6 +684,7 @@ MessageBoxIcon.Information);
                 LoadParamFile(arg, tabControl);
                 if (!GlobalVariables.noPath)
                 {
+                    arg = (arg.StartsWith("cli|"))? arg.Split('|')[1]: arg;
                     GlobalVariables.openedFilePath = arg;
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     GlobalVariables.openedFileName = fileInfo.Name;
