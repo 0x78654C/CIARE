@@ -282,21 +282,6 @@ namespace CIARE.GUI
                 tabControl.SelectTab(tabIndex + 1);
         }
 
-        public static void SwitchTabs2(ref TabControl tabControl, bool left)
-        {
-            var tabCount = tabControl.TabCount;
-            var tabIndex = tabControl.SelectedIndex;
-
-
-            if (tabIndex > 1)
-                tabControl.SelectTab(tabIndex - 1);
-            else
-            if (tabIndex <= tabCount - 2)
-                tabControl.SelectTab(tabIndex + 1);
-        }
-
-
-
         /// <summary>
         /// Set color for selected tab.
         /// </summary>
