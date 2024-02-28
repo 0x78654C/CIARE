@@ -123,7 +123,7 @@ namespace CIARE
             myProjectContent.Language = CurrentLanguageProperties;
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
-            selectedEditor.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
+            SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
@@ -173,7 +173,7 @@ namespace CIARE
             myProjectContent.Language = CurrentLanguageProperties;
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
-            selectedEditor.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
+            SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
 
 
             //File open via parameters(Open with option..)
