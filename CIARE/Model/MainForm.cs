@@ -65,7 +65,7 @@ namespace CIARE
         private ApiConnectionEvents _apiConnectionEvents;
         public TextEditorControl selectedEditor;
         TextEditorControl dynamicTextEdtior;
-        private int countTabs = 0;
+        private int _countTabs = 0;
         BackgroundWorker worker;
 
 
@@ -881,15 +881,17 @@ namespace CIARE
                 this.Text = $"CIARE {versionName}";
             }
             var tabCount = this.EditorTabControl.TabCount;
-            if (tabCount != countTabs)
+            if (tabCount != _countTabs)
             {
-                countTabs = tabCount;
+                _countTabs = tabCount;
                 dynamicTextEdtior = new TextEditorControl();
                 TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
                 SetDesignEditor(ref dynamicTextEdtior);
                 tabPage.Controls.Add(dynamicTextEdtior);
                 Initiliaze(EditorTabControl.SelectedIndex);
             }
+            //TODO: Will see in future if is needed
+           // FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath);
         }
 
         /// <summary>
