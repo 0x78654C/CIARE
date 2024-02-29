@@ -161,36 +161,6 @@ MessageBoxIcon.Warning);
             return fileName;
         }
 
-        public static bool ManageCommandFileParam(string fileName, bool isFromForm)
-        {
-            fileName = fileName.Split('|')[1];
-            if (string.IsNullOrEmpty(fileName))
-                return false;
-
-            fileName = GetCiarePath(fileName);
-            if (!File.Exists(fileName))
-            {
-                DialogResult dr;
-                if(isFromForm)
-                    dr = MessageBox.Show($"File '{fileName}' does not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                else
-                    dr = MessageBox.Show($"File '{fileName}' does not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
-
-                if (dr == DialogResult.Cancel)
-                    Environment.Exit(1);
-                if (dr == DialogResult.Yes)
-                    File.WriteAllText(fileName, "");
-                if (dr == DialogResult.No)
-                    GlobalVariables.noPath = true;
-                return true;
-            }
-            GlobalVariables.openedFilePath = fileName;
-            var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-            GlobalVariables.openedFileName = fileInfo.Name;
-            return false;
-        }
-
-
 
         /// <summary>
         /// Sanitize fileName path with CIARE applicatin
