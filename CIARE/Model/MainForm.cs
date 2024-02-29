@@ -67,6 +67,7 @@ namespace CIARE
         TextEditorControl dynamicTextEdtior;
         private int _countTabs = 0;
         BackgroundWorker worker;
+        private string[] _filesDrag;
 
 
         // Used for tab's auto-resize
@@ -306,6 +307,8 @@ namespace CIARE
         {
             TabControllerManage.AddNewTab(EditorTabControl);
         }
+
+
 
         /// <summary>
         /// Split window horizontaly.
@@ -891,7 +894,7 @@ namespace CIARE
                 Initiliaze(EditorTabControl.SelectedIndex);
             }
             //TODO: Will see in future if is needed
-           // FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath);
+            // FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath);
         }
 
         /// <summary>
@@ -949,9 +952,27 @@ namespace CIARE
            MessageBoxIcon.Warning);
                 return;
             }
-            foreach (var file in files)
-                FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), file);
+            _filesDrag = files;
+            worker = new BackgroundWorker();
+            worker.DoWork += AddTabOnDop;
+            worker.RunWorkerAsync();
         }
+
+        /// <summary>
+        /// Open data from drag&drop to new tab.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void AddTabOnDop(object sender, DoWorkEventArgs e)
+        {
+            this.Invoke(delegate {
+                TabControllerManage.AddNewTab(EditorTabControl);
+
+            foreach (var file in _filesDrag)
+                FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), file);
+            });
+        }
+
 
         /// <summary>
         /// Draw new tab with X for close after.
