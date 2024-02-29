@@ -427,7 +427,7 @@ MessageBoxIcon.Warning);
             {
                 string titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text.Trim();
                 MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
-                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}             ";
+                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}               ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText =GlobalVariables.openedFilePath;
                 int tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
                 if (GlobalVariables.OStartUp)
@@ -456,7 +456,7 @@ MessageBoxIcon.Warning);
             GlobalVariables.openedFilePath = string.Empty;
             GlobalVariables.savedFile = false;
             MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
-            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page             ";
+            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page               ";
             MainForm.Instance.markStartFileChk.Checked = false;
             if (GlobalVariables.OStartUp)
             {
