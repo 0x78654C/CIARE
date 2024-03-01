@@ -113,16 +113,16 @@ MessageBoxIcon.Warning);
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static string PathCheck(string data)
+        public static string PathCheck(string data, bool isCLI)
         {
             if (data.Contains(":\\"))
             {
                 if (!File.Exists(data))
-                    return ManageCommandFileParam(data);
+                    return ManageCommandFileParam(data, isCLI);
                 return data;
             }
             else
-                return ManageCommandFileParam(data);
+                return ManageCommandFileParam(data, isCLI);
         }
 
         /// <summary>
@@ -131,7 +131,7 @@ MessageBoxIcon.Warning);
         /// <param name="textEditorControl"></param>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public static string ManageCommandFileParam(string fileName)
+        public static string ManageCommandFileParam(string fileName, bool isCLI)
         {
             if (string.IsNullOrEmpty(fileName))
                 return string.Empty;
@@ -161,6 +161,26 @@ MessageBoxIcon.Warning);
             return fileName;
         }
 
+        /// <summary>
+        /// Create file if not exist for cli method call.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
+        public static bool ManageCommandFileParamCLI(string filePath)
+        {
+            if (File.Exists(filePath))
+                return true;
+
+            DialogResult dr = MessageBox.Show($"File '{filePath}' does not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (dr == DialogResult.Yes)
+            {
+                File.WriteAllText(filePath, "");
+                return true;
+            }
+            if (dr == DialogResult.No)
+                return false;
+            return false;
+        }
 
         /// <summary>
         /// Sanitize fileName path with CIARE applicatin
@@ -226,7 +246,7 @@ MessageBoxIcon.Warning);
                     if (tab.Text.StartsWith("*") || tab.Text.Contains("New Page"))
                     {
                         if (!string.IsNullOrEmpty(textEditorControl.Text))
-                            dr = MessageBox.Show($"There is unsaved data in {tab.Text.Trim().Replace("*","")}. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
+                            dr = MessageBox.Show($"There is unsaved data in {tab.Text.Trim().Replace("*", "")}. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
             MessageBoxIcon.Warning);
                         MainForm.Instance.EditorTabControl.SelectTab(tab);
                         DialogResultAction(dr, textEditorControl);
@@ -398,7 +418,7 @@ MessageBoxIcon.Warning);
                 string titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text.Trim();
                 MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}               ";
-                MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText =GlobalVariables.openedFilePath;
+                MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                 int tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
                 if (GlobalVariables.OStartUp)
                 {
@@ -604,6 +624,9 @@ MessageBoxIcon.Information);
             if (data.StartsWith("cli|"))
             {
                 string file = data.Split('|')[1];
+                bool fileExist = ManageCommandFileParamCLI(file);
+                if (!fileExist)
+                    return;
                 FileInfo fileInfo = new FileInfo(file);
 
                 using (var reader = new StreamReader(file))
@@ -617,7 +640,7 @@ MessageBoxIcon.Information);
                         tabControl.SelectedTab.ToolTipText = file;
                         if (GlobalVariables.OStartUp)
                         {
-                            TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
+                            TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedIndex, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
                             TabControllerManage.StoreFileSize(file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
                         }
                     });
@@ -625,7 +648,7 @@ MessageBoxIcon.Information);
                 return;
             }
 
-            data = PathCheck(data);
+            data = PathCheck(data, false);
 
             if (File.Exists(data))
             {
@@ -635,7 +658,7 @@ MessageBoxIcon.Information);
                 FileInfo fileInfo = new FileInfo(data);
                 var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
                 MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {MainForm.Instance.versionName}";
-                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}      ";
+                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = fileInfo.FullName;
                 TabControllerManage.StoreFileSize(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, 1);
                 if (GlobalVariables.OStartUp)
@@ -647,19 +670,19 @@ MessageBoxIcon.Information);
         /// Load files from arguments on cli.
         /// </summary>
         /// <param name="arg"></param>
-        public static void OpenFileFromArgs(string arg, TabControl tabControl, bool isFromForm=false)
+        public static void OpenFileFromArgs(string arg, TabControl tabControl, bool isFromForm = false)
         {
             try
             {
                 LoadParamFile(arg, tabControl);
                 if (!GlobalVariables.noPath)
                 {
-                    arg = (arg.StartsWith("cli|"))? arg.Split('|')[1]: arg;
+                    arg = (arg.StartsWith("cli|")) ? arg.Split('|')[1] : arg;
                     GlobalVariables.openedFilePath = arg;
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     GlobalVariables.openedFileName = fileInfo.Name;
                     if (arg.Length > 1)
-                        MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {MainForm.Instance.versionName}";
+                        MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {MainForm.Instance.versionName}";
                 }
             }
             catch { }
