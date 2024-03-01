@@ -122,6 +122,9 @@ namespace CIARE.GUI
         /// <param name="fileTabStore"></param>
         public static void DeleteFileSize(TabControl tabControl, string filePath, string tempDir, string fileTabStore, string index)
         {
+            if (string.IsNullOrEmpty(filePath))
+                return;
+
             if (!Directory.Exists(tempDir))
                 return;
 
