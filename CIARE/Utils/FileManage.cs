@@ -139,6 +139,7 @@ MessageBoxIcon.Warning);
             fileName = GetCiarePath(fileName);
             if (!File.Exists(fileName))
             {
+                MainForm.Instance.Activate();
                 DialogResult dr = MessageBox.Show($"File '{fileName}' does not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
                 if (dr == DialogResult.Cancel)
                     Environment.Exit(1);
@@ -170,7 +171,7 @@ MessageBoxIcon.Warning);
         {
             if (File.Exists(filePath))
                 return true;
-
+            MainForm.Instance.Activate();
             DialogResult dr = MessageBox.Show($"File '{filePath}' does not exist.\nDo you want to create it?", "CIARE", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (dr == DialogResult.Yes)
             {
