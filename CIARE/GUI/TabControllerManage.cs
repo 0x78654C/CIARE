@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
@@ -21,7 +22,7 @@ namespace CIARE.GUI
         /// <param name="tabControl"></param>
         /// <param name="textEditorControl"></param>
         /// <param name="e"></param>
-        public static void CloseTabEvent(TabControl tabControl, TextEditorControl textEditorControl, MouseEventArgs e)
+        private static void CloseTabEvent(TabControl tabControl, TextEditorControl textEditorControl, MouseEventArgs e)
         {
             var index = tabControl.SelectedIndex;
             if (index <= 1) return;
@@ -38,30 +39,13 @@ namespace CIARE.GUI
         /// </summary>
         /// <param name="tabControl"></param>
         /// <param name="textEditorControl"></param>
-        private static void CloseTabEvent(TabControl tabControl, TextEditorControl textEditorControl)
+        public static void CloseTabEvent(TabControl tabControl, TextEditorControl textEditorControl)
         {
             var index = tabControl.SelectedIndex;
             if (index <= 1) return;
             if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
                 CloseSelectedIndex(textEditorControl, tabControl, index, false);
             return;
-        }
-
-        /// <summary>
-        /// Close tab funciton.
-        /// </summary>
-        /// <param name="tabControl"></param>
-        public static void CloseTab(TabControl tabControl)
-        {
-            var tabCount = tabControl.TabCount;
-            var lastIndex = tabControl.SelectedIndex;
-            if (lastIndex == 0)
-            {
-                tabControl.TabPages.Insert(tabCount, $"New Page               ");
-                tabControl.SelectedIndex = lastIndex + tabCount;
-            }
-            else
-                CloseTabEvent(tabControl, SelectedEditor.GetSelectedEditor());
         }
 
         /// <summary>
@@ -80,6 +64,60 @@ namespace CIARE.GUI
             else
                 CloseTabEvent(tabControl, SelectedEditor.GetSelectedEditor(), e);
         }
+
+
+        /// <summary>
+        /// Close all tabs.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        /// <param name="textEditorControl"></param>
+        public static void CloseAllTabs(TabControl tabControl, TextEditorControl textEditorControl)
+        {
+            var tabPages = tabControl.TabPages;
+            int tabCount = tabControl.TabCount - 1;
+            int count = 0;
+            foreach (TabPage tabPage in tabPages)
+            {
+                count = tabCount - 1;
+                if (count > 0)
+                {
+                    tabControl.SelectTab(count);
+                    if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
+                    {
+                        FileManage.ManageUnsavedData(textEditorControl, count, false);
+
+                        var pathFile = tabControl.SelectedTab.ToolTipText;
+                        if (!GlobalVariables.noClear)
+                        {
+                            tabControl.TabPages.RemoveAt(tabCount--);
+                            tabControl.SelectTab(count);
+                            if (GlobalVariables.OStartUp)
+                                ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+
+                            if (GlobalVariables.OStartUp)
+                                ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
+                            GlobalVariables.noClear = false;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Clear tabs file all/size.
+        /// </summary>
+        /// <param name="tempDir"></param>
+        /// <param name="fileTabStore"></param>
+        private static void ClearTabsFile(string tempDir, string fileTabStore)
+        {
+            if (!Directory.Exists(tempDir))
+                return;
+
+            if (File.Exists(fileTabStore))
+                File.WriteAllText(fileTabStore, "");
+        }
+
 
         /// <summary>
         /// Close selected index is right dialog result.
@@ -109,6 +147,7 @@ namespace CIARE.GUI
                 GlobalVariables.noClear = false;
             }
         }
+
         /// <summary>
         /// Add new tab with editor.
         /// </summary>
@@ -119,7 +158,6 @@ namespace CIARE.GUI
         {
             try
             {
-
                 tabControl.Invoke(delegate
                 {
                     tabControl.SelectedIndex = index;

@@ -39,7 +39,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
-using ICSharpCode.NRefactory.Ast;
 
 
 namespace CIARE
@@ -1019,7 +1018,17 @@ namespace CIARE
         /// <param name="e"></param>
         private void closeTab_Click(object sender, EventArgs e)
         {
-            TabControllerManage.CloseTab(EditorTabControl);
+            TabControllerManage.CloseTabEvent(EditorTabControl, SelectedEditor.GetSelectedEditor());
+        }
+
+        /// <summary>
+        /// Close event on right click event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void closeAllTabs_Click(object sender, EventArgs e)
+        {
+            TabControllerManage.CloseAllTabs(EditorTabControl, SelectedEditor.GetSelectedEditor());
         }
     }
 }
