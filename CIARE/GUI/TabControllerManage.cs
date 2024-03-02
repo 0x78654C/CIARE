@@ -38,13 +38,30 @@ namespace CIARE.GUI
         /// </summary>
         /// <param name="tabControl"></param>
         /// <param name="textEditorControl"></param>
-        public static void CloseTabEvent(TabControl tabControl, TextEditorControl textEditorControl)
+        private static void CloseTabEvent(TabControl tabControl, TextEditorControl textEditorControl)
         {
             var index = tabControl.SelectedIndex;
             if (index <= 1) return;
-                if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
-                    CloseSelectedIndex(textEditorControl, tabControl, index, false);
+            if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
+                CloseSelectedIndex(textEditorControl, tabControl, index, false);
             return;
+        }
+
+        /// <summary>
+        /// Close tab funciton.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        public static void CloseTab(TabControl tabControl)
+        {
+            var tabCount = tabControl.TabCount;
+            var lastIndex = tabControl.SelectedIndex;
+            if (lastIndex == 0)
+            {
+                tabControl.TabPages.Insert(tabCount, $"New Page               ");
+                tabControl.SelectedIndex = lastIndex + tabCount;
+            }
+            else
+                CloseTabEvent(tabControl, SelectedEditor.GetSelectedEditor());
         }
 
         /// <summary>
@@ -155,7 +172,7 @@ namespace CIARE.GUI
                 if (lines[i].StartsWith(filePath) && lines[i].EndsWith(index))
                     lines.Remove(lines[i]);
             }
-            
+
             File.WriteAllText(fileTabStore, string.Join("\n", lines));
         }
 

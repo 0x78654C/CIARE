@@ -838,17 +838,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void EditorTabControl_MouseDown(object sender, MouseEventArgs e)
         {
-            var tabCount = EditorTabControl.TabCount;
-            var lastIndex = EditorTabControl.SelectedIndex;
-            if (lastIndex == 0)
-            {
-                EditorTabControl.TabPages.Insert(tabCount, $"New Page               ");
-                EditorTabControl.SelectedIndex = lastIndex + tabCount;
-            }
-            else
-            {
-                TabControllerManage.CloseTabEvent(EditorTabControl, SelectedEditor.GetSelectedEditor(), e);
-            }
+            TabControllerManage.CloseTab(EditorTabControl);
         }
 
         /// <summary>
@@ -1029,17 +1019,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void closeTab_Click(object sender, EventArgs e)
         {
-            var tabCount = EditorTabControl.TabCount;
-            var lastIndex = EditorTabControl.SelectedIndex;
-            if (lastIndex == 0)
-            {
-                EditorTabControl.TabPages.Insert(tabCount, $"New Page               ");
-                EditorTabControl.SelectedIndex = lastIndex + tabCount;
-            }
-            else
-            {
-                TabControllerManage.CloseTabEvent(EditorTabControl, SelectedEditor.GetSelectedEditor());
-            }
+            TabControllerManage.CloseTab(EditorTabControl);
         }
     }
 }
