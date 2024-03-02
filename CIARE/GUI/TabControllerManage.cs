@@ -6,7 +6,6 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
@@ -101,6 +100,47 @@ namespace CIARE.GUI
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Close all tabs.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        /// <param name="textEditorControl"></param>
+        public static void CloseAllTabsOne(TabControl tabControl, TextEditorControl textEditorControl, int selectedIndex)
+        {
+            var tabPages = tabControl.TabPages;
+            int tabCount = tabControl.TabCount - 1;
+            int count = 0;
+            foreach (TabPage tabPage in tabPages)
+            {
+                count = tabCount - 1;
+                if (count > 0)
+                {
+                    tabControl.SelectTab(count);
+                    if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
+                    {
+                        FileManage.ManageUnsavedData(textEditorControl, count, false);
+
+                        var pathFile = tabControl.SelectedTab.ToolTipText;
+                        if (!GlobalVariables.noClear)
+                        {
+                            var removeAt = tabCount--;
+                            if (removeAt == selectedIndex)
+                                continue;
+                            tabControl.TabPages.RemoveAt(removeAt);
+                            tabControl.SelectTab(count);
+                            if (GlobalVariables.OStartUp)
+                               // ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+
+                            if (GlobalVariables.OStartUp)
+                                //ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
+                            GlobalVariables.noClear = false;
+                        }
+                    }
+                }
+            }
+            tabControl.SelectTab(2);
         }
 
 

@@ -1030,5 +1030,11 @@ namespace CIARE
         {
             TabControllerManage.CloseAllTabs(EditorTabControl, SelectedEditor.GetSelectedEditor());
         }
+        private void closeAllTabsOne_Click(object sender, EventArgs e)
+        {
+            int index = EditorTabControl.SelectedIndex;
+            TabControllerManage.CloseAllTabsOne(EditorTabControl, SelectedEditor.GetSelectedEditor(), index);
+        }
+
     }
 }

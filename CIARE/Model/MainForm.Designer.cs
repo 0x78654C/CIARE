@@ -92,6 +92,7 @@ namespace CIARE
             tabMenu = new System.Windows.Forms.ContextMenuStrip(components);
             closeTab = new System.Windows.Forms.ToolStripMenuItem();
             closeAllTabs = new System.Windows.Forms.ToolStripMenuItem();
+            closeAllTabsOne = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)runCodePb).BeginInit();
             menuStrip1.SuspendLayout();
             groupBox1.SuspendLayout();
@@ -631,6 +632,7 @@ namespace CIARE
             // 
             tabMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { closeTab });
             tabMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { closeAllTabs });
+            tabMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { closeAllTabsOne });
             tabMenu.Name = "tabMenu";
             tabMenu.Size = new System.Drawing.Size(181, 48);
             // 
@@ -647,6 +649,13 @@ namespace CIARE
             closeAllTabs.Size = new System.Drawing.Size(180, 22);
             closeAllTabs.Text = "Close All Tabs";
             closeAllTabs.Click += closeAllTabs_Click;
+            // 
+            // closeAllTabsOne
+            // 
+            closeAllTabsOne.Name = "closeAllTabsOne";
+            closeAllTabsOne.Size = new System.Drawing.Size(180, 22);
+            closeAllTabsOne.Text = "Close All Tabs Except This One";
+            closeAllTabsOne.Click += closeAllTabsOne_Click;
             // 
             // MainForm
             // 
@@ -753,6 +762,7 @@ namespace CIARE
         private System.Windows.Forms.ContextMenuStrip tabMenu;
         private System.Windows.Forms.ToolStripMenuItem closeTab;
         private System.Windows.Forms.ToolStripMenuItem closeAllTabs;
+        private System.Windows.Forms.ToolStripMenuItem closeAllTabsOne;
     }
 }
 
