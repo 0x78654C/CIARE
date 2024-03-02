@@ -965,11 +965,12 @@ namespace CIARE
         /// <param name="e"></param>
         private void AddTabOnDop(object sender, DoWorkEventArgs e)
         {
-            this.Invoke(delegate {
+            this.Invoke(delegate
+            {
                 TabControllerManage.AddNewTab(EditorTabControl);
 
-            foreach (var file in _filesDrag)
-                FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), file);
+                foreach (var file in _filesDrag)
+                    FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), file);
             });
         }
 
@@ -992,6 +993,59 @@ namespace CIARE
                 TabControllerManage.ColorTab(EditorTabControl, GlobalVariables.liveTabIndex, e, Color.Red);
             var taBindex = EditorTabControl.SelectedIndex;
             TabControllerManage.ColorTab(EditorTabControl, taBindex, e, Color.LightGray);
+        }
+
+        /// <summary>
+        /// Show the menu strip on right click tab event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void EditorTabControl_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                this.tabMenu.Show(this.EditorTabControl, e.Location);
+            }
+        }
+
+        /// <summary>
+        /// Select tab where is mouse over.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void tabMenu_Opening(object sender, CancelEventArgs e)
+        {
+            Point p = this.EditorTabControl.PointToClient(Cursor.Position);
+            for (int i = 0; i < this.EditorTabControl.TabCount; i++)
+            {
+                Rectangle r = this.EditorTabControl.GetTabRect(i);
+                if (r.Contains(p))
+                {
+                    this.EditorTabControl.SelectedIndex = i; // i is the index of tab under cursor
+                    return;
+                }
+            }
+            e.Cancel = true;
+        }
+
+        /// <summary>
+        /// Close event on right click event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void closeTab_Click(object sender, EventArgs e)
+        {
+            var tabCount = EditorTabControl.TabCount;
+            var lastIndex = EditorTabControl.SelectedIndex;
+            if (lastIndex == 0)
+            {
+                EditorTabControl.TabPages.Insert(tabCount, $"New Page               ");
+                EditorTabControl.SelectedIndex = lastIndex + tabCount;
+            }
+            else
+            {
+                TabControllerManage.CloseTabEvent(EditorTabControl, SelectedEditor.GetSelectedEditor());
+            }
         }
     }
 }

@@ -34,6 +34,20 @@ namespace CIARE.GUI
         }
 
         /// <summary>
+        /// Close event for right click menu
+        /// </summary>
+        /// <param name="tabControl"></param>
+        /// <param name="textEditorControl"></param>
+        public static void CloseTabEvent(TabControl tabControl, TextEditorControl textEditorControl)
+        {
+            var index = tabControl.SelectedIndex;
+            if (index <= 1) return;
+                if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
+                    CloseSelectedIndex(textEditorControl, tabControl, index, false);
+            return;
+        }
+
+        /// <summary>
         /// Close selected index is right dialog result.
         /// </summary>
         /// <param name="textEditorControl"></param>

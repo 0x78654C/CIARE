@@ -76,7 +76,7 @@ namespace CIARE
             optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            hotKeyToolStripMenuItem= new System.Windows.Forms.ToolStripMenuItem();
+            hotKeyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             groupBox1 = new System.Windows.Forms.GroupBox();
             splitContainer1 = new System.Windows.Forms.SplitContainer();
             EditorTabControl = new System.Windows.Forms.TabControl();
@@ -89,6 +89,8 @@ namespace CIARE
             imageList1 = new System.Windows.Forms.ImageList(components);
             markStartFileChk = new System.Windows.Forms.CheckBox();
             liveStatusPb = new System.Windows.Forms.PictureBox();
+            tabMenu = new System.Windows.Forms.ContextMenuStrip(components);
+            closeTab = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)runCodePb).BeginInit();
             menuStrip1.SuspendLayout();
             groupBox1.SuspendLayout();
@@ -98,6 +100,7 @@ namespace CIARE
             splitContainer1.SuspendLayout();
             EditorTabControl.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).BeginInit();
+            tabMenu.SuspendLayout();
             SuspendLayout();
             // 
             // outputRBT
@@ -112,7 +115,7 @@ namespace CIARE
             outputRBT.Name = "outputRBT";
             outputRBT.ReadOnly = true;
             outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            outputRBT.Size = new System.Drawing.Size(1388, 114);
+            outputRBT.Size = new System.Drawing.Size(1388, 113);
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
             outputRBT.MouseWheel += outputRBT_MouseWheel;
@@ -387,7 +390,7 @@ namespace CIARE
             // liveShareToolStripMenuItem
             // 
             liveShareToolStripMenuItem.Name = "liveShareToolStripMenuItem";
-            liveShareToolStripMenuItem.Size = new System.Drawing.Size(173, 22);
+            liveShareToolStripMenuItem.Size = new System.Drawing.Size(240, 22);
             liveShareToolStripMenuItem.Text = "Live Share Manage ( CTRL + Q )";
             liveShareToolStripMenuItem.Click += liveShareHostToolStripMenuItem_Click;
             // 
@@ -407,8 +410,7 @@ namespace CIARE
             // 
             // helpToolStripMenuItem
             // 
-            helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { aboutToolStripMenuItem });
-            helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { hotKeyToolStripMenuItem });
+            helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { aboutToolStripMenuItem, hotKeyToolStripMenuItem });
             helpToolStripMenuItem.Name = "helpToolStripMenuItem";
             helpToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             helpToolStripMenuItem.Text = "Help";
@@ -416,16 +418,16 @@ namespace CIARE
             // aboutToolStripMenuItem
             // 
             aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            aboutToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
+            aboutToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
             aboutToolStripMenuItem.Text = "About";
             aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
             // 
             // hotKeyToolStripMenuItem
             // 
             hotKeyToolStripMenuItem.Name = "hotKeyToolStripMenuItem";
-            hotKeyToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
+            hotKeyToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
             hotKeyToolStripMenuItem.Text = "HotKeys";
-            hotKeyToolStripMenuItem.Click += HotKeyToolStripMenuItem_Click; ;
+            hotKeyToolStripMenuItem.Click += HotKeyToolStripMenuItem_Click;
             // 
             // groupBox1
             // 
@@ -436,7 +438,7 @@ namespace CIARE
             groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBox1.Size = new System.Drawing.Size(1402, 138);
+            groupBox1.Size = new System.Drawing.Size(1402, 137);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
             groupBox1.Text = "Output:";
@@ -457,7 +459,7 @@ namespace CIARE
             // 
             splitContainer1.Panel2.Controls.Add(groupBox1);
             splitContainer1.Size = new System.Drawing.Size(1410, 838);
-            splitContainer1.SplitterDistance = 685;
+            splitContainer1.SplitterDistance = 684;
             splitContainer1.SplitterWidth = 5;
             splitContainer1.TabIndex = 6;
             // 
@@ -472,11 +474,12 @@ namespace CIARE
             EditorTabControl.Name = "EditorTabControl";
             EditorTabControl.SelectedIndex = 0;
             EditorTabControl.ShowToolTips = true;
-            EditorTabControl.Size = new System.Drawing.Size(1403, 679);
+            EditorTabControl.Size = new System.Drawing.Size(1403, 678);
             EditorTabControl.TabIndex = 1;
             EditorTabControl.DrawItem += EditorTabControl_DrawItem;
             EditorTabControl.Selecting += EditorTabControl_Selecting;
             EditorTabControl.HandleCreated += EditorTabControl_HandleCreated;
+            EditorTabControl.MouseClick += EditorTabControl_MouseClick;
             EditorTabControl.MouseDown += EditorTabControl_MouseDown;
             // 
             // tabPage1
@@ -485,7 +488,7 @@ namespace CIARE
             tabPage1.Location = new System.Drawing.Point(4, 24);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            tabPage1.Size = new System.Drawing.Size(1395, 651);
+            tabPage1.Size = new System.Drawing.Size(1395, 650);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "   +        ";
             tabPage1.ToolTipText = "Add Tab (CTRL + Tab)";
@@ -495,7 +498,7 @@ namespace CIARE
             // 
             tabPage2.Location = new System.Drawing.Point(4, 24);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new System.Drawing.Size(1395, 651);
+            tabPage2.Size = new System.Drawing.Size(1395, 650);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "New Page             ";
             tabPage2.UseVisualStyleBackColor = true;
@@ -623,8 +626,23 @@ namespace CIARE
             liveStatusPb.TabStop = false;
             liveStatusPb.Paint += liveStatusPb_Paint;
             // 
+            // tabMenu
+            // 
+            tabMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { closeTab });
+            tabMenu.Name = "tabMenu";
+            tabMenu.Size = new System.Drawing.Size(181, 48);
+            tabMenu.Opening += tabMenu_Opening;
+            // 
+            // closeTab
+            // 
+            closeTab.Name = "closeTab";
+            closeTab.Size = new System.Drawing.Size(180, 22);
+            closeTab.Text = "Close Tab";
+            closeTab.Click += closeTab_Click;
+            // 
             // MainForm
             // 
+            AllowDrop = true;
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             BackColor = System.Drawing.SystemColors.Window;
@@ -642,7 +660,6 @@ namespace CIARE
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip1;
             Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            AllowDrop = true;
             Name = "MainForm";
             StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             Text = "CIARE";
@@ -660,6 +677,7 @@ namespace CIARE
             splitContainer1.ResumeLayout(false);
             EditorTabControl.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).EndInit();
+            tabMenu.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -724,6 +742,8 @@ namespace CIARE
         public System.Windows.Forms.TabControl EditorTabControl;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabPage tabPage2;
+        private System.Windows.Forms.ContextMenuStrip tabMenu;
+        private System.Windows.Forms.ToolStripMenuItem closeTab;
     }
 }
 
