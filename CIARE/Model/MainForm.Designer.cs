@@ -654,7 +654,7 @@ namespace CIARE
             // 
             closeAllTabsOne.Name = "closeAllTabsOne";
             closeAllTabsOne.Size = new System.Drawing.Size(180, 22);
-            closeAllTabsOne.Text = "Close All Tabs Except This One";
+            closeAllTabsOne.Text = "Close All BUT This";
             closeAllTabsOne.Click += closeAllTabsOne_Click;
             // 
             // MainForm
