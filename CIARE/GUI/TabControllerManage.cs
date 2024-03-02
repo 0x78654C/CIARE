@@ -91,10 +91,10 @@ namespace CIARE.GUI
                             tabControl.TabPages.RemoveAt(tabCount--);
                             tabControl.SelectTab(count);
                             if (GlobalVariables.OStartUp)
+                            {
                                 ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
-
-                            if (GlobalVariables.OStartUp)
                                 ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
+                            }
                             GlobalVariables.noClear = false;
                         }
                     }
@@ -130,17 +130,18 @@ namespace CIARE.GUI
                                 continue;
                             tabControl.TabPages.RemoveAt(removeAt);
                             tabControl.SelectTab(count);
-                            if (GlobalVariables.OStartUp)
-                               // ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
-
-                            if (GlobalVariables.OStartUp)
-                                //ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
                             GlobalVariables.noClear = false;
                         }
                     }
                 }
             }
+
             tabControl.SelectTab(2);
+            if (GlobalVariables.OStartUp)
+            {
+                StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedTab.ToolTipText, false);
+                StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedTab.ToolTipText, true);
+            }
         }
 
 
@@ -156,6 +157,29 @@ namespace CIARE.GUI
 
             if (File.Exists(fileTabStore))
                 File.WriteAllText(fileTabStore, "");
+        }
+
+        /// <summary>
+        /// Clear tabs but not selected on and store file all/size.
+        /// </summary>
+        /// <param name="tempDir"></param>
+        /// <param name="fileTabStore"></param>
+        private static void StoreSingleTab(string tempDir, string fileTabStore,string filePath, bool isSize)
+        {
+            if (!Directory.Exists(tempDir))
+                return;
+            if (isSize)
+            {
+                if (File.Exists(fileTabStore))
+                {
+                    FileInfo fileInfo = new(filePath);
+                    File.WriteAllText(fileTabStore,$"{filePath}|{fileInfo.Length}|2");
+                }
+            }
+            else
+                if (File.Exists(fileTabStore))
+                    File.WriteAllText(fileTabStore, $"{filePath}|2");
+     
         }
 
 
