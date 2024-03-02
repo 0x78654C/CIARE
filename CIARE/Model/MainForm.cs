@@ -39,6 +39,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
+using ICSharpCode.NRefactory.Ast;
 
 
 namespace CIARE
@@ -1004,28 +1005,21 @@ namespace CIARE
         {
             if (e.Button == MouseButtons.Right)
             {
-                this.tabMenu.Show(this.EditorTabControl, e.Location);
-            }
-        }
-
-        /// <summary>
-        /// Select tab where is mouse over.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void tabMenu_Opening(object sender, CancelEventArgs e)
-        {
-            Point p = this.EditorTabControl.PointToClient(Cursor.Position);
-            for (int i = 0; i < this.EditorTabControl.TabCount; i++)
-            {
-                Rectangle r = this.EditorTabControl.GetTabRect(i);
-                if (r.Contains(p))
+                Point p = EditorTabControl.PointToClient(Cursor.Position);
+                for (int i = 0; i < EditorTabControl.TabCount; i++)
                 {
-                    this.EditorTabControl.SelectedIndex = i; // i is the index of tab under cursor
-                    return;
+                    Rectangle r = EditorTabControl.GetTabRect(i);
+                    if (r.Contains(p))
+                    {
+                        if (i > 1)
+                        {
+                            EditorTabControl.SelectedIndex = i;
+                            tabMenu.Show(EditorTabControl, e.Location);
+                            return;
+                        }
+                    }
                 }
             }
-            e.Cancel = true;
         }
 
         /// <summary>

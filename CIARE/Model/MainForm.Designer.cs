@@ -631,7 +631,6 @@ namespace CIARE
             tabMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { closeTab });
             tabMenu.Name = "tabMenu";
             tabMenu.Size = new System.Drawing.Size(181, 48);
-            tabMenu.Opening += tabMenu_Opening;
             // 
             // closeTab
             // 
