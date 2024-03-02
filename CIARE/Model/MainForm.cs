@@ -838,7 +838,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void EditorTabControl_MouseDown(object sender, MouseEventArgs e)
         {
-            TabControllerManage.CloseTab(EditorTabControl);
+            TabControllerManage.CloseTab(EditorTabControl, e);
         }
 
         /// <summary>

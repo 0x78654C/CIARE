@@ -65,6 +65,23 @@ namespace CIARE.GUI
         }
 
         /// <summary>
+        /// Close tab funciton on mouse down.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        public static void CloseTab(TabControl tabControl, MouseEventArgs e)
+        {
+            var tabCount = tabControl.TabCount;
+            var lastIndex = tabControl.SelectedIndex;
+            if (lastIndex == 0)
+            {
+                tabControl.TabPages.Insert(tabCount, $"New Page               ");
+                tabControl.SelectedIndex = lastIndex + tabCount;
+            }
+            else
+                CloseTabEvent(tabControl, SelectedEditor.GetSelectedEditor(), e);
+        }
+
+        /// <summary>
         /// Close selected index is right dialog result.
         /// </summary>
         /// <param name="textEditorControl"></param>
