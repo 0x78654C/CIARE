@@ -106,26 +106,13 @@ namespace CIARE
             InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
             FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
             LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
-            //Code completion initialize.
-            if (GlobalVariables.OCodeCompletion)
-            {
-                HostCallbackImplementation.Register(this);
-                CodeCompletionKeyHandler.Attach(this, SelectedEditor.GetSelectedEditor());
-                ToolTipProvider.Attach(this, SelectedEditor.GetSelectedEditor());
-
-                pcRegistry = new Dom.ProjectContentRegistry();
-                if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
-                    Directory.CreateDirectory((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion")));
-
-                pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"));
-            }
-            //-------------------------------
-            myProjectContent = new Dom.DefaultProjectContent();
-            myProjectContent.Language = CurrentLanguageProperties;
+            SetCodeCompletion(index);
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
         }
+
+
         private void MainForm_Load(object sender, EventArgs e)
         {
             this.Hide();
@@ -152,8 +139,10 @@ namespace CIARE
                 TabControllerManage.ReadTabs(EditorTabControl, SelectedEditor.GetSelectedEditor(), GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
             else
                 TabControllerManage.CleanStoredTabs(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+            GlobalVariables.isLoaded = true;
             this.Show();
-
+            myProjectContent = new Dom.DefaultProjectContent();
+            myProjectContent.Language = CurrentLanguageProperties;
             _apiConnectionEvents = new ApiConnectionEvents();
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
@@ -166,6 +155,23 @@ namespace CIARE
             //----------------------------------
 
             ReloadRef();
+        }
+
+        private void SetCodeCompletion(int index)
+        {
+            if (GlobalVariables.OCodeCompletion)
+            {
+                HostCallbackImplementation.Register(this);
+                CodeCompletionKeyHandler.Attach(this, SelectedEditor.GetSelectedEditor(index));
+                ToolTipProvider.Attach(this, SelectedEditor.GetSelectedEditor(index));
+
+                pcRegistry = new Dom.ProjectContentRegistry();
+                if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
+                    Directory.CreateDirectory((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion")));
+
+                pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"));
+                SelectedEditor.GetSelectedEditor(index).ActiveTextAreaControl.Refresh();
+            }
         }
 
         /// <summary>
@@ -814,7 +820,7 @@ namespace CIARE
         private void outputRBT_MouseWheel(object sender, MouseEventArgs e) => GlobalVariables.zoomFactor = outputRBT.ZoomFactor;
 
         /// <summary>
-        /// Create new tab with new editor.
+        /// Create/close new tab with new editor.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -840,6 +846,7 @@ namespace CIARE
 
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
+
             string titleTab = EditorTabControl.SelectedTab.Text.Trim();
             string filePath = EditorTabControl.SelectedTab.ToolTipText.Trim();
             if (!string.IsNullOrEmpty(filePath))
@@ -866,6 +873,7 @@ namespace CIARE
                 tabPage.Controls.Add(dynamicTextEdtior);
                 Initiliaze(EditorTabControl.SelectedIndex);
             }
+
             //TODO: Will see in future if is needed
             // FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath);
         }
@@ -1018,6 +1026,5 @@ namespace CIARE
             int index = EditorTabControl.SelectedIndex;
             TabControllerManage.CloseAllTabsOne(EditorTabControl, SelectedEditor.GetSelectedEditor(), index);
         }
-
     }
 }
