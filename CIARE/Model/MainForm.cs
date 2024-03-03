@@ -139,7 +139,6 @@ namespace CIARE
                 TabControllerManage.ReadTabs(EditorTabControl, SelectedEditor.GetSelectedEditor(), GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
             else
                 TabControllerManage.CleanStoredTabs(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
-            GlobalVariables.isLoaded = true;
             this.Show();
             myProjectContent = new Dom.DefaultProjectContent();
             myProjectContent.Language = CurrentLanguageProperties;
