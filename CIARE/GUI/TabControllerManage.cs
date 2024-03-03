@@ -80,9 +80,9 @@ namespace CIARE.GUI
                 count = tabCount - 1;
                 if (count > 0)
                 {
-                    tabControl.SelectTab(count);
                     if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
                     {
+                        tabControl.SelectTab(count);
                         FileManage.ManageUnsavedData(textEditorControl, count, false);
 
                         var pathFile = tabControl.SelectedTab.ToolTipText;
@@ -117,9 +117,9 @@ namespace CIARE.GUI
                 count = tabCount - 1;
                 if (count > 0)
                 {
-                    tabControl.SelectTab(count);
                     if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
                     {
+                        tabControl.SelectTab(count);
                         FileManage.ManageUnsavedData(textEditorControl, count, false);
 
                         var pathFile = tabControl.SelectedTab.ToolTipText;
@@ -136,9 +136,9 @@ namespace CIARE.GUI
                 }
             }
 
-            tabControl.SelectTab(2);
             if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
             {
+                tabControl.SelectTab(2);
                 if (GlobalVariables.OStartUp)
                 {
                     StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedTab.ToolTipText, false);
@@ -167,7 +167,7 @@ namespace CIARE.GUI
         /// </summary>
         /// <param name="tempDir"></param>
         /// <param name="fileTabStore"></param>
-        private static void StoreSingleTab(string tempDir, string fileTabStore,string filePath, bool isSize)
+        private static void StoreSingleTab(string tempDir, string fileTabStore, string filePath, bool isSize)
         {
             if (!Directory.Exists(tempDir))
                 return;
@@ -176,13 +176,13 @@ namespace CIARE.GUI
                 if (File.Exists(fileTabStore))
                 {
                     FileInfo fileInfo = new(filePath);
-                    File.WriteAllText(fileTabStore,$"{filePath}|{fileInfo.Length}|2");
+                    File.WriteAllText(fileTabStore, $"{filePath}|{fileInfo.Length}|2");
                 }
             }
             else
                 if (File.Exists(fileTabStore))
-                    File.WriteAllText(fileTabStore, $"{filePath}|2");
-     
+                File.WriteAllText(fileTabStore, $"{filePath}|2");
+
         }
 
 
