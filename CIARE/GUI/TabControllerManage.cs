@@ -77,7 +77,10 @@ namespace CIARE.GUI
             int count = 0;
             FileManage.ManageUnsavedData(textEditorControl, 0, true);
             if (GlobalVariables.noClear)
+            {
+                GlobalVariables.noClear = false;
                 return;
+            }
             foreach (TabPage tabPage in tabPages)
             {
                 count = tabCount - 1;
@@ -113,7 +116,10 @@ namespace CIARE.GUI
             int count = 0;
             FileManage.ManageUnsavedData(textEditorControl, 0, true);
             if (GlobalVariables.noClear)
+            {
+                GlobalVariables.noClear = false;
                 return;
+            }
             foreach (TabPage tabPage in tabPages)
             {
                 count = tabCount - 1;
