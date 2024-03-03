@@ -160,7 +160,7 @@ CTRL + Z         : Undo last modifications.
 CTRL + X         : Cut selection.
 CTRL + C         : Copy selection.
 CTRL + V         : Paste selection.
-Del              : Delete Selection.
+DEL              : Delete Selection.
 CTRL + F         : Find text in current tab.
 CTRL + H         : Replace text in current tab.
 CTRL + G         : Go to line number in current tab.
@@ -177,6 +177,11 @@ CTRL + R         : Add external reference or download from NuGet.
 CTRL + W         : Split window vertically.
 CTRL + Shift + W : Split window horizontally.
 CTRL + K         : Show/Hide output window.
+
+----------- Tabs management ---------------
+CTRL + Tab       : Adds new tab.
+CTRL + Left      : Switches tabs to left.
+CTRL + Right     : Switches tabs to right.
 
 ----------- Live share management ---------
 CTRL + Q         : Start live share management window.
