@@ -6,7 +6,7 @@
 Simple text editor for Windows with C# runtime compiler and code execution using Roslyn.
 Useful to run code on the fly and get instant result.
 
-![alt text](https://github.com/0x78654C/CIARE/blob/1.4.0-tabs/Media/ciare_2.0.0.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_2.0.0.png?raw=true)
 
 # Features
 
