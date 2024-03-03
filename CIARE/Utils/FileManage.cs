@@ -232,7 +232,6 @@ MessageBoxIcon.Warning);
         /// <param name="checkAll"></param>
         public static void ManageUnsavedData(TextEditorControl textEditorControl, int selectedIndex = 0, bool checkAll = false)
         {
-            GlobalVariables.noClear = false;
             DialogResult dr = DialogResult.No;
             int countTabs = 0;
             foreach (TabPage tab in MainForm.Instance.EditorTabControl.TabPages)

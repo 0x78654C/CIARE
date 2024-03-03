@@ -75,6 +75,9 @@ namespace CIARE.GUI
             var tabPages = tabControl.TabPages;
             int tabCount = tabControl.TabCount - 1;
             int count = 0;
+            FileManage.ManageUnsavedData(textEditorControl, 0, true);
+            if (GlobalVariables.noClear)
+                return;
             foreach (TabPage tabPage in tabPages)
             {
                 count = tabCount - 1;
@@ -83,20 +86,16 @@ namespace CIARE.GUI
                     if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
                     {
                         tabControl.SelectTab(count);
-                        FileManage.ManageUnsavedData(textEditorControl, count, false);
 
                         var pathFile = tabControl.SelectedTab.ToolTipText;
-                        if (!GlobalVariables.noClear)
+                        tabControl.TabPages.RemoveAt(tabCount--);
+                        tabControl.SelectTab(count);
+                        if (GlobalVariables.OStartUp)
                         {
-                            tabControl.TabPages.RemoveAt(tabCount--);
-                            tabControl.SelectTab(count);
-                            if (GlobalVariables.OStartUp)
-                            {
-                                ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
-                                ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
-                            }
-                            GlobalVariables.noClear = false;
+                            ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+                            ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
                         }
+                        GlobalVariables.noClear = false;
                     }
                 }
             }
@@ -112,6 +111,9 @@ namespace CIARE.GUI
             var tabPages = tabControl.TabPages;
             int tabCount = tabControl.TabCount - 1;
             int count = 0;
+            FileManage.ManageUnsavedData(textEditorControl, 0, true);
+            if (GlobalVariables.noClear)
+                return;
             foreach (TabPage tabPage in tabPages)
             {
                 count = tabCount - 1;
@@ -120,18 +122,14 @@ namespace CIARE.GUI
                     if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
                     {
                         tabControl.SelectTab(count);
-                        FileManage.ManageUnsavedData(textEditorControl, count, false);
 
                         var pathFile = tabControl.SelectedTab.ToolTipText;
-                        if (!GlobalVariables.noClear)
-                        {
-                            var removeAt = tabCount--;
-                            if (removeAt == selectedIndex)
-                                continue;
-                            tabControl.TabPages.RemoveAt(removeAt);
-                            tabControl.SelectTab(count);
-                            GlobalVariables.noClear = false;
-                        }
+                        var removeAt = tabCount--;
+                        if (removeAt == selectedIndex)
+                            continue;
+                        tabControl.TabPages.RemoveAt(removeAt);
+                        tabControl.SelectTab(count);
+                        GlobalVariables.noClear = false;
                     }
                 }
             }

@@ -511,6 +511,7 @@ namespace CIARE
             {
                 e.Cancel = true;
                 GlobalVariables.noClear = false;
+                return;
             }
             else
                 e.Cancel = false;
