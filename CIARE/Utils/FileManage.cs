@@ -232,6 +232,7 @@ MessageBoxIcon.Warning);
         /// <param name="checkAll"></param>
         public static void ManageUnsavedData(TextEditorControl textEditorControl, int selectedIndex = 0, bool checkAll = false)
         {
+            GlobalVariables.noClear = false;
             DialogResult dr = DialogResult.No;
             int countTabs = 0;
             foreach (TabPage tab in MainForm.Instance.EditorTabControl.TabPages)
@@ -247,7 +248,7 @@ MessageBoxIcon.Warning);
                     if (tab.Text.StartsWith("*") || tab.Text.Contains("New Page"))
                     {
                         if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor(countTabs - 1).Text))
-                            dr = MessageBox.Show($"There is unsaved data in {tab.Text.Trim().Replace("*", "")}. Do you want to save it?", "CIARE", MessageBoxButtons.YesNo,
+                            dr = MessageBox.Show($"There is unsaved data in {tab.Text.Trim().Replace("*", "")}. Do you want to save it?", "CIARE", MessageBoxButtons.YesNoCancel,
             MessageBoxIcon.Warning);
                         MainForm.Instance.EditorTabControl.SelectTab(tab);
                         DialogResultAction(dr, textEditorControl);

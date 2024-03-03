@@ -508,7 +508,10 @@ namespace CIARE
         {
             FileManage.ManageUnsavedData(SelectedEditor.GetSelectedEditor(), 0, true);
             if (GlobalVariables.noClear)
+            {
                 e.Cancel = true;
+                GlobalVariables.noClear = false;
+            }
             else
                 e.Cancel = false;
 
