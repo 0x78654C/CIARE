@@ -155,23 +155,6 @@ namespace CIARE
             this.Show();
 
             _apiConnectionEvents = new ApiConnectionEvents();
-            //------------------------------
-            //Code completion initialize.
-            if (GlobalVariables.OCodeCompletion)
-            {
-                HostCallbackImplementation.Register(this);
-                CodeCompletionKeyHandler.Attach(this, SelectedEditor.GetSelectedEditor());
-                ToolTipProvider.Attach(this, SelectedEditor.GetSelectedEditor());
-
-                pcRegistry = new Dom.ProjectContentRegistry();
-                if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
-                    Directory.CreateDirectory((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion")));
-
-                pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"));
-            }
-            ////-------------------------------
-            myProjectContent = new Dom.DefaultProjectContent();
-            myProjectContent.Language = CurrentLanguageProperties;
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
@@ -518,7 +501,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            FileManage.ManageUnsavedData(selectedEditor, 0, true);
+            FileManage.ManageUnsavedData(SelectedEditor.GetSelectedEditor(), 0, true);
             if (GlobalVariables.noClear)
                 e.Cancel = true;
             else
