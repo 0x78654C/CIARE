@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Runtime.Versioning;
 using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Gui.CompletionWindow;
 
 namespace CIARE.GUI
 {
-	class CodeCompletionKeyHandler
+    [SupportedOSPlatform("windows")]
+    class CodeCompletionKeyHandler
 	{
         MainForm mainForm;
 		TextEditorControl editor;

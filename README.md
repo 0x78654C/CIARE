@@ -6,7 +6,7 @@
 Simple text editor for Windows with C# runtime compiler and code execution using Roslyn.
 Useful to run code on the fly and get instant result.
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_1.0.2.png?raw=true)
+![alt text](https://github.com/0x78654C/CIARE/blob/1.4.0-tabs/Media/ciare_2.0.0.png?raw=true)
 
 # Features
 
@@ -18,6 +18,7 @@ Useful to run code on the fly and get instant result.
  - Compile code to binary files(.exe or .dll).
  - Show runtime(ms) for code compile and exectuion or compile only.
  - Hotkeys for mentioned above features. 
+ - Drag & Drop
  - Display output result and errors (ID and message).
  - Highlight code fore various of programing languages.
  - Find and replace text.
@@ -90,9 +91,11 @@ Useful to run code on the fly and get instant result.
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_start.png?raw=true)
 
- When live share is started and connection to API message box will be prompted a red notification bubble will appear in right-up corner that notify you that is broadcasting.
+ When live share is started and connection to API message box will be prompted a red notification bubble will appear in right-up corner that notify you that is broadcasting and current tab is colored red aswel. 
+ In the process of live share tabs cannot be closed.
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_notify.png?raw=true)
+![live2](https://github.com/0x78654C/CIARE/assets/13780514/fc1a8915-4439-4b5c-88f4-d957ece90f2e)
 
  3. To start a remote connection go to Live tab -> Live Share Manage and add your given session id and password 
     and add them to 'Remote Session Id/Password' text boxes. After click on 'Remote Connect' button.
@@ -142,3 +145,44 @@ https://user-images.githubusercontent.com/13780514/223232524-22b1c5a3-795e-4735-
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_menu.png?raw=true)
 
 ![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_recursion.png?raw=true)
+
+# HotKeys
+```
+----------- File management --------------- 
+CTRL + N         : Empty the current tab file and sets to new page.
+CTRL + O         : Open file.
+CTRL + S         : Save to data to current file if changed.
+CTRL + Shift + S : Save data to a new file name or existing one.
+CTRL + T         : Load C# Main template.
+
+----------- Edit file management ----------
+CTRL + Z         : Undo last modifications.
+CTRL + X         : Cut selection.
+CTRL + C         : Copy selection.
+CTRL + V         : Paste selection.
+DEL              : Delete Selection.
+CTRL + F         : Find text in current tab.
+CTRL + H         : Replace text in current tab.
+CTRL + G         : Go to line number in current tab.
+CTRL + A         : Select all text in current tab
+CTRL + Shift + P : Get data from chatGPT by your provided text pattern.
+
+---------------- Compile ------------------
+CTRL + B         : Compile code from current tab to executable file. (.exe)
+CTRL + Shift + B : Compile code from current tab to dynamic-link library. (.dll)
+CTRL + L         : Add command line arguments.
+CTRL + R         : Add external reference or download from NuGet.
+
+------------------ View -------------------
+CTRL + W         : Split window vertically.
+CTRL + Shift + W : Split window horizontally.
+CTRL + K         : Show/Hide output window.
+
+----------- Tabs management ---------------
+CTRL + Tab       : Adds new tab.
+CTRL + Left      : Switches tabs to left.
+CTRL + Right     : Switches tabs to right.
+
+----------- Live share management ---------
+CTRL + Q         : Start live share management window.
+```

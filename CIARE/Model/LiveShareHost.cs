@@ -61,7 +61,7 @@ namespace CIARE
         /// <param name="e"></param>
         private async void startLiveBtn_Click(object sender, EventArgs e)
         {
-            if(passwordTxt.Text.Length < 5)
+            if (passwordTxt.Text.Length < 5)
             {
                 MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -71,14 +71,16 @@ namespace CIARE
             GlobalVariables.typeConnection = true;
             try
             {
+                GlobalVariables.liveTabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
                 HubConnectionBuild();
-                await ApiConnectionEvents.StartShare(this, MainForm.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
-                    startLiveBtn, connectHostBtn, MainForm.Instance.textEditorControl1);
+                await ApiConnectionEvents.StartShare(MainForm.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
+                    startLiveBtn, connectHostBtn, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
         }
 
         /// <summary>
@@ -126,7 +128,6 @@ namespace CIARE
         private void GeneratePassword(TextBox password, string livePassword, bool apiRemoteConnected)
         {
             password.Text = (string.IsNullOrEmpty(livePassword) || apiRemoteConnected) ? Utils.Encryption.KeyGenerator.GeneratePassword(15, true, true, false) : livePassword;
-
         }
 
         /// <summary>
@@ -176,14 +177,16 @@ namespace CIARE
             GlobalVariables.typeConnection = false;
             try
             {
+                GlobalVariables.liveTabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
                 HubConnectionBuild();
                 await ApiConnectionEvents.Connect(this, MainForm.Instance.hubConnection, connectHostBtn, startLiveBtn,
-                    GlobalVariables.livePassword, GlobalVariables.sessionId, MainForm.Instance.textEditorControl1);
+                    GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
         }
 
         /// <summary>
@@ -211,11 +214,14 @@ namespace CIARE
             if (!GlobalVariables.connected)
             {
                 MainForm.Instance.hubConnection = new HubConnectionBuilder()
-      .WithUrl(GlobalVariables.apiUrl)
+      .WithUrl(GlobalVariables.apiUrl, opts =>
+        {
+            opts.TransportMaxBufferSize = 100000000; //100mb
+            opts.ApplicationMaxBufferSize = 100000000; //100mb
+        }
+      )
       .Build();
-
-                ApiConnectionEvents.ApiConnection(MainForm.Instance.hubConnection, MainForm.Instance.textEditorControl1,
-                    GlobalVariables.connected, GlobalVariables.apiUrl);
+                ApiConnectionEvents.ApiConnection(MainForm.Instance.hubConnection, GlobalVariables.apiUrl);
             }
         }
 
@@ -224,7 +230,7 @@ namespace CIARE
         /// </summary>
         private void CheckReconnectionStatus()
         {
-            if (GlobalVariables.liveDisconnected  || GlobalVariables.reconnectionCount < 6)
+            if (GlobalVariables.liveDisconnected || GlobalVariables.reconnectionCount < 6)
             {
                 MessageBox.Show("You cannot access this setting when trying to reconnect to Live Share API!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.Close();

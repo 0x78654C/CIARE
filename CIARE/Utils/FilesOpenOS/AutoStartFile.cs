@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CIARE.GUI;
+using System;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -8,6 +9,7 @@ namespace CIARE.Utils.FilesOpenOS
     [SupportedOSPlatform("windows")]
     public class AutoStartFile
     {
+        //TODO: requires refecetor and removele of unused code.
 
         public string UserRunRegistryPath { get; set; }
         public string UserAppdataFile { get; set; }
@@ -125,6 +127,7 @@ namespace CIARE.Utils.FilesOpenOS
             GlobalVariables.OWinLoginState = checkBox.Checked;
         }
 
+
         /// <summary>
         /// Set CIARE to start on windows login if there are marked files for open.
         /// </summary>
@@ -195,7 +198,7 @@ namespace CIARE.Utils.FilesOpenOS
             //TODO: This is nasty. I know. I will remake it.
             try
             {
-                if (string.IsNullOrEmpty(MainForm.Instance.textEditorControl1.Text))
+                if (string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
                     Environment.Exit(0);
             }
             catch

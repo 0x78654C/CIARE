@@ -5,10 +5,11 @@ using ICSharpCode.SharpDevelop.Dom.CSharp;
 using ICSharpCode.SharpDevelop.Dom.VBNet;
 using TextEditor = ICSharpCode.TextEditor;
 using NRefactoryResolver = ICSharpCode.SharpDevelop.Dom.NRefactoryResolver.NRefactoryResolver;
-using ICSharpCode.NRefactory.Ast;
+using System.Runtime.Versioning;
 
 namespace CIARE.GUI
 {
+    [SupportedOSPlatform("Windows")]
     sealed class ToolTipProvider
     {
         MainForm mainForm;

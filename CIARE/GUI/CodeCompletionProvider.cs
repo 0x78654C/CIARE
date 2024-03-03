@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Gui.CompletionWindow;
@@ -11,7 +11,8 @@ using NRefactoryResolver = ICSharpCode.SharpDevelop.Dom.NRefactoryResolver.NRefa
 
 namespace CIARE.GUI
 {
-	class CodeCompletionProvider : ICompletionDataProvider
+    [SupportedOSPlatform("windows")]
+    class CodeCompletionProvider : ICompletionDataProvider
 	{
 		MainForm mainForm;
 

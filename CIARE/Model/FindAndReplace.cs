@@ -1,12 +1,15 @@
 ﻿using System;
 using CIARE.Utils;
-using CIARE.GUI;
 using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Document;
+using CIARE.GUI;
+using System.Runtime.Versioning;
 
 namespace CIARE
 {
+    [SupportedOSPlatform("Windows")]
+
     /*
      Form for find and replace string in main text editor.
      */
@@ -60,7 +63,7 @@ namespace CIARE
         private void singleReplaceBtn_Click(object sender, EventArgs e)
         {
             if (MainForm.Instance != null)
-                ReplaceSingle(MainForm.Instance.textEditorControl1, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
+                ReplaceSingle(SelectedEditor.GetSelectedEditor(), findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
             StoreReplaceData(findTxt.Text, repalceWithTxt.Text);
         }
 
@@ -68,7 +71,7 @@ namespace CIARE
         private void multiReplaceBtn_Click(object sender, EventArgs e)
         {
             if (MainForm.Instance != null)
-                MainForm.Instance.textEditorControl1.Text = ReplaceAll(MainForm.Instance.textEditorControl1.Text, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
+                SelectedEditor.GetSelectedEditor().Text = ReplaceAll(SelectedEditor.GetSelectedEditor().Text, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
             StoreReplaceData(findTxt.Text, repalceWithTxt.Text);
         }
 
@@ -298,7 +301,7 @@ MessageBoxIcon.Warning);
         /// <param name="e"></param>
         private void findBtn_Click(object sender, EventArgs e)
         {
-            Find(MainForm.Instance.textEditorControl1, findTxtBox.Text);
+            Find(SelectedEditor.GetSelectedEditor(), findTxtBox.Text);
             GlobalVariables.findData = findTxtBox.Text;
         }
 

@@ -120,14 +120,14 @@ namespace CIARE.GUI
                 if (regHighlight == _defaultHighLight)
                 {
                     GlobalVariables.darkColor = true;
-                    MainForm.Instance.SetHighLighter(regHighlight);
+                    MainForm.Instance.SetHighLighter(SelectedEditor.GetSelectedEditor(), regHighlight);
                 }
                 textEditor.SetHighlighting(regHighlight);
                 return;
             }
             RegistryManagement.RegKey_CreateKey(regKeyName, _regName, _defaultHighLight);
             GlobalVariables.darkColor = true;
-            MainForm.Instance.SetHighLighter(_defaultHighLight);
+            MainForm.Instance.SetHighLighter(SelectedEditor.GetSelectedEditor(), _defaultHighLight);
         }
 
 
@@ -142,7 +142,7 @@ namespace CIARE.GUI
             string sizeFont = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regSubKey);
             if (sizeFont.Length > 0)
             {
-                textEditor.Font = new Font("Consolas", float.Parse(sizeFont), FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+                textEditor.Font = new Font("Cascadia Mono", float.Parse(sizeFont), FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)));
                 return;
             }
             RegistryManagement.RegKey_CreateKey(GlobalVariables.registryPath, regSubKey, "9.75");
@@ -173,7 +173,7 @@ namespace CIARE.GUI
             }
             RegistryManagement.RegKey_CreateKey(regKeyName, "OutWState", "True");
         }
-
+        
         /// <summary>
         /// Check/Create user data directory on CIARE start up.
         /// </summary>

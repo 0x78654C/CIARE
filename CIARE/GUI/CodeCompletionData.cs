@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Xml;
 using ICSharpCode.SharpDevelop.Dom;
@@ -9,8 +10,9 @@ using ICSharpCode.TextEditor.Gui.CompletionWindow;
 
 namespace CIARE.GUI
 {
-	/// </summary>
-	class CodeCompletionData : DefaultCompletionData, ICompletionData
+    [SupportedOSPlatform("windows")]
+    /// </summary>
+    class CodeCompletionData : DefaultCompletionData, ICompletionData
 	{
 		IMember member;
 		IClass c;

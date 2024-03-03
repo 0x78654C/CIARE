@@ -11,8 +11,12 @@ namespace CIARE.Utils
         private static string s_rootPath = Path.GetPathRoot(Environment.SystemDirectory);
         private static readonly string s_accountName = Environment.UserName;
         public static readonly string userProfileDirectory = $"{s_rootPath}Users\\{s_accountName}\\AppData\\Local\\CIARE\\";
-        public static readonly string markFile = $"{userProfileDirectory}\\markedFiles.cDat";
-        public static readonly string markFileTemp = $"{userProfileDirectory}\\markedFiles_tmp.cDat";
+        public static readonly string markFile = $"{userProfileDirectory}markedFiles.cDat";
+        public static readonly string markFileTemp = $"{userProfileDirectory}markedFiles_tmp.cDat";
+        public static readonly string tabsFilePath = $"{userProfileDirectory}tabsFilePath.cDat";
+        public static readonly string tabsFilePathAll = $"{userProfileDirectory}tabsFilePathAll.cDat";
+        public static string processArg = string.Empty;
+        public static bool isStoringTabs = false;
         public static string openedFilePath = string.Empty;
         public static string openedFileName = string.Empty;
         public static string commandLineArguments = string.Empty;
@@ -41,7 +45,7 @@ namespace CIARE.Utils
         public static bool compileTime = false;
         public static bool codeWriter = false;
         public static string Framework { get; set; } = "net6.0-windows";
-        public static bool noClear = false;
+        public static bool noClear { get; set; } = false;
         public static string binaryName = string.Empty;
         public static string livePassword = string.Empty;
         public static string remoteLivePassword = string.Empty;
@@ -56,7 +60,8 @@ namespace CIARE.Utils
         public static bool apiRemoteConnected = false;
         public static bool typeConnection = false;
         public static bool isConnected = false;
-        public static int reconnectionCount = 6;
+        public static int reconnectionCount { get; set; } = 6;
+        public static int liveTabIndex = 0;
         public static string ciarePath = $"{Application.StartupPath}CIARE.exe";
         public static readonly string registryPath = "SOFTWARE\\CIARE";
         public static readonly string regUserRunPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";

@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CIARE.GUI;
 using CIARE.Utils;
 using CIARE.Utils.Encryption;
 using ICSharpCode.TextEditor;
@@ -19,7 +20,7 @@ namespace CIARE.LiveShareManage
         /// <param name="updateCode"></param>
         /// <param name="writer"></param>
         /// <param name="connected"></param>
-        public static void ApiConnection(HubConnection hubConnection, TextEditorControl textEditorControl, bool connected, string apiUrl)
+        public static void ApiConnection(HubConnection hubConnection, string apiUrl)
         {
             if (string.IsNullOrEmpty(apiUrl))
                 return;
@@ -157,7 +158,8 @@ namespace CIARE.LiveShareManage
                     await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted, $"{lineNumber}|{columnNumber}");
                 }
             }
-            catch { }
+            catch{
+            }
         }
 
         /// <summary>
@@ -179,7 +181,7 @@ namespace CIARE.LiveShareManage
         /// <param name="connectBtn"></param>
         /// <param name="output"></param>
         /// <returns></returns>
-        public static async Task StartShare(Form form,HubConnection hubConnection, string password, string sessionId, Button startShareBtn,
+        public static async Task StartShare(HubConnection hubConnection, string password, string sessionId, Button startShareBtn,
             Button connectBtn, TextEditorControl textEditorControl)
         {
             if (GlobalVariables.apiConnected)
@@ -206,7 +208,7 @@ namespace CIARE.LiveShareManage
                     MessageBox.Show("No password provied!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-
+                
                 hubConnection.On<string, string, string>("GetSend", (code, position, remoteConnectionId) =>
                 {
                     GlobalVariables.remoteConnectionId = remoteConnectionId;
@@ -228,7 +230,6 @@ namespace CIARE.LiveShareManage
                     connectBtn.Enabled = false;
                     if (GlobalVariables.darkColor)
                         connectBtn.BackColor = Color.Gray;
-
                     MessageBox.Show("Live Share started!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
@@ -320,11 +321,11 @@ MessageBoxIcon.Warning);
             if (dr == DialogResult.Yes)
             {
                 if (GlobalVariables.typeConnection)
-                    await StartShare(new Form(),hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
-               fakeButton, fakeButton, MainForm.Instance.textEditorControl1);
+                    await StartShare(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
+               fakeButton, fakeButton, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
                 else
                     await Connect(new Form(),hubConnection, fakeButton, fakeButton,
-GlobalVariables.livePassword, GlobalVariables.sessionId, MainForm.Instance.textEditorControl1); ;
+GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex)); ;
             }
             else
             {

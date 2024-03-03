@@ -5,6 +5,7 @@ using CIARE.GUI;
 using CIARE.Utils;
 using CIARE.Utils.FilesOpenOS;
 using CIARE.Utils.Options;
+using ICSharpCode.TextEditor;
 
 namespace CIARE
 {
@@ -30,7 +31,7 @@ namespace CIARE
 
         private void Options_Load(object sender, EventArgs e)
         {
-            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, MainForm.Instance.textEditorControl1, highlightCMB);
+            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, SelectedEditor.GetSelectedEditor(), highlightCMB);
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             codeCompletionCkb.Checked = GlobalVariables.OCodeCompletion;
             lineNumberCkb.Checked = GlobalVariables.OLineNumber;
@@ -43,16 +44,31 @@ namespace CIARE
             apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
-            CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
             _tokenTxtLen = maxTokensTxtBox.Text.Length;
         }
 
+        /// <summary>
+        /// Hightlight set for text editor.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void highlightCMB_SelectedIndexChanged(object sender, EventArgs e)
         {
-            MainForm.Instance.SetHighLighter(highlightCMB.Text);
+            var tabs = MainForm.Instance.EditorTabControl;
+            int count = 0;
+            foreach(TabPage tab in tabs.TabPages)
+            {
+                if (count > 0)
+                {
+                    Control ctrl = MainForm.Instance.EditorTabControl.Controls[count].Controls[0];
+                    var textEditor = ctrl as TextEditorControl;
+                    MainForm.Instance.SetHighLighter(textEditor, highlightCMB.Text);
+                }
+                count++;
+            }
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
         }
 
@@ -101,7 +117,7 @@ namespace CIARE
         private void startBehaveCkb_CheckedChanged(object sender, EventArgs e)
         {
             StartFilesOS.SetOSStartStatus(startBehaveCkb, GlobalVariables.startUp);
-            CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
+            //CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
         }
 
         /// <summary>
@@ -122,20 +138,21 @@ namespace CIARE
 
         private void winLoginCkb_CheckedChanged(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
-            {
-                winLoginCkb.Checked = false;
-                return;
-            }
+            //if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
+            //{
+            //    winLoginCkb.Checked = false;
+            //    return;
+            //}
 
             var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
-            if (!autoStartFile.CheckFileContent(GlobalVariables.markFile))
-            {
-                winLoginCkb.Checked = false;
-                return;
-            }
-            StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
+            //if (!autoStartFile.CheckFileContent(GlobalVariables.markFile))
+            //{
+            //    winLoginCkb.Checked = false;
+            //    return;
+            //}
+            //StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
             autoStartFile.SetRegistryRunApp(winLoginCkb);
+            StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
         }
 
         private void frameWorkCMB_SelectedIndexChanged(object sender, EventArgs e)
