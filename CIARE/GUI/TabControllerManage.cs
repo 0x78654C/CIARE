@@ -137,10 +137,13 @@ namespace CIARE.GUI
             }
 
             tabControl.SelectTab(2);
-            if (GlobalVariables.OStartUp)
+            if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
             {
-                StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedTab.ToolTipText, false);
-                StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedTab.ToolTipText, true);
+                if (GlobalVariables.OStartUp)
+                {
+                    StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedTab.ToolTipText, false);
+                    StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedTab.ToolTipText, true);
+                }
             }
         }
 
