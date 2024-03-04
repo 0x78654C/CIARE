@@ -894,7 +894,7 @@ namespace CIARE
             dynamicTextEdtior.Dock = DockStyle.Fill;
             dynamicTextEdtior.BackColor = SystemColors.Window;
             dynamicTextEdtior.BorderStyle = BorderStyle.FixedSingle;
-            dynamicTextEdtior.Font = new Font("Cascadia Mono", 10F);
+            dynamicTextEdtior.Font = new Font("Consolas", 10F);
             dynamicTextEdtior.Highlighting = null;
             dynamicTextEdtior.Location = new Point(0, 0);
             dynamicTextEdtior.Margin = new Padding(4, 3, 4, 3);
