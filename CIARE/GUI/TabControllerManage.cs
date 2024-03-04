@@ -202,21 +202,23 @@ namespace CIARE.GUI
             FileManage.ManageUnsavedData(textEditorControl, index, checkAll);
 
             var pathFile = tabControl.SelectedTab.ToolTipText;
-            if (!GlobalVariables.noClear)
+            if (GlobalVariables.noClear)
             {
-                tabControl.TabPages.RemoveAt(index);
-                if (index >= tabControl.TabCount)
-                    tabControl.SelectTab(index - 1);
-                else
-                    tabControl.SelectTab(index);
-
-                if (GlobalVariables.OStartUp)
-                    StoreDeleteTabs(pathFile, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, pathFile);
-
-                if (GlobalVariables.OStartUp)
-                    DeleteFileSize(tabControl, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index.ToString());
                 GlobalVariables.noClear = false;
+                return;
             }
+            tabControl.TabPages.RemoveAt(index);
+            if (index >= tabControl.TabCount)
+                tabControl.SelectTab(index - 1);
+            else
+                tabControl.SelectTab(index);
+
+            if (GlobalVariables.OStartUp)
+            {
+                StoreDeleteTabs(pathFile, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, pathFile);
+                DeleteFileSize(tabControl, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index.ToString());
+            }
+            GlobalVariables.noClear = false;
         }
 
         /// <summary>
