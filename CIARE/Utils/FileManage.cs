@@ -506,18 +506,19 @@ MessageBoxIcon.Warning);
         {
             var index = MainForm.Instance.EditorTabControl.SelectedIndex;
             ManageUnsavedData(textEditor, index);
+            if (GlobalVariables.noClear)
+                return;
             DialogResult dr = MessageBox.Show("Do you really want to load C# code template?", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Information);
             if (dr == DialogResult.Yes)
             {
-                string path = GlobalVariables.openedFilePath;
-                if (!string.IsNullOrEmpty(path))
+                if (GlobalVariables.OStartUp)
                 {
-                    MainForm.Instance.Text = $"*{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
-                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"*{GlobalVariables.openedFileName}             ";
+                    TabControllerManage.StoreDeleteTabs("", MainForm.Instance.EditorTabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
+                    TabControllerManage.DeleteFileSize(MainForm.Instance.EditorTabControl, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index.ToString());
                 }
-                else
-                    MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
+                MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
+                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page               ";
                 textEditor.Text = GlobalVariables.roslynTemplate;
             }
         }
