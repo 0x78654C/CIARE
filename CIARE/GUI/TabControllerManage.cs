@@ -347,6 +347,8 @@ namespace CIARE.GUI
             }
             else
             {
+                if (string.IsNullOrEmpty(pathRmove))
+                    pathRmove = "!@#$$#@%^&\\@#$@#$"; // I din't think I need to do this.
                 if (lines.Any(i => i.Contains(pathRmove)) && !isLine)
                     lines.RemoveAll(i => i.Contains(pathRmove));
             }
