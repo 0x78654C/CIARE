@@ -451,7 +451,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void LoadCStripMenuItem_Click(object sender, EventArgs e)
         {
-            FileManage.LoadCSTemplate(selectedEditor);
+            FileManage.LoadCSTemplate(SelectedEditor.GetSelectedEditor());
         }
 
 
