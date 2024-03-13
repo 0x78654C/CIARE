@@ -30,78 +30,97 @@ namespace CIARE
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(BinaryName));
-            this.binaryNameTxt = new System.Windows.Forms.TextBox();
-            this.ConfirmButton = new System.Windows.Forms.Button();
-            this.cancelButton = new System.Windows.Forms.Button();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.groupBox1.SuspendLayout();
-            this.SuspendLayout();
+            binaryNameTxt = new System.Windows.Forms.TextBox();
+            ConfirmButton = new System.Windows.Forms.Button();
+            cancelButton = new System.Windows.Forms.Button();
+            groupBox1 = new System.Windows.Forms.GroupBox();
+            typeCompileCkb = new System.Windows.Forms.CheckBox();
+            groupBox1.SuspendLayout();
+            SuspendLayout();
             // 
             // binaryNameTxt
             // 
-            this.binaryNameTxt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.binaryNameTxt.Location = new System.Drawing.Point(12, 19);
-            this.binaryNameTxt.Name = "binaryNameTxt";
-            this.binaryNameTxt.Size = new System.Drawing.Size(196, 22);
-            this.binaryNameTxt.TabIndex = 0;
-            this.binaryNameTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            binaryNameTxt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+            binaryNameTxt.Location = new System.Drawing.Point(14, 22);
+            binaryNameTxt.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            binaryNameTxt.Name = "binaryNameTxt";
+            binaryNameTxt.Size = new System.Drawing.Size(228, 22);
+            binaryNameTxt.TabIndex = 0;
+            binaryNameTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // ConfirmButton
             // 
-            this.ConfirmButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.ConfirmButton.Location = new System.Drawing.Point(12, 63);
-            this.ConfirmButton.Name = "ConfirmButton";
-            this.ConfirmButton.Size = new System.Drawing.Size(75, 23);
-            this.ConfirmButton.TabIndex = 1;
-            this.ConfirmButton.Text = "OK";
-            this.ConfirmButton.UseVisualStyleBackColor = true;
-            this.ConfirmButton.Click += new System.EventHandler(this.ConfirmButton_Click);
+            ConfirmButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            ConfirmButton.Location = new System.Drawing.Point(14, 73);
+            ConfirmButton.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            ConfirmButton.Name = "ConfirmButton";
+            ConfirmButton.Size = new System.Drawing.Size(88, 27);
+            ConfirmButton.TabIndex = 1;
+            ConfirmButton.Text = "OK";
+            ConfirmButton.UseVisualStyleBackColor = true;
+            ConfirmButton.Click += ConfirmButton_Click;
             // 
             // cancelButton
             // 
-            this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.cancelButton.Location = new System.Drawing.Point(133, 63);
-            this.cancelButton.Name = "cancelButton";
-            this.cancelButton.Size = new System.Drawing.Size(75, 23);
-            this.cancelButton.TabIndex = 2;
-            this.cancelButton.Text = "Cancel";
-            this.cancelButton.UseVisualStyleBackColor = true;
-            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
+            cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            cancelButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            cancelButton.Location = new System.Drawing.Point(155, 73);
+            cancelButton.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            cancelButton.Name = "cancelButton";
+            cancelButton.Size = new System.Drawing.Size(88, 27);
+            cancelButton.TabIndex = 2;
+            cancelButton.Text = "Cancel";
+            cancelButton.UseVisualStyleBackColor = true;
+            cancelButton.Click += cancelButton_Click;
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.binaryNameTxt);
-            this.groupBox1.Controls.Add(this.cancelButton);
-            this.groupBox1.Controls.Add(this.ConfirmButton);
-            this.groupBox1.Location = new System.Drawing.Point(12, 12);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(222, 96);
-            this.groupBox1.TabIndex = 3;
-            this.groupBox1.TabStop = false;
+            groupBox1.Controls.Add(typeCompileCkb);
+            groupBox1.Controls.Add(binaryNameTxt);
+            groupBox1.Controls.Add(cancelButton);
+            groupBox1.Controls.Add(ConfirmButton);
+            groupBox1.Location = new System.Drawing.Point(14, 14);
+            groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            groupBox1.Name = "groupBox1";
+            groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            groupBox1.Size = new System.Drawing.Size(259, 111);
+            groupBox1.TabIndex = 3;
+            groupBox1.TabStop = false;
+            // 
+            // typeCompileCkb
+            // 
+            typeCompileCkb.AutoSize = true;
+            typeCompileCkb.Location = new System.Drawing.Point(59, 50);
+            typeCompileCkb.Name = "typeCompileCkb";
+            typeCompileCkb.Size = new System.Drawing.Size(139, 19);
+            typeCompileCkb.TabIndex = 3;
+            typeCompileCkb.Text = "Windows Application";
+            typeCompileCkb.UseVisualStyleBackColor = true;
+            typeCompileCkb.Visible = false;
+            typeCompileCkb.CheckedChanged += typeCompileCkb_CheckedChanged;
             // 
             // BinaryName
             // 
-            this.AcceptButton = this.ConfirmButton;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.Window;
-            this.CancelButton = this.cancelButton;
-            this.ClientSize = new System.Drawing.Size(245, 126);
-            this.Controls.Add(this.groupBox1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "BinaryName";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Set Binary Name";
-            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.BinaryName_FormClosed);
-            this.Load += new System.EventHandler(this.BinaryName_Load);
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
-            this.ResumeLayout(false);
-
+            AcceptButton = ConfirmButton;
+            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            BackColor = System.Drawing.SystemColors.Window;
+            CancelButton = cancelButton;
+            ClientSize = new System.Drawing.Size(286, 145);
+            Controls.Add(groupBox1);
+            FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
+            Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "BinaryName";
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            Text = "Set Binary Name";
+            FormClosed += BinaryName_FormClosed;
+            Load += BinaryName_Load;
+            groupBox1.ResumeLayout(false);
+            groupBox1.PerformLayout();
+            ResumeLayout(false);
         }
 
         #endregion
@@ -110,5 +129,6 @@ namespace CIARE
         private System.Windows.Forms.Button ConfirmButton;
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.CheckBox typeCompileCkb;
     }
 }

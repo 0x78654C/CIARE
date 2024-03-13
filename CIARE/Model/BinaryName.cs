@@ -21,12 +21,15 @@ namespace CIARE
         {
             GlobalVariables.checkFormOpen = true;
             binaryNameTxt.Text = GlobalVariables.binaryNameStore;
-            binaryNameTxt.Text =binaryNameTxt.Text.Trim();
+            binaryNameTxt.Text = binaryNameTxt.Text.Trim();
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             if (GlobalVariables.exeName)
             {
                 this.Text = "Set EXE binary name";
                 WaterMark.TextBoxWaterMark(binaryNameTxt, "Enter name of output file..");
+                typeCompileCkb.Visible = true;
+                if (GlobalVariables.OutputKind == Microsoft.CodeAnalysis.OutputKind.WindowsApplication)
+                    typeCompileCkb.Checked = true;
                 return;
             }
             this.Text = "Set DLL binary name";
@@ -39,8 +42,8 @@ namespace CIARE
             binaryNameTxt.Text = binaryNameTxt.Text.Trim();
             if (binaryNameTxt.Text.Length > 0)
             {
-                if(GlobalVariables.exeName)
-                    GlobalVariables.binaryName = binaryNameTxt.Text+".exe";
+                if (GlobalVariables.exeName)
+                    GlobalVariables.binaryName = binaryNameTxt.Text + ".exe";
                 else
                     GlobalVariables.binaryName = binaryNameTxt.Text + ".dll";
 
@@ -77,6 +80,14 @@ namespace CIARE
             GlobalVariables.exeName = false;
             if (!_checkConfirmationAction)
                 GlobalVariables.binaryName = string.Empty;
+        }
+
+        private void typeCompileCkb_CheckedChanged(object sender, EventArgs e)
+        {
+            if (typeCompileCkb.Checked)
+                GlobalVariables.OutputKind = Microsoft.CodeAnalysis.OutputKind.WindowsApplication;
+            else
+                GlobalVariables.OutputKind = Microsoft.CodeAnalysis.OutputKind.ConsoleApplication;
         }
     }
 }
