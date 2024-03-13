@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.CodeAnalysis;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
@@ -34,6 +35,7 @@ namespace CIARE.Utils
         public static bool darkColor = false;
         public static string configParam = "/p:configuration=Debug";
         public static string platformParam = "/p:Platform=\"Any CPU\"";
+        public static OutputKind OutputKind;
         public static bool OCodeCompletion = true;
         public static bool OLineNumber = true;
         public static bool OFoldingCode = true;
