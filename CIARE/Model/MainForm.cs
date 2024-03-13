@@ -557,6 +557,11 @@ namespace CIARE
             SendKeys.Send("^z");
         }
 
+        private void redoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendKeys.Send("^y");
+        }
+
         private void cutStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^x");
