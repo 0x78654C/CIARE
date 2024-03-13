@@ -46,6 +46,7 @@ namespace CIARE
             exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             undoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            redoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             cutStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             copyStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -211,7 +212,7 @@ namespace CIARE
             // 
             // editToolStripMenuItem
             // 
-            editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { undoToolStripMenuItem, toolStripSeparator3, cutStripMenuItem, copyStripMenuItem, pasteStripMenuItem, deleteStripMenuItem, toolStripSeparator4, finStripMenuItem, replaceStripMenuItem, goToLineStripMenuItem, selectAllStripMenuItem3, toolStripSeparator6, chatGPTCTRLShiftPToolStripMenuItem });
+            editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { undoToolStripMenuItem, redoToolStripMenuItem, toolStripSeparator3, cutStripMenuItem, copyStripMenuItem, pasteStripMenuItem, deleteStripMenuItem, toolStripSeparator4, finStripMenuItem, replaceStripMenuItem, goToLineStripMenuItem, selectAllStripMenuItem3, toolStripSeparator6, chatGPTCTRLShiftPToolStripMenuItem });
             editToolStripMenuItem.Name = "editToolStripMenuItem";
             editToolStripMenuItem.ShowShortcutKeys = false;
             editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
@@ -223,6 +224,13 @@ namespace CIARE
             undoToolStripMenuItem.Size = new System.Drawing.Size(229, 22);
             undoToolStripMenuItem.Text = "Undo        ( CTRL + Z )";
             undoToolStripMenuItem.Click += undoToolStripMenuItem_Click;
+            // 
+            // redoToolStripMenuItem
+            // 
+            redoToolStripMenuItem.Name = "redoToolStripMenuItem";
+            redoToolStripMenuItem.Size = new System.Drawing.Size(229, 22);
+            redoToolStripMenuItem.Text = "Redo         ( CTRL + Y )";
+            redoToolStripMenuItem.Click += redoToolStripMenuItem_Click;
             // 
             // toolStripSeparator3
             // 
@@ -725,6 +733,7 @@ namespace CIARE
         public System.Windows.Forms.ToolStripMenuItem compileToDLLCtrlSfitBToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem editToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem undoToolStripMenuItem;
+        public System.Windows.Forms.ToolStripMenuItem redoToolStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         public System.Windows.Forms.ToolStripMenuItem copyStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem cutStripMenuItem;
