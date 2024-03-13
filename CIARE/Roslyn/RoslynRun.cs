@@ -121,7 +121,7 @@ namespace CIARE.Roslyn
         /// <param name="exeFile"></param>
         /// <param name="outPut"></param>
         /// <param name="richTextBox"></param>
-        public static void BinaryCompile(string code, bool exeFile, string outPut, RichTextBox richTextBox, bool allowUnsafe)
+        public static void BinaryCompile(string code, bool exeFile, string outPut, RichTextBox richTextBox, bool allowUnsafe, OutputKind outputKind = OutputKind.ConsoleApplication)
         {
             string pathOutput = Application.StartupPath + "binary\\";
             string roslynDir = Application.StartupPath + "roslyn\\";
@@ -167,7 +167,7 @@ namespace CIARE.Roslyn
                       assemblyName,
                       syntaxTrees: new[] { syntaxTree },
                       references: References(true),
-                      options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
+                      options: new CSharpCompilationOptions(outputKind, true, null, null,
                       null, null, OptimizationLevelState(), false, allowUnsafe, null, null,
                       ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));;
                 }
@@ -266,14 +266,14 @@ namespace CIARE.Roslyn
         /// <summary>
         /// Compile code to EXE binary file method.
         /// </summary>
-        public static void CompileBinaryExe(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb, bool runner)
+        public static void CompileBinaryExe(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb, bool runner, OutputKind outputKind = OutputKind.ConsoleApplication)
         {
             GlobalVariables.exeName = true;
             BinaryName binaryName = new BinaryName();
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
-            BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb,GlobalVariables.OUnsafeCode);
+            BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb,GlobalVariables.OUnsafeCode, outputKind);
             RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             GC.Collect();
         }
