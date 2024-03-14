@@ -16,6 +16,7 @@ using System.Runtime.Versioning;
 using Path = System.IO.Path;
 using System.Collections.Immutable;
 using System.Runtime.Loader;
+using Mono.Cecil.Cil;
 
 namespace CIARE.Roslyn
 {
@@ -270,6 +271,13 @@ namespace CIARE.Roslyn
         {
             GlobalVariables.exeName = true;
             BinaryName binaryName = new BinaryName();
+            var code = textEditor.Text;
+            if (string.IsNullOrEmpty(code))
+            {
+                MessageBox.Show("There is no code in the editor to compile!", "CIARE", MessageBoxButtons.OK,
+            MessageBoxIcon.Warning);
+                return;
+            }
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
@@ -285,6 +293,13 @@ namespace CIARE.Roslyn
         {
             GlobalVariables.exeName = false;
             BinaryName binaryName = new BinaryName();
+            var code = textEditor.Text;
+            if (string.IsNullOrEmpty(code))
+            {
+                MessageBox.Show("There is no code in the editor to compile!", "CIARE", MessageBoxButtons.OK,
+            MessageBoxIcon.Warning);
+                return;
+            }
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
