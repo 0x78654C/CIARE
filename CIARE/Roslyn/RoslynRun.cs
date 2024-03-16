@@ -16,6 +16,7 @@ using System.Runtime.Versioning;
 using Path = System.IO.Path;
 using System.Collections.Immutable;
 using System.Runtime.Loader;
+using Mono.Cecil.Cil;
 
 namespace CIARE.Roslyn
 {
@@ -121,7 +122,7 @@ namespace CIARE.Roslyn
         /// <param name="exeFile"></param>
         /// <param name="outPut"></param>
         /// <param name="richTextBox"></param>
-        public static void BinaryCompile(string code, bool exeFile, string outPut, RichTextBox richTextBox, bool allowUnsafe)
+        public static void BinaryCompile(string code, bool exeFile, string outPut, RichTextBox richTextBox, bool allowUnsafe, OutputKind outputKind = OutputKind.ConsoleApplication)
         {
             string pathOutput = Application.StartupPath + "binary\\";
             string roslynDir = Application.StartupPath + "roslyn\\";
@@ -167,7 +168,7 @@ namespace CIARE.Roslyn
                       assemblyName,
                       syntaxTrees: new[] { syntaxTree },
                       references: References(true),
-                      options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
+                      options: new CSharpCompilationOptions(outputKind, true, null, null,
                       null, null, OptimizationLevelState(), false, allowUnsafe, null, null,
                       ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));;
                 }
@@ -266,14 +267,21 @@ namespace CIARE.Roslyn
         /// <summary>
         /// Compile code to EXE binary file method.
         /// </summary>
-        public static void CompileBinaryExe(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb, bool runner)
+        public static void CompileBinaryExe(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb, bool runner, OutputKind outputKind = OutputKind.ConsoleApplication)
         {
             GlobalVariables.exeName = true;
             BinaryName binaryName = new BinaryName();
+            var code = textEditor.Text;
+            if (string.IsNullOrEmpty(code))
+            {
+                MessageBox.Show("There is no code in the editor to compile!", "CIARE", MessageBoxButtons.OK,
+            MessageBoxIcon.Warning);
+                return;
+            }
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
-            BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb,GlobalVariables.OUnsafeCode);
+            BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb,GlobalVariables.OUnsafeCode, outputKind);
             RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             GC.Collect();
         }
@@ -285,6 +293,13 @@ namespace CIARE.Roslyn
         {
             GlobalVariables.exeName = false;
             BinaryName binaryName = new BinaryName();
+            var code = textEditor.Text;
+            if (string.IsNullOrEmpty(code))
+            {
+                MessageBox.Show("There is no code in the editor to compile!", "CIARE", MessageBoxButtons.OK,
+            MessageBoxIcon.Warning);
+                return;
+            }
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);

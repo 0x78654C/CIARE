@@ -29,6 +29,7 @@ namespace CIARE.GUI
                 MainForm.Instance.compileToDLLCtrlSfitBToolStripMenuItem,
                 MainForm.Instance.editToolStripMenuItem,
                 MainForm.Instance.undoToolStripMenuItem,
+                MainForm.Instance.redoToolStripMenuItem,
                 MainForm.Instance.copyStripMenuItem,
                 MainForm.Instance.cutStripMenuItem,
                 MainForm.Instance.pasteStripMenuItem,

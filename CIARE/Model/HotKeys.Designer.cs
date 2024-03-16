@@ -35,6 +35,7 @@
             // textEditorControl1
             // 
             textEditorControl1.AllowDrop = true;
+            textEditorControl1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             textEditorControl1.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
             textEditorControl1.Highlighting = "C#-Dark";
             textEditorControl1.Location = new System.Drawing.Point(12, 12);
@@ -42,7 +43,7 @@
             textEditorControl1.ReadOnly = true;
             textEditorControl1.ShowLineNumbers = false;
             textEditorControl1.ShowVRuler = false;
-            textEditorControl1.Size = new System.Drawing.Size(668, 642);
+            textEditorControl1.Size = new System.Drawing.Size(631, 737);
             textEditorControl1.TabIndex = 0;
             textEditorControl1.Text = resources.GetString("textEditorControl1.Text");
             // 
@@ -50,7 +51,7 @@
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(690, 665);
+            ClientSize = new System.Drawing.Size(655, 761);
             Controls.Add(textEditorControl1);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");

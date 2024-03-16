@@ -155,8 +155,13 @@ CTRL + S         : Save to data to current file if changed.
 CTRL + Shift + S : Save data to a new file name or existing one.
 CTRL + T         : Load C# Main template.
 
------------ Edit file management ----------
+------------ Editor management ------------
 CTRL + Z         : Undo last modifications.
+CTRL + R         : Redo last modifications.
+CTRL + Delete    : Delete words to right.
+CTRL + Backspace : Delete words to left.
+CTRL + D         : Delete current line.
+CTRL + Shift + D : Delete from cursor to end of line.
 CTRL + X         : Cut selection.
 CTRL + C         : Copy selection.
 CTRL + V         : Paste selection.
@@ -168,6 +173,7 @@ CTRL + A         : Select all text in current tab
 CTRL + Shift + P : Get data from chatGPT by your provided text pattern.
 
 ---------------- Compile ------------------
+F5               : Run current cod.                
 CTRL + B         : Compile code from current tab to executable file. (.exe)
 CTRL + Shift + B : Compile code from current tab to dynamic-link library. (.dll)
 CTRL + L         : Add command line arguments.
