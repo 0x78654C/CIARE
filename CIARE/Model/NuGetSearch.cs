@@ -35,8 +35,9 @@ namespace CIARE.Model
             s_initialSizeForm = this.Size.Width;
 
             // Check if can access NuGet API website.
-            Network network = new Network(GlobalVariables.nugetApiAddress);
-            if (!network.PingHost())
+            Network network = new Network(GlobalVariables.nugetApi);
+            bool isApiUp = network.IsWebResponding();
+            if (!isApiUp)
             {
                 MessageBox.Show($"NuGet API cannot be reached. Check your internet connection!", "CIARE", MessageBoxButtons.OK,
 MessageBoxIcon.Warning);
