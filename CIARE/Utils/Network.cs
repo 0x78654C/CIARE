@@ -1,4 +1,6 @@
-﻿using System.Net.NetworkInformation;
+﻿using System.Net;
+using System;
+using System.Net.NetworkInformation;
 
 namespace CIARE.Utils
 {
@@ -37,6 +39,27 @@ namespace CIARE.Utils
                 }
             }
             return pingable;
+        }
+
+        /// <summary>
+        /// Check if website respond 200 code.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsWebResponding()
+        {
+            try
+            {
+                HttpWebRequest request = WebRequest.Create(IpAdress) as HttpWebRequest;
+                request.Method = "HEAD";
+                HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                bool isResponding = response.StatusCode == HttpStatusCode.OK;
+                response.Close();
+                return isResponding;
+            }
+            catch
+            {
+               return false;
+            }
         }
     }
 }
