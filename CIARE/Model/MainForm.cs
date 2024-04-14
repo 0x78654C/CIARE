@@ -430,7 +430,7 @@ namespace CIARE
                 textEditorControl.SetHighlighting(highlight);
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlight);
             }
-            if (highlight == "C#-Dark")
+            if (highlight.StartsWith("C#-Dark"))
             {
                 GlobalVariables.darkColor = true;
                 ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = true;
