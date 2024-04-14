@@ -34,7 +34,7 @@ namespace CIARE.GUI
         {
             form.BackColor = Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
-            richTextBox.BackColor = Color.FromArgb(30, 30, 30);
+            richTextBox.BackColor = Color.FromArgb(2, 0, 10);
             richTextBox.ForeColor = Color.FromArgb(192, 215, 207);
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
             separator2.ForeColor = Color.FromArgb(192, 215, 207);
