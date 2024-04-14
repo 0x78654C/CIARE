@@ -21,7 +21,7 @@ namespace CIARE.GUI
             int width = toolStripSeparator.Width;
             int height = toolStripSeparator.Height;
             Color foreColor = Color.FromArgb(192, 215, 207);
-            Color backColor = Color.FromArgb(51, 51, 51);
+            Color backColor = Color.FromArgb(0, 1, 10);
             e.Graphics.FillRectangle(new SolidBrush(backColor), 0, 0, width, height);
             e.Graphics.DrawLine(new Pen(foreColor), 4, height / 2, width - 4, height / 2);
         }

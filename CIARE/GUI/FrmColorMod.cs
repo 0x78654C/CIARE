@@ -20,7 +20,7 @@ namespace CIARE.GUI
             ForeColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
             BackGroundColor = dark ? Color.FromArgb(30, 30, 30) : SystemColors.Window;
             ForeColorForm = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
-            BackGroundColorForm = dark ? Color.FromArgb(51, 51, 51) : SystemColors.Window;
+            BackGroundColorForm = dark ? Color.FromArgb(0, 1, 10) : SystemColors.Window;
             ApplyColorMode(form, dark);
             form.BackColor = BackGroundColorForm;
             form.ForeColor = ForeColorForm;

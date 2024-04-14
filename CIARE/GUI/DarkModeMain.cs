@@ -32,19 +32,19 @@ namespace CIARE.GUI
             Label separator2, Label separator3, MenuStrip menuStrip,
             List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList)
         {
-            form.BackColor = Color.FromArgb(51, 51, 51);
+            form.BackColor = Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             richTextBox.BackColor = Color.FromArgb(30, 30, 30);
             richTextBox.ForeColor = Color.FromArgb(192, 215, 207);
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
             separator2.ForeColor = Color.FromArgb(192, 215, 207);
             separator3.ForeColor = Color.FromArgb(192, 215, 207);
-            menuStrip.BackColor = Color.FromArgb(51, 51, 51);
+            menuStrip.BackColor = Color.FromArgb(0, 1, 10);
             menuStrip.ForeColor = Color.FromArgb(192, 215, 207);
             menuStrip.Renderer = new ColorTableSet();
             foreach (var toolStripMenu in toolStripMenuList)
             {
-                toolStripMenu.BackColor = Color.FromArgb(51, 51, 51);
+                toolStripMenu.BackColor = Color.FromArgb(0, 1, 10);
                 toolStripMenu.ForeColor = Color.FromArgb(192, 215, 207);
             }
             foreach (var toolStripSeparator in toolStripSeparatorList)
