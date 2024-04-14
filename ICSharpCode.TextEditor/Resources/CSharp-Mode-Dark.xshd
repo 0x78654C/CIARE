@@ -4,14 +4,14 @@
 	<Environment>
 		<Custom name="TypeReference" bold="false" italic="false" color="#04ABAB" />
 		<Custom name="UnknownEntity" bold="false" italic="false" color="#AB0404" />
-		<Default bold="false" italic="false" color="White" bgcolor="#1E1E1E" />
+		<Default bold="false" italic="false" color="White" bgcolor="#02000a" />
 		<Selection bold="false" italic="false" color="#D4D0C8" bgcolor="Gray" />
-		<VRuler bold="false" italic="false" color="#1E1E1E" />
+		<VRuler bold="false" italic="false" color="#02000a" />
 		<InvalidLines bold="false" italic="false" color="#999999" />
 		<CaretMarker bold="false" italic="false" color="#999999" />
-		<LineNumbers bold="false" italic="false" color="#6897BB" bgcolor="#1E1E1E" />
+		<LineNumbers bold="false" italic="false" color="#6897BB" bgcolor="#02000a" />
 		<FoldLine bold="false" italic="false" color="Gray" bgcolor="Gray" />
-		<FoldMarker bold="false" italic="false" color="Gray" bgcolor="#1E1E1E" />
+		<FoldMarker bold="false" italic="false" color="Gray" bgcolor="#02000a" />
 		<SelectedFoldLine bold="false" italic="false" color="Gray" />
 		<EOLMarkers bold="false" italic="false" color="#999999" />
 		<SpaceMarkers bold="false" italic="false" color="#999999" />
@@ -164,7 +164,13 @@
 				<Key word="uint" />
 				<Key word="ushort" />
 				<Key word="ulong" />
-			</KeyWords>
+        <Key word="IntPtr" />
+        <Key word="UIntPtr" />
+        <Key word="UInt32" />
+        <Key word="UInt64" />
+        <Key word="Int32" />
+        <Key word="Int64" />
+      </KeyWords>
 			<KeyWords name="ReferenceTypes" bold="false" italic="false" color="#CAE682">
 				<Key word="class" />
 				<Key word="interface" />
