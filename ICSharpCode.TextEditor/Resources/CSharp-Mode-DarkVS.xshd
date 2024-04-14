@@ -1221,6 +1221,7 @@
         <Key word="HtmlWindowCollection" />
         <Key word="HttpCachePolicyElement" />
         <Key word="HttpContinueDelegate" />
+		<Key word="HttpClient" />
         <Key word="HttpListener" />
         <Key word="HttpListenerBasicIdentity" />
         <Key word="HttpListenerContext" />
