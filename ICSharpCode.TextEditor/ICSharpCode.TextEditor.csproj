@@ -43,6 +43,9 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Resources\CSharp-Mode-DarkVS.xshd" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Update="Gui\CompletionWindow\CodeCompletionListView.cs" />
     <Compile Update="Gui\ContextMenu.cs" />
     <Compile Update="Gui\HRuler.cs" />
@@ -54,6 +57,7 @@
     <EmbeddedResource Include="Resources\BAT-Mode.xshd" />
     <EmbeddedResource Include="Resources\CPP-Mode.xshd" />
     <EmbeddedResource Include="Resources\Coco-Mode.xshd" />
+    <EmbeddedResource Include="Resources\CSharp-Mode-DarkVS.xshd" />
     <EmbeddedResource Include="Resources\CSharp-Mode.xshd" />
     <EmbeddedResource Include="Resources\HTML-Mode.xshd" />
     <EmbeddedResource Include="Resources\CSharp-Mode-Dark.xshd" />
