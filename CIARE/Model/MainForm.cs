@@ -975,7 +975,7 @@ namespace CIARE
             TabControllerManage.DrawTabControl(EditorTabControl, e);
 
             // Set transparent header bar.
-            TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 51, 51, 51);
+            TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 0, 1, 10);
 
             // Color tab to red if live shared started on that index.
             if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
