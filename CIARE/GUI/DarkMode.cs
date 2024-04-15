@@ -102,7 +102,7 @@ namespace CIARE.GUI
         public static void FinAndReplaceDarkMode(Form form, Button replaceBtn, Button replaceAllBtn, TextBox findWhatTxt,
             TextBox replaceWithTxt, GroupBox groupBox, CheckBox ignoreCaseCkb, TabPage findTab, TabPage replaceTab, Button find,TextBox findTxt, bool isVsTheme)
         {
-            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);;
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51) : Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             replaceBtn.BackColor = Color.FromArgb(30, 30, 30);
             replaceBtn.ForeColor = Color.FromArgb(192, 215, 207);
@@ -147,7 +147,7 @@ namespace CIARE.GUI
             CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayBox, GroupBox buildBox, Label displaySetting ,Label behaveSetting, CheckBox startFile,
             Label apiLabel, TextBox apiUrlTxt, Button saveApiBtn, GroupBox liveShare, GroupBox openAIgrp,Label apiAiLbl,Label tokenLbl, TextBox apiAIKey, TextBox maxTokens, Button saveAibtn, bool isVsTheme)
         {
-            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);;
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             cancelBtn.BackColor = Color.FromArgb(30, 30, 30);
             cancelBtn.ForeColor = Color.FromArgb(192, 215, 207);
@@ -198,7 +198,7 @@ namespace CIARE.GUI
         public static void LiveShareDarkMode(Form form, GroupBox hostGrp, Label sessionLbl, TextBox sessionId, Label passwordLbl, TextBox password, Button startHost,
             GroupBox remoteGrp, Label remoteSessionLbl, TextBox remoteSessionId, Label remotePasswordLbl, TextBox remotePasswordTxt, Button remoteConnect, bool isVsTheme)
         {
-            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);;
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             hostGrp.ForeColor = Color.FromArgb(192, 215, 207);
             sessionLbl.ForeColor = Color.FromArgb(192, 215, 207);
@@ -230,7 +230,7 @@ namespace CIARE.GUI
         /// <param name="button"></param>
         public static void ApiUrlCheckDarkMode(Form form,GroupBox groupBox, Label label,TextBox textBox, Button button, bool isVsTheme)
         {
-            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);;
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
             label.ForeColor = Color.FromArgb(192, 215, 207);
