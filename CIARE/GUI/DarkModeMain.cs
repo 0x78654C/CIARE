@@ -1,4 +1,3 @@
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.Versioning;
@@ -30,21 +29,21 @@ namespace CIARE.GUI
         /// <param name="findButton"></param>
         public static void SetDarkModeMain(Form form, RichTextBox richTextBox, GroupBox groupBox,
             Label separator2, Label separator3, MenuStrip menuStrip,
-            List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList)
+            List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList, bool isVsTheme)
         {
-            form.BackColor = Color.FromArgb(0, 1, 10);
+            form.BackColor = (isVsTheme)? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
-            richTextBox.BackColor = Color.FromArgb(2, 0, 10);
+            richTextBox.BackColor = (isVsTheme) ? Color.FromArgb(30, 30, 30) : Color.FromArgb(2, 0, 10);
             richTextBox.ForeColor = Color.FromArgb(192, 215, 207);
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
             separator2.ForeColor = Color.FromArgb(192, 215, 207);
             separator3.ForeColor = Color.FromArgb(192, 215, 207);
-            menuStrip.BackColor = Color.FromArgb(0, 1, 10);
+            menuStrip.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
             menuStrip.ForeColor = Color.FromArgb(192, 215, 207);
             menuStrip.Renderer = new ColorTableSet();
             foreach (var toolStripMenu in toolStripMenuList)
             {
-                toolStripMenu.BackColor = Color.FromArgb(0, 1, 10);
+                toolStripMenu.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51) : Color.FromArgb(0, 1, 10);
                 toolStripMenu.ForeColor = Color.FromArgb(192, 215, 207);
             }
             foreach (var toolStripSeparator in toolStripSeparatorList)
