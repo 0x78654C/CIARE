@@ -12,6 +12,7 @@ namespace CIARE.GUI
     public class InitializeEditor
     {
         private const string _defaultHighLight = "C#-Dark";
+        private const string _vsTheme = "C#-DarkVS";
         private const string _regName = "highlight";
         private const string _windowSize = "windowSize";
         private const string _windowSizeMax = "windowSizeMax";
@@ -41,7 +42,7 @@ namespace CIARE.GUI
             string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _regName);
             if (regHighlight.Length > 0)
             {
-                if (regHighlight == _defaultHighLight)
+                if (regHighlight == _defaultHighLight || regHighlight == _vsTheme)
                     GlobalVariables.darkColor = true;
                 textEditor.SetHighlighting(regHighlight);
                 comboBox.Text = regHighlight;
@@ -117,7 +118,7 @@ namespace CIARE.GUI
             string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _regName);
             if (regHighlight.Length > 0)
             {
-                if (regHighlight == _defaultHighLight)
+                if (regHighlight == _defaultHighLight || regHighlight == _vsTheme)
                 {
                     GlobalVariables.darkColor = true;
                     MainForm.Instance.SetHighLighter(SelectedEditor.GetSelectedEditor(), regHighlight);
