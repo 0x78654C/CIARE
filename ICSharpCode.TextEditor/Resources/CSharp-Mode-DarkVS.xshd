@@ -187,6 +187,8 @@
       </KeyWords>
       <KeyWords name="Modifiers" bold="false" italic="false" color="#cae682">
         <Key word="abstract" />
+        <Key word="await" />
+        <Key word="async" />
         <Key word="const" />
         <Key word="event" />
         <Key word="extern" />
@@ -2574,6 +2576,7 @@
         <Key word="TableLayoutStyle" />
         <Key word="TableLayoutStyleCollection" />
         <Key word="TabPage" />
+        <Key word="Task" />
         <Key word="TabRenderer" />
         <Key word="TaiwanCalendar" />
         <Key word="TaiwanLunisolarCalendar" />
