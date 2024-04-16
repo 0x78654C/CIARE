@@ -45,18 +45,18 @@
 				<Begin>"</Begin>
 				<End>"</End>
 			</Span>
-			<Span name="MultiLineString" escapecharacter="&quot;" stopateol="false" bold="false" italic="false" color="#BCB000">
+			<Span name="MultiLineString" escapecharacter="&quot;" stopateol="false" bold="false" italic="false" color="#BAB228">
 				<Begin>@@"</Begin>
 				<End>"</End>
 			</Span>
-			<Span name="Char" escapecharacter="\" stopateol="true" bold="false" italic="false" color="#BCB000">
+			<Span name="Char" escapecharacter="\" stopateol="true" bold="false" italic="false" color="#BAB228">
 				<Begin>'</Begin>
 				<End>'</End>
 			</Span>
 			
-			<MarkPrevious bold = "true" italic = "false" color = "#1EF7FF">(</MarkPrevious>
+			<MarkPrevious bold = "true" italic = "false" color = "#6DFFFF">(</MarkPrevious>
 			
-			<KeyWords name="Punctuation" bold="false" italic="false" color="#A8DBBD">
+			<KeyWords name="Punctuation" bold="false" italic="false" color="#91D8AF">
 				<Key word="?" />
 				<Key word="," />
 				<Key word="." />
@@ -81,11 +81,11 @@
 				<Key word="|" />
 				<Key word="&amp;" />
 			</KeyWords>
-			<KeyWords name="AccessKeywords" bold="true" italic="false" color="#FF00DC">
+			<KeyWords name="AccessKeywords" bold="true" italic="false" color="#FF2DE3">
 				<Key word="this" />
 				<Key word="base" />
 			</KeyWords>
-			<KeyWords name="OperatorKeywords" bold="true" italic="false" color="#FF00DC">
+			<KeyWords name="OperatorKeywords" bold="true" italic="false" color="#FF2DE3">
 				<Key word="as" />
 				<Key word="is" />
 				<Key word="new" />
@@ -148,7 +148,7 @@
 				<Key word="fixed" />
 				<Key word="unsafe" />
 			</KeyWords>
-			<KeyWords name="ValueTypes" bold="true" italic="false" color="#BCB000">
+			<KeyWords name="ValueTypes" bold="true" italic="false" color="#BAB228">
 				<Key word="bool" />
 				<Key word="byte" />
 				<Key word="char" />
@@ -172,26 +172,26 @@
         <Key word="Int64" />
       	<Key word="string" />
       </KeyWords>
-			<KeyWords name="ReferenceTypes" bold="false" italic="false" color="#FF00DC">
+			<KeyWords name="ReferenceTypes" bold="false" italic="false" color="#FF2DE3">
 				<Key word="class" />
 				<Key word="interface" />
 				<Key word="delegate" />
 				<Key word="object" />
 			</KeyWords>
-			<KeyWords name="Void" bold="false" italic="false" color="#BCB000">
+			<KeyWords name="Void" bold="false" italic="false" color="#BAB228">
 				<Key word="void" />
 			</KeyWords>
-			<KeyWords name="ConversionKeyWords" bold="true" italic="false" color="#FF00DC">
+			<KeyWords name="ConversionKeyWords" bold="true" italic="false" color="#FF2DE3">
 				<Key word="explicit" />
 				<Key word="implicit" />
 				<Key word="operator" />
 			</KeyWords>
-			<KeyWords name="MethodParameters" bold="true" italic="false" color="#FF00DC">
+			<KeyWords name="MethodParameters" bold="true" italic="false" color="#FF2DE3">
 				<Key word="params" />
 				<Key word="ref" />
 				<Key word="out" />
 			</KeyWords>
-			<KeyWords name="Modifiers" bold="false" italic="false" color="#5BAAE0">
+			<KeyWords name="Modifiers" bold="false" italic="false" color="#758EFF">
 				<Key word="abstract" />
         <Key word="await" />
         <Key word="async" />
@@ -205,30 +205,30 @@
 				<Key word="virtual" />
 				<Key word="volatile" />
 			</KeyWords>
-			<KeyWords name="AccessModifiers" bold="false" italic="false" color="#5BAAE0">
+			<KeyWords name="AccessModifiers" bold="false" italic="false" color="#758EFF">
 				<Key word="public" />
 				<Key word="protected" />
 				<Key word="private" />
 				<Key word="internal" />
 			</KeyWords>
-			<KeyWords name="NameSpaces" bold="false" italic="false" color="#5BAAE0">
+			<KeyWords name="NameSpaces" bold="false" italic="false" color="#758EFF">
 				<Key word="namespace" />
 				<Key word="using" />
 			</KeyWords>
-			<KeyWords name="LockKeyWord" bold="false" italic="false" color="#FF00DC">
+			<KeyWords name="LockKeyWord" bold="false" italic="false" color="#BAB228">
 				<Key word="lock" />
 			</KeyWords>
-			<KeyWords name="GetSet" bold="false" italic="false" color="#FF00DC">
+			<KeyWords name="GetSet" bold="false" italic="false" color="#FF2DE3">
 				<Key word="get" />
 				<Key word="set" />
 				<Key word="add" />
 				<Key word="remove" />
 			</KeyWords>
-			<KeyWords name="Literals" bold="true" italic="false" color="#FF00DC">
+			<KeyWords name="Literals" bold="true" italic="false" color="#FF2DE3">
 				<Key word="null" />
 				<Key word="value" />
 			</KeyWords>
-			<KeyWords name="DotNetClassNames" bold="false" italic="false" color="#BCB000">
+			<KeyWords name="DotNetClassNames" bold="false" italic="false" color="#BAB228">
 				<Key word="AbandonedMutexException" />
 				<Key word="AccessedThroughPropertyAttribute" />
 				<Key word="AccessibleObject" />
