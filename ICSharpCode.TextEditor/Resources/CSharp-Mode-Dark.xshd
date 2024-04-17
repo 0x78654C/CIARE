@@ -54,9 +54,9 @@
 				<End>'</End>
 			</Span>
 			
-			<MarkPrevious bold = "true" italic = "false" color = "#6DFFFF">(</MarkPrevious>
+			<MarkPrevious bold = "true" italic = "false" color = "#3FEFFF">(</MarkPrevious>
 			
-			<KeyWords name="Punctuation" bold="false" italic="false" color="#91D8AF">
+			<KeyWords name="Punctuation" bold="false" italic="false" color="#961B00">
 				<Key word="?" />
 				<Key word="," />
 				<Key word="." />
