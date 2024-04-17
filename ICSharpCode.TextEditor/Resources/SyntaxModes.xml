@@ -26,7 +26,11 @@
 	<Mode file       = "CSharp-Mode-Dark.xshd"
 	      name       = "C#-Dark"
 	      extensions = ".cs"/>
-	
+  
+  <Mode file       = "CSharp-Mode-DarkVS.xshd"
+      name				 = "C#-DarkVS"
+      extensions   = ".cs"/>
+  
 	<Mode file       = "HTML-Mode.xshd"
 	      name       = "HTML"
 	      extensions = ".htm;.html"/>

@@ -75,6 +75,8 @@ namespace CIARE
                 HubConnectionBuild();
                 await ApiConnectionEvents.StartShare(MainForm.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
                     startLiveBtn, connectHostBtn, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
+                SetColorButtonsOnDisable(startLiveBtn, GlobalVariables.darkColor);
+                SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
             }
             catch (Exception ex)
             {
@@ -181,6 +183,8 @@ namespace CIARE
                 HubConnectionBuild();
                 await ApiConnectionEvents.Connect(this, MainForm.Instance.hubConnection, connectHostBtn, startLiveBtn,
                     GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
+                SetColorButtonsOnDisable(startLiveBtn, GlobalVariables.darkColor);
+                SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
             }
             catch (Exception ex)
             {
@@ -200,7 +204,12 @@ namespace CIARE
                 return;
 
             if (button.Enabled)
-                button.BackColor = Color.FromArgb(30, 30, 30);
+            {
+                if (GlobalVariables.isVStheme)
+                    button.BackColor = Color.FromArgb(30, 30, 30);
+                else
+                    button.BackColor = Color.FromArgb(2, 0, 10);
+            }
             else
                 button.BackColor = Color.Gray;
         }

@@ -30,21 +30,21 @@ namespace CIARE.GUI
         /// <param name="findButton"></param>
         public static void SetDarkModeMain(Form form, RichTextBox richTextBox, GroupBox groupBox,
             Label separator2, Label separator3, MenuStrip menuStrip,
-            List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList)
+            List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList, bool isVsTheme)
         {
-            form.BackColor = Color.FromArgb(51, 51, 51);
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             richTextBox.BackColor = Color.FromArgb(30, 30, 30);
             richTextBox.ForeColor = Color.FromArgb(192, 215, 207);
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
             separator2.ForeColor = Color.FromArgb(192, 215, 207);
             separator3.ForeColor = Color.FromArgb(192, 215, 207);
-            menuStrip.BackColor = Color.FromArgb(51, 51, 51);
+            menuStrip.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51) : Color.FromArgb(0, 1, 10);
             menuStrip.ForeColor = Color.FromArgb(192, 215, 207);
             menuStrip.Renderer = new ColorTableSet();
             foreach (var toolStripMenu in toolStripMenuList)
             {
-                toolStripMenu.BackColor = Color.FromArgb(51, 51, 51);
+                toolStripMenu.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51) : Color.FromArgb(0, 1, 10);
                 toolStripMenu.ForeColor = Color.FromArgb(192, 215, 207);
             }
             foreach (var toolStripSeparator in toolStripSeparatorList)
@@ -58,15 +58,15 @@ namespace CIARE.GUI
         /// </summary>
         /// <param name="form"></param>
         /// <param name="okButton"></param>
-        public static void AboutFormDarkMode(Form form, Button okButton, TextBox aboutMessage, PictureBox pictureBox)
+        public static void AboutFormDarkMode(Form form, Button okButton, TextBox aboutMessage, PictureBox pictureBox, bool isVsTheme)
         {
-            form.BackColor = Color.FromArgb(51, 51, 51);
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);;
             form.ForeColor = Color.FromArgb(192, 215, 207);
             okButton.BackColor = Color.FromArgb(30, 30, 30);
             okButton.ForeColor = Color.FromArgb(192, 215, 207);
             aboutMessage.BackColor = Color.FromArgb(30, 30, 30);
             aboutMessage.ForeColor = Color.FromArgb(192, 215, 207);
-            pictureBox.BackColor = Color.FromArgb(51, 51, 51);
+            pictureBox.BackColor = Color.FromArgb(0, 1, 10);
         }
         /// <summary>
         /// CMD Line Arguments and Set Binary Name form dark mode.
@@ -76,9 +76,9 @@ namespace CIARE.GUI
         /// <param name="cancelButton"></param>
         /// <param name="aboutMessage"></param>
         /// <param name="groupBox"></param>
-        public static void CMDLineArgsDarkMode(Form form, Button okButton, Button cancelButton, TextBox aboutMessage, GroupBox groupBox)
+        public static void CMDLineArgsDarkMode(Form form, Button okButton, Button cancelButton, TextBox aboutMessage, GroupBox groupBox, bool isVsTheme)
         {
-            form.BackColor = Color.FromArgb(51, 51, 51);
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);;
             form.ForeColor = Color.FromArgb(192, 215, 207);
             okButton.BackColor = Color.FromArgb(30, 30, 30);
             okButton.ForeColor = Color.FromArgb(192, 215, 207);
@@ -100,9 +100,9 @@ namespace CIARE.GUI
         /// <param name="groupBox"></param>
         /// <param name="ignoreCaseCkb"></param>
         public static void FinAndReplaceDarkMode(Form form, Button replaceBtn, Button replaceAllBtn, TextBox findWhatTxt,
-            TextBox replaceWithTxt, GroupBox groupBox, CheckBox ignoreCaseCkb, TabPage findTab, TabPage replaceTab, Button find,TextBox findTxt)
+            TextBox replaceWithTxt, GroupBox groupBox, CheckBox ignoreCaseCkb, TabPage findTab, TabPage replaceTab, Button find,TextBox findTxt, bool isVsTheme)
         {
-            form.BackColor = Color.FromArgb(51, 51, 51);
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51) : Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             replaceBtn.BackColor = Color.FromArgb(30, 30, 30);
             replaceBtn.ForeColor = Color.FromArgb(192, 215, 207);
@@ -114,9 +114,9 @@ namespace CIARE.GUI
             replaceWithTxt.ForeColor = Color.FromArgb(192, 215, 207);
             ignoreCaseCkb.ForeColor = Color.FromArgb(192, 215, 207);
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
-            findTab.BackColor = Color.FromArgb(51, 51, 51);
+            findTab.BackColor = Color.FromArgb(0, 1, 10);
             findTab.ForeColor = Color.FromArgb(192, 215, 207);
-            replaceTab.BackColor = Color.FromArgb(51, 51, 51);
+            replaceTab.BackColor = Color.FromArgb(0, 1, 10);
             replaceTab.ForeColor = Color.FromArgb(192, 215, 207);
             findTxt.BackColor = Color.FromArgb(30, 30, 30);
             findTxt.ForeColor = Color.FromArgb(192, 215, 207);
@@ -145,9 +145,9 @@ namespace CIARE.GUI
         /// <param name="liveShare"></param>
         public static void OptionsDarkMode(Form form, Button cancelBtn, Label highlightLbl, ComboBox highLightName,
             CheckBox codeCompletion, CheckBox lineNumber, CheckBox codeFolding, GroupBox displayBox, GroupBox buildBox, Label displaySetting ,Label behaveSetting, CheckBox startFile,
-            Label apiLabel, TextBox apiUrlTxt, Button saveApiBtn, GroupBox liveShare, GroupBox openAIgrp,Label apiAiLbl,Label tokenLbl, TextBox apiAIKey, TextBox maxTokens, Button saveAibtn)
+            Label apiLabel, TextBox apiUrlTxt, Button saveApiBtn, GroupBox liveShare, GroupBox openAIgrp,Label apiAiLbl,Label tokenLbl, TextBox apiAIKey, TextBox maxTokens, Button saveAibtn, bool isVsTheme)
         {
-            form.BackColor = Color.FromArgb(51, 51, 51);
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             cancelBtn.BackColor = Color.FromArgb(30, 30, 30);
             cancelBtn.ForeColor = Color.FromArgb(192, 215, 207);
@@ -196,9 +196,9 @@ namespace CIARE.GUI
         /// <param name="remotePasswordTxt"></param>
         /// <param name="remoteConnect"></param>
         public static void LiveShareDarkMode(Form form, GroupBox hostGrp, Label sessionLbl, TextBox sessionId, Label passwordLbl, TextBox password, Button startHost,
-            GroupBox remoteGrp, Label remoteSessionLbl, TextBox remoteSessionId, Label remotePasswordLbl, TextBox remotePasswordTxt, Button remoteConnect)
+            GroupBox remoteGrp, Label remoteSessionLbl, TextBox remoteSessionId, Label remotePasswordLbl, TextBox remotePasswordTxt, Button remoteConnect, bool isVsTheme)
         {
-            form.BackColor = Color.FromArgb(51, 51, 51);
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             hostGrp.ForeColor = Color.FromArgb(192, 215, 207);
             sessionLbl.ForeColor = Color.FromArgb(192, 215, 207);
@@ -228,9 +228,9 @@ namespace CIARE.GUI
         /// <param name="label"></param>
         /// <param name="textBox"></param>
         /// <param name="button"></param>
-        public static void ApiUrlCheckDarkMode(Form form,GroupBox groupBox, Label label,TextBox textBox, Button button)
+        public static void ApiUrlCheckDarkMode(Form form,GroupBox groupBox, Label label,TextBox textBox, Button button, bool isVsTheme)
         {
-            form.BackColor = Color.FromArgb(51, 51, 51);
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
             label.ForeColor = Color.FromArgb(192, 215, 207);

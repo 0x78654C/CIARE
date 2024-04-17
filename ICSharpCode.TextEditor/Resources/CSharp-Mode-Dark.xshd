@@ -4,14 +4,14 @@
 	<Environment>
 		<Custom name="TypeReference" bold="false" italic="false" color="#04ABAB" />
 		<Custom name="UnknownEntity" bold="false" italic="false" color="#AB0404" />
-		<Default bold="false" italic="false" color="White" bgcolor="#1E1E1E" />
+		<Default bold="false" italic="false" color="White" bgcolor="#02000a" />
 		<Selection bold="false" italic="false" color="#D4D0C8" bgcolor="Gray" />
-		<VRuler bold="false" italic="false" color="#1E1E1E" />
+		<VRuler bold="false" italic="false" color="#02000a" />
 		<InvalidLines bold="false" italic="false" color="#999999" />
 		<CaretMarker bold="false" italic="false" color="#999999" />
-		<LineNumbers bold="false" italic="false" color="#6897BB" bgcolor="#1E1E1E" />
+		<LineNumbers bold="false" italic="false" color="#6897BB" bgcolor="#02000a" />
 		<FoldLine bold="false" italic="false" color="Gray" bgcolor="Gray" />
-		<FoldMarker bold="false" italic="false" color="Gray" bgcolor="#1E1E1E" />
+		<FoldMarker bold="false" italic="false" color="Gray" bgcolor="#02000a" />
 		<SelectedFoldLine bold="false" italic="false" color="Gray" />
 		<EOLMarkers bold="false" italic="false" color="#999999" />
 		<SpaceMarkers bold="false" italic="false" color="#999999" />
@@ -45,18 +45,18 @@
 				<Begin>"</Begin>
 				<End>"</End>
 			</Span>
-			<Span name="MultiLineString" escapecharacter="&quot;" stopateol="false" bold="false" italic="false" color="#e5786d">
+			<Span name="MultiLineString" escapecharacter="&quot;" stopateol="false" bold="false" italic="false" color="#BAB228">
 				<Begin>@@"</Begin>
 				<End>"</End>
 			</Span>
-			<Span name="Char" escapecharacter="\" stopateol="true" bold="false" italic="false" color="#e5786d">
+			<Span name="Char" escapecharacter="\" stopateol="true" bold="false" italic="false" color="#BAB228">
 				<Begin>'</Begin>
 				<End>'</End>
 			</Span>
 			
-			<MarkPrevious bold = "true" italic = "false" color = "#A3E9FF">(</MarkPrevious>
+			<MarkPrevious bold = "true" italic = "false" color = "#3FEFFF">(</MarkPrevious>
 			
-			<KeyWords name="Punctuation" bold="false" italic="false" color="#A8DBBD">
+			<KeyWords name="Punctuation" bold="false" italic="false" color="#961B00">
 				<Key word="?" />
 				<Key word="," />
 				<Key word="." />
@@ -81,11 +81,11 @@
 				<Key word="|" />
 				<Key word="&amp;" />
 			</KeyWords>
-			<KeyWords name="AccessKeywords" bold="true" italic="false" color="#CAE682">
+			<KeyWords name="AccessKeywords" bold="true" italic="false" color="#FF2DE3">
 				<Key word="this" />
 				<Key word="base" />
 			</KeyWords>
-			<KeyWords name="OperatorKeywords" bold="true" italic="false" color="#cae682">
+			<KeyWords name="OperatorKeywords" bold="true" italic="false" color="#FF2DE3">
 				<Key word="as" />
 				<Key word="is" />
 				<Key word="new" />
@@ -95,27 +95,27 @@
 				<Key word="false" />
 				<Key word="stackalloc" />
 			</KeyWords>
-			<KeyWords name="SelectionStatements" bold="true" italic="false" color="#D8A0DF">
+			<KeyWords name="SelectionStatements" bold="true" italic="false" color="#00BE80">
 				<Key word="else" />
 				<Key word="if" />
 				<Key word="switch" />
 				<Key word="case" />
 				<Key word="default" />
 			</KeyWords>
-			<KeyWords name="IterationStatements" bold="true" italic="false" color="#D8A0DF">
+			<KeyWords name="IterationStatements" bold="true" italic="false" color="#00BE80">
 				<Key word="do" />
 				<Key word="for" />
 				<Key word="foreach" />
 				<Key word="in" />
 				<Key word="while" />
 			</KeyWords>
-			<KeyWords name="JumpStatements" bold="false" italic="false" color="#D8A0DF">
+			<KeyWords name="JumpStatements" bold="false" italic="false" color="#00BE80">
 				<Key word="break" />
 				<Key word="continue" />
 				<Key word="goto" />
 				<Key word="return" />
 			</KeyWords>
-			<KeyWords name="ContextKeywords" bold="false" italic="false" color="#D8A0DF">
+			<KeyWords name="ContextKeywords" bold="false" italic="false" color="#00BE80">
 				<Key word="yield" />
 				<Key word="partial" />
 				<Key word="global" />
@@ -134,7 +134,7 @@
 				<Key word="equals" />
 				<Key word="var" />
 			</KeyWords>
-			<KeyWords name="ExceptionHandlingStatements" bold="true" italic="false" color="#cae682">
+			<KeyWords name="ExceptionHandlingStatements" bold="true" italic="false" color="#00BE80">
 				<Key word="try" />
 				<Key word="throw" />
 				<Key word="catch" />
@@ -148,7 +148,7 @@
 				<Key word="fixed" />
 				<Key word="unsafe" />
 			</KeyWords>
-			<KeyWords name="ValueTypes" bold="true" italic="false" color="#e5786d">
+			<KeyWords name="ValueTypes" bold="true" italic="false" color="#BAB228">
 				<Key word="bool" />
 				<Key word="byte" />
 				<Key word="char" />
@@ -164,29 +164,37 @@
 				<Key word="uint" />
 				<Key word="ushort" />
 				<Key word="ulong" />
-			</KeyWords>
-			<KeyWords name="ReferenceTypes" bold="false" italic="false" color="#CAE682">
+        <Key word="IntPtr" />
+        <Key word="UIntPtr" />
+        <Key word="UInt32" />
+        <Key word="UInt64" />
+        <Key word="Int32" />
+        <Key word="Int64" />
+      	<Key word="string" />
+      </KeyWords>
+			<KeyWords name="ReferenceTypes" bold="false" italic="false" color="#FF2DE3">
 				<Key word="class" />
 				<Key word="interface" />
 				<Key word="delegate" />
 				<Key word="object" />
-				<Key word="string" />
 			</KeyWords>
-			<KeyWords name="Void" bold="false" italic="false" color="#CAE682">
+			<KeyWords name="Void" bold="false" italic="false" color="#BAB228">
 				<Key word="void" />
 			</KeyWords>
-			<KeyWords name="ConversionKeyWords" bold="true" italic="false" color="#cae682">
+			<KeyWords name="ConversionKeyWords" bold="true" italic="false" color="#FF2DE3">
 				<Key word="explicit" />
 				<Key word="implicit" />
 				<Key word="operator" />
 			</KeyWords>
-			<KeyWords name="MethodParameters" bold="true" italic="false" color="#cae682">
+			<KeyWords name="MethodParameters" bold="true" italic="false" color="#FF2DE3">
 				<Key word="params" />
 				<Key word="ref" />
 				<Key word="out" />
 			</KeyWords>
-			<KeyWords name="Modifiers" bold="false" italic="false" color="#cae682">
+			<KeyWords name="Modifiers" bold="false" italic="false" color="#758EFF">
 				<Key word="abstract" />
+        <Key word="await" />
+        <Key word="async" />
 				<Key word="const" />
 				<Key word="event" />
 				<Key word="extern" />
@@ -197,30 +205,30 @@
 				<Key word="virtual" />
 				<Key word="volatile" />
 			</KeyWords>
-			<KeyWords name="AccessModifiers" bold="false" italic="false" color="#8ac6f2">
+			<KeyWords name="AccessModifiers" bold="false" italic="false" color="#758EFF">
 				<Key word="public" />
 				<Key word="protected" />
 				<Key word="private" />
 				<Key word="internal" />
 			</KeyWords>
-			<KeyWords name="NameSpaces" bold="false" italic="false" color="#8ac6f2">
+			<KeyWords name="NameSpaces" bold="false" italic="false" color="#758EFF">
 				<Key word="namespace" />
 				<Key word="using" />
 			</KeyWords>
-			<KeyWords name="LockKeyWord" bold="false" italic="false" color="#cae682">
+			<KeyWords name="LockKeyWord" bold="false" italic="false" color="#BAB228">
 				<Key word="lock" />
 			</KeyWords>
-			<KeyWords name="GetSet" bold="false" italic="false" color="#cae682">
+			<KeyWords name="GetSet" bold="false" italic="false" color="#FF2DE3">
 				<Key word="get" />
 				<Key word="set" />
 				<Key word="add" />
 				<Key word="remove" />
 			</KeyWords>
-			<KeyWords name="Literals" bold="true" italic="false" color="#CAE682">
+			<KeyWords name="Literals" bold="true" italic="false" color="#FF2DE3">
 				<Key word="null" />
 				<Key word="value" />
 			</KeyWords>
-			<KeyWords name="DotNetClassNames" bold="false" italic="false" color="#e5786d">
+			<KeyWords name="DotNetClassNames" bold="false" italic="false" color="#BAB228">
 				<Key word="AbandonedMutexException" />
 				<Key word="AccessedThroughPropertyAttribute" />
 				<Key word="AccessibleObject" />
@@ -1221,6 +1229,7 @@
 				<Key word="HtmlWindowCollection" />
 				<Key word="HttpCachePolicyElement" />
 				<Key word="HttpContinueDelegate" />
+				<Key word="HttpClient" />
 				<Key word="HttpListener" />
 				<Key word="HttpListenerBasicIdentity" />
 				<Key word="HttpListenerContext" />
@@ -2573,6 +2582,7 @@
 				<Key word="TableLayoutStyle" />
 				<Key word="TableLayoutStyleCollection" />
 				<Key word="TabPage" />
+        <Key word="Task" />
 				<Key word="TabRenderer" />
 				<Key word="TaiwanCalendar" />
 				<Key word="TaiwanLunisolarCalendar" />

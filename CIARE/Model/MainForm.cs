@@ -430,12 +430,13 @@ namespace CIARE
                 textEditorControl.SetHighlighting(highlight);
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlight);
             }
-            if (highlight == "C#-Dark")
+            if (highlight.StartsWith("C#-Dark"))
             {
                 GlobalVariables.darkColor = true;
                 ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = true;
+                GlobalVariables.isVStheme = (highlight.EndsWith("VS")) ? true : false;
                 DarkModeMain.SetDarkModeMain(this, outputRBT, groupBox1, label2, label3,
-                    menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
+                    menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator(), GlobalVariables.isVStheme);
                 return;
             }
             GlobalVariables.darkColor = false;
@@ -975,7 +976,10 @@ namespace CIARE
             TabControllerManage.DrawTabControl(EditorTabControl, e);
 
             // Set transparent header bar.
-            TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 51, 51, 51);
+            if(GlobalVariables.isVStheme)
+                TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 51, 51, 51);
+            else
+                TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 0, 1, 10);
 
             // Color tab to red if live shared started on that index.
             if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)

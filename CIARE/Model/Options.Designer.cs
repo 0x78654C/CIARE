@@ -80,7 +80,7 @@ namespace CIARE
             // 
             highlightCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             highlightCMB.FormattingEnabled = true;
-            highlightCMB.Items.AddRange(new object[] { "Default", "C#-Light", "C#-Dark" });
+            highlightCMB.Items.AddRange(new object[] { "Default", "C#-Light", "C#-Dark", "C#-DarkVS" });
             highlightCMB.Location = new System.Drawing.Point(119, 67);
             highlightCMB.Name = "highlightCMB";
             highlightCMB.Size = new System.Drawing.Size(93, 23);
