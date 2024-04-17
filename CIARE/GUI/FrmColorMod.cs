@@ -19,7 +19,10 @@ namespace CIARE.GUI
         public static void ToogleColorMode(this Form form, bool dark)
         {
             ForeColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
-            BackGroundColor = dark ? Color.FromArgb(30, 30, 30) : SystemColors.Window;
+            if (GlobalVariables.isVStheme)
+                BackGroundColor = dark ? Color.FromArgb(30, 30, 30) : SystemColors.Window;
+            else
+                BackGroundColor = dark ? Color.FromArgb(2, 0, 10) : SystemColors.Window;
             ForeColorForm = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
             if(GlobalVariables.isVStheme)
                 BackGroundColorForm = dark ? Color.FromArgb(51, 51, 51) : SystemColors.Window;
