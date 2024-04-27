@@ -293,6 +293,8 @@ namespace CIARE
         /// <param name="e"></param>
         private void NewHotKeyTab(object sender, DoWorkEventArgs e)
         {
+            if (outputRBT.ForeColor == Color.Red)
+                GlobalVariables.isRed = true;
             TabControllerManage.AddNewTab(EditorTabControl);
         }
 
