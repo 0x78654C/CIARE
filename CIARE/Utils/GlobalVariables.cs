@@ -46,6 +46,8 @@ namespace CIARE.Utils
         public static bool OUnsafeCode = false;
         public static bool compileTime = false;
         public static bool codeWriter = false;
+        public static bool isRed = false;
+
         public static string Framework { get; set; } = "net6.0-windows";
         public static bool noClear { get; set; } = false;
         public static string binaryName = string.Empty;
