@@ -1,3 +1,4 @@
+using CIARE.Utils;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.Versioning;
@@ -34,7 +35,13 @@ namespace CIARE.GUI
             form.BackColor = (isVsTheme)? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             richTextBox.BackColor = (isVsTheme) ? Color.FromArgb(30, 30, 30) : Color.FromArgb(2, 0, 10);
-            richTextBox.ForeColor = Color.FromArgb(192, 215, 207);
+            if (GlobalVariables.isRed)
+            {
+                richTextBox.ForeColor = Color.Red;
+                GlobalVariables.isRed = false;
+            }
+            else
+                richTextBox.ForeColor = Color.FromArgb(192, 215, 207);
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
             separator2.ForeColor = Color.FromArgb(192, 215, 207);
             separator3.ForeColor = Color.FromArgb(192, 215, 207);
