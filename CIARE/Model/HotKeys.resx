@@ -127,7 +127,7 @@ CTRL + T         : Load C# Main template.
 
 ------------ Editor management ------------
 CTRL + Z         : Undo last modifications.
-CTRL + R         : Redo last modifications.
+CTRL + Y         : Redo last modifications.
 CTRL + Delete    : Delete words to right.
 CTRL + Backspace : Delete words to left.
 CTRL + D         : Delete current line.
