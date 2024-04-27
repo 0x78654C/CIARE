@@ -336,6 +336,12 @@ namespace CIARE
         {
             switch (keyData)
             {
+                case Keys.PageDown | Keys.Control:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
+                    return true;
+                case Keys.PageUp | Keys.Control:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
+                    return true;
                 case Keys.Q | Keys.Control:
                     LiveShareHost liveShareHost = new LiveShareHost();
                     liveShareHost.ShowDialog();
