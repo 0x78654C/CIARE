@@ -18,8 +18,9 @@ namespace CIARE.Utils
         public static readonly string tabsFilePathAll = $"{userProfileDirectory}tabsFilePathAll.cDat";
         public static string processArg = string.Empty;
         public static bool isStoringTabs = false;
-        public static string openedFilePath = string.Empty;
+        public static string openedFilePath { get; set; } = string.Empty;
         public static string openedFileName = string.Empty;
+        public static int openedFileLen = 0;
         public static string commandLineArguments = string.Empty;
         public static string findData = string.Empty;
         public static string findWhat = string.Empty;
