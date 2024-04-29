@@ -368,12 +368,6 @@ namespace CIARE
                 case Keys.Right | Keys.Control:
                     TabControllerManage.SwitchTabs(ref EditorTabControl, false);
                     return true;
-                case Keys.Left | Keys.Shift:
-                    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
-                    return true;
-                case Keys.Right | Keys.Shift:
-                    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
-                    return true;
                 case Keys.Tab | Keys.Control:
                     worker = new BackgroundWorker();
                     worker.DoWork += NewHotKeyTab;
