@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
+using System.Text;
 using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Reference;
@@ -99,6 +100,8 @@ MessageBoxIcon.Warning);
                         FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                         GlobalVariables.openedFileName = fileInfo.Name;
                         GlobalVariables.savedFile = true;
+                        var readData = File.ReadAllText(fileInfo.FullName, Encoding.UTF8);
+                        GlobalVariables.openedFileSize = readData.Length;
                     }
                 }
                 catch (Exception e)
@@ -361,6 +364,8 @@ MessageBoxIcon.Warning);
                     MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
                     StoreTabs(GlobalVariables.openedFilePath);
+                    var readData = File.ReadAllText(fileInfo.FullName, Encoding.UTF8);
+                    GlobalVariables.openedFileSize = readData.Length;
                     return;
                 }
                 SaveFile(SelectedEditor.GetSelectedEditor().Text);

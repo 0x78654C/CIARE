@@ -39,6 +39,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
+using System.Text;
 
 
 namespace CIARE
@@ -261,13 +262,26 @@ namespace CIARE
         /// <param name="e"></param>
         private void textEditorControl1_TextChanged(object sender, EventArgs e)
         {
-            string titleTab = EditorTabControl.SelectedTab.Text;
-            if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page"))
+            var path = EditorTabControl.SelectedTab.ToolTipText;
+            if (File.Exists(path))
             {
-                this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
-                string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
-                EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
+                var sizeTxt = Encoding.UTF8.GetByteCount(SelectedEditor.GetSelectedEditor().Text);
+                
+                //Remove * depende of file size in comparison text size.
+                if (GlobalVariables.openedFileSize != sizeTxt)
+                {
+                    this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                    string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
+                    EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
+                }
+                else
+                {
+                    this.Text = $"{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                    string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
+                    EditorTabControl.SelectedTab.Text = $"{curentTabTitle}";
+                }
             }
+
             LinesManage.GetTotalLinesCount(linesCountLbl);
             SelectedEditor.GetSelectedEditor().Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
             SelectedEditor.GetSelectedEditor().Document.FoldingManager.UpdateFoldings(null, null);
@@ -293,6 +307,8 @@ namespace CIARE
         /// <param name="e"></param>
         private void NewHotKeyTab(object sender, DoWorkEventArgs e)
         {
+            if (outputRBT.ForeColor == Color.Red)
+                GlobalVariables.isRed = true;
             TabControllerManage.AddNewTab(EditorTabControl);
         }
 
@@ -336,6 +352,12 @@ namespace CIARE
         {
             switch (keyData)
             {
+                case Keys.PageDown | Keys.Control:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
+                    return true;
+                case Keys.PageUp | Keys.Control:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
+                    return true;
                 case Keys.Q | Keys.Control:
                     LiveShareHost liveShareHost = new LiveShareHost();
                     liveShareHost.ShowDialog();
@@ -344,6 +366,12 @@ namespace CIARE
                     TabControllerManage.SwitchTabs(ref EditorTabControl, true);
                     return true;
                 case Keys.Right | Keys.Control:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
+                    return true;
+                case Keys.Left | Keys.Shift:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
+                    return true;
+                case Keys.Right | Keys.Shift:
                     TabControllerManage.SwitchTabs(ref EditorTabControl, false);
                     return true;
                 case Keys.Tab | Keys.Control:
@@ -863,10 +891,16 @@ namespace CIARE
                 GlobalVariables.openedFilePath = filePath;
                 var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                 GlobalVariables.openedFileName = fileInfo.Name;
+                if (File.Exists(filePath))
+                {
+                    var readData = File.ReadAllText(filePath, Encoding.UTF8);
+                    GlobalVariables.openedFileSize = readData.Length;
+                }
             }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
                 this.Text = $"{titleTab.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+
             }
             else
             {
@@ -976,7 +1010,7 @@ namespace CIARE
             TabControllerManage.DrawTabControl(EditorTabControl, e);
 
             // Set transparent header bar.
-            if(GlobalVariables.isVStheme)
+            if (GlobalVariables.isVStheme)
                 TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 51, 51, 51);
             else
                 TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 0, 1, 10);
@@ -985,6 +1019,8 @@ namespace CIARE
             if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
                 TabControllerManage.ColorTab(EditorTabControl, GlobalVariables.liveTabIndex, e, Color.Red);
             var taBindex = EditorTabControl.SelectedIndex;
+
+            // Color light green if editor data is unsaved.
             TabControllerManage.ColorTab(EditorTabControl, taBindex, e, Color.LightGray);
         }
 
@@ -1033,10 +1069,29 @@ namespace CIARE
         {
             TabControllerManage.CloseAllTabs(EditorTabControl, SelectedEditor.GetSelectedEditor());
         }
+
+        /// <summary>
+        /// Close all tabs but not selected one.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void closeAllTabsOne_Click(object sender, EventArgs e)
         {
             int index = EditorTabControl.SelectedIndex;
             TabControllerManage.CloseAllTabsOne(EditorTabControl, SelectedEditor.GetSelectedEditor(), index);
+        }
+
+        /// <summary>
+        /// Cancel left/right key scroll.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void EditorTabControl_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right)
+            {
+                e.Handled = true;
+            }
         }
     }
 }
