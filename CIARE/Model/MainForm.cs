@@ -39,6 +39,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
+using System.Text;
 
 
 namespace CIARE
@@ -261,13 +262,27 @@ namespace CIARE
         /// <param name="e"></param>
         private void textEditorControl1_TextChanged(object sender, EventArgs e)
         {
-            string titleTab = EditorTabControl.SelectedTab.Text;
-            if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page"))
+            var path = EditorTabControl.SelectedTab.ToolTipText;
+            if (File.Exists(path))
             {
-                this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
-                string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
-                EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
+                var fileInfo = File.ReadAllText(path,Encoding.UTF8);
+                var sizeTxt = Encoding.UTF8.GetByteCount(SelectedEditor.GetSelectedEditor().Text);
+
+                //Remove * depende of file size in comparison text size.
+                if (fileInfo.Length != sizeTxt)
+                {
+                    this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                    string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
+                    EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
+                }
+                else
+                {
+                    this.Text = $"{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                    string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
+                    EditorTabControl.SelectedTab.Text = $"{curentTabTitle}";
+                }
             }
+
             LinesManage.GetTotalLinesCount(linesCountLbl);
             SelectedEditor.GetSelectedEditor().Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
             SelectedEditor.GetSelectedEditor().Document.FoldingManager.UpdateFoldings(null, null);
@@ -875,6 +890,7 @@ namespace CIARE
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
                 this.Text = $"{titleTab.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+
             }
             else
             {
@@ -984,7 +1000,7 @@ namespace CIARE
             TabControllerManage.DrawTabControl(EditorTabControl, e);
 
             // Set transparent header bar.
-            if(GlobalVariables.isVStheme)
+            if (GlobalVariables.isVStheme)
                 TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 51, 51, 51);
             else
                 TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 0, 1, 10);
@@ -993,6 +1009,8 @@ namespace CIARE
             if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
                 TabControllerManage.ColorTab(EditorTabControl, GlobalVariables.liveTabIndex, e, Color.Red);
             var taBindex = EditorTabControl.SelectedIndex;
+
+            // Color light green if editor data is unsaved.
             TabControllerManage.ColorTab(EditorTabControl, taBindex, e, Color.LightGray);
         }
 
