@@ -368,6 +368,12 @@ namespace CIARE
                 case Keys.Right | Keys.Control:
                     TabControllerManage.SwitchTabs(ref EditorTabControl, false);
                     return true;
+                case Keys.Left | Keys.Shift:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
+                    return true;
+                case Keys.Right | Keys.Shift:
+                    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
+                    return true;
                 case Keys.Tab | Keys.Control:
                     worker = new BackgroundWorker();
                     worker.DoWork += NewHotKeyTab;
@@ -1063,10 +1069,29 @@ namespace CIARE
         {
             TabControllerManage.CloseAllTabs(EditorTabControl, SelectedEditor.GetSelectedEditor());
         }
+
+        /// <summary>
+        /// Close all tabs but not selected one.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void closeAllTabsOne_Click(object sender, EventArgs e)
         {
             int index = EditorTabControl.SelectedIndex;
             TabControllerManage.CloseAllTabsOne(EditorTabControl, SelectedEditor.GetSelectedEditor(), index);
+        }
+
+        /// <summary>
+        /// Cancel left/right key scroll.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void EditorTabControl_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right)
+            {
+                e.Handled = true;
+            }
         }
     }
 }

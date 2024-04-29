@@ -491,6 +491,7 @@ namespace CIARE
             EditorTabControl.HandleCreated += EditorTabControl_HandleCreated;
             EditorTabControl.MouseClick += EditorTabControl_MouseClick;
             EditorTabControl.MouseDown += EditorTabControl_MouseDown;
+            EditorTabControl.KeyDown += EditorTabControl_KeyDown;
             // 
             // tabPage1
             // 
