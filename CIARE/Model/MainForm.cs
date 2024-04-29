@@ -265,11 +265,10 @@ namespace CIARE
             var path = EditorTabControl.SelectedTab.ToolTipText;
             if (File.Exists(path))
             {
-                var fileInfo = File.ReadAllText(path,Encoding.UTF8);
                 var sizeTxt = Encoding.UTF8.GetByteCount(SelectedEditor.GetSelectedEditor().Text);
-
+                
                 //Remove * depende of file size in comparison text size.
-                if (fileInfo.Length != sizeTxt)
+                if (GlobalVariables.openedFileSize != sizeTxt)
                 {
                     this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
                     string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
@@ -886,6 +885,11 @@ namespace CIARE
                 GlobalVariables.openedFilePath = filePath;
                 var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                 GlobalVariables.openedFileName = fileInfo.Name;
+                if (File.Exists(filePath))
+                {
+                    var readData = File.ReadAllText(filePath, Encoding.UTF8);
+                    GlobalVariables.openedFileSize = readData.Length;
+                }
             }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
