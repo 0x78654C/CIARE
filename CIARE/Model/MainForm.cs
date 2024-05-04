@@ -147,7 +147,7 @@ namespace CIARE
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
-
+            InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
 
             //File open via parameters(Open with option..)
             string arg = ReadArgs(s_args);
@@ -529,6 +529,9 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            // Store tab index and line position of current opened tab.x
+            TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl.SelectedIndex, GlobalVariables.linePos);
+
             FileManage.ManageUnsavedData(SelectedEditor.GetSelectedEditor(), 0, true);
             if (GlobalVariables.noClear)
             {
@@ -555,6 +558,7 @@ namespace CIARE
 
             // Stop Live share if connected.
             Task.Run(() => _apiConnectionEvents.CloseConnection(hubConnection));
+
         }
 
         /// <summary>
