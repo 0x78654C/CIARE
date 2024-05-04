@@ -1,7 +1,10 @@
 ﻿using CIARE.GUI;
 using CIARE.Reference;
 using CIARE.Utils;
+using CIARE.Utils.Options;
 using System;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -87,13 +90,29 @@ namespace CIARE.Model
         private void DeleteRefLibrary(ListView refList)
         {
             var selecItem = refList.SelectedItems[0].Text;
+            var pathItem = refList.Items[refList.Items.IndexOf(refList.SelectedItems[0])].SubItems[1].Text;
             var dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference. Are you sure? ", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Warning);
             if (dialogResult == DialogResult.Yes)
             {
-                GlobalVariables.customRefAsm.RemoveAll(x => x.Contains(selecItem));
+                GlobalVariables.customRefAsm.RemoveAll(x => x.Contains(pathItem));
                 refList.SelectedItems[0].Remove();
             }
+            WeakReference testAlcWeakRef;
+            ExecuteAndUnload(pathItem, out testAlcWeakRef);
+            for (int i = 0; testAlcWeakRef.IsAlive && (i < 10); i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+        }
+
+        //TEST
+        private static void ExecuteAndUnload(string assemblyPath, out WeakReference alcWeakRef)
+        {
+            var alc = new AsmLoad(assemblyPath);
+            alcWeakRef = new WeakReference(alc, trackResurrection: true);
+            alc.Unload();
         }
 
         /// <summary>
