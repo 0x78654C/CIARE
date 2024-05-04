@@ -11,7 +11,6 @@ namespace CIARE.GUI
             MainForm.Instance.linesPositionLbl.Text = string.Empty;
             MainForm.Instance.linesCountLbl.Text = string.Empty;
             GlobalVariables.linePos = 0;
-            GlobalVariables.colPos = 0;
         }
     }
 }
