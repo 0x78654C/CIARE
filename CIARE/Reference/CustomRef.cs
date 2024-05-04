@@ -123,7 +123,7 @@ namespace CIARE.Reference
                     ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
                     if (string.IsNullOrEmpty(assemblyNamespace))
                         continue;
-                    if (!CheckItem(refList,assemblyNamespace) && (IsManaged(lib)))
+                    if (!CheckItem(refList, lib) && (IsManaged(lib)))
                         refList.Items.Add(item);
                 }
             }
@@ -141,10 +141,11 @@ namespace CIARE.Reference
         /// <returns></returns>
         private static bool CheckItem(ListView listView, string text)
         {
+            bool isPresent = false;
             for (int i = 0; i < listView.Items.Count; i++)
-                if (listView.Items[i].SubItems[0].Text == text)
-                   return true;
-            return false;
+                if (listView.Items[i].SubItems[1].Text == text)
+                    isPresent = true;
+            return isPresent;
         }
     }
 }
