@@ -21,7 +21,6 @@ namespace CIARE.Utils
                 var linePos = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Position.Line + 1;
                 var colPos = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Column;
                 GlobalVariables.linePos = linePos;
-                GlobalVariables.colPos = colPos;
                 MainForm.Instance.linesPositionLbl.Text =
                     $"[Line {linePos}, Col {colPos}]";
             }
