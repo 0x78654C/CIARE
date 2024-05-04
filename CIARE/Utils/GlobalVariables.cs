@@ -83,6 +83,9 @@ namespace CIARE.Utils
         public static readonly string OConfigParam = "OConfigParam";
         public static readonly string OPlatformParam = "OPlatformParam";
         public static readonly string OFramework = "OFramework";
+        public static readonly string lastTabPosition = "lastTabPosition";
+        public static int linePos = 0;
+        public static int colPos = 0;
         public static int selectedIndex = 0;
         //output richtextbox zoomfactor varlue store;
         public static float zoomFactor = 1f;
