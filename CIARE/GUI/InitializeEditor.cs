@@ -1,4 +1,5 @@
 ﻿using CIARE.Utils;
+using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using System;
 using System.Drawing;
@@ -222,6 +223,26 @@ namespace CIARE.GUI
             }
             catch (Exception)
             { // Ignore
+            }
+        }
+
+        /// <summary>
+        /// Select position and line from reg data.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="regPos"></param>
+        public static void GetTabIndexPosLine(string regKeyName, string regPos, TabControl tabControl)
+        {
+            string regLastPos = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regPos);
+            if (regLastPos.Length > 0)
+            {
+                var pos = Int32.Parse(regLastPos.Split('|')[0]);
+                var line = Int32.Parse(regLastPos.Split('|')[1]);
+                if(pos > 0)
+                    tabControl.SelectedIndex = pos;
+
+                if (line > 0)
+                    GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), line);
             }
         }
     }
