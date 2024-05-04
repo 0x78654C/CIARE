@@ -239,10 +239,19 @@ namespace CIARE.GUI
                 var pos = Int32.Parse(regLastPos.Split('|')[0]);
                 var line = Int32.Parse(regLastPos.Split('|')[1]);
                 if(pos > 0)
-                    tabControl.SelectedIndex = pos;
+                    if(pos == 1)
+                        tabControl.SelectedIndex = pos + 1;
+                     else
+                        tabControl.SelectedIndex = pos;
 
                 if (line > 0)
-                    GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), line);
+                {
+                    var lineNumber = SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines;
+                    if (line <= lineNumber)
+                        GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), line);
+                    else
+                        GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), 0);
+                }
             }
         }
     }
