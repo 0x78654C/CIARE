@@ -913,6 +913,10 @@ namespace CIARE
 
             //TODO: Will see in future if is needed
             // FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath);
+
+            // Clear line/col position on new tab switch
+            ClearInfoLinescs.ClearLinesInfo();
+            LinesManage.GetTotalLinesCount(linesCountLbl);
         }
 
         /// <summary>
