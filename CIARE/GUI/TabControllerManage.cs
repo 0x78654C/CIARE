@@ -549,5 +549,15 @@ namespace CIARE.GUI
             background.Size = new Size(tabControl.Right - background.Left, lasttabrect.Height + 1);
             e.Graphics.FillRectangle(fillbrush, background);
         }
+
+        /// <summary>
+        /// Store tab index, line pos in registri.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="regPos"></param>
+        /// <param name="tabIndex"></param>
+        /// <param name="linePos"></param>
+        public static void StoreTabPosition(string regKeyName,string regPos, int tabIndex, int linePos)
+           => RegistryManagement.RegKey_WriteSubkey(regKeyName, regPos, $"{tabIndex}|{linePos}");
     }
 }
