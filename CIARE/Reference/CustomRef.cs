@@ -7,12 +7,15 @@ using System.Collections.Generic;
 using System.IO;
 using System;
 using CIARE.Roslyn;
+using System.Xml.XPath;
 
 namespace CIARE.Reference
 {
     [SupportedOSPlatform("Windows")]
     public class CustomRef
     {
+        private static bool s_isInList = false;
+
         /// <summary>
         /// Check if  a library is managed.
         /// </summary>
@@ -40,8 +43,11 @@ namespace CIARE.Reference
         {
             try
             {
+                refList = refList.Distinct().ToList();
                 foreach (var libPath in refList)
                 {
+                    if (s_isInList) continue;
+
                     var checkASM = LibLoaded.CheckLoadedAssembly(libPath);
 
                     if (checkASM) continue;
@@ -119,6 +125,7 @@ namespace CIARE.Reference
             {
                 foreach (var lib in libPath)
                 {
+
                     string assemblyNamespace = GetAssemblyNamespace(lib);
                     ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
                     if (string.IsNullOrEmpty(assemblyNamespace))
@@ -126,6 +133,8 @@ namespace CIARE.Reference
                     FileInfo fileInfo = new FileInfo(lib);
                     if (!CheckItem(refList, fileInfo.Name) && (IsManaged(lib)))
                         refList.Items.Add(item);
+                    else
+                        s_isInList = true;
                 }
             }
             catch
