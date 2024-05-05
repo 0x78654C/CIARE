@@ -238,18 +238,15 @@ namespace CIARE.GUI
             {
                 var pos = Int32.Parse(regLastPos.Split('|')[0]);
                 var line = Int32.Parse(regLastPos.Split('|')[1]);
-                if(pos > 0)
-                    if(pos == 1)
-                        tabControl.SelectedIndex = pos + 1;
-                     else
-                        tabControl.SelectedIndex = pos;
+                if (pos > 0)
+                      tabControl.SelectedIndex = pos;
 
                 if (line > 0)
                 {
                     var lineNumber = SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines;
                     if (line <= lineNumber)
                     {
-                        if(line > 20)
+                        if (line > 20)
                             GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), line - 10);
                         else
                             GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), 0);
