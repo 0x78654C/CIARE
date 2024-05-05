@@ -248,7 +248,12 @@ namespace CIARE.GUI
                 {
                     var lineNumber = SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines;
                     if (line <= lineNumber)
-                        GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), line);
+                    {
+                        if(line > 20)
+                            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), line - 10);
+                        else
+                            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), 0);
+                    }
                     else
                         GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), 0);
                 }
