@@ -123,7 +123,8 @@ namespace CIARE.Reference
                     ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
                     if (string.IsNullOrEmpty(assemblyNamespace))
                         continue;
-                    if (!CheckItem(refList, lib) && (IsManaged(lib)))
+                    FileInfo fileInfo = new FileInfo(lib);
+                    if (!CheckItem(refList, fileInfo.Name) && (IsManaged(lib)))
                         refList.Items.Add(item);
                 }
             }
@@ -143,7 +144,7 @@ namespace CIARE.Reference
         {
             bool isPresent = false;
             for (int i = 0; i < listView.Items.Count; i++)
-                if (listView.Items[i].SubItems[1].Text == text)
+                if (listView.Items[i].SubItems[1].Text.EndsWith(text))
                     isPresent = true;
             return isPresent;
         }
