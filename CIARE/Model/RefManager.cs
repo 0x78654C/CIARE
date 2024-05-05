@@ -1,10 +1,12 @@
 ﻿using CIARE.GUI;
 using CIARE.Reference;
+using CIARE.Roslyn;
 using CIARE.Utils;
 using CIARE.Utils.Options;
 using System;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+using System.Xml.XPath;
 
 namespace CIARE.Model
 {
@@ -46,7 +48,7 @@ namespace CIARE.Model
             CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
 
             // Load assemblies from list.
-            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
+            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm, refListView);
         }
 
         /// <summary>
@@ -96,29 +98,13 @@ MessageBoxIcon.Warning);
                 GlobalVariables.customRefAsm.RemoveAll(x => x.Contains(pathItem));
                 refList.SelectedItems[0].Remove();
             }
-            try
-            {
-                WeakReference testAlcWeakRef;
-                ExecuteAndUnload(pathItem, out testAlcWeakRef);
-                for (int i = 0; testAlcWeakRef.IsAlive && (i < 10); i++)
-                {
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                }
-            }catch(Exception e)
-            {
-                MessageBox.Show(e.ToString(), "CIARE", MessageBoxButtons.OK,
-MessageBoxIcon.Error);
-            }
+            MainForm.Instance.outputRBT.Clear();
+            foreach (var asm in GlobalVariables.customRefAsm)
+                MainForm.Instance.outputRBT.Text += $"{asm}\n";
+
+           LibLoaded.RemoveRef(pathItem);
         }
 
-        //TEST
-        private static void ExecuteAndUnload(string assemblyPath, out WeakReference alcWeakRef)
-        {
-            var alc = new AsmLoad(assemblyPath);
-            alcWeakRef = new WeakReference(alc, trackResurrection: true);
-            alc.Unload();
-        }
 
         /// <summary>
         /// Set namespace to clipborad.
