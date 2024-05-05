@@ -14,10 +14,9 @@ namespace CIARE.Utils
         {
             TextArea textArea = textEditorControl.ActiveTextAreaControl.TextArea;
             textArea.Caret.Line = lineNumber - 1;
-            textArea.Caret.UpdateCaretPosition();
+            textArea.ScrollToCaret();
         }
-        
-
+     
         /// <summary>
         /// Set position of caret by column and line.
         /// </summary>
