@@ -96,12 +96,19 @@ MessageBoxIcon.Warning);
                 GlobalVariables.customRefAsm.RemoveAll(x => x.Contains(pathItem));
                 refList.SelectedItems[0].Remove();
             }
-            WeakReference testAlcWeakRef;
-            ExecuteAndUnload(pathItem, out testAlcWeakRef);
-            for (int i = 0; testAlcWeakRef.IsAlive && (i < 10); i++)
+            try
             {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
+                WeakReference testAlcWeakRef;
+                ExecuteAndUnload(pathItem, out testAlcWeakRef);
+                for (int i = 0; testAlcWeakRef.IsAlive && (i < 10); i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+            }catch(Exception e)
+            {
+                MessageBox.Show(e.ToString(), "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Error);
             }
         }
 
