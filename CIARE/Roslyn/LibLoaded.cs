@@ -1,9 +1,11 @@
-﻿using System;
+﻿using CIARE.Utils.Options;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Versioning;
+using System.Windows.Forms;
 
 namespace CIARE.Roslyn
 {
@@ -44,6 +46,7 @@ namespace CIARE.Roslyn
         /// </summary>
         /// <param name="packageName"></param>
         /// <returns></returns>
+        
         public static bool CheckLoadedAssembly(string libPath)
         {
             if (!File.Exists(libPath))
@@ -51,6 +54,49 @@ namespace CIARE.Roslyn
             FileInfo fileInfo = new FileInfo(libPath);
             var NameSpace =fileInfo.Name.Replace(".dll",string.Empty);
             return _assemblies.Where(key => key.Key == NameSpace).Any();
+        }
+        
+        // test
+        public static bool CheckLoadedAssembly1(string libPath)
+        {
+            if (!File.Exists(libPath))
+                return false;
+            FileInfo fileInfo = new FileInfo(libPath);
+            var nameSpace = fileInfo.Name.Replace(".dll", string.Empty);
+            var listRef = AppDomain.CurrentDomain.GetAssemblies();
+            bool isLoaded = listRef.Any(key=> key.FullName.StartsWith(nameSpace));
+            return isLoaded;
+        }
+
+        /// <summary>
+        /// Remove custom added library reference.
+        /// </summary>
+        /// <param name="libPath"></param>
+        public static void RemoveRef(string libPath)
+        {
+            try
+            {
+                WeakReference testAlcWeakRef;
+                ExecuteAndUnload(libPath, out testAlcWeakRef);
+                for (int i = 0; testAlcWeakRef.IsAlive && (i < 10); i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.ToString(), "CIARE", MessageBoxButtons.OK,
+MessageBoxIcon.Error);
+            }
+        }
+
+        //TEST
+        private static void ExecuteAndUnload(string assemblyPath, out WeakReference alcWeakRef)
+        {
+            var alc = new AsmLoad(assemblyPath);
+            alcWeakRef = new WeakReference(alc, trackResurrection: true);
+            alc.Unload();
         }
     }
 }
