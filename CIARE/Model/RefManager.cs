@@ -92,6 +92,7 @@ namespace CIARE.Model
             var dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference. Are you sure? ", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Warning);
             MainForm.Instance.outputRBT.Clear();
+            //test
             foreach (var item in GlobalVariables.customRefAsm)
             {
                 MainForm.Instance.outputRBT.Text += $"{item}\n";
