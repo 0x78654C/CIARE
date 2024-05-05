@@ -98,6 +98,7 @@ MessageBoxIcon.Warning);
                 GlobalVariables.customRefAsm.RemoveAll(x => x.Contains(pathItem));
                 refList.SelectedItems[0].Remove();
             }
+            //test
             MainForm.Instance.outputRBT.Clear();
             foreach (var asm in GlobalVariables.customRefAsm)
                 MainForm.Instance.outputRBT.Text += $"{asm}\n";
