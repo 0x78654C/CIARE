@@ -98,6 +98,7 @@ namespace CIARE.Utils
         public static string model = string.Empty;
         // --Reference----
         public static List<string> customRefAsm = new List<string>(); // Used to store custom asspably path file.
+        public static List<string> customRefList= new List<string>();
         //- NuGet-
         public static readonly string downloadNugetPath = $"{userProfileDirectory}nuget\\";
         public static List<string> nugetPackage = new List<string>();
