@@ -5,9 +5,8 @@ using System.Windows.Forms;
 using System.Runtime.Versioning;
 using System.Collections.Generic;
 using System.IO;
-using System;
 using CIARE.Roslyn;
-using System.Xml.XPath;
+using CIARE.Utils;
 
 namespace CIARE.Reference
 {
@@ -43,7 +42,6 @@ namespace CIARE.Reference
         {
             try
             {
-                refList = refList.Distinct().ToList();
                 foreach (var libPath in refList)
                 {
                     if (s_isInList) continue;
@@ -119,22 +117,40 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="libPath"></param>
         /// <param name="refList"></param>
-        public static void PopulateList(List<string> libPath, ListView refList)
+        public static void PopulateList(List<string> libPath, ListView refList, bool isFormLoading = false)
         {
             try
             {
-                foreach (var lib in libPath)
+                if (!isFormLoading)
                 {
-
-                    string assemblyNamespace = GetAssemblyNamespace(lib);
-                    ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
-                    if (string.IsNullOrEmpty(assemblyNamespace))
-                        continue;
-                    FileInfo fileInfo = new FileInfo(lib);
-                    if (!CheckItem(refList, fileInfo.Name) && (IsManaged(lib)))
+                    foreach (var lib in libPath)
+                    {
+                        if (!isFormLoading)
+                        {
+                            string assemblyNamespace = GetAssemblyNamespace(lib);
+                            ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
+                            if (string.IsNullOrEmpty(assemblyNamespace))
+                                continue;
+                            FileInfo fileInfo = new FileInfo(lib);
+                            if (!CheckItem(refList, fileInfo.Name) && (IsManaged(lib)))
+                            {
+                                refList.Items.Add(item);
+                                GlobalVariables.customRefList.Add($"{assemblyNamespace}|{ lib}");
+                            }
+                            else
+                                s_isInList = true;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var dItem in GlobalVariables.customRefList)
+                    {
+                        var asmName = dItem.Split('|')[0];
+                        var lib = dItem.Split('|')[1];
+                        ListViewItem item = new ListViewItem(new[] { asmName, lib });
                         refList.Items.Add(item);
-                    else
-                        s_isInList = true;
+                    }
                 }
             }
             catch
