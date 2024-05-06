@@ -4,6 +4,8 @@ using CIARE.Roslyn;
 using CIARE.Utils;
 using CIARE.Utils.Options;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 using System.Xml.XPath;
@@ -32,7 +34,7 @@ namespace CIARE.Model
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
 
             // Populate listview with ref.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView, true);
         }
 
         /// <summary>
@@ -97,6 +99,8 @@ MessageBoxIcon.Warning);
             {
                 GlobalVariables.customRefAsm.RemoveAll(x => x.Contains(pathItem));
                 refList.SelectedItems[0].Remove();
+                var item = $"{selecItem}|{pathItem}";
+                GlobalVariables.customRefList.Remove(item);
             }
             //test
             MainForm.Instance.outputRBT.Clear();
