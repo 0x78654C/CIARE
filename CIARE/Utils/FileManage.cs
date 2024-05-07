@@ -540,12 +540,14 @@ MessageBoxIcon.Information);
                 foreach (var file in s_packageLibs)
                 {
                     if (file.Contains(@"\analyzers\")) continue;
+                    if (file.Contains(@"\ref\")) continue; //texst
                     if (file.Contains(@$"\{framework}\") && file.Contains(@"\lib\") && file.EndsWith(".dll"))
                     {
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
-                            GlobalVariables.customRefAsm.Add(file);
+                            if (!GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
+                                GlobalVariables.customRefAsm.Add(file);
                             break;
                         }
                     }
@@ -555,7 +557,8 @@ MessageBoxIcon.Information);
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
-                            GlobalVariables.customRefAsm.Add(file);
+                            if (!GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
+                                GlobalVariables.customRefAsm.Add(file);
                             break;
                         }
                     }
@@ -565,7 +568,8 @@ MessageBoxIcon.Information);
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
-                            GlobalVariables.customRefAsm.Add(file);
+                            if(!GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
+                                GlobalVariables.customRefAsm.Add(file);
                             break;
                         }
                     }
