@@ -5,6 +5,7 @@ using CIARE.Utils;
 using CIARE.Utils.Options;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -97,10 +98,15 @@ namespace CIARE.Model
 MessageBoxIcon.Warning);
             if (dialogResult == DialogResult.Yes)
             {
-                GlobalVariables.customRefAsm.RemoveAll(x => x.Contains(pathItem));
+                FileInfo fileInfo = new FileInfo(pathItem);
+                foreach (var item in GlobalVariables.customRefAsm)
+                    if (item.EndsWith(fileInfo.Name))
+                        GlobalVariables.blackRefList.Add(item);
+                GlobalVariables.customRefAsm.RemoveAll(x => x.EndsWith(fileInfo.Name));
                 refList.SelectedItems[0].Remove();
-                var item = $"{selecItem}|{pathItem}";
-                GlobalVariables.customRefList.Remove(item);
+                GlobalVariables.customRefList.RemoveAll(x => x.EndsWith(fileInfo.Name));
+                //CustomRef.DeleteNuGetLibs(GlobalVariables.downloadNugetPath, pathItem);
+
             }
             //test
             MainForm.Instance.outputRBT.Clear();
