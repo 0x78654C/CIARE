@@ -239,7 +239,16 @@ namespace CIARE.GUI
                 var pos = Int32.Parse(regLastPos.Split('|')[0]);
                 var line = Int32.Parse(regLastPos.Split('|')[1]);
                 if (pos > 0)
-                      tabControl.SelectedIndex = pos;
+                {
+                    tabControl.SelectedIndex = pos;
+                    string filePath = tabControl.SelectedTab.ToolTipText.Trim();
+                    if (!string.IsNullOrEmpty(filePath))
+                    {
+                        GlobalVariables.openedFilePath = filePath;
+                        var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                        GlobalVariables.openedFileName = fileInfo.Name;
+                    }
+                }
 
                 if (line > 0)
                 {
