@@ -55,6 +55,7 @@ namespace CIARE.Reference
                         Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
                 }
                 MainForm.Instance.ReloadRef();
+                GlobalVariables.customRefAsm.Clear();
             }
             catch
             {
