@@ -52,6 +52,7 @@ namespace CIARE.Model
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
+
         }
 
         /// <summary>
