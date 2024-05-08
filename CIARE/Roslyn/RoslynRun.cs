@@ -27,7 +27,7 @@ namespace CIARE.Roslyn
         private static Stopwatch s_stopWatch;
         private static TimeSpan s_timeSpan;
         private static string[] s_commandLineArguments = null;
-
+        private static AssemblyLoadContext s_assemblyLoad;
         /// <summary>
         /// Compile and run C# using Roslyn.
         /// </summary>
@@ -315,17 +315,19 @@ namespace CIARE.Roslyn
         private static IEnumerable<MetadataReference> References(bool isCompiled)
         {
             var refList = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).Select(refs => MetadataReference.CreateFromFile(refs)).Cast<MetadataReference>().ToList();
-            var customRefList = GlobalVariables.customRefAsm;
+            var customRefList = GlobalVariables.customRefList;
+            s_assemblyLoad = AssemblyLoadContext.Default;
             foreach (var libPath in customRefList)
             {
-                if (!isCompiled && !string.IsNullOrEmpty(libPath))
+                var lib = libPath.Split('|')[1];
+                if (!isCompiled && !string.IsNullOrEmpty(lib))
                 {
-                    var existAsm = LibLoaded.CheckLoadedAssembly(libPath);
+                    var existAsm = LibLoaded.CheckLoadedAssembly(lib);
                     if (existAsm) continue;
                 }
-                var stream = File.OpenRead(libPath);
-                AssemblyLoadContext.Default.LoadFromStream(stream);
-                var r = MetadataReference.CreateFromFile(libPath);
+                var stream = File.OpenRead(lib);
+                s_assemblyLoad.LoadFromStream(stream);
+                var r = MetadataReference.CreateFromFile(lib);
                 refList.Add(r);
             }
             return refList;
