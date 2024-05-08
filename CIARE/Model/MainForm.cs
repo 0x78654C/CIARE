@@ -147,7 +147,6 @@ namespace CIARE
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
-            InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
 
             //File open via parameters(Open with option..)
             string arg = ReadArgs(s_args);
@@ -155,6 +154,8 @@ namespace CIARE
             //----------------------------------
 
             ReloadRef();
+            InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
+
         }
 
         private void SetCodeCompletion(int index)
