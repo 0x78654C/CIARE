@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -78,7 +79,7 @@ namespace CIARE.Roslyn
             {
                 WeakReference testAlcWeakRef;
                 ExecuteAndUnload(libPath, out testAlcWeakRef);
-                for (int i = 0; testAlcWeakRef.IsAlive && (i < 10); i++)
+                for (int i = 0; testAlcWeakRef.IsAlive && (i < 100); i++)
                 {
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
@@ -91,7 +92,7 @@ MessageBoxIcon.Error);
             }
         }
 
-        //TEST
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ExecuteAndUnload(string assemblyPath, out WeakReference alcWeakRef)
         {
             var alc = new AsmLoad(assemblyPath);
