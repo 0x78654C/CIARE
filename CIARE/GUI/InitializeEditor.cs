@@ -249,7 +249,7 @@ namespace CIARE.GUI
                         GlobalVariables.openedFileName = fileInfo.Name;
                     }
                 }
-
+                /*
                 if (line > 0)
                 {
                     var lineNumber = SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines;
@@ -263,6 +263,7 @@ namespace CIARE.GUI
                     else
                         GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), 0);
                 }
+                */
             }
         }
     }
