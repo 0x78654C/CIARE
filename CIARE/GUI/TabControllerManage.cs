@@ -557,7 +557,7 @@ namespace CIARE.GUI
         /// <param name="regPos"></param>
         /// <param name="tabIndex"></param>
         /// <param name="linePos"></param>
-        public static void StoreTabPosition(string regKeyName,string regPos, int tabIndex, int linePos)
-           => RegistryManagement.RegKey_WriteSubkey(regKeyName, regPos, $"{tabIndex}|{linePos}");
+        public static void StoreTabPosition(string regKeyName,string regPos, string toolTipText)
+           => RegistryManagement.RegKey_WriteSubkey(regKeyName, regPos, $"{toolTipText}");
     }
 }
