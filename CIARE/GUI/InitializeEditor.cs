@@ -227,7 +227,7 @@ namespace CIARE.GUI
         }
 
         /// <summary>
-        /// Select position and line from reg data.
+        /// Select tab by stored tab text from registry.
         /// </summary>
         /// <param name="regKeyName"></param>
         /// <param name="regPos"></param>
@@ -236,34 +236,25 @@ namespace CIARE.GUI
             string regLastPos = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regPos);
             if (regLastPos.Length > 0)
             {
-                var pos = Int32.Parse(regLastPos.Split('|')[0]);
-                var line = Int32.Parse(regLastPos.Split('|')[1]);
-                if (pos > 0)
+                var tabSaved = regLastPos.Split('|')[0];
+                if (tabSaved.Length > 0)
                 {
-                    tabControl.SelectedIndex = pos;
-                    string filePath = tabControl.SelectedTab.ToolTipText.Trim();
-                    if (!string.IsNullOrEmpty(filePath))
+                    foreach (TabPage tab in tabControl.TabPages)
                     {
-                        GlobalVariables.openedFilePath = filePath;
-                        var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                        GlobalVariables.openedFileName = fileInfo.Name;
+                        if (tab.Text == tabSaved)
+                        {
+                            tabControl.SelectTab(tab);
+                            string filePath = tabControl.SelectedTab.ToolTipText.Trim();
+                            if (!string.IsNullOrEmpty(filePath))
+                            {
+                                GlobalVariables.openedFilePath = filePath;
+                                var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                                GlobalVariables.openedFileName = fileInfo.Name;
+                            }
+                            break;
+                        }
                     }
                 }
-                /*
-                if (line > 0)
-                {
-                    var lineNumber = SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines;
-                    if (line <= lineNumber)
-                    {
-                        if (line > 20)
-                            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), line - 10);
-                        else
-                            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), 0);
-                    }
-                    else
-                        GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), 0);
-                }
-                */
             }
         }
     }
