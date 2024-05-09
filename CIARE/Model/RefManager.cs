@@ -95,25 +95,23 @@ namespace CIARE.Model
         {
             var selecItem = refList.SelectedItems[0].Text;
             var pathItem = refList.Items[refList.Items.IndexOf(refList.SelectedItems[0])].SubItems[1].Text;
-            var dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference. Are you sure? ", "CIARE", MessageBoxButtons.YesNo,
+            DialogResult dialogResult;
+            if (pathItem.Contains(GlobalVariables.downloadNugetPath))
+             dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference.\nNuGet package's can be only readded after application restart.\nAre you sure that you want to remove? ", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Warning);
+            else
+                dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference.\nAre you sure that you want to remove? ", "CIARE", MessageBoxButtons.YesNo,
+   MessageBoxIcon.Warning);
             if (dialogResult == DialogResult.Yes)
             {
                 FileInfo fileInfo = new FileInfo(pathItem);
                 foreach (var item in GlobalVariables.customRefAsm)
-                    if (item.EndsWith(fileInfo.Name))
+                    if (item.EndsWith(fileInfo.Name) && item.Contains(GlobalVariables.downloadNugetPath))
                         GlobalVariables.blackRefList.Add(item);
                 GlobalVariables.customRefAsm.RemoveAll(x => x.EndsWith(fileInfo.Name));
                 refList.SelectedItems[0].Remove();
                 GlobalVariables.customRefList.RemoveAll(x => x.EndsWith(fileInfo.Name));
-                //CustomRef.DeleteNuGetLibs(GlobalVariables.downloadNugetPath, pathItem);
-
             }
-            //test
-            MainForm.Instance.outputRBT.Clear();
-            foreach (var asm in GlobalVariables.customRefAsm)
-                MainForm.Instance.outputRBT.Text += $"{asm}\n";
-
            LibLoaded.RemoveRef(pathItem);
         }
 
