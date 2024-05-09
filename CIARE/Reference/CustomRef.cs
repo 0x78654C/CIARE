@@ -55,7 +55,6 @@ namespace CIARE.Reference
                         Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
                 }
                 MainForm.Instance.ReloadRef();
-                GlobalVariables.customRefAsm.Clear();
             }
             catch
             {
@@ -125,8 +124,6 @@ namespace CIARE.Reference
             {
                 if (!isFormLoading)
                 {
-                    MainForm.Instance.outputRBT.Clear();
-
                     foreach (var lib in libPath)
                     {
                         if (!isFormLoading)
