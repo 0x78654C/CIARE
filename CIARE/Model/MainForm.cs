@@ -530,8 +530,8 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // Store tab index and line position of current opened tab.x
-            TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl.SelectedIndex, GlobalVariables.linePos);
+            // Store tab text of current opened tab.
+            TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl.SelectedTab.Text);
 
             FileManage.ManageUnsavedData(SelectedEditor.GetSelectedEditor(), 0, true);
             if (GlobalVariables.noClear)
