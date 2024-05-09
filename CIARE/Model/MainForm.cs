@@ -353,6 +353,10 @@ namespace CIARE
         {
             switch (keyData)
             {
+                case Keys.End:
+                    return true;
+                case Keys.Home:
+                    return true;
                 case Keys.PageDown | Keys.Control:
                     TabControllerManage.SwitchTabs(ref EditorTabControl, true);
                     return true;
