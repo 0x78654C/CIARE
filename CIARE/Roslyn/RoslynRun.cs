@@ -57,7 +57,7 @@ namespace CIARE.Roslyn
                     assemblyName,
                     syntaxTrees: new[] { syntaxTree },
                     references: References(false),
-                    options: new CSharpCompilationOptions(OutputKind.ConsoleApplication, true, null, null,
+                    options: new CSharpCompilationOptions(OutputKind.WindowsApplication, true, null, null,
                      null, null, OptimizationLevelState(), false, allowUnsafe, null, null,
                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
 
