@@ -224,5 +224,37 @@ namespace CIARE.GUI
             { // Ignore
             }
         }
+
+        /// <summary>
+        /// Select tab by stored tab text from registry.
+        /// </summary>
+        /// <param name="regKeyName"></param>
+        /// <param name="regPos"></param>
+        public static void GetTabIndexPosLine(string regKeyName, string regPos, TabControl tabControl)
+        {
+            string regLastPos = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regPos);
+            if (regLastPos.Length > 0)
+            {
+                var tabSaved = regLastPos.Split('|')[0];
+                if (tabSaved.Length > 0)
+                {
+                    foreach (TabPage tab in tabControl.TabPages)
+                    {
+                        if (tab.Text == tabSaved)
+                        {
+                            tabControl.SelectTab(tab);
+                            string filePath = tabControl.SelectedTab.ToolTipText.Trim();
+                            if (!string.IsNullOrEmpty(filePath))
+                            {
+                                GlobalVariables.openedFilePath = filePath;
+                                var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                                GlobalVariables.openedFileName = fileInfo.Name;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 }

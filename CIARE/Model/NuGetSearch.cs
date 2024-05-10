@@ -203,31 +203,10 @@ MessageBoxIcon.Information);
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
 
             // Delete downloaded package.
-            DelDownloadedPackage(GlobalVariables.downloadNugetPath);
+            CustomRef.DelDownloadedPackage(GlobalVariables.downloadNugetPath);
 
             // Sow controlers after download.
             ShowControler();
-        }
-
-        /// <summary>
-        /// Function for delete zip file from nuget forlder.
-        /// </summary>
-        /// <param name="pathNugetDir"></param>
-        private void DelDownloadedPackage(string pathNugetDir)
-        {
-            Thread.Sleep(3000);
-            try
-            {
-                if (!Directory.Exists(pathNugetDir)) return;
-
-                var files = Directory.GetFiles(pathNugetDir);
-                foreach (var file in files)
-                {
-                    if (file.EndsWith(".zip"))
-                        File.Delete(file);
-                }
-            }
-            catch { }
         }
 
         /// <summary>

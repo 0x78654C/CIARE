@@ -1,9 +1,15 @@
 ﻿using CIARE.GUI;
 using CIARE.Reference;
+using CIARE.Roslyn;
 using CIARE.Utils;
+using CIARE.Utils.Options;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+using System.Xml.XPath;
 
 namespace CIARE.Model
 {
@@ -29,7 +35,7 @@ namespace CIARE.Model
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
 
             // Populate listview with ref.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView, true);
         }
 
         /// <summary>
@@ -46,6 +52,7 @@ namespace CIARE.Model
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
+
         }
 
         /// <summary>
@@ -87,14 +94,27 @@ namespace CIARE.Model
         private void DeleteRefLibrary(ListView refList)
         {
             var selecItem = refList.SelectedItems[0].Text;
-            var dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference. Are you sure? ", "CIARE", MessageBoxButtons.YesNo,
+            var pathItem = refList.Items[refList.Items.IndexOf(refList.SelectedItems[0])].SubItems[1].Text;
+            DialogResult dialogResult;
+            if (pathItem.Contains(GlobalVariables.downloadNugetPath))
+             dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference.\nNuGet package's can be only readded after application restart.\nAre you sure that you want to remove? ", "CIARE", MessageBoxButtons.YesNo,
 MessageBoxIcon.Warning);
+            else
+                dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference.\nAre you sure that you want to remove? ", "CIARE", MessageBoxButtons.YesNo,
+   MessageBoxIcon.Warning);
             if (dialogResult == DialogResult.Yes)
             {
-                GlobalVariables.customRefAsm.RemoveAll(x => x.Contains(selecItem));
+                FileInfo fileInfo = new FileInfo(pathItem);
+                foreach (var item in GlobalVariables.customRefAsm)
+                    if (item.EndsWith(fileInfo.Name) && item.Contains(GlobalVariables.downloadNugetPath))
+                        GlobalVariables.blackRefList.Add(item);
+                GlobalVariables.customRefAsm.RemoveAll(x => x.EndsWith(fileInfo.Name));
                 refList.SelectedItems[0].Remove();
+                GlobalVariables.customRefList.RemoveAll(x => x.EndsWith(fileInfo.Name));
             }
+           LibLoaded.RemoveRef(pathItem);
         }
+
 
         /// <summary>
         /// Set namespace to clipborad.

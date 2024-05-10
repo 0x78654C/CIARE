@@ -17,8 +17,12 @@ namespace CIARE.Utils
         {
             SelectedEditor.GetSelectedEditor();
             if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
+            {
+                var linePos = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Position.Line + 1;
+                var colPos = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Column;
                 MainForm.Instance.linesPositionLbl.Text =
-                    $"[Line {SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Position.Line + 1}, Col {SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Column}]";
+                    $"[Line {linePos}, Col {colPos}]";
+            }
             else
                 MainForm.Instance.linesPositionLbl.Text = string.Empty;
         }
@@ -30,10 +34,17 @@ namespace CIARE.Utils
         /// <param name="totalLinesCountLbl"></param>
         public static void GetTotalLinesCount(Label totalLinesCountLbl)
         {
-            if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
-                totalLinesCountLbl.Text = $"Lines: {SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines}";
-            else
-                totalLinesCountLbl.Text = string.Empty;
+            try
+            {
+                if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
+                    totalLinesCountLbl.Text = $"Lines: {SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines}";
+                else
+                    totalLinesCountLbl.Text = string.Empty;
+            }
+            catch
+            {
+                // Ignore first error.
+            }
         }
     }
 }

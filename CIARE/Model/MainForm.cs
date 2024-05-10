@@ -148,13 +148,14 @@ namespace CIARE
             linesPositionLbl.Text = string.Empty;
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
 
-
             //File open via parameters(Open with option..)
             string arg = ReadArgs(s_args);
             FileManage.OpenFileFromArgs(arg, EditorTabControl);
             //----------------------------------
 
             ReloadRef();
+            InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
+
         }
 
         private void SetCodeCompletion(int index)
@@ -352,6 +353,10 @@ namespace CIARE
         {
             switch (keyData)
             {
+                case Keys.End:
+                    return true;
+                case Keys.Home:
+                    return true;
                 case Keys.PageDown | Keys.Control:
                     TabControllerManage.SwitchTabs(ref EditorTabControl, true);
                     return true;
@@ -529,6 +534,9 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            // Store tab text of current opened tab.
+            TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl.SelectedTab.Text);
+
             FileManage.ManageUnsavedData(SelectedEditor.GetSelectedEditor(), 0, true);
             if (GlobalVariables.noClear)
             {
@@ -555,6 +563,7 @@ namespace CIARE
 
             // Stop Live share if connected.
             Task.Run(() => _apiConnectionEvents.CloseConnection(hubConnection));
+
         }
 
         /// <summary>
@@ -913,6 +922,10 @@ namespace CIARE
 
             //TODO: Will see in future if is needed
             // FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath);
+
+            // Clear line/col position on new tab switch
+            ClearInfoLinescs.ClearLinesInfo();
+            LinesManage.GetTotalLinesCount(linesCountLbl);
         }
 
         /// <summary>

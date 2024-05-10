@@ -5,14 +5,17 @@ using System.Windows.Forms;
 using System.Runtime.Versioning;
 using System.Collections.Generic;
 using System.IO;
-using System;
 using CIARE.Roslyn;
+using CIARE.Utils;
+using System.Threading;
 
 namespace CIARE.Reference
 {
     [SupportedOSPlatform("Windows")]
     public class CustomRef
     {
+        private static bool s_isInList = false;
+
         /// <summary>
         /// Check if  a library is managed.
         /// </summary>
@@ -42,6 +45,8 @@ namespace CIARE.Reference
             {
                 foreach (var libPath in refList)
                 {
+                    if (s_isInList) continue;
+
                     var checkASM = LibLoaded.CheckLoadedAssembly(libPath);
 
                     if (checkASM) continue;
@@ -113,18 +118,42 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="libPath"></param>
         /// <param name="refList"></param>
-        public static void PopulateList(List<string> libPath, ListView refList)
+        public static void PopulateList(List<string> libPath, ListView refList, bool isFormLoading = false)
         {
             try
             {
-                foreach (var lib in libPath)
+                if (!isFormLoading)
                 {
-                    string assemblyNamespace = GetAssemblyNamespace(lib);
-                    ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
-                    if (string.IsNullOrEmpty(assemblyNamespace))
-                        continue;
-                    if (!CheckItem(refList,assemblyNamespace) && (IsManaged(lib)))
+                    foreach (var lib in libPath)
+                    {
+                        if (!isFormLoading)
+                        {
+                            string assemblyNamespace = GetAssemblyNamespace(lib);
+                            ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
+                            if (string.IsNullOrEmpty(assemblyNamespace))
+                                continue;
+                            FileInfo fileInfo = new FileInfo(lib);
+                            var libFile = $"{assemblyNamespace}|{lib}";
+                            if (!CheckItem(refList, fileInfo.Name) && (IsManaged(lib)))
+                            {
+                                refList.Items.Add(item);
+                                if (!GlobalVariables.customRefList.Contains(libFile))
+                                     GlobalVariables.customRefList.Add(libFile);
+                            }
+                            else
+                                s_isInList = true;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var dItem in GlobalVariables.customRefList)
+                    {
+                        var asmName = dItem.Split('|')[0];
+                        var lib = dItem.Split('|')[1];
+                        ListViewItem item = new ListViewItem(new[] { asmName, lib });
                         refList.Items.Add(item);
+                    }
                 }
             }
             catch
@@ -141,10 +170,53 @@ namespace CIARE.Reference
         /// <returns></returns>
         private static bool CheckItem(ListView listView, string text)
         {
+            bool isPresent = false;
             for (int i = 0; i < listView.Items.Count; i++)
-                if (listView.Items[i].SubItems[0].Text == text)
-                   return true;
-            return false;
+                if (listView.Items[i].SubItems[1].Text.EndsWith(text))
+                    isPresent = true;
+            return isPresent;
+        }
+
+        /// <summary>
+        /// Function for delete zip file from nuget forlder.
+        /// </summary>
+        /// <param name="pathNugetDir"></param>
+        public static void DelDownloadedPackage(string pathNugetDir)
+        {
+            Thread.Sleep(3000);
+            try
+            {
+                if (!Directory.Exists(pathNugetDir)) return;
+
+                var files = Directory.GetFiles(pathNugetDir);
+                foreach (var file in files)
+                {
+                    if (file.EndsWith(".zip"))
+                        File.Delete(file);
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Function for delete zip file from nuget forlder.
+        /// </summary>
+        /// <param name="pathNugetDir"></param>
+        public static void DeleteNuGetLibs(string pathNugetDir,string libFile)
+        {
+            Thread.Sleep(3000);
+            try
+            {
+                if (!Directory.Exists(pathNugetDir)) return;
+
+                var files = Directory.GetFiles(pathNugetDir);
+                foreach (var file in files)
+                {
+                    if (file.EndsWith(libFile))
+                        File.Delete(file);
+                }
+            }
+            catch { }
         }
     }
 }

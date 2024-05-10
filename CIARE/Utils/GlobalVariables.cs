@@ -83,6 +83,7 @@ namespace CIARE.Utils
         public static readonly string OConfigParam = "OConfigParam";
         public static readonly string OPlatformParam = "OPlatformParam";
         public static readonly string OFramework = "OFramework";
+        public static readonly string OlastTabPosition = "lastTabPosition";
         public static int selectedIndex = 0;
         //output richtextbox zoomfactor varlue store;
         public static float zoomFactor = 1f;
@@ -95,7 +96,9 @@ namespace CIARE.Utils
         public static string aiKey = string.Empty;
         public static string model = string.Empty;
         // --Reference----
-        public static List<string> customRefAsm = new List<string>(); // Used to store custom asspably path file.
+        public static List<string> customRefAsm { get; set; } = new List<string>(); // Used to store custom asspably path file.
+        public static List<string> customRefList { get; set; } = new List<string>();
+        public static List<string> blackRefList { get; set; } = new List<string>();
         //- NuGet-
         public static readonly string downloadNugetPath = $"{userProfileDirectory}nuget\\";
         public static List<string> nugetPackage = new List<string>();

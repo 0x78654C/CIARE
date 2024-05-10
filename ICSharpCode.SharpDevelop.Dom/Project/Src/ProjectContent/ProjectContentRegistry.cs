@@ -46,18 +46,6 @@ namespace ICSharpCode.SharpDevelop.Dom
     .GroupBy(e => e.name)
     .ToDictionary(e => e.Key, e => e.First().assembly);
 
-        /// <summary>
-        /// Return if a package is loaded in CIARE.
-        /// </summary>
-        /// <param name="packageName"></param>
-        /// <returns></returns>
-        public bool CheckLoadedAssembly(string libPath)
-        {
-            FileInfo fileInfo = new FileInfo(libPath);
-            var fileName = fileInfo.Name.Replace(".dll", string.Empty);
-            return _assemblies.Where(key => key.Key == fileName).Any();
-        }
-
         public void LoadCustomAssembly(string assemblyName)
         {
             lock (s_lockAssembly)

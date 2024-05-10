@@ -958,6 +958,7 @@
 				<Key word="DesigntimeLicenseContextSerializer" />
 				<Key word="DesignTimeVisibleAttribute" />
 				<Key word="DiagnosticsConfigurationHandler" />
+        <Key word="Dictionary" />
 				<Key word="DictionaryBase" />
 				<Key word="DictionarySectionHandler" />
 				<Key word="Directory" />

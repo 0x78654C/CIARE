@@ -65,6 +65,7 @@
             refListView.Size = new System.Drawing.Size(866, 359);
             refListView.TabIndex = 0;
             refListView.UseCompatibleStateImageBehavior = false;
+            refListView.MultiSelect = false;
             refListView.View = System.Windows.Forms.View.Details;
             refListView.MouseClick += refListView_MouseClick;
             // 
