@@ -1,5 +1,4 @@
 ﻿using CIARE.Utils;
-using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using System;
 using System.Drawing;
