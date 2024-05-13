@@ -266,7 +266,7 @@ namespace CIARE
             var path = EditorTabControl.SelectedTab.ToolTipText;
             if (File.Exists(path))
             {
-                var sizeTxt = Encoding.UTF8.GetByteCount(SelectedEditor.GetSelectedEditor().Text);
+                var sizeTxt = SelectedEditor.GetSelectedEditor().Text.Length;
                 
                 //Remove * depende of file size in comparison text size.
                 if (GlobalVariables.openedFileSize != sizeTxt)
@@ -896,7 +896,7 @@ namespace CIARE
                 GlobalVariables.openedFileName = fileInfo.Name;
                 if (File.Exists(filePath))
                 {
-                    var readData = File.ReadAllText(filePath, Encoding.UTF8);
+                    var readData = File.ReadAllText(filePath);
                     GlobalVariables.openedFileSize = readData.Length;
                 }
             }
