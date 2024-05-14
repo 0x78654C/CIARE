@@ -517,14 +517,13 @@ MessageBoxIcon.Warning);
 MessageBoxIcon.Information);
             if (dr == DialogResult.Yes)
             {
-                if (GlobalVariables.OStartUp)
-                {
-                    TabControllerManage.StoreDeleteTabs("", MainForm.Instance.EditorTabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
-                    TabControllerManage.DeleteFileSize(MainForm.Instance.EditorTabControl, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index.ToString());
-                }
-                MainForm.Instance.Text = $"CIARE {GlobalVariables.versionName}";
-                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page               ";
-                textEditor.Text = GlobalVariables.roslynTemplate;
+                var appTitle = MainForm.Instance.Text;
+                var tabTitle = MainForm.Instance.EditorTabControl.SelectedTab.Text;
+                if(!appTitle.StartsWith("CIARE"))
+                    MainForm.Instance.Text = $"*{appTitle}";
+                if(!tabTitle.StartsWith("New"))
+                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"*{tabTitle}";
+                textEditor.Document.Replace(0, textEditor.Text.Length,GlobalVariables.roslynTemplate);
             }
         }
 
