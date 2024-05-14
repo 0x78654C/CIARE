@@ -19,7 +19,6 @@ using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using System;
 using System.IO;
-using System.Reflection;
 using System.Windows.Forms;
 using NRefactory = ICSharpCode.NRefactory;
 using Dom = ICSharpCode.SharpDevelop.Dom;
@@ -39,7 +38,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
-using System.Text;
 
 
 namespace CIARE
