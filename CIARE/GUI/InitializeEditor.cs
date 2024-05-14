@@ -240,7 +240,7 @@ namespace CIARE.GUI
                 {
                     foreach (TabPage tab in tabControl.TabPages)
                     {
-                        if (tab.Text.Trim() == tabSaved)
+                        if (tab.ToolTipText.Trim() == tabSaved)
                         {
                             tabControl.SelectTab(tab);
                             string filePath = tabControl.SelectedTab.ToolTipText.Trim();
