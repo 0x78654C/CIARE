@@ -13,6 +13,7 @@ namespace CIARE
     public partial class Options : Form
     {
         int _tokenTxtLen = 0;
+        public static Options Instance { get; private set; }
         public Options()
         {
             InitializeComponent();
@@ -31,6 +32,7 @@ namespace CIARE
 
         private void Options_Load(object sender, EventArgs e)
         {
+            Instance = this;
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, SelectedEditor.GetSelectedEditor(), highlightCMB);
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             codeCompletionCkb.Checked = GlobalVariables.OCodeCompletion;
