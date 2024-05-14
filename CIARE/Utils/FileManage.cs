@@ -631,6 +631,8 @@ MessageBoxIcon.Information);
         /// <param name="textEditorControl"></param>
         private static void LoadParamFile(string data, TabControl tabControl)
         {
+            bool isTabPresent = false;
+
             if (data.StartsWith("cli|"))
             {
                 string file = data.Split('|')[1];
@@ -638,7 +640,8 @@ MessageBoxIcon.Information);
                 if (!fileExist)
                     return;
                 FileInfo fileInfo = new FileInfo(file);
-
+                isTabPresent = SetEditorTabArgs(tabControl, file);
+                if (isTabPresent) return;
                 using (var reader = new StreamReader(file))
                 {
                     TabControllerManage.AddNewTab(tabControl);
@@ -662,10 +665,12 @@ MessageBoxIcon.Information);
 
             if (File.Exists(data))
             {
-                MainForm.Instance.EditorTabControl.SelectTab(1);
-                SelectedEditor.GetSelectedEditor(1).Clear();
-                SelectedEditor.GetSelectedEditor(1).Text = File.ReadAllText(data);
                 FileInfo fileInfo = new FileInfo(data);
+                isTabPresent = SetEditorTabArgs(tabControl, data);
+                if (isTabPresent) return;
+                TabControllerManage.AddNewTab(tabControl);
+                SelectedEditor.GetSelectedEditor().Clear();
+                SelectedEditor.GetSelectedEditor().Text = File.ReadAllText(data);
                 var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
                 MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
@@ -676,6 +681,34 @@ MessageBoxIcon.Information);
             }
         }
 
+        /// <summary>
+        /// Select editor tab when using args file opener.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        private static bool SetEditorTabArgs(TabControl tabControl,string path)
+        {
+            bool isTabPresent =false;
+            FileInfo fileInfo = new FileInfo(path);
+            foreach (TabPage tab in tabControl.TabPages)
+            {
+                if (tab.ToolTipText.Trim() == path.Trim())
+                {
+                    tabControl.SelectTab(tab);
+                    string filePath = tabControl.SelectedTab.ToolTipText.Trim();
+                    if (!string.IsNullOrEmpty(filePath))
+                    {
+                        GlobalVariables.openedFilePath = filePath;
+                        fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                        GlobalVariables.openedFileName = fileInfo.Name;
+                        isTabPresent = true;
+                    }
+                    break;
+                }
+            }
+            return isTabPresent;
+        }
         /// <summary>
         /// Load files from arguments on cli.
         /// </summary>
