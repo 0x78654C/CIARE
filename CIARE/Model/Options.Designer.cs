@@ -464,7 +464,7 @@ namespace CIARE
         private System.Windows.Forms.Label displaySepLbl;
         private System.Windows.Forms.CheckBox winLoginCkb;
         private System.Windows.Forms.Label frameworkLbl;
-        private System.Windows.Forms.ComboBox frameWorkCMB;
+        public System.Windows.Forms.ComboBox frameWorkCMB;
         private System.Windows.Forms.GroupBox liveShareGb;
         private System.Windows.Forms.Button saveApiUrlBtn;
         private System.Windows.Forms.TextBox apiUrlTxt;
