@@ -48,7 +48,6 @@ namespace CIARE
     public partial class MainForm : Form
     {
         public HubConnection hubConnection;
-        public string versionName;
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
         public bool isLoaded = false;
@@ -118,9 +117,7 @@ namespace CIARE
         {
             this.Hide();
             Instance = this;
-            versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            versionName = versionName.Substring(0, versionName.Length - 2);
-            this.Text = $"CIARE {versionName}";
+            this.Text = $"CIARE {GlobalVariables.versionName}";
             TabControllerManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
             Initiliaze();
             Console.SetOut(new ControlWriter(outputRBT));
@@ -270,13 +267,13 @@ namespace CIARE
                 //Remove * depende of file size in comparison text size.
                 if (GlobalVariables.openedFileSize != sizeTxt)
                 {
-                    this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                    this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                     string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
                     EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
                 }
                 else
                 {
-                    this.Text = $"{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                    this.Text = $"{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                     string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
                     EditorTabControl.SelectedTab.Text = $"{curentTabTitle}";
                 }
@@ -901,12 +898,12 @@ namespace CIARE
             }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
-                this.Text = $"{titleTab.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                this.Text = $"{titleTab.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
 
             }
             else
             {
-                this.Text = $"CIARE {versionName}";
+                this.Text = $"CIARE {GlobalVariables.versionName}";
             }
             var tabCount = this.EditorTabControl.TabCount;
             if (tabCount != _countTabs)
