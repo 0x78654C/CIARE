@@ -534,7 +534,11 @@ namespace CIARE
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             // Store tab text of current opened tab.
-            TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl.SelectedTab.ToolTipText.Trim());
+            var toolTipText = EditorTabControl.SelectedTab.ToolTipText.Trim();
+            if(toolTipText.StartsWith("Add Tab"))
+                TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, string.Empty);
+            else
+                TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl.SelectedTab.ToolTipText.Trim());
 
             FileManage.ManageUnsavedData(SelectedEditor.GetSelectedEditor(), 0, true);
             if (GlobalVariables.noClear)
