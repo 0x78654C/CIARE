@@ -30,5 +30,14 @@ namespace CIARE.Utils
             if (editor != null)
                 editor.SplitPosition(horizontal);
         }
+
+        public static void SetActiveSplit(TextEditorControl textEditor, bool isPrimary)
+        {
+            var areaControl = textEditor.ActiveTextAreaControl;
+            textEditor.ActiveTextAreaControl.TextArea.GotFocus += delegate
+            {
+                textEditor.SetActiveTextAreaControl(areaControl);
+            };
+        }
     }
 }

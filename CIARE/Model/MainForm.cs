@@ -108,6 +108,7 @@ namespace CIARE
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
+            SelectedEditor.GetSelectedEditor().AutoHideScrollbars = false;
         }
 
 
