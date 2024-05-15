@@ -635,6 +635,7 @@ MessageBoxIcon.Information);
 
             if (data.StartsWith("cli|"))
             {
+                GlobalVariables.isCLIOpen = true;
                 string file = data.Split('|')[1];
                 bool fileExist = ManageCommandFileParamCLI(file);
                 if (!fileExist)
@@ -665,6 +666,7 @@ MessageBoxIcon.Information);
 
             if (File.Exists(data))
             {
+                GlobalVariables.isCLIOpen = true;
                 FileInfo fileInfo = new FileInfo(data);
                 isTabPresent = SetEditorTabArgs(tabControl, data);
                 if (isTabPresent) return;
@@ -690,7 +692,6 @@ MessageBoxIcon.Information);
         private static bool SetEditorTabArgs(TabControl tabControl,string path)
         {
             bool isTabPresent =false;
-            FileInfo fileInfo = new FileInfo(path);
             foreach (TabPage tab in tabControl.TabPages)
             {
                 if (tab.ToolTipText.Trim() == path.Trim())
@@ -700,7 +701,7 @@ MessageBoxIcon.Information);
                     if (!string.IsNullOrEmpty(filePath))
                     {
                         GlobalVariables.openedFilePath = filePath;
-                        fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                        var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                         GlobalVariables.openedFileName = fileInfo.Name;
                         isTabPresent = true;
                     }
