@@ -108,7 +108,6 @@ namespace CIARE
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
-            SelectedEditor.GetSelectedEditor().AutoHideScrollbars = false;
         }
 
 
@@ -350,6 +349,9 @@ namespace CIARE
         {
             switch (keyData)
             {
+                case Keys.U:
+                    SplitEditorWindow.SetActiveSplit(SelectedEditor.GetSelectedEditor(), true); // test
+                    return true;
                 case Keys.End:
                     return true;
                 case Keys.Home:
