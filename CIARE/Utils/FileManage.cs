@@ -446,13 +446,15 @@ MessageBoxIcon.Warning);
                 return;
             Control ctrl = MainForm.Instance.EditorTabControl.Controls[index].Controls[0];
             textEditor = ctrl as TextEditorControl;
-            textEditor.Clear();
+            textEditor.Text="";
             logOutput.Clear();
             string path = GlobalVariables.openedFilePath;
             GlobalVariables.openedFilePath = string.Empty;
+            GlobalVariables.openedFileName = string.Empty;
             GlobalVariables.savedFile = false;
             MainForm.Instance.Text = $"CIARE {GlobalVariables.versionName}";
             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page               ";
+            MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText =string.Empty;
             MainForm.Instance.markStartFileChk.Checked = false;
             if (GlobalVariables.OStartUp)
             {
