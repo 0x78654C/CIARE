@@ -55,7 +55,7 @@ namespace ICSharpCode.TextEditor
             }
         }
 
-        public void SetActiveTextAreaControl(TextAreaControl value)
+        protected void SetActiveTextAreaControl(TextAreaControl value)
         {
             if (activeTextAreaControl != value)
             {
