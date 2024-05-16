@@ -305,7 +305,7 @@ MessageBoxIcon.Warning);
             textEditor.Text = openedData;
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
             GlobalVariables.openedFileName = fileInfo.Name;
-            MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+            MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
             var filePath = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{GlobalVariables.openedFileName}";
             var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
@@ -336,7 +336,7 @@ MessageBoxIcon.Warning);
                 MainForm.Instance.EditorTabControl.SelectTab(index);
                 textEditor.Text = reader.ReadToEnd();
                 var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
-                MainForm.Instance.Text = $"{fileInfo.Name} : {filePath} - CIARE {MainForm.Instance.versionName}";
+                MainForm.Instance.Text = $"{fileInfo.Name} : {filePath} - CIARE {GlobalVariables.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
                 TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
@@ -362,7 +362,7 @@ MessageBoxIcon.Warning);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{titleTab.Replace("*", "")}               ";
                     MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
-                    MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                    MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                     StoreTabs(GlobalVariables.openedFilePath);
                     var readData = File.ReadAllText(fileInfo.FullName, Encoding.UTF8);
                     GlobalVariables.openedFileSize = readData.Length;
@@ -374,7 +374,7 @@ MessageBoxIcon.Warning);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}               ";
                     MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
-                    MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                    MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                     StoreTabs(GlobalVariables.openedFilePath);
                 }
             }
@@ -422,7 +422,7 @@ MessageBoxIcon.Warning);
             if (GlobalVariables.savedFile)
             {
                 string titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text.Trim();
-                MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}               ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                 int tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
@@ -446,13 +446,15 @@ MessageBoxIcon.Warning);
                 return;
             Control ctrl = MainForm.Instance.EditorTabControl.Controls[index].Controls[0];
             textEditor = ctrl as TextEditorControl;
-            textEditor.Clear();
+            textEditor.Text="";
             logOutput.Clear();
             string path = GlobalVariables.openedFilePath;
             GlobalVariables.openedFilePath = string.Empty;
+            GlobalVariables.openedFileName = string.Empty;
             GlobalVariables.savedFile = false;
-            MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
+            MainForm.Instance.Text = $"CIARE {GlobalVariables.versionName}";
             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page               ";
+            MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText =string.Empty;
             MainForm.Instance.markStartFileChk.Checked = false;
             if (GlobalVariables.OStartUp)
             {
@@ -493,7 +495,7 @@ MessageBoxIcon.Warning);
                         {
                             MainForm.Instance.EditorTabControl.SelectTab(tabIndex);
                             SelectedEditor.GetSelectedEditor(tabIndex).Text = reader.ReadToEnd();
-                            MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {MainForm.Instance.versionName}";
+                            MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{fileInfo.Name}";
                             TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
@@ -517,14 +519,13 @@ MessageBoxIcon.Warning);
 MessageBoxIcon.Information);
             if (dr == DialogResult.Yes)
             {
-                if (GlobalVariables.OStartUp)
-                {
-                    TabControllerManage.StoreDeleteTabs("", MainForm.Instance.EditorTabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
-                    TabControllerManage.DeleteFileSize(MainForm.Instance.EditorTabControl, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index.ToString());
-                }
-                MainForm.Instance.Text = $"CIARE {MainForm.Instance.versionName}";
-                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page               ";
-                textEditor.Text = GlobalVariables.roslynTemplate;
+                var appTitle = MainForm.Instance.Text;
+                var tabTitle = MainForm.Instance.EditorTabControl.SelectedTab.Text;
+                if(!appTitle.StartsWith("CIARE"))
+                    MainForm.Instance.Text = $"*{appTitle}";
+                if(!tabTitle.StartsWith("New"))
+                    MainForm.Instance.EditorTabControl.SelectedTab.Text = $"*{tabTitle}";
+                textEditor.Document.Replace(0, textEditor.Text.Length,GlobalVariables.roslynTemplate);
             }
         }
 
@@ -632,21 +633,25 @@ MessageBoxIcon.Information);
         /// <param name="textEditorControl"></param>
         private static void LoadParamFile(string data, TabControl tabControl)
         {
+            bool isTabPresent = false;
+
             if (data.StartsWith("cli|"))
             {
+                GlobalVariables.isCLIOpen = true;
                 string file = data.Split('|')[1];
                 bool fileExist = ManageCommandFileParamCLI(file);
                 if (!fileExist)
                     return;
                 FileInfo fileInfo = new FileInfo(file);
-
+                isTabPresent = SetEditorTabArgs(tabControl, file);
+                if (isTabPresent) return;
                 using (var reader = new StreamReader(file))
                 {
                     TabControllerManage.AddNewTab(tabControl);
                     tabControl.Invoke(delegate
                     {
                         SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
-                        MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {MainForm.Instance.versionName}";
+                        MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                         tabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                         tabControl.SelectedTab.ToolTipText = file;
                         if (GlobalVariables.OStartUp)
@@ -663,12 +668,15 @@ MessageBoxIcon.Information);
 
             if (File.Exists(data))
             {
-                MainForm.Instance.EditorTabControl.SelectTab(1);
-                SelectedEditor.GetSelectedEditor(1).Clear();
-                SelectedEditor.GetSelectedEditor(1).Text = File.ReadAllText(data);
+                GlobalVariables.isCLIOpen = true;
                 FileInfo fileInfo = new FileInfo(data);
+                isTabPresent = SetEditorTabArgs(tabControl, data);
+                if (isTabPresent) return;
+                TabControllerManage.AddNewTab(tabControl);
+                SelectedEditor.GetSelectedEditor().Clear();
+                SelectedEditor.GetSelectedEditor().Text = File.ReadAllText(data);
                 var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
-                MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {MainForm.Instance.versionName}";
+                MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = fileInfo.FullName;
                 TabControllerManage.StoreFileSize(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, 1);
@@ -677,6 +685,33 @@ MessageBoxIcon.Information);
             }
         }
 
+        /// <summary>
+        /// Select editor tab when using args file opener.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        private static bool SetEditorTabArgs(TabControl tabControl,string path)
+        {
+            bool isTabPresent =false;
+            foreach (TabPage tab in tabControl.TabPages)
+            {
+                if (tab.ToolTipText.Trim() == path.Trim())
+                {
+                    tabControl.SelectTab(tab);
+                    string filePath = tabControl.SelectedTab.ToolTipText.Trim();
+                    if (!string.IsNullOrEmpty(filePath))
+                    {
+                        GlobalVariables.openedFilePath = filePath;
+                        var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                        GlobalVariables.openedFileName = fileInfo.Name;
+                        isTabPresent = true;
+                    }
+                    break;
+                }
+            }
+            return isTabPresent;
+        }
         /// <summary>
         /// Load files from arguments on cli.
         /// </summary>
@@ -693,7 +728,7 @@ MessageBoxIcon.Information);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     GlobalVariables.openedFileName = fileInfo.Name;
                     if (arg.Length > 1)
-                        MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {MainForm.Instance.versionName}";
+                        MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                 }
             }
             catch { }

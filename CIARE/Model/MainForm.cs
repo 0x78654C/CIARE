@@ -3,7 +3,7 @@
        Useful to run code on the fly and get instant result.
 
        This app is distributed under the MIT License.
-       Copyright © 2024 x_coding. All rights reserved.
+       Copyright © 2022 - 2024 x_coding. All rights reserved.
 
        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -19,7 +19,6 @@ using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using System;
 using System.IO;
-using System.Reflection;
 using System.Windows.Forms;
 using NRefactory = ICSharpCode.NRefactory;
 using Dom = ICSharpCode.SharpDevelop.Dom;
@@ -39,7 +38,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
-using System.Text;
 
 
 namespace CIARE
@@ -48,7 +46,6 @@ namespace CIARE
     public partial class MainForm : Form
     {
         public HubConnection hubConnection;
-        public string versionName;
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
         public bool isLoaded = false;
@@ -118,9 +115,7 @@ namespace CIARE
         {
             this.Hide();
             Instance = this;
-            versionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            versionName = versionName.Substring(0, versionName.Length - 2);
-            this.Text = $"CIARE {versionName}";
+            this.Text = $"CIARE {GlobalVariables.versionName}";
             TabControllerManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
             Initiliaze();
             Console.SetOut(new ControlWriter(outputRBT));
@@ -153,9 +148,10 @@ namespace CIARE
             FileManage.OpenFileFromArgs(arg, EditorTabControl);
             //----------------------------------
 
+            if (!GlobalVariables.isCLIOpen)
+                InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
+            
             ReloadRef();
-            InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
-
         }
 
         private void SetCodeCompletion(int index)
@@ -271,13 +267,13 @@ namespace CIARE
                 //Remove * depende of file size in comparison text size.
                 if (GlobalVariables.openedFileSize != sizeTxt)
                 {
-                    this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                    this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                     string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
                     EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
                 }
                 else
                 {
-                    this.Text = $"{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                    this.Text = $"{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                     string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
                     EditorTabControl.SelectedTab.Text = $"{curentTabTitle}";
                 }
@@ -535,7 +531,11 @@ namespace CIARE
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             // Store tab text of current opened tab.
-            TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl.SelectedTab.Text.Replace("*","").Trim());
+            var toolTipText = EditorTabControl.SelectedTab.ToolTipText.Trim();
+            if(toolTipText.StartsWith("Add Tab"))
+                TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, string.Empty);
+            else
+                TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl.SelectedTab.ToolTipText.Trim());
 
             FileManage.ManageUnsavedData(SelectedEditor.GetSelectedEditor(), 0, true);
             if (GlobalVariables.noClear)
@@ -902,12 +902,12 @@ namespace CIARE
             }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
-                this.Text = $"{titleTab.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {versionName}";
+                this.Text = $"{titleTab.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
 
             }
             else
             {
-                this.Text = $"CIARE {versionName}";
+                this.Text = $"CIARE {GlobalVariables.versionName}";
             }
             var tabCount = this.EditorTabControl.TabCount;
             if (tabCount != _countTabs)

@@ -235,12 +235,16 @@ namespace CIARE.GUI
             string regLastPos = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regPos);
             if (regLastPos.Length > 0)
             {
-                var tabSaved = regLastPos.Split('|')[0];
-                if (tabSaved.Length > 0)
+                if(regLastPos.StartsWith("Add Tab"))
+                {
+                    tabControl.SelectTab(1);
+                    return;
+                }
+                if (regLastPos.Length > 0)
                 {
                     foreach (TabPage tab in tabControl.TabPages)
                     {
-                        if (tab.Text.Trim() == tabSaved)
+                        if (tab.ToolTipText.Trim() == regLastPos)
                         {
                             tabControl.SelectTab(tab);
                             string filePath = tabControl.SelectedTab.ToolTipText.Trim();
