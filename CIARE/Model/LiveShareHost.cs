@@ -55,6 +55,24 @@ namespace CIARE
         }
 
         /// <summary>
+        /// Overwrite the key press.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            switch (keyData)
+            {
+                case Keys.Escape:
+                    this.Close();
+                    return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+
+        /// <summary>
         /// Start/Stop live share envent.
         /// </summary>
         /// <param name="sender"></param>
