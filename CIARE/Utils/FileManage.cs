@@ -38,6 +38,8 @@ namespace CIARE.Utils
                 {
                     GlobalVariables.openedFilePath = s_openFileDialog.FileName;
                     var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                    var readData = File.ReadAllText(fileInfo.FullName);
+                    GlobalVariables.openedFileSize = readData.Length;
                     GlobalVariables.openedFileName = fileInfo.Name;
                     return reader.ReadToEnd();
                 }
