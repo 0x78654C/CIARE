@@ -1,4 +1,6 @@
-﻿using ICSharpCode.TextEditor;
+﻿using CIARE.GUI;
+using ICSharpCode.TextEditor;
+using System.Runtime.Versioning;
 
 namespace CIARE.Utils
 {
@@ -7,6 +9,7 @@ namespace CIARE.Utils
      */
     public class SplitEditorWindow
     {
+        [SupportedOSPlatform("windows")]
         /// <summary>
         /// Split text editor window.
         /// </summary>
@@ -16,7 +19,8 @@ namespace CIARE.Utils
             TextEditorControl editor = textEditor;
             if (editor != null)
                 editor.Split(horizontal);
-
+            GlobalVariables.textAreaFirst = SelectedEditor.GetSelectedEditor().primaryTextArea;
+            GlobalVariables.textAreaSecond = SelectedEditor.GetSelectedEditor().secondaryTextArea;
             GlobalVariables.splitWindowPosition = horizontal;
         }
         /// <summary>
