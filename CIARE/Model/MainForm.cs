@@ -150,7 +150,7 @@ namespace CIARE
 
             if (!GlobalVariables.isCLIOpen)
                 InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
-            
+            isLoaded = true;   
             ReloadRef();
         }
 
@@ -309,8 +309,6 @@ namespace CIARE
             TabControllerManage.AddNewTab(EditorTabControl);
         }
 
-
-
         /// <summary>
         /// Split window horizontaly.
         /// </summary>
@@ -349,6 +347,9 @@ namespace CIARE
         {
             switch (keyData)
             {
+                case Keys.U | Keys.Control:
+                    SwitchSplit.SwitchSplitWindow();
+                    return true;
                 case Keys.End:
                     return true;
                 case Keys.Home:
@@ -886,6 +887,11 @@ namespace CIARE
 
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
+            if (isLoaded)
+            {
+                GlobalVariables.textAreaFirst = SelectedEditor.GetSelectedEditor().primaryTextArea;
+                GlobalVariables.textAreaSecond = SelectedEditor.GetSelectedEditor().secondaryTextArea;
+            }
 
             string titleTab = EditorTabControl.SelectedTab.Text.Trim();
             string filePath = EditorTabControl.SelectedTab.ToolTipText.Trim();
