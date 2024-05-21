@@ -43,7 +43,7 @@
             textEditorControl1.ReadOnly = true;
             textEditorControl1.ShowLineNumbers = false;
             textEditorControl1.ShowVRuler = false;
-            textEditorControl1.Size = new System.Drawing.Size(631, 737);
+            textEditorControl1.Size = new System.Drawing.Size(631, 756);
             textEditorControl1.TabIndex = 0;
             textEditorControl1.Text = resources.GetString("textEditorControl1.Text");
             // 
@@ -51,7 +51,7 @@
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(655, 761);
+            ClientSize = new System.Drawing.Size(655, 780);
             Controls.Add(textEditorControl1);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
