@@ -887,14 +887,9 @@ namespace CIARE
 
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
-            if (isLoaded)
-            {
-                GlobalVariables.textAreaFirst = SelectedEditor.GetSelectedEditor().primaryTextArea;
-                GlobalVariables.textAreaSecond = SelectedEditor.GetSelectedEditor().secondaryTextArea;
-            }
-
             string titleTab = EditorTabControl.SelectedTab.Text.Trim();
             string filePath = EditorTabControl.SelectedTab.ToolTipText.Trim();
+
             if (!string.IsNullOrEmpty(filePath))
             {
                 GlobalVariables.openedFilePath = filePath;

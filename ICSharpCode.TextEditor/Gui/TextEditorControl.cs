@@ -260,54 +260,6 @@ namespace ICSharpCode.TextEditor
             }
         }
 
-
-        public void SwtichArea(bool horizontal)
-        {
-            if (secondaryTextArea == null)
-            {
-                secondaryTextArea = new TextAreaControl(this);
-                if (horizontal)
-                {
-                    secondaryTextArea.Dock = DockStyle.Right;
-                    secondaryTextArea.Width = Width / 2;
-                }
-                else
-                {
-                    secondaryTextArea.Dock = DockStyle.Bottom;
-                    secondaryTextArea.Height = Height / 2;
-                }
-                
-                secondaryTextArea.TextArea.Focus();
-                //secondaryTextArea.TextArea.GotFocus += delegate
-                //{
-                //    //SetActiveTextAreaControl(secondaryTextArea);
-                //};
-
-                textAreaSplitter = new Splitter();
-                textAreaSplitter.BorderStyle = BorderStyle.FixedSingle;
-                if (horizontal)
-                {
-                    textAreaSplitter.Width = 4;
-                    textAreaSplitter.Dock = DockStyle.Right;
-                }
-                else
-                {
-                    textAreaSplitter.Width = 4;
-                    textAreaSplitter.Dock = DockStyle.Bottom;
-                }
-                //secondaryTextArea.OptionsChanged();
-            }
-            else
-            {
-                //SetActiveTextAreaControl(primaryTextArea);
-                primaryTextArea.TextArea.Focus();
-                secondaryTextArea.Dispose();
-                textAreaSplitter.Dispose();
-                secondaryTextArea = null;
-                textAreaSplitter = null;
-            }
-        }
-
         [Browsable(false)]
         public bool EnableUndo
         {
