@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using ICSharpCode.TextEditor;
 
 namespace CIARE.Utils
 {
@@ -32,6 +33,8 @@ namespace CIARE.Utils
         public static bool savedFile = false;
         public static bool noFileSelected = false;
         public static bool splitWindowPosition = false;
+        public static TextAreaControl textAreaFirst { get; set; }
+        public static TextAreaControl textAreaSecond { get; set; }
         public static bool exeName = false;
         public static bool checkFormOpen = false;
         public static bool outPutDisplay = false;
