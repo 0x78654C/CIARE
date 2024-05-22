@@ -150,7 +150,7 @@ namespace CIARE
 
             if (!GlobalVariables.isCLIOpen)
                 InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
-            isLoaded = true;   
+            isLoaded = true;
             ReloadRef();
         }
 
@@ -889,7 +889,17 @@ namespace CIARE
         {
             string titleTab = EditorTabControl.SelectedTab.Text.Trim();
             string filePath = EditorTabControl.SelectedTab.ToolTipText.Trim();
-
+            if (isLoaded)
+            {
+                try
+                {
+                    GlobalVariables.textAreaFirst = SelectedEditor.GetSelectedEditor().primaryTextArea;
+                    GlobalVariables.textAreaSecond = SelectedEditor.GetSelectedEditor().secondaryTextArea;
+                }
+                catch {
+                    // Ignore index 0 error. The area will be set after load on first split anyway.
+                }
+            }
             if (!string.IsNullOrEmpty(filePath))
             {
                 GlobalVariables.openedFilePath = filePath;
