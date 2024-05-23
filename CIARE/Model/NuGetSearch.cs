@@ -63,6 +63,23 @@ MessageBoxIcon.Warning);
         }
 
         /// <summary>
+        /// Overwrite the key press.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            switch (keyData)
+            {
+                case Keys.Escape:
+                    this.Close();
+                    return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        /// <summary>
         /// Method for get name of package, version and description
         /// </summary>
         private void GetNuGetSearhed(string packageName, string nugetApi, ListView refList)
