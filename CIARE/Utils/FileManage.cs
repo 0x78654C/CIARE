@@ -299,6 +299,17 @@ MessageBoxIcon.Warning);
             //if (GlobalVariables.noClear)
             //    return;
             string openedData = OpenFile();
+
+            // Check if tab contains the file you want to open and select if exist in tabs.
+            foreach(TabPage tabPage in MainForm.Instance.EditorTabControl.TabPages)
+            {
+                if(tabPage.ToolTipText == GlobalVariables.openedFilePath)
+                {
+                    MainForm.Instance.EditorTabControl.SelectTab(tabPage);
+                    return;
+                }
+            }
+
             if (GlobalVariables.noFileSelected)
             {
                 GlobalVariables.noFileSelected = false;
@@ -449,6 +460,7 @@ MessageBoxIcon.Warning);
             Control ctrl = MainForm.Instance.EditorTabControl.Controls[index].Controls[0];
             textEditor = ctrl as TextEditorControl;
             textEditor.Text="";
+            textEditor.Refresh();
             logOutput.Clear();
             string path = GlobalVariables.openedFilePath;
             GlobalVariables.openedFilePath = string.Empty;
