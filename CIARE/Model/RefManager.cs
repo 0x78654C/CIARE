@@ -37,6 +37,26 @@ namespace CIARE.Model
             // Populate listview with ref.
             CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView, true);
         }
+        
+        /// <summary>
+        /// Overwrite the key press.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            switch (keyData)
+            {
+                case Keys.A:
+                    LoadReference();
+                    return true;
+                case Keys.N:
+                    LoadNugetSearch();
+                    return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
 
         /// <summary>
         /// Load reference assembly button control event.
@@ -44,15 +64,7 @@ namespace CIARE.Model
         /// <param name="sender"></param>
         private void AddRefFileBtn_Click(object sender, EventArgs e)
         {
-            // Add lib's to list dialog.
-            FileManage.AddReferenceDialog();
-
-            // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
-
-            // Load assemblies from list.
-            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
-
+            LoadReference();
         }
 
         /// <summary>
@@ -139,8 +151,7 @@ MessageBoxIcon.Warning);
         /// <param name="e"></param>
         private void NugetManagerBtn_Click(object sender, EventArgs e)
         {
-            NuGetSearch nuGetSearch = new NuGetSearch();
-            nuGetSearch.ShowDialog();
+           LoadNugetSearch();
         }
 
         /// <summary>
@@ -153,6 +164,30 @@ MessageBoxIcon.Warning);
             int changedSize = this.Size.Width - s_initialSizeForm;
             int descriptionSize = refListView.Columns[1].Width;
             refListView.Columns[1].Width = descriptionSize + changedSize;
+        }
+
+        /// <summary>
+        /// Load NuGet search manager.
+        /// </summary>
+        private void LoadNugetSearch()
+        {
+            NuGetSearch nuGetSearch = new NuGetSearch();
+            nuGetSearch.ShowDialog();
+        }
+
+        /// <summary>
+        /// Load local library reference.
+        /// </summary>
+        private void LoadReference()
+        {
+            // Add lib's to list dialog.
+            FileManage.AddReferenceDialog();
+
+            // Repopulate listview with ref. after loading list.
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
+
+            // Load assemblies from list.
+            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
         }
     }
 }
