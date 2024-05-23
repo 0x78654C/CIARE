@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Forms;
 
 namespace CIARE
 {
@@ -54,6 +55,13 @@ namespace CIARE
         {
             string firstParamSplit = input.SplitByText(firstParam, 1);
             return firstParamSplit.SplitByText(secondParam, 0);
+        }
+
+        internal static void ScrollToEnd(this RichTextBox richTextBox)
+        {
+            richTextBox.Text += "\n";
+            richTextBox.SelectionStart = richTextBox.Text.Length+1;
+            richTextBox.ScrollToCaret();
         }
     }
 }
