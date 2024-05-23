@@ -354,6 +354,21 @@ namespace CIARE
                     return true;
                 case Keys.Home:
                     return true;
+                case Keys.End | Keys.Control:
+                    if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
+                    {
+                        var liensCount = SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines;
+                        SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.ScrollTo(liensCount);
+                        SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Line =liensCount;
+                    }
+                    return true;
+                case Keys.Home | Keys.Control:
+                    if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
+                    {
+                        SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.ScrollTo(0);
+                        SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Line = 0;
+                    }
+                    return true;
                 case Keys.PageDown | Keys.Control:
                     TabControllerManage.SwitchTabs(ref EditorTabControl, true);
                     return true;
