@@ -73,6 +73,7 @@ namespace CIARE.Roslyn
                         {
                             richTextBox.Clear();
                             richTextBox.ForeColor = Color.Red;
+                            richTextBox.ScrollToEnd();
                             var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
                             ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
                         }
@@ -90,9 +91,15 @@ namespace CIARE.Roslyn
                 s_stopWatch.Stop();
                 s_timeSpan = s_stopWatch.Elapsed;
                 if (richTextBox.Text.EndsWith("\n"))
+                {
                     richTextBox.Text += $"---------------------------------\nCompile and code execution time: {s_timeSpan.Milliseconds} milliseconds";
+                    richTextBox.ScrollToEnd();
+                }
                 else
+                {
                     richTextBox.Text += $"\n---------------------------------\nCompile and code execution time: {s_timeSpan.Milliseconds} milliseconds";
+                    richTextBox.ScrollToEnd();
+                }
             }
             catch (DivideByZeroException dbze)
             {
@@ -108,7 +115,9 @@ namespace CIARE.Roslyn
                         richTextBox.Text += $"---------------Stack Trace------------------\n";
                     }
                     else
+                    {
                         richTextBox.Text += $"\n--------------Stack Trace-------------------\n";
+                    }
                     richTextBox.Text += st.ToString();
                 }
             }
@@ -197,6 +206,7 @@ namespace CIARE.Roslyn
                         {
                             richTextBox.Clear();
                             richTextBox.ForeColor = Color.Red;
+                            richTextBox.ScrollToEnd();
                             var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
                             ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
                         }
@@ -209,7 +219,10 @@ namespace CIARE.Roslyn
                         s_stopWatch.Stop();
                         s_timeSpan = s_stopWatch.Elapsed;
                         if (!GlobalVariables.compileTime)
+                        {
                             richTextBox.Text += $"\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
+                            richTextBox.ScrollToEnd();
+                        }
                         GlobalVariables.compileTime = false;
                     }
                     s_stopWatch.Stop();

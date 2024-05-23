@@ -24,6 +24,7 @@ namespace CIARE.GUI
                 MainForm.Instance.visibleSplitContainer = false;
                 GlobalVariables.outPutDisplay = false;
                 outLogRtb.Focus();
+                outLogRtb.ScrollToEnd();
                 return;
             }
 
@@ -33,6 +34,7 @@ namespace CIARE.GUI
                 MainForm.Instance.visibleSplitContainer = false;
                 GlobalVariables.outPutDisplay = false;
                 outLogRtb.Focus();
+                outLogRtb.ScrollToEnd();
             }
         }
 
@@ -49,6 +51,7 @@ namespace CIARE.GUI
                 MainForm.Instance.visibleSplitContainer = false;
                 MainForm.Instance.visibleSplitContainerAutoHide = true;
                 outputRtb.Focus();
+                outputRtb.ScrollToEnd();
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "False");
             }
             else
