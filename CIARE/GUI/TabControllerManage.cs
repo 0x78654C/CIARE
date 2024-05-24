@@ -16,6 +16,24 @@ namespace CIARE.GUI
         private static int s_hoverIndex = -1;
 
         /// <summary>
+        /// Check if tab contains the file you want to open and select if exist in tabs.
+        /// </summary>
+        /// <param name="tabControl"></param>
+        /// <returns></returns>
+        public static bool IsFileOpenedInTab(TabControl tabControl, string path)
+        {
+            foreach (TabPage tabPage in tabControl.TabPages)
+            {
+                if (tabPage.ToolTipText == path)
+                {
+                    tabControl.SelectTab(tabPage);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Manage event on close tab.
         /// </summary>
         /// <param name="tabControl"></param>
