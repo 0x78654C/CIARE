@@ -742,10 +742,7 @@ namespace CIARE
 
                 myProjectContent.AddReferencedContent(item);
 
-                if (myProjectContent is Dom.ReflectionProjectContent)
-                {
-                    (myProjectContent as Dom.ReflectionProjectContent).InitializeReferences();
-                }
+                if (myProjectContent is Dom.ReflectionProjectContent myObj) myObj.InitializeReferences();
             }
 
             while (!IsDisposed)
