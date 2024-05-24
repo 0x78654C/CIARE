@@ -300,15 +300,8 @@ MessageBoxIcon.Warning);
             //    return;
             string openedData = OpenFile();
 
-            // Check if tab contains the file you want to open and select if exist in tabs.
-            foreach(TabPage tabPage in MainForm.Instance.EditorTabControl.TabPages)
-            {
-                if(tabPage.ToolTipText == GlobalVariables.openedFilePath)
-                {
-                    MainForm.Instance.EditorTabControl.SelectTab(tabPage);
-                    return;
-                }
-            }
+            var isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, GlobalVariables.openedFilePath);
+            if (isFileOpenedInTab) return;
 
             if (GlobalVariables.noFileSelected)
             {
@@ -653,6 +646,8 @@ MessageBoxIcon.Information);
             {
                 GlobalVariables.isCLIOpen = true;
                 string file = data.Split('|')[1];
+                var isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, file);
+                if (isFileOpenedInTab) return;
                 bool fileExist = ManageCommandFileParamCLI(file);
                 if (!fileExist)
                     return;
