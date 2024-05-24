@@ -26,8 +26,9 @@ namespace CIARE.Roslyn
 	  <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
+    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>"+GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
@@ -42,8 +43,9 @@ namespace CIARE.Roslyn
 	  <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
+    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>"+GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
