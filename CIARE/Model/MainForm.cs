@@ -149,7 +149,13 @@ namespace CIARE
             //----------------------------------
 
             if (!GlobalVariables.isCLIOpen)
+            {
                 InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
+            }
+            else
+            {
+                TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, GlobalVariables.openedFilePath);
+            }
             isLoaded = true;
             ReloadRef();
         }
@@ -979,6 +985,8 @@ namespace CIARE
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.DragDrop += DynamicTextEdtior_DragDrop;
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.DragOver += DynamicTextEdtior_DragEnter;
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.AllowDrop = true;
+            dynamicTextEdtior.ActiveTextAreaControl.HScrollBar.Visible = true;
+            dynamicTextEdtior.ActiveTextAreaControl.VScrollBar.Visible = true;
             dynamicTextEdtior.TextEditorProperties.AutoInsertCurlyBracket = true;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
@@ -1024,10 +1032,14 @@ namespace CIARE
         {
             this.Invoke(delegate
             {
-                TabControllerManage.AddNewTab(EditorTabControl);
 
                 foreach (var file in _filesDrag)
+                {
+                    var isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, file);
+                    if (isFileOpenedInTab) return;
+                    TabControllerManage.AddNewTab(EditorTabControl);
                     FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), file);
+                }
             });
         }
 
