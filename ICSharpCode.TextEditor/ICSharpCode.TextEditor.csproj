@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>.net6.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <OutputTarget>Library</OutputTarget>
     <NoStdLib>False</NoStdLib>
     <NoConfig>False</NoConfig>
@@ -89,7 +89,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.5" />
   </ItemGroup>
   <PropertyGroup />
   <PropertyGroup />
