@@ -24,7 +24,7 @@ namespace CIARE.GUI
         {
             foreach (TabPage tabPage in tabControl.TabPages)
             {
-                if (tabPage.ToolTipText == path)
+                if (tabPage.ToolTipText.ToLower() == path.ToLower())
                 {
                     tabControl.SelectTab(tabPage);
                     return true;
