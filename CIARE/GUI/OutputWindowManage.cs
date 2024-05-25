@@ -51,7 +51,7 @@ namespace CIARE.GUI
                 MainForm.Instance.visibleSplitContainer = false;
                 MainForm.Instance.visibleSplitContainerAutoHide = true;
                 outputRtb.Focus();
-                outputRtb.ScrollToEnd();
+                outputRtb.ScrollToEnd(true);
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "False");
             }
             else

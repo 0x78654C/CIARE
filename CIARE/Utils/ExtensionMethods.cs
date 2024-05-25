@@ -57,9 +57,10 @@ namespace CIARE
             return firstParamSplit.SplitByText(secondParam, 0);
         }
 
-        internal static void ScrollToEnd(this RichTextBox richTextBox)
+        internal static void ScrollToEnd(this RichTextBox richTextBox, bool isShown = false)
         {
-            richTextBox.Text += "\n";
+            if(!isShown)
+                richTextBox.Text += "\n";
             richTextBox.SelectionStart = richTextBox.Text.Length+1;
             richTextBox.ScrollToCaret();
         }
