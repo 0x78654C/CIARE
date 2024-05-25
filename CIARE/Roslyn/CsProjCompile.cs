@@ -26,7 +26,6 @@ namespace CIARE.Roslyn
 	  <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
-    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
 <AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -43,7 +42,6 @@ namespace CIARE.Roslyn
 	  <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
-    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
 <AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
   </PropertyGroup>
