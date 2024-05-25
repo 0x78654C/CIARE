@@ -16,7 +16,6 @@ using System.Runtime.Versioning;
 using Path = System.IO.Path;
 using System.Collections.Immutable;
 using System.Runtime.Loader;
-using Mono.Cecil.Cil;
 
 namespace CIARE.Roslyn
 {
@@ -49,7 +48,7 @@ namespace CIARE.Roslyn
                 s_stopWatch = new Stopwatch();
                 s_stopWatch.Start();
                 Assembly assembly = null;
-                SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
+                SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code, SetLanguageVersion(GlobalVariables.Framework));
                 string assemblyName = Path.GetRandomFileName();
                 string assemblyPath = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
 
@@ -60,7 +59,6 @@ namespace CIARE.Roslyn
                     options: new CSharpCompilationOptions(OutputKind.WindowsApplication, true, null, null,
                      null, null, OptimizationLevelState(), false, allowUnsafe, null, null,
                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));
-
                 using (var ms = new MemoryStream())
                 {
                     EmitResult result = compilation.Emit(ms);
@@ -168,7 +166,7 @@ namespace CIARE.Roslyn
                 s_timeSpan = new TimeSpan();
                 s_stopWatch = new Stopwatch();
                 s_stopWatch.Start();
-                SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
+                SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code, SetLanguageVersion(GlobalVariables.Framework));
                 string assemblyName = Path.GetRandomFileName();
                 CSharpCompilation compilation;
                 if (exeFile)
@@ -179,7 +177,7 @@ namespace CIARE.Roslyn
                       references: References(true),
                       options: new CSharpCompilationOptions(outputKind, true, null, null,
                       null, null, OptimizationLevelState(), false, allowUnsafe, null, null,
-                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu));;
+                      ImmutableArray.Create<byte>(new byte[] { }), false, Platform.AnyCpu)); ;
                 }
                 else
                 {
@@ -294,7 +292,7 @@ namespace CIARE.Roslyn
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
-            BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb,GlobalVariables.OUnsafeCode, outputKind);
+            BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb, GlobalVariables.OUnsafeCode, outputKind);
             RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             GC.Collect();
         }
@@ -352,5 +350,28 @@ namespace CIARE.Roslyn
         /// <returns></returns>
         private static OptimizationLevel OptimizationLevelState() => (GlobalVariables.configParam.Contains("Release")) ? OptimizationLevel.Release : OptimizationLevel.Debug;
 
+        /// <summary>
+        /// Set C# language version.
+        /// </summary>
+        /// <param name="framework"></param>
+        /// <returns></returns>
+        private static CSharpParseOptions SetLanguageVersion(string framework)
+        {
+            var languageVersion = LanguageVersion.Default;
+            switch (framework)
+            {
+                case "net6.0-windows":
+                    languageVersion = LanguageVersion.CSharp10;
+                    break;
+                case "net7.0-windows":
+                    languageVersion = LanguageVersion.CSharp11;
+                    break;
+                case "net8.0-windows":
+                    languageVersion = LanguageVersion.CSharp12;
+                    break;
+            }
+            return CSharpParseOptions.Default.WithLanguageVersion(languageVersion);
+
+        }
     }
 }
