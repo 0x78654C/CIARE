@@ -226,16 +226,16 @@ namespace CIARE
             frameworkLbl.AutoSize = true;
             frameworkLbl.Location = new System.Drawing.Point(12, 115);
             frameworkLbl.Name = "frameworkLbl";
-            frameworkLbl.Size = new System.Drawing.Size(159, 15);
+            frameworkLbl.Size = new System.Drawing.Size(185, 15);
             frameworkLbl.TabIndex = 18;
-            frameworkLbl.Text = "Target Compile Framework:";
+            frameworkLbl.Text = "Target Run/Compile Framework:";
             // 
             // frameWorkCMB
             // 
             frameWorkCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             frameWorkCMB.FormattingEnabled = true;
             frameWorkCMB.Items.AddRange(new object[] { ".NET 6", ".NET 7", ".NET 8" });
-            frameWorkCMB.Location = new System.Drawing.Point(172, 112);
+            frameWorkCMB.Location = new System.Drawing.Point(217, 112);
             frameWorkCMB.Name = "frameWorkCMB";
             frameWorkCMB.Size = new System.Drawing.Size(93, 23);
             frameWorkCMB.TabIndex = 19;
@@ -258,7 +258,7 @@ namespace CIARE
             platformBox.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             platformBox.FormattingEnabled = true;
             platformBox.Items.AddRange(new object[] { "Any CPU", "x64", "x86" });
-            platformBox.Location = new System.Drawing.Point(172, 23);
+            platformBox.Location = new System.Drawing.Point(217, 23);
             platformBox.Name = "platformBox";
             platformBox.Size = new System.Drawing.Size(93, 23);
             platformBox.TabIndex = 15;
@@ -270,7 +270,7 @@ namespace CIARE
             configurationBox.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             configurationBox.FormattingEnabled = true;
             configurationBox.Items.AddRange(new object[] { "Debug", "Release" });
-            configurationBox.Location = new System.Drawing.Point(73, 23);
+            configurationBox.Location = new System.Drawing.Point(118, 23);
             configurationBox.Name = "configurationBox";
             configurationBox.Size = new System.Drawing.Size(93, 23);
             configurationBox.TabIndex = 14;
@@ -282,9 +282,9 @@ namespace CIARE
             platformLbl.AutoSize = true;
             platformLbl.Location = new System.Drawing.Point(12, 26);
             platformLbl.Name = "platformLbl";
-            platformLbl.Size = new System.Drawing.Size(53, 15);
+            platformLbl.Size = new System.Drawing.Size(100, 15);
             platformLbl.TabIndex = 0;
-            platformLbl.Text = "Params:";
+            platformLbl.Text = "Params compile:";
             // 
             // liveShareGb
             // 
