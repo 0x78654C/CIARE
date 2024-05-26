@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
@@ -21,6 +22,8 @@ namespace CIARE.Utils
         private static OpenFileDialog s_openFileDialog = new OpenFileDialog();
         private static SaveFileDialog s_saveFileDialog = new SaveFileDialog();
         private static List<string> s_packageLibs = new List<string>();
+        private static string s_path = "";
+        private static BackgroundWorker s_worker;
         /// <summary>
         /// Open file dialog.
         /// </summary>
@@ -38,8 +41,7 @@ namespace CIARE.Utils
                 {
                     GlobalVariables.openedFilePath = s_openFileDialog.FileName;
                     var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    var readData = File.ReadAllText(fileInfo.FullName);
-                    GlobalVariables.openedFileSize = readData.Length;
+                    GlobalVariables.openedFileSize = reader.ReadToEnd().Length;
                     GlobalVariables.openedFileName = fileInfo.Name;
                     return reader.ReadToEnd();
                 }
@@ -102,8 +104,7 @@ MessageBoxIcon.Warning);
                         FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                         GlobalVariables.openedFileName = fileInfo.Name;
                         GlobalVariables.savedFile = true;
-                        var readData = File.ReadAllText(fileInfo.FullName, Encoding.UTF8);
-                        GlobalVariables.openedFileSize = readData.Length;
+                        SetFileSize(fileInfo.FullName);
                     }
                 }
                 catch (Exception e)
@@ -370,8 +371,7 @@ MessageBoxIcon.Warning);
                     MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                     StoreTabs(GlobalVariables.openedFilePath);
-                    var readData = File.ReadAllText(fileInfo.FullName, Encoding.UTF8);
-                    GlobalVariables.openedFileSize = readData.Length;
+                    SetFileSize(fileInfo.FullName);
                     return;
                 }
                 SaveFile(SelectedEditor.GetSelectedEditor().Text);
@@ -452,7 +452,7 @@ MessageBoxIcon.Warning);
                 return;
             Control ctrl = MainForm.Instance.EditorTabControl.Controls[index].Controls[0];
             textEditor = ctrl as TextEditorControl;
-            textEditor.Text="";
+            textEditor.Text = "";
             textEditor.Refresh();
             logOutput.Clear();
             string path = GlobalVariables.openedFilePath;
@@ -461,7 +461,7 @@ MessageBoxIcon.Warning);
             GlobalVariables.savedFile = false;
             MainForm.Instance.Text = $"CIARE {GlobalVariables.versionName}";
             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page               ";
-            MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText =string.Empty;
+            MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = string.Empty;
             MainForm.Instance.markStartFileChk.Checked = false;
             if (GlobalVariables.OStartUp)
             {
@@ -506,8 +506,7 @@ MessageBoxIcon.Warning);
                             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{fileInfo.Name}";
                             TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
-                            var readData = File.ReadAllText(fileInfo.FullName);
-                            GlobalVariables.openedFileSize = readData.Length;
+                            SetFileSize(filePath);
                         }
                     }
                 }
@@ -530,11 +529,11 @@ MessageBoxIcon.Information);
             {
                 var appTitle = MainForm.Instance.Text;
                 var tabTitle = MainForm.Instance.EditorTabControl.SelectedTab.Text;
-                if(!appTitle.StartsWith("CIARE"))
+                if (!appTitle.StartsWith("CIARE"))
                     MainForm.Instance.Text = $"*{appTitle}";
-                if(!tabTitle.StartsWith("New"))
+                if (!tabTitle.StartsWith("New"))
                     MainForm.Instance.EditorTabControl.SelectedTab.Text = $"*{tabTitle}";
-                textEditor.Document.Replace(0, textEditor.Text.Length,GlobalVariables.roslynTemplate);
+                textEditor.Document.Replace(0, textEditor.Text.Length, GlobalVariables.roslynTemplate);
             }
         }
 
@@ -578,7 +577,7 @@ MessageBoxIcon.Information);
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
-                            if(!GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
+                            if (!GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
                                 GlobalVariables.customRefAsm.Add(file);
                             break;
                         }
@@ -702,9 +701,9 @@ MessageBoxIcon.Information);
         /// <param name="tabControl"></param>
         /// <param name="path"></param>
         /// <returns></returns>
-        private static bool SetEditorTabArgs(TabControl tabControl,string path)
+        private static bool SetEditorTabArgs(TabControl tabControl, string path)
         {
-            bool isTabPresent =false;
+            bool isTabPresent = false;
             foreach (TabPage tab in tabControl.TabPages)
             {
                 if (tab.ToolTipText.Trim() == path.Trim())
@@ -743,6 +742,29 @@ MessageBoxIcon.Information);
                 }
             }
             catch { }
+        }
+
+        /// <summary>
+        /// Do worker event for read file.
+        /// </summary>
+        /// <param name="o"></param>
+        /// <param name="e"></param>
+        private static void GetSetFileSize(object o, DoWorkEventArgs e)
+        {
+            using (var streamReader = new StreamReader(s_path))
+                GlobalVariables.openedFileSize = streamReader.ReadToEnd().Length;
+        }
+
+        /// <summary>
+        /// Store in global the file size.
+        /// </summary>
+        /// <param name="filePath"></param>
+        public static void SetFileSize(string filePath)
+        {
+            s_path = filePath;
+            s_worker = new BackgroundWorker();
+            s_worker.DoWork += GetSetFileSize;
+            s_worker.RunWorkerAsync();
         }
     }
 }

@@ -902,11 +902,11 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
             string titleTab = EditorTabControl.SelectedTab.Text.Trim();
             string filePath = EditorTabControl.SelectedTab.ToolTipText.Trim();
+
             if (isLoaded)
             {
                 try
@@ -914,10 +914,12 @@ namespace CIARE
                     GlobalVariables.textAreaFirst = SelectedEditor.GetSelectedEditor().primaryTextArea;
                     GlobalVariables.textAreaSecond = SelectedEditor.GetSelectedEditor().secondaryTextArea;
                 }
-                catch {
+                catch
+                {
                     // Ignore index 0 error. The area will be set after load on first split anyway.
                 }
             }
+
             if (!string.IsNullOrEmpty(filePath))
             {
                 GlobalVariables.openedFilePath = filePath;
@@ -925,8 +927,7 @@ namespace CIARE
                 GlobalVariables.openedFileName = fileInfo.Name;
                 if (File.Exists(filePath))
                 {
-                    var readData = File.ReadAllText(filePath);
-                    GlobalVariables.openedFileSize = readData.Length;
+                    FileManage.SetFileSize(filePath);
                 }
             }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
