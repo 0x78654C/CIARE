@@ -40,7 +40,7 @@ namespace CIARE.Utils
                 {
                     GlobalVariables.openedFilePath = s_openFileDialog.FileName;
                     var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    GlobalVariables.openedFileSize = reader.ReadToEnd().Length;
+                    SetFileSize(fileInfo.FullName);
                     GlobalVariables.openedFileName = fileInfo.Name;
                     return reader.ReadToEnd();
                 }
@@ -721,6 +721,7 @@ MessageBoxIcon.Information);
             }
             return isTabPresent;
         }
+
         /// <summary>
         /// Load files from arguments on cli.
         /// </summary>
@@ -750,7 +751,7 @@ MessageBoxIcon.Information);
         public static void SetFileSize(string filePath)
         {
             using (var streamReader = new StreamReader(filePath))
-                GlobalVariables.openedFileSize = streamReader.ReadToEndAsync().Result.Length;
+                GlobalVariables.openedFileSize = streamReader.ReadToEnd().Length;
         }
     }
 }
