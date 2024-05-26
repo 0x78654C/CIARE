@@ -506,6 +506,8 @@ MessageBoxIcon.Warning);
                             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{fileInfo.Name}";
                             TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                            var readData = File.ReadAllText(fileInfo.FullName);
+                            GlobalVariables.openedFileSize = readData.Length;
                         }
                     }
                 }
