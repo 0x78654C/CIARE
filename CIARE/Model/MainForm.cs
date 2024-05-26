@@ -926,9 +926,7 @@ namespace CIARE
                 var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                 GlobalVariables.openedFileName = fileInfo.Name;
                 if (File.Exists(filePath))
-                {
                     FileManage.SetFileSize(filePath);
-                }
             }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
