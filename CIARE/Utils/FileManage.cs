@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
-using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Reference;
@@ -22,8 +22,7 @@ namespace CIARE.Utils
         private static OpenFileDialog s_openFileDialog = new OpenFileDialog();
         private static SaveFileDialog s_saveFileDialog = new SaveFileDialog();
         private static List<string> s_packageLibs = new List<string>();
-        private static string s_path = "";
-        private static BackgroundWorker s_worker;
+
         /// <summary>
         /// Open file dialog.
         /// </summary>
@@ -745,26 +744,13 @@ MessageBoxIcon.Information);
         }
 
         /// <summary>
-        /// Do worker event for read file.
-        /// </summary>
-        /// <param name="o"></param>
-        /// <param name="e"></param>
-        private static void GetSetFileSize(object o, DoWorkEventArgs e)
-        {
-            using (var streamReader = new StreamReader(s_path))
-                GlobalVariables.openedFileSize = streamReader.ReadToEnd().Length;
-        }
-
-        /// <summary>
         /// Store in global the file size.
         /// </summary>
         /// <param name="filePath"></param>
         public static void SetFileSize(string filePath)
         {
-            s_path = filePath;
-            s_worker = new BackgroundWorker();
-            s_worker.DoWork += GetSetFileSize;
-            s_worker.RunWorkerAsync();
+            using (var streamReader = new StreamReader(filePath))
+                GlobalVariables.openedFileSize = streamReader.ReadToEndAsync().Result.Length;
         }
     }
 }
