@@ -651,6 +651,7 @@ MessageBoxIcon.Information);
                 if (!fileExist)
                     return;
                 FileInfo fileInfo = new FileInfo(file);
+                SetFileSize(file);
                 isTabPresent = SetEditorTabArgs(tabControl, file);
                 if (isTabPresent) return;
                 using (var reader = new StreamReader(file))
@@ -662,7 +663,6 @@ MessageBoxIcon.Information);
                         MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                         tabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                         tabControl.SelectedTab.ToolTipText = file;
-                        SetFileSize(fileInfo.FullName);
                         if (GlobalVariables.OStartUp)
                         {
                             TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedIndex, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
@@ -679,6 +679,7 @@ MessageBoxIcon.Information);
             {
                 GlobalVariables.isCLIOpen = true;
                 FileInfo fileInfo = new FileInfo(data);
+                SetFileSize(fileInfo.FullName);
                 isTabPresent = SetEditorTabArgs(tabControl, data);
                 if (isTabPresent) return;
                 TabControllerManage.AddNewTab(tabControl);
@@ -687,7 +688,6 @@ MessageBoxIcon.Information);
                 var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
                 MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
-                SetFileSize(fileInfo.FullName);
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = fileInfo.FullName;
                 TabControllerManage.StoreFileSize(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, 1);
                 if (GlobalVariables.OStartUp)
