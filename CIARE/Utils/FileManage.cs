@@ -345,6 +345,7 @@ MessageBoxIcon.Warning);
                 MainForm.Instance.Text = $"{fileInfo.Name} : {filePath} - CIARE {GlobalVariables.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
+                SetFileSize(filePath);
                 TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
                 if (GlobalVariables.OStartUp)
                     TabControllerManage.StoreDeleteTabs(previousTabPath, filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, index);  // Store tabs title and index.
@@ -663,6 +664,7 @@ MessageBoxIcon.Information);
                         MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                         tabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                         tabControl.SelectedTab.ToolTipText = file;
+                        SetFileSize(fileInfo.FullName);
                         if (GlobalVariables.OStartUp)
                         {
                             TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedIndex, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
@@ -687,6 +689,7 @@ MessageBoxIcon.Information);
                 var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
                 MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
+                SetFileSize(fileInfo.FullName);
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = fileInfo.FullName;
                 TabControllerManage.StoreFileSize(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, 1);
                 if (GlobalVariables.OStartUp)
@@ -750,8 +753,8 @@ MessageBoxIcon.Information);
         /// <param name="filePath"></param>
         public static void SetFileSize(string filePath)
         {
-            using (var streamReader = new StreamReader(filePath))
-                GlobalVariables.openedFileSize = streamReader.ReadToEnd().Length;
+            string fileData = File.ReadAllText(filePath);
+            GlobalVariables.openedFileSize = fileData.Length;
         }
     }
 }
