@@ -651,7 +651,6 @@ MessageBoxIcon.Information);
                 if (!fileExist)
                     return;
                 FileInfo fileInfo = new FileInfo(file);
-                SetFileSize(file);
                 isTabPresent = SetEditorTabArgs(tabControl, file);
                 if (isTabPresent) return;
                 using (var reader = new StreamReader(file))
@@ -663,6 +662,7 @@ MessageBoxIcon.Information);
                         MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                         tabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                         tabControl.SelectedTab.ToolTipText = file;
+                        SetFileSize(fileInfo.FullName);
                         if (GlobalVariables.OStartUp)
                         {
                             TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedIndex, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
