@@ -640,12 +640,12 @@ MessageBoxIcon.Information);
         private static void LoadParamFile(string data, TabControl tabControl)
         {
             bool isTabPresent = false;
-
+            var isFileOpenedInTab = false;
             if (data.StartsWith("cli|"))
             {
                 GlobalVariables.isCLIOpen = true;
                 string file = data.Split('|')[1];
-                var isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, file);
+                isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, file);
                 if (isFileOpenedInTab) return;
                 bool fileExist = ManageCommandFileParamCLI(file);
                 if (!fileExist)
@@ -672,7 +672,7 @@ MessageBoxIcon.Information);
                 }
                 return;
             }
-
+            if (isFileOpenedInTab) return;
             data = PathCheck(data, false);
 
             if (File.Exists(data))
