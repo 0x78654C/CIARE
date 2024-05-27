@@ -61,15 +61,14 @@ namespace ICSharpCode.SharpDevelop.Dom
 		
 		void SetFullyQualifiedName(string fullName)
 		{
-			if (fullName != null)
-			{
-				this.fullName = fullName;
-				int pos = fullName.LastIndexOf('.');
-				if (pos < 0)
-					shortName = fullName;
-				else
-					shortName = fullName.Substring(pos + 1);
-			}
+			if (fullName == null)
+				throw new ArgumentNullException("fullName");
+			this.fullName = fullName;
+			int pos = fullName.LastIndexOf('.');
+			if (pos < 0)
+				shortName = fullName;
+			else
+				shortName = fullName.Substring(pos + 1);
 		}
 		
 		public override string Name {

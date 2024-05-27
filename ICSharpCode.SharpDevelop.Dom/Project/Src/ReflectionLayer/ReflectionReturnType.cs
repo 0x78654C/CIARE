@@ -150,18 +150,16 @@ namespace ICSharpCode.SharpDevelop.Dom.ReflectionLayer
 				return new GenericReturnType(new DefaultTypeParameter(c, type));
 			} else {
 				string name = type.FullName;
-                int typeParameterCount=0;
-                if (name != null)
-				{
-					name = ReflectionClass.ConvertReflectionNameToFullName(name, out typeParameterCount);
-					if (!createLazyReturnType)
-					{
-						IClass c = pc.GetClass(name, typeParameterCount);
-						if (c != null)
-							return c.DefaultReturnType;
-						// example where name is not found: pointers like System.Char*
-						// or when the class is in a assembly that is not referenced
-					}
+				if (name == null)
+					throw new ApplicationException("type.FullName returned null. Type: " + type.ToString());
+				int typeParameterCount;
+				name = ReflectionClass.ConvertReflectionNameToFullName(name, out typeParameterCount);
+				if (!createLazyReturnType) {
+					IClass c = pc.GetClass(name, typeParameterCount);
+					if (c != null)
+						return c.DefaultReturnType;
+					// example where name is not found: pointers like System.Char*
+					// or when the class is in a assembly that is not referenced
 				}
 				return new GetClassReturnType(pc, name, typeParameterCount);
 			}
