@@ -341,7 +341,6 @@ namespace CIARE
             });
         }
 
-
         #region HotKeys Actions
         /// <summary>
         /// Override the key combination listener for file management events.
@@ -355,10 +354,6 @@ namespace CIARE
             {
                 case Keys.U | Keys.Control:
                     SwitchSplit.SwitchSplitWindow();
-                    return true;
-                case Keys.End:
-                    return true;
-                case Keys.Home:
                     return true;
                 case Keys.End | Keys.Control:
                     if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
@@ -1123,13 +1118,17 @@ namespace CIARE
         }
 
         /// <summary>
-        /// Cancel left/right key scroll.
+        /// Cancel left/right and home/end key scroll.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void EditorTabControl_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right)
+            {
+                e.Handled = true;
+            }
+            if (e.KeyCode == Keys.End || e.KeyCode == Keys.Home)
             {
                 e.Handled = true;
             }
