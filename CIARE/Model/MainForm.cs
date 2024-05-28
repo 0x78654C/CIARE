@@ -269,7 +269,7 @@ namespace CIARE
             if (File.Exists(path))
             {
                 var sizeTxt = SelectedEditor.GetSelectedEditor().Text.Length;
-                
+
                 //Remove * depende of file size in comparison text size.
                 if (GlobalVariables.openedFileSize != sizeTxt)
                 {
@@ -360,7 +360,7 @@ namespace CIARE
                     {
                         var liensCount = SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines;
                         SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.ScrollTo(liensCount);
-                        SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Line =liensCount;
+                        SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Line = liensCount;
                     }
                     return true;
                 case Keys.Home | Keys.Control:
@@ -549,7 +549,7 @@ namespace CIARE
         {
             // Store tab text of current opened tab.
             var toolTipText = EditorTabControl.SelectedTab.ToolTipText.Trim();
-            if(toolTipText.StartsWith("Add Tab"))
+            if (toolTipText.StartsWith("Add Tab"))
                 TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, string.Empty);
             else
                 TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl.SelectedTab.ToolTipText.Trim());
@@ -978,7 +978,10 @@ namespace CIARE
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.AllowDrop = true;
             dynamicTextEdtior.ActiveTextAreaControl.HScrollBar.Visible = true;
             dynamicTextEdtior.ActiveTextAreaControl.VScrollBar.Visible = true;
-            dynamicTextEdtior.TextEditorProperties.AutoInsertCurlyBracket = true;
+            dynamicTextEdtior.ActiveTextAreaControl.AutoHideScrollbars = true;
+            dynamicTextEdtior.ActiveTextAreaControl.TextEditorProperties.AutoInsertCurlyBracket = true;
+            dynamicTextEdtior.ActiveTextAreaControl.VerticalScroll.Enabled =true;
+            dynamicTextEdtior.ActiveTextAreaControl.HorizontalScroll.Enabled =true;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             dynamicTextEdtior.Focus();
