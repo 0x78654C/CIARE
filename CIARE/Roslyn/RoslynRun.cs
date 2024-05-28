@@ -137,8 +137,7 @@ namespace CIARE.Roslyn
             {
                 if (!Directory.Exists(roslynDir))
                 {
-                    richTextBox.Text = $"ERROR: Directory does not exist -> {roslynDir}";
-                    return;
+                    Directory.CreateDirectory(roslynDir);
                 }
                 if (string.IsNullOrEmpty(code))
                 {
