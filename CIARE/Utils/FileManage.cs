@@ -20,6 +20,7 @@ namespace CIARE.Utils
         private static OpenFileDialog s_openFileDialog = new OpenFileDialog();
         private static SaveFileDialog s_saveFileDialog = new SaveFileDialog();
         private static List<string> s_packageLibs = new List<string>();
+        private static bool s_isTabOpen = false;
 
         /// <summary>
         /// Open file dialog.
@@ -40,6 +41,7 @@ namespace CIARE.Utils
                     var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                     SetFileSize(fileInfo.FullName);
                     GlobalVariables.openedFileName = fileInfo.Name;
+                    s_isTabOpen = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, GlobalVariables.openedFilePath);
                     return reader.ReadToEnd();
                 }
             }
@@ -297,11 +299,8 @@ MessageBoxIcon.Warning);
             //if (GlobalVariables.noClear)
             //    return;
             string openedData = OpenFile();
-            if (string.IsNullOrEmpty(openedData))
-                return;
 
-            var isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, GlobalVariables.openedFilePath);
-            if (isFileOpenedInTab) return;
+            if (s_isTabOpen) return;
 
             if (GlobalVariables.noFileSelected)
             {
