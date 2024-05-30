@@ -6,6 +6,7 @@ using System.Runtime.Versioning;
 using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Reference;
+using CIARE.Utils.Encryption;
 using CIARE.Utils.FilesOpenOS;
 using ICSharpCode.TextEditor;
 using Application = System.Windows.Forms.Application;
@@ -39,7 +40,7 @@ namespace CIARE.Utils
                 {
                     GlobalVariables.openedFilePath = s_openFileDialog.FileName;
                     var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                    SetFileSize(fileInfo.FullName);
+                    SetFileMD5(fileInfo.FullName);
                     GlobalVariables.openedFileName = fileInfo.Name;
                     s_isTabOpen = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, GlobalVariables.openedFilePath);
                     return reader.ReadToEnd();
@@ -103,7 +104,7 @@ MessageBoxIcon.Warning);
                         FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                         GlobalVariables.openedFileName = fileInfo.Name;
                         GlobalVariables.savedFile = true;
-                        SetFileSize(fileInfo.FullName);
+                        SetFileMD5(fileInfo.FullName);
                     }
                 }
                 catch (Exception e)
@@ -345,7 +346,7 @@ MessageBoxIcon.Warning);
                 MainForm.Instance.Text = $"{fileInfo.Name} : {filePath} - CIARE {GlobalVariables.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
-                SetFileSize(filePath);
+                SetFileMD5(filePath);
                 TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
                 if (GlobalVariables.OStartUp)
                     TabControllerManage.StoreDeleteTabs(previousTabPath, filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, index);  // Store tabs title and index.
@@ -371,7 +372,7 @@ MessageBoxIcon.Warning);
                     MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                     StoreTabs(GlobalVariables.openedFilePath);
-                    SetFileSize(fileInfo.FullName);
+                    SetFileMD5(fileInfo.FullName);
                     return;
                 }
                 SaveFile(SelectedEditor.GetSelectedEditor().Text);
@@ -506,7 +507,7 @@ MessageBoxIcon.Warning);
                             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{fileInfo.Name}";
                             TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
-                            SetFileSize(filePath);
+                            SetFileMD5(filePath);
                         }
                     }
                 }
@@ -664,7 +665,7 @@ MessageBoxIcon.Information);
                         MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                         tabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                         tabControl.SelectedTab.ToolTipText = file;
-                        SetFileSize(fileInfo.FullName);
+                        SetFileMD5(fileInfo.FullName);
                         if (GlobalVariables.OStartUp)
                         {
                             TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedIndex, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
@@ -681,7 +682,7 @@ MessageBoxIcon.Information);
             {
                 GlobalVariables.isCLIOpen = true;
                 FileInfo fileInfo = new FileInfo(data);
-                SetFileSize(fileInfo.FullName);
+                SetFileMD5(fileInfo.FullName);
                 isTabPresent = SetEditorTabArgs(tabControl, data);
                 if (isTabPresent) return;
                 TabControllerManage.AddNewTab(tabControl);
@@ -751,10 +752,10 @@ MessageBoxIcon.Information);
         /// Store in global the file size.
         /// </summary>
         /// <param name="filePath"></param>
-        public static void SetFileSize(string filePath)
+        public static void SetFileMD5(string filePath)
         {
             string fileData = File.ReadAllText(filePath);
-            GlobalVariables.openedFileSize = fileData.Length;
+            GlobalVariables.openedFileMD5 = MD5Hash.GetMD5Hash(fileData);
         }
     }
 }
