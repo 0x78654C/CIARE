@@ -38,6 +38,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
+using CIARE.Utils.Encryption;
 
 
 namespace CIARE
@@ -268,10 +269,10 @@ namespace CIARE
             var path = EditorTabControl.SelectedTab.ToolTipText;
             if (File.Exists(path))
             {
-                var sizeTxt = SelectedEditor.GetSelectedEditor().Text.Length;
+                var md5Txt = MD5Hash.GetMD5Hash(SelectedEditor.GetSelectedEditor().Text);
 
                 //Remove * depende of file size in comparison text size.
-                if (GlobalVariables.openedFileSize != sizeTxt)
+                if (GlobalVariables.openedFileMD5 != md5Txt)
                 {
                     this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                     string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
@@ -921,7 +922,7 @@ namespace CIARE
                 var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                 GlobalVariables.openedFileName = fileInfo.Name;
                 if (File.Exists(filePath))
-                    FileManage.SetFileSize(filePath);
+                    FileManage.SetFileMD5(filePath);
             }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
