@@ -980,8 +980,8 @@ namespace CIARE
             dynamicTextEdtior.ActiveTextAreaControl.VScrollBar.Visible = true;
             dynamicTextEdtior.ActiveTextAreaControl.AutoHideScrollbars = true;
             dynamicTextEdtior.ActiveTextAreaControl.TextEditorProperties.AutoInsertCurlyBracket = true;
-            dynamicTextEdtior.ActiveTextAreaControl.VerticalScroll.Enabled =true;
-            dynamicTextEdtior.ActiveTextAreaControl.HorizontalScroll.Enabled =true;
+            dynamicTextEdtior.ActiveTextAreaControl.VerticalScroll.Enabled = true;
+            dynamicTextEdtior.ActiveTextAreaControl.HorizontalScroll.Enabled = true;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             dynamicTextEdtior.Focus();
