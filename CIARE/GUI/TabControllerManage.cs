@@ -22,15 +22,19 @@ namespace CIARE.GUI
         /// <returns></returns>
         public static bool IsFileOpenedInTab(TabControl tabControl, string path)
         {
-            foreach (TabPage tabPage in tabControl.TabPages)
+            var isPresent = false;
+            MainForm.Instance.Invoke(delegate
             {
-                if (tabPage.ToolTipText.ToLower() == path.ToLower())
+                foreach (TabPage tabPage in tabControl.TabPages)
                 {
-                    tabControl.SelectTab(tabPage);
-                    return true;
+                    if (tabPage.ToolTipText.ToLower() == path.ToLower())
+                    {
+                        tabControl.SelectTab(tabPage);
+                        isPresent= true;
+                    }
                 }
-            }
-            return false;
+            });
+            return isPresent;
         }
 
         /// <summary>
