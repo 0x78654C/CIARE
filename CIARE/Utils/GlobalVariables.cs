@@ -24,7 +24,7 @@ namespace CIARE.Utils
         public static bool isStoringTabs = false;
         public static string openedFilePath { get; set; } = string.Empty;
         public static string openedFileName = string.Empty;
-        public static int openedFileSize = 0;
+        public static string openedFileMD5 { get; set; } = "";
         public static int openedFileLen = 0;
         public static string commandLineArguments = string.Empty;
         public static string findData = string.Empty;
