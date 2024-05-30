@@ -297,6 +297,8 @@ MessageBoxIcon.Warning);
             //if (GlobalVariables.noClear)
             //    return;
             string openedData = OpenFile();
+            if (string.IsNullOrEmpty(openedData))
+                return;
 
             var isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, GlobalVariables.openedFilePath);
             if (isFileOpenedInTab) return;
@@ -307,6 +309,7 @@ MessageBoxIcon.Warning);
                 return;
             }
             textEditor.Text = openedData;
+            textEditor.Refresh();
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
             GlobalVariables.openedFileName = fileInfo.Name;
             MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
