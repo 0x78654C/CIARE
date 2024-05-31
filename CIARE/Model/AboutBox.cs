@@ -21,6 +21,23 @@ namespace CIARE
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
         }
 
+        /// <summary>
+        /// Overwrite the key press.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            switch (keyData)
+            {
+                case Keys.Escape:
+                    this.Close();
+                    return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
         #region Assembly Attribute Accessors
 
         public string AssemblyTitle

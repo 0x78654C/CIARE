@@ -182,6 +182,7 @@ CTRL + R         : Add external reference or download from NuGet.
 ------------------ View -------------------
 CTRL + W         : Split window vertically.
 CTRL + Shift + W : Split window horizontally.
+CTRL + U         : Switch between splited window area.
 CTRL + K         : Show/Hide output window.
 
 ----------- Tabs management ---------------

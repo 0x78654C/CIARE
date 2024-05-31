@@ -38,6 +38,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
+using CIARE.Utils.Encryption;
 
 
 namespace CIARE
@@ -149,8 +150,14 @@ namespace CIARE
             //----------------------------------
 
             if (!GlobalVariables.isCLIOpen)
+            {
                 InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
-            
+            }
+            else
+            {
+                TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, GlobalVariables.openedFilePath);
+            }
+            isLoaded = true;
             ReloadRef();
         }
 
@@ -262,10 +269,10 @@ namespace CIARE
             var path = EditorTabControl.SelectedTab.ToolTipText;
             if (File.Exists(path))
             {
-                var sizeTxt = SelectedEditor.GetSelectedEditor().Text.Length;
-                
+                var md5Txt = MD5Hash.GetMD5Hash(SelectedEditor.GetSelectedEditor().Text);
+
                 //Remove * depende of file size in comparison text size.
-                if (GlobalVariables.openedFileSize != sizeTxt)
+                if (GlobalVariables.openedFileMD5 != md5Txt)
                 {
                     this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                     string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
@@ -309,8 +316,6 @@ namespace CIARE
             TabControllerManage.AddNewTab(EditorTabControl);
         }
 
-
-
         /// <summary>
         /// Split window horizontaly.
         /// </summary>
@@ -337,7 +342,6 @@ namespace CIARE
             });
         }
 
-
         #region HotKeys Actions
         /// <summary>
         /// Override the key combination listener for file management events.
@@ -349,9 +353,23 @@ namespace CIARE
         {
             switch (keyData)
             {
-                case Keys.End:
+                case Keys.U | Keys.Control:
+                    SwitchSplit.SwitchSplitWindow();
                     return true;
-                case Keys.Home:
+                case Keys.End | Keys.Control:
+                    if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
+                    {
+                        var liensCount = SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines;
+                        SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.ScrollTo(liensCount);
+                        SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Line = liensCount;
+                    }
+                    return true;
+                case Keys.Home | Keys.Control:
+                    if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
+                    {
+                        SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.ScrollTo(0);
+                        SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Line = 0;
+                    }
                     return true;
                 case Keys.PageDown | Keys.Control:
                     TabControllerManage.SwitchTabs(ref EditorTabControl, true);
@@ -532,7 +550,7 @@ namespace CIARE
         {
             // Store tab text of current opened tab.
             var toolTipText = EditorTabControl.SelectedTab.ToolTipText.Trim();
-            if(toolTipText.StartsWith("Add Tab"))
+            if (toolTipText.StartsWith("Add Tab"))
                 TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, string.Empty);
             else
                 TabControllerManage.StoreTabPosition(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl.SelectedTab.ToolTipText.Trim());
@@ -720,10 +738,7 @@ namespace CIARE
 
                 myProjectContent.AddReferencedContent(item);
 
-                if (myProjectContent is Dom.ReflectionProjectContent)
-                {
-                    (myProjectContent as Dom.ReflectionProjectContent).InitializeReferences();
-                }
+                if (myProjectContent is Dom.ReflectionProjectContent myObj) myObj.InitializeReferences();
             }
 
             while (!IsDisposed)
@@ -883,22 +898,31 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
-
             string titleTab = EditorTabControl.SelectedTab.Text.Trim();
             string filePath = EditorTabControl.SelectedTab.ToolTipText.Trim();
+
+            if (isLoaded)
+            {
+                try
+                {
+                    GlobalVariables.textAreaFirst = SelectedEditor.GetSelectedEditor().primaryTextArea;
+                    GlobalVariables.textAreaSecond = SelectedEditor.GetSelectedEditor().secondaryTextArea;
+                }
+                catch
+                {
+                    // Ignore index 0 error. The area will be set after load on first split anyway.
+                }
+            }
+
             if (!string.IsNullOrEmpty(filePath))
             {
                 GlobalVariables.openedFilePath = filePath;
                 var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                 GlobalVariables.openedFileName = fileInfo.Name;
                 if (File.Exists(filePath))
-                {
-                    var readData = File.ReadAllText(filePath);
-                    GlobalVariables.openedFileSize = readData.Length;
-                }
+                    FileManage.SetFileMD5(filePath);
             }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
@@ -953,7 +977,12 @@ namespace CIARE
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.DragDrop += DynamicTextEdtior_DragDrop;
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.DragOver += DynamicTextEdtior_DragEnter;
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.AllowDrop = true;
-            dynamicTextEdtior.TextEditorProperties.AutoInsertCurlyBracket = true;
+            dynamicTextEdtior.ActiveTextAreaControl.HScrollBar.Visible = true;
+            dynamicTextEdtior.ActiveTextAreaControl.VScrollBar.Visible = true;
+            dynamicTextEdtior.ActiveTextAreaControl.AutoHideScrollbars = true;
+            dynamicTextEdtior.ActiveTextAreaControl.TextEditorProperties.AutoInsertCurlyBracket = true;
+            dynamicTextEdtior.ActiveTextAreaControl.VerticalScroll.Enabled = true;
+            dynamicTextEdtior.ActiveTextAreaControl.HorizontalScroll.Enabled = true;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             dynamicTextEdtior.Focus();
@@ -998,10 +1027,14 @@ namespace CIARE
         {
             this.Invoke(delegate
             {
-                TabControllerManage.AddNewTab(EditorTabControl);
 
                 foreach (var file in _filesDrag)
+                {
+                    var isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, file);
+                    if (isFileOpenedInTab) return;
+                    TabControllerManage.AddNewTab(EditorTabControl);
                     FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), file);
+                }
             });
         }
 
@@ -1089,13 +1122,17 @@ namespace CIARE
         }
 
         /// <summary>
-        /// Cancel left/right key scroll.
+        /// Cancel left/right and home/end key scroll.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void EditorTabControl_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right)
+            {
+                e.Handled = true;
+            }
+            if (e.KeyCode == Keys.End || e.KeyCode == Keys.Home)
             {
                 e.Handled = true;
             }

@@ -27,7 +27,7 @@ namespace CIARE.Roslyn
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>"+GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
@@ -43,7 +43,7 @@ namespace CIARE.Roslyn
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>"+GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>

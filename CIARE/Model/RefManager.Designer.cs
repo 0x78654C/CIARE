@@ -59,13 +59,13 @@
             // 
             refListView.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             refListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { nameSpace, filePath });
-            refListView.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            refListView.Font = new System.Drawing.Font("Segoe UI", 9.75F);
             refListView.Location = new System.Drawing.Point(6, 22);
+            refListView.MultiSelect = false;
             refListView.Name = "refListView";
             refListView.Size = new System.Drawing.Size(866, 359);
             refListView.TabIndex = 0;
             refListView.UseCompatibleStateImageBehavior = false;
-            refListView.MultiSelect = false;
             refListView.View = System.Windows.Forms.View.Details;
             refListView.MouseClick += refListView_MouseClick;
             // 
@@ -86,7 +86,7 @@
             AddRefFileBtn.Name = "AddRefFileBtn";
             AddRefFileBtn.Size = new System.Drawing.Size(106, 28);
             AddRefFileBtn.TabIndex = 1;
-            AddRefFileBtn.Text = "Add Reference";
+            AddRefFileBtn.Text = "(A)dd Reference";
             AddRefFileBtn.UseVisualStyleBackColor = true;
             AddRefFileBtn.Click += AddRefFileBtn_Click;
             // 
@@ -127,9 +127,9 @@
             NugetManagerBtn.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
             NugetManagerBtn.Location = new System.Drawing.Point(124, 421);
             NugetManagerBtn.Name = "NugetManagerBtn";
-            NugetManagerBtn.Size = new System.Drawing.Size(106, 28);
+            NugetManagerBtn.Size = new System.Drawing.Size(110, 28);
             NugetManagerBtn.TabIndex = 3;
-            NugetManagerBtn.Text = "NuGet Manager ";
+            NugetManagerBtn.Text = "(N)uGet Manager ";
             NugetManagerBtn.UseVisualStyleBackColor = true;
             NugetManagerBtn.Click += NugetManagerBtn_Click;
             // 

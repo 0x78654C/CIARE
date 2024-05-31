@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using ICSharpCode.TextEditor;
 
 namespace CIARE.Utils
 {
@@ -23,7 +24,7 @@ namespace CIARE.Utils
         public static bool isStoringTabs = false;
         public static string openedFilePath { get; set; } = string.Empty;
         public static string openedFileName = string.Empty;
-        public static int openedFileSize = 0;
+        public static string openedFileMD5 { get; set; } = "";
         public static int openedFileLen = 0;
         public static string commandLineArguments = string.Empty;
         public static string findData = string.Empty;
@@ -32,6 +33,8 @@ namespace CIARE.Utils
         public static bool savedFile = false;
         public static bool noFileSelected = false;
         public static bool splitWindowPosition = false;
+        public static TextAreaControl textAreaFirst { get; set; }
+        public static TextAreaControl textAreaSecond { get; set; }
         public static bool exeName = false;
         public static bool checkFormOpen = false;
         public static bool outPutDisplay = false;

@@ -23,9 +23,9 @@ namespace ICSharpCode.TextEditor
     public class TextEditorControl : TextEditorControlBase
     {
         protected Panel textAreaPanel = new Panel();
-        TextAreaControl primaryTextArea;
+        public TextAreaControl primaryTextArea;
         Splitter textAreaSplitter = null;
-        TextAreaControl secondaryTextArea = null;
+        public TextAreaControl secondaryTextArea = null;
 
         PrintDocument printDocument = null;
         string highlighting;

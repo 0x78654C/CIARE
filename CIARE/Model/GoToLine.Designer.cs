@@ -30,79 +30,84 @@ namespace CIARE
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(GoToLine));
-            this.goToLineGB = new System.Windows.Forms.GroupBox();
-            this.cancelBtn = new System.Windows.Forms.Button();
-            this.goToLineBtn = new System.Windows.Forms.Button();
-            this.goToLineNumberTxt = new System.Windows.Forms.TextBox();
-            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.goToLineGB.SuspendLayout();
-            this.SuspendLayout();
+            goToLineGB = new System.Windows.Forms.GroupBox();
+            cancelBtn = new System.Windows.Forms.Button();
+            goToLineBtn = new System.Windows.Forms.Button();
+            goToLineNumberTxt = new System.Windows.Forms.TextBox();
+            backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            goToLineGB.SuspendLayout();
+            SuspendLayout();
             // 
             // goToLineGB
             // 
-            this.goToLineGB.Controls.Add(this.cancelBtn);
-            this.goToLineGB.Controls.Add(this.goToLineBtn);
-            this.goToLineGB.Controls.Add(this.goToLineNumberTxt);
-            this.goToLineGB.Location = new System.Drawing.Point(12, 12);
-            this.goToLineGB.Name = "goToLineGB";
-            this.goToLineGB.Size = new System.Drawing.Size(232, 98);
-            this.goToLineGB.TabIndex = 0;
-            this.goToLineGB.TabStop = false;
+            goToLineGB.Controls.Add(cancelBtn);
+            goToLineGB.Controls.Add(goToLineBtn);
+            goToLineGB.Controls.Add(goToLineNumberTxt);
+            goToLineGB.Location = new System.Drawing.Point(14, 14);
+            goToLineGB.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            goToLineGB.Name = "goToLineGB";
+            goToLineGB.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            goToLineGB.Size = new System.Drawing.Size(271, 113);
+            goToLineGB.TabIndex = 0;
+            goToLineGB.TabStop = false;
             // 
             // cancelBtn
             // 
-            this.cancelBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.cancelBtn.Location = new System.Drawing.Point(151, 61);
-            this.cancelBtn.Name = "cancelBtn";
-            this.cancelBtn.Size = new System.Drawing.Size(75, 23);
-            this.cancelBtn.TabIndex = 2;
-            this.cancelBtn.Text = "Cancel";
-            this.cancelBtn.UseVisualStyleBackColor = true;
-            this.cancelBtn.Click += new System.EventHandler(this.cancelBtn_Click);
+            cancelBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            cancelBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            cancelBtn.Location = new System.Drawing.Point(176, 70);
+            cancelBtn.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            cancelBtn.Name = "cancelBtn";
+            cancelBtn.Size = new System.Drawing.Size(88, 27);
+            cancelBtn.TabIndex = 2;
+            cancelBtn.Text = "Cancel";
+            cancelBtn.UseVisualStyleBackColor = true;
+            cancelBtn.Click += cancelBtn_Click;
             // 
             // goToLineBtn
             // 
-            this.goToLineBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.goToLineBtn.Location = new System.Drawing.Point(6, 61);
-            this.goToLineBtn.Name = "goToLineBtn";
-            this.goToLineBtn.Size = new System.Drawing.Size(75, 23);
-            this.goToLineBtn.TabIndex = 1;
-            this.goToLineBtn.Text = "Go";
-            this.goToLineBtn.UseVisualStyleBackColor = true;
-            this.goToLineBtn.Click += new System.EventHandler(this.goToLineBtn_Click);
+            goToLineBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            goToLineBtn.Location = new System.Drawing.Point(7, 70);
+            goToLineBtn.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            goToLineBtn.Name = "goToLineBtn";
+            goToLineBtn.Size = new System.Drawing.Size(88, 27);
+            goToLineBtn.TabIndex = 1;
+            goToLineBtn.Text = "Go";
+            goToLineBtn.UseVisualStyleBackColor = true;
+            goToLineBtn.Click += goToLineBtn_Click;
             // 
             // goToLineNumberTxt
             // 
-            this.goToLineNumberTxt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.goToLineNumberTxt.Location = new System.Drawing.Point(6, 19);
-            this.goToLineNumberTxt.Name = "goToLineNumberTxt";
-            this.goToLineNumberTxt.Size = new System.Drawing.Size(220, 22);
-            this.goToLineNumberTxt.TabIndex = 0;
-            this.goToLineNumberTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.goToLineNumberTxt.TextChanged += new System.EventHandler(this.goToLineNumberTxt_TextChanged);
+            goToLineNumberTxt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+            goToLineNumberTxt.Location = new System.Drawing.Point(7, 22);
+            goToLineNumberTxt.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            goToLineNumberTxt.Name = "goToLineNumberTxt";
+            goToLineNumberTxt.Size = new System.Drawing.Size(256, 22);
+            goToLineNumberTxt.TabIndex = 0;
+            goToLineNumberTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            goToLineNumberTxt.TextChanged += goToLineNumberTxt_TextChanged;
             // 
             // GoToLine
             // 
-            this.AcceptButton = this.goToLineBtn;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.Window;
-            this.CancelButton = this.cancelBtn;
-            this.ClientSize = new System.Drawing.Size(257, 127);
-            this.Controls.Add(this.goToLineGB);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "GoToLine";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Go To Line";
-            this.Load += new System.EventHandler(this.GoToLine_Load);
-            this.goToLineGB.ResumeLayout(false);
-            this.goToLineGB.PerformLayout();
-            this.ResumeLayout(false);
-
+            AcceptButton = goToLineBtn;
+            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            BackColor = System.Drawing.SystemColors.Window;
+            CancelButton = cancelBtn;
+            ClientSize = new System.Drawing.Size(300, 147);
+            Controls.Add(goToLineGB);
+            FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
+            Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "GoToLine";
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            Text = "Go To Line";
+            Load += GoToLine_Load;
+            goToLineGB.ResumeLayout(false);
+            goToLineGB.PerformLayout();
+            ResumeLayout(false);
         }
 
         #endregion
