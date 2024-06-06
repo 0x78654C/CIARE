@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.Utils
 {
+    [SupportedOSPlatform("windows")]
     public class WaterMark
     {
         //Grab the user32.dll function for textbox hint text

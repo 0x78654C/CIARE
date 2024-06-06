@@ -8,9 +8,11 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using OpenAI.Api.Client.Models;
+using System.Runtime.Versioning;
 
 namespace CIARE.Utils.OpenAISettings
 {
+    [SupportedOSPlatform("windows")]
     public class AiManage
     {
         private string ApiKey = string.Empty;

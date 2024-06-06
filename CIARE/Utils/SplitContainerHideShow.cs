@@ -1,6 +1,8 @@
-﻿using System.Windows.Forms;
+﻿using System.Runtime.Versioning;
+using System.Windows.Forms;
 namespace CIARE.Utils
 {
+    [SupportedOSPlatform("windows")]
     /*
      Show/Hide split container second Panel.
      */

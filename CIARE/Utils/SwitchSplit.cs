@@ -1,7 +1,9 @@
 ﻿using ICSharpCode.TextEditor;
+using System.Runtime.Versioning;
 
 namespace CIARE.Utils
 {
+    [SupportedOSPlatform("windows")]
     /*
      Split ICSharpCode.TextEditor window.
      */

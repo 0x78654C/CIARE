@@ -2,9 +2,11 @@
 using System.Windows.Forms;
 using CIARE.Utils;
 using CIARE.GUI;
+using System.Runtime.Versioning;
 
 namespace CIARE
 {
+    [SupportedOSPlatform("windows")]
     public partial class BinaryName : Form
     {
         /*

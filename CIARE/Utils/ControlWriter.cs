@@ -1,9 +1,11 @@
 ﻿using System.IO;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Windows.Forms;
 
 namespace CIARE.Utils
 {
+    [SupportedOSPlatform("windows")]
     public class ControlWriter : TextWriter
     {
         private Control textbox;

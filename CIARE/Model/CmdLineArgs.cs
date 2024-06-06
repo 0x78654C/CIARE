@@ -2,9 +2,11 @@
 using CIARE.Utils;
 using System.Windows.Forms;
 using CIARE.GUI;
+using System.Runtime.Versioning;
 
 namespace CIARE
 {
+    [SupportedOSPlatform("windows")]
     /*
      Form for set the command line arguments.
      */

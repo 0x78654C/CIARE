@@ -3,11 +3,13 @@ using System.Reflection;
 using System.Windows.Forms;
 using CIARE.Utils;
 using CIARE.GUI;
+using System.Runtime.Versioning;
 
 namespace CIARE
 {
     partial class AboutBox : Form
     {
+        [SupportedOSPlatform("windows")]
         public AboutBox()
         {
             InitializeComponent();

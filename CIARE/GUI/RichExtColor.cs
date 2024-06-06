@@ -1,8 +1,10 @@
 ﻿using System.Windows.Forms;
 using System.Drawing;
+using System.Runtime.Versioning;
 
 namespace CIARE.GUI
 {
+    [SupportedOSPlatform("windows")]
     public class RichExtColor
     {
         /// <summary>

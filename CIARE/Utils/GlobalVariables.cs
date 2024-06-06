@@ -5,9 +5,11 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 using ICSharpCode.TextEditor;
+using System.Runtime.Versioning;
 
 namespace CIARE.Utils
 {
+    [SupportedOSPlatform("windows")]
     public class GlobalVariables
     {
         public static string paramData = string.Empty;

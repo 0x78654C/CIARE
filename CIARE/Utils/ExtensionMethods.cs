@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE
 {
+    [SupportedOSPlatform("windows")]
     internal static class ExtensionMethods
     {
         internal static bool ContainsText(this string source, string searchText)
