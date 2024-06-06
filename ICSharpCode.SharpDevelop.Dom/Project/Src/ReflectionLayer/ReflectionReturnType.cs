@@ -149,7 +149,7 @@ namespace ICSharpCode.SharpDevelop.Dom.ReflectionLayer
 				}
 				return new GenericReturnType(new DefaultTypeParameter(c, type));
 			} else {
-				string name = type.FullName;
+				string name = type.Assembly.FullName;
 				if (name == null)
 					throw new ApplicationException("type.FullName returned null. Type: " + type.ToString());
 				int typeParameterCount;
