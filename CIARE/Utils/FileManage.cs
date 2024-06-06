@@ -317,7 +317,7 @@ MessageBoxIcon.Warning);
             var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}               ";
-            TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
+            TabControllerManage.StoreFileMD5(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
             if (GlobalVariables.OStartUp)
                 TabControllerManage.StoreDeleteTabs(previousTabPath, filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, index);  // Store tabs title and index.
             AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
@@ -347,7 +347,7 @@ MessageBoxIcon.Warning);
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = filePath;
                 SetFileMD5(filePath);
-                TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
+                TabControllerManage.StoreFileMD5(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index); // Store file path in user profile.
                 if (GlobalVariables.OStartUp)
                     TabControllerManage.StoreDeleteTabs(previousTabPath, filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, index);  // Store tabs title and index.
             }
@@ -403,7 +403,7 @@ MessageBoxIcon.Warning);
             {
                 TabControllerManage.StoreDeleteTabs("", path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabIndex);
             }
-            TabControllerManage.StoreFileSize(path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+            TabControllerManage.StoreFileMD5(path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
         }
 
         /// <summary>
@@ -437,7 +437,7 @@ MessageBoxIcon.Warning);
                 {
                     TabControllerManage.StoreDeleteTabs(titleTab, GlobalVariables.openedFilePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabIndex);
                 }
-                TabControllerManage.StoreFileSize(GlobalVariables.openedFilePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                TabControllerManage.StoreFileMD5(GlobalVariables.openedFilePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
             }
         }
 
@@ -490,10 +490,12 @@ MessageBoxIcon.Warning);
             foreach (var line in readTabsLines)
             {
                 string filePath = line.Split('|')[0];
-                long fileSize = long.Parse(line.Split('|')[1]);
+                string fileSize = line.Split('|')[1];
                 int tabIndex = Int32.Parse(line.Split('|')[2]);
+                var fileData = File.ReadAllText(filePath); // test 
+                var fileMD5 = MD5Hash.GetMD5Hash(fileData); //test
                 FileInfo fileInfo = new FileInfo(filePath);
-                if (fileSize != fileInfo.Length)
+                if (fileSize != fileMD5)
                 {
                     DialogResult dr = MessageBox.Show($"{fileInfo.Name} was changed.\nDo you want to reload it?", "CIARE", MessageBoxButtons.YesNo,
         MessageBoxIcon.Warning);
@@ -506,7 +508,7 @@ MessageBoxIcon.Warning);
                             MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{fileInfo.Name}";
-                            TabControllerManage.StoreFileSize(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                            TabControllerManage.StoreFileMD5(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                             SetFileMD5(filePath);
                         }
                     }
@@ -669,7 +671,7 @@ MessageBoxIcon.Information);
                         if (GlobalVariables.OStartUp)
                         {
                             TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedIndex, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
-                            TabControllerManage.StoreFileSize(file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
+                            TabControllerManage.StoreFileMD5(file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
                         }
                     });
                 }
@@ -692,7 +694,7 @@ MessageBoxIcon.Information);
                 MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = fileInfo.FullName;
-                TabControllerManage.StoreFileSize(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, 1);
+                TabControllerManage.StoreFileMD5(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, 1);
                 if (GlobalVariables.OStartUp)
                     TabControllerManage.StoreDeleteTabs(previousTabPath, data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
             }
