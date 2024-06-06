@@ -27,7 +27,7 @@
     <DebugType>None</DebugType>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetFramework>net6.0-windows7.0</TargetFramework>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
@@ -35,9 +35,6 @@
       <HintPath>..\..\Libs\Mono.Cecil\Mono.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="System.Configuration" />
-    <Reference Update="System.Core">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
     <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
