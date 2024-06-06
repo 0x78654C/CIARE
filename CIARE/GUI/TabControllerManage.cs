@@ -1,4 +1,5 @@
 ﻿using CIARE.Utils;
+using CIARE.Utils.Encryption;
 using ICSharpCode.TextEditor;
 using System;
 using System.Collections.Generic;
@@ -266,23 +267,22 @@ namespace CIARE.GUI
         }
 
         /// <summary>
-        /// Funtiction to store tabs file size.
+        /// Funtiction to store tabs file MD5.
         /// </summary>
         /// <param name="filePath"></param>
         /// <param name="tempDir"></param>
         /// <param name="fileTabStore"></param>
-        public static void StoreFileSize(string filePath, string tempDir, string fileTabStore, int tabIndex)
+        public static void StoreFileMD5(string filePath, string tempDir, string fileTabStore, int tabIndex)
         {
             if (!Directory.Exists(tempDir))
                 return;
-
+            
             if (!File.Exists(fileTabStore))
                 File.WriteAllText(fileTabStore, "");
 
-            FileInfo fileInfo = new FileInfo(filePath);
-
-            var fileSize = fileInfo.Length;
-            var line = $"{filePath}|{fileSize}|{tabIndex}";
+            var fileData = File.ReadAllText(filePath); // test 
+            var fileMD5 = MD5Hash.GetMD5Hash(fileData); //test
+            var line = $"{filePath}|{fileMD5}|{tabIndex}";
             List<string> lines = File.ReadAllLines(fileTabStore).ToList();
 
             for (int i = 0; i < lines.Count(); i++)
@@ -435,7 +435,7 @@ namespace CIARE.GUI
                         MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                         MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = item.Key;
                         var tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
-                        StoreFileSize(item.Key, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                        StoreFileMD5(item.Key, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                     }
                 }
                 else
