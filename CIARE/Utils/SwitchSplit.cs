@@ -1,5 +1,4 @@
-﻿using ICSharpCode.TextEditor;
-using System.Runtime.Versioning;
+﻿using System.Runtime.Versioning;
 
 namespace CIARE.Utils
 {
