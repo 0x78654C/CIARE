@@ -1,8 +1,10 @@
 ﻿using System.Drawing;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
 {
+    [SupportedOSPlatform("windows")]
     /// <summary>
     /// Class for change Menu items selection color.
     /// </summary>

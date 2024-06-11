@@ -1,9 +1,11 @@
 ﻿using CIARE.Utils;
 using System.Drawing;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
 {
+    [SupportedOSPlatform("windows")]
     public static class FrmColorMod
     {
         private static Color ForeColor;

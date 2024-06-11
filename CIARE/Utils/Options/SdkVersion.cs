@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.Utils.Options
 {
+    [SupportedOSPlatform("windows")]
     public class SdkVersion
     {
         /// <summary>

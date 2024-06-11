@@ -158,7 +158,6 @@
 
         private System.Windows.Forms.GroupBox refLisgGroupBox;
         public System.Windows.Forms.ListView refListView;
-        private System.Windows.Forms.ColumnHeader @namespace;
         private System.Windows.Forms.ColumnHeader filePath;
         private System.Windows.Forms.Button AddRefFileBtn;
         private System.Windows.Forms.ColumnHeader nameSpace;

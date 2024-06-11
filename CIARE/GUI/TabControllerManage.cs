@@ -1,4 +1,5 @@
 ﻿using CIARE.Utils;
+using CIARE.Utils.Encryption;
 using ICSharpCode.TextEditor;
 using System;
 using System.Collections.Generic;
@@ -30,7 +31,7 @@ namespace CIARE.GUI
                     if (tabPage.ToolTipText.ToLower() == path.ToLower())
                     {
                         tabControl.SelectTab(tabPage);
-                        isPresent= true;
+                        isPresent = true;
                     }
                 }
             });
@@ -266,12 +267,12 @@ namespace CIARE.GUI
         }
 
         /// <summary>
-        /// Funtiction to store tabs file size.
+        /// Funtiction to store tabs file MD5.
         /// </summary>
         /// <param name="filePath"></param>
         /// <param name="tempDir"></param>
         /// <param name="fileTabStore"></param>
-        public static void StoreFileSize(string filePath, string tempDir, string fileTabStore, int tabIndex)
+        public static void StoreFileMD5(string filePath, string tempDir, string fileTabStore, int tabIndex)
         {
             if (!Directory.Exists(tempDir))
                 return;
@@ -279,10 +280,9 @@ namespace CIARE.GUI
             if (!File.Exists(fileTabStore))
                 File.WriteAllText(fileTabStore, "");
 
-            FileInfo fileInfo = new FileInfo(filePath);
-
-            var fileSize = fileInfo.Length;
-            var line = $"{filePath}|{fileSize}|{tabIndex}";
+            var fileData = File.ReadAllText(filePath); // test 
+            var fileMD5 = MD5Hash.GetMD5Hash(fileData); //test
+            var line = $"{filePath}|{fileMD5}|{tabIndex}";
             List<string> lines = File.ReadAllLines(fileTabStore).ToList();
 
             for (int i = 0; i < lines.Count(); i++)
@@ -435,7 +435,7 @@ namespace CIARE.GUI
                         MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                         MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = item.Key;
                         var tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
-                        StoreFileSize(item.Key, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                        StoreFileMD5(item.Key, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                     }
                 }
                 else
@@ -476,46 +476,54 @@ namespace CIARE.GUI
         /// <param name="e"></param>
         public static void ColorTab(TabControl tabControl, int index, DrawItemEventArgs e, Color color)
         {
-            Rectangle rec = tabControl.ClientRectangle;
-            StringFormat StrFormat = new StringFormat();
-            StrFormat.LineAlignment = StringAlignment.Center;
-            StrFormat.Alignment = StringAlignment.Center;
-            SolidBrush fontColor;
-            Font fntTab = e.Font;
-            Brush bshBack = new SolidBrush(color);
-            Rectangle recBounds = tabControl.GetTabRect(index);
-            RectangleF tabTextArea = (RectangleF)tabControl.GetTabRect(index);
-            e.Graphics.FillRectangle(bshBack, recBounds);
-            fontColor = new SolidBrush(Color.Black);
-            e.Graphics.DrawString(tabControl.TabPages[index].Text, fntTab, fontColor, tabTextArea, StrFormat);
-
-            var g = e.Graphics;
-            var tp = tabControl.TabPages[e.Index];
-            var rt = e.Bounds;
-            var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
-
-            if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
+            try
             {
-                rx.Offset(0, 2);
+                Rectangle rec = tabControl.ClientRectangle;
+                StringFormat StrFormat = new StringFormat();
+                StrFormat.LineAlignment = StringAlignment.Center;
+                StrFormat.Alignment = StringAlignment.Center;
+                SolidBrush fontColor;
+                Font fntTab = e.Font;
+                Brush bshBack = new SolidBrush(color);
+                Rectangle recBounds = tabControl.GetTabRect(index);
+                RectangleF tabTextArea = (RectangleF)tabControl.GetTabRect(index);
+                e.Graphics.FillRectangle(bshBack, recBounds);
+                fontColor = new SolidBrush(Color.Black);
+                e.Graphics.DrawString(tabControl.TabPages[index].Text, fntTab, fontColor, tabTextArea, StrFormat);
+
+                var g = e.Graphics;
+                var tp = tabControl.TabPages[e.Index];
+                var rt = e.Bounds;
+                var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
+
+                if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
+                {
+                    rx.Offset(0, 2);
+                }
+
+                rt.Inflate(-rx.Width, 0);
+                rt.Offset(-(rx.Width / 2), 0);
+
+                using (Font f = new Font("Marlett", 8f))
+                using (StringFormat sf = new StringFormat()
+                {
+                    Alignment = StringAlignment.Center,
+                    LineAlignment = StringAlignment.Center,
+                    Trimming = StringTrimming.EllipsisCharacter,
+                    FormatFlags = StringFormatFlags.NoWrap,
+                })
+                {
+                    //g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, Brushes.Black, rt, sf);
+                    if (e.Index > 1)
+                        g.DrawString("r", f, s_hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
+                }
+                tp.Tag = rx;
             }
-
-            rt.Inflate(-rx.Width, 0);
-            rt.Offset(-(rx.Width / 2), 0);
-
-            using (Font f = new Font("Marlett", 8f))
-            using (StringFormat sf = new StringFormat()
+            catch
             {
-                Alignment = StringAlignment.Center,
-                LineAlignment = StringAlignment.Center,
-                Trimming = StringTrimming.EllipsisCharacter,
-                FormatFlags = StringFormatFlags.NoWrap,
-            })
-            {
-                //g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, Brushes.Black, rt, sf);
-                if (e.Index > 1)
-                    g.DrawString("r", f, s_hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
+                // Ignore GDI+ error.
+                // TODO: do more research on this.
             }
-            tp.Tag = rx;
         }
 
         /// <summary>
@@ -525,33 +533,41 @@ namespace CIARE.GUI
         /// <param name="e"></param>
         public static void DrawTabControl(TabControl tabControl, DrawItemEventArgs e)
         {
-            var g = e.Graphics;
-            var tp = tabControl.TabPages[e.Index];
-            var rt = e.Bounds;
-            var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
-
-            if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
+            try
             {
-                rx.Offset(0, 2);
+                var g = e.Graphics;
+                var tp = tabControl.TabPages[e.Index];
+                var rt = e.Bounds;
+                var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
+
+                if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
+                {
+                    rx.Offset(0, 2);
+                }
+
+                rt.Inflate(-rx.Width, 0);
+                rt.Offset(-(rx.Width / 2), 0);
+
+                using (Font f = new Font("Marlett", 8f))
+                using (StringFormat sf = new StringFormat()
+                {
+                    Alignment = StringAlignment.Center,
+                    LineAlignment = StringAlignment.Center,
+                    Trimming = StringTrimming.EllipsisCharacter,
+                    FormatFlags = StringFormatFlags.NoWrap,
+                })
+                {
+                    g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, Brushes.Black, rt, sf);
+                    if (e.Index > 1)
+                        g.DrawString("r", f, s_hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
+                }
+                tp.Tag = rx;
             }
-
-            rt.Inflate(-rx.Width, 0);
-            rt.Offset(-(rx.Width / 2), 0);
-
-            using (Font f = new Font("Marlett", 8f))
-            using (StringFormat sf = new StringFormat()
+            catch
             {
-                Alignment = StringAlignment.Center,
-                LineAlignment = StringAlignment.Center,
-                Trimming = StringTrimming.EllipsisCharacter,
-                FormatFlags = StringFormatFlags.NoWrap,
-            })
-            {
-                g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, Brushes.Black, rt, sf);
-                if (e.Index > 1)
-                    g.DrawString("r", f, s_hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
+                // Ignore GDI+ error.
+                // TODO: do more research on this.
             }
-            tp.Tag = rx;
         }
 
         /// <summary>
@@ -562,14 +578,22 @@ namespace CIARE.GUI
         /// 
         public static void SetTransparentTabBar(TabControl tabControl, DrawItemEventArgs e, int red = 0, int green = 0, int blue = 0)
         {
-            bool dark = GlobalVariables.darkColor;
-            Color BackGroundColorForm = dark ? Color.FromArgb(red, green, blue) : SystemColors.Window;
-            SolidBrush fillbrush = new SolidBrush(BackGroundColorForm);
-            Rectangle lasttabrect = tabControl.GetTabRect(tabControl.TabPages.Count - 1);
-            Rectangle background = new Rectangle();
-            background.Location = new Point(lasttabrect.Right, 0);
-            background.Size = new Size(tabControl.Right - background.Left, lasttabrect.Height + 1);
-            e.Graphics.FillRectangle(fillbrush, background);
+            try
+            {
+                bool dark = GlobalVariables.darkColor;
+                Color BackGroundColorForm = dark ? Color.FromArgb(red, green, blue) : SystemColors.Window;
+                SolidBrush fillbrush = new SolidBrush(BackGroundColorForm);
+                Rectangle lasttabrect = tabControl.GetTabRect(tabControl.TabPages.Count - 1);
+                Rectangle background = new Rectangle();
+                background.Location = new Point(lasttabrect.Right, 0);
+                background.Size = new Size(tabControl.Right - background.Left, lasttabrect.Height + 1);
+                e.Graphics.FillRectangle(fillbrush, background);
+            }
+            catch
+            {
+                // Ignore GDI+ error.
+                // TODO: do more research on this.
+            }
         }
 
         /// <summary>
@@ -579,7 +603,7 @@ namespace CIARE.GUI
         /// <param name="regPos"></param>
         /// <param name="tabIndex"></param>
         /// <param name="linePos"></param>
-        public static void StoreTabPosition(string regKeyName,string regPos, string toolTipText)
+        public static void StoreTabPosition(string regKeyName, string regPos, string toolTipText)
            => RegistryManagement.RegKey_WriteSubkey(regKeyName, regPos, $"{toolTipText}");
     }
 }

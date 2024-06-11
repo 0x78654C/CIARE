@@ -1,7 +1,9 @@
-﻿using System.Windows.Forms;
+﻿using System.Runtime.Versioning;
+using System.Windows.Forms;
 
 namespace CIARE.GUI
 {
+    [SupportedOSPlatform("windows")]
     /* Set zoom factor for richtextbox*/
     public class RtbZoom
     {
