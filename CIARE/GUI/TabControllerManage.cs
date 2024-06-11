@@ -533,33 +533,41 @@ namespace CIARE.GUI
         /// <param name="e"></param>
         public static void DrawTabControl(TabControl tabControl, DrawItemEventArgs e)
         {
-            var g = e.Graphics;
-            var tp = tabControl.TabPages[e.Index];
-            var rt = e.Bounds;
-            var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
-
-            if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
+            try
             {
-                rx.Offset(0, 2);
+                var g = e.Graphics;
+                var tp = tabControl.TabPages[e.Index];
+                var rt = e.Bounds;
+                var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
+
+                if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
+                {
+                    rx.Offset(0, 2);
+                }
+
+                rt.Inflate(-rx.Width, 0);
+                rt.Offset(-(rx.Width / 2), 0);
+
+                using (Font f = new Font("Marlett", 8f))
+                using (StringFormat sf = new StringFormat()
+                {
+                    Alignment = StringAlignment.Center,
+                    LineAlignment = StringAlignment.Center,
+                    Trimming = StringTrimming.EllipsisCharacter,
+                    FormatFlags = StringFormatFlags.NoWrap,
+                })
+                {
+                    g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, Brushes.Black, rt, sf);
+                    if (e.Index > 1)
+                        g.DrawString("r", f, s_hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
+                }
+                tp.Tag = rx;
             }
-
-            rt.Inflate(-rx.Width, 0);
-            rt.Offset(-(rx.Width / 2), 0);
-
-            using (Font f = new Font("Marlett", 8f))
-            using (StringFormat sf = new StringFormat()
+            catch
             {
-                Alignment = StringAlignment.Center,
-                LineAlignment = StringAlignment.Center,
-                Trimming = StringTrimming.EllipsisCharacter,
-                FormatFlags = StringFormatFlags.NoWrap,
-            })
-            {
-                g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, Brushes.Black, rt, sf);
-                if (e.Index > 1)
-                    g.DrawString("r", f, s_hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
+                // Ignore GDI+ error.
+                // TODO: do more research on this.
             }
-            tp.Tag = rx;
         }
 
         /// <summary>
