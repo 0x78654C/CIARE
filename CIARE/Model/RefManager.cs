@@ -119,7 +119,7 @@ namespace CIARE.Model
                 GlobalVariables.customRefAsm.RemoveAll(x => x.EndsWith(fileInfo.Name));
                 refList.SelectedItems[0].Remove();
                 GlobalVariables.customRefList.RemoveAll(x => x.EndsWith(fileInfo.Name));
-                GlobalVariables.filterdNugetPackage.RemoveAll(x => x.EndsWith(fileInfo.Name));
+                GlobalVariables.filteredCustomRef.RemoveAll(x => x.EndsWith(fileInfo.Name));
                 GlobalVariables.nugetNames.RemoveAll(x => x.StartsWith(selecItem));
             }
             LibLoaded.RemoveRef(pathItem);
