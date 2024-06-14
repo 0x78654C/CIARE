@@ -162,14 +162,15 @@ MessageBoxIcon.Warning);
         private void AddNuGetPackageToRef(ListView nugetListView)
         {
             var packageName = nugetListView.SelectedItems[0].Text;
+            var version = nugetListView.SelectedItems[0].SubItems[1].Text;
             if (GlobalVariables.customRefAsm.Any(x => x.Contains(packageName)))
             {
                 MessageBox.Show($"NuGet package {packageName} is already downloaded and added to reference!", "CIARE", MessageBoxButtons.OK,
 MessageBoxIcon.Warning);
                 return;
             }
-          var dialog = MessageBox.Show($"If the NuGet package contains dependencies it will be added to reference list!\nDo you want to download the package?", "CIARE", MessageBoxButtons.YesNo,
-MessageBoxIcon.Information);
+            var dialog = MessageBox.Show($"If the NuGet package contains dependencies it will be added to reference list!\nDo you want to download the package?", "CIARE", MessageBoxButtons.YesNo,
+  MessageBoxIcon.Information);
 
             if (dialog == DialogResult.No)
                 return;
@@ -177,6 +178,9 @@ MessageBoxIcon.Information);
             s_packageName = packageName;
 
             HideControlers();
+            var nameVersion = $"{packageName}|{version}";
+            if (!GlobalVariables.nugetNames.Contains(nameVersion))
+                GlobalVariables.nugetNames.Add(nameVersion);
 
             Task.Run(() => Download(s_packageName));
         }
