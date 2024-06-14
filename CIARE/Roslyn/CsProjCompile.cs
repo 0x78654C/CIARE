@@ -32,7 +32,7 @@ namespace CIARE.Roslyn
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
   </PropertyGroup>
-" + SetReference(GlobalVariables.customRefAsm) + @"
+" + SetReference(GlobalVariables.filterdNugetPackage, GlobalVariables.nugetNames) + @"
 </Project>
 ";
         private string CsProjTemplateDll = $@"<Project Sdk=""Microsoft.NET.Sdk"">
@@ -48,7 +48,7 @@ namespace CIARE.Roslyn
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
   </PropertyGroup>
-" + SetReference(GlobalVariables.customRefAsm) + @"
+" + SetReference(GlobalVariables.filterdNugetPackage, GlobalVariables.nugetNames) + @"
 </Project>
 ";
         /// <summary>
@@ -75,9 +75,24 @@ namespace CIARE.Roslyn
         /// </summary>
         /// <param name="refList"></param>
         /// <returns></returns>
-        private static string SetReference(List<string> refList)
+        private static string SetReference(List<string> refList, List<string> nugetNames)
         {
             string outRef = string.Empty;
+            refList = refList.Distinct().ToList();
+            nugetNames = nugetNames.Distinct().ToList();
+
+            foreach(var nameVersion in nugetNames)
+            {
+                if (!string.IsNullOrEmpty(nameVersion))
+                {
+                    var name = nameVersion.Split('|')[0];
+                    var version = nameVersion.Split('|')[1];
+                    string format = $@"<ItemGroup>
+    <PackageReference Include=""" + name + @""" Version="""+version+@"""/>
+</ItemGroup>";
+                    outRef += Environment.NewLine + format;
+                }
+            }
 
             foreach (var item in refList)
             {
