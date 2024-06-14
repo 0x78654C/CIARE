@@ -29,9 +29,12 @@ namespace CIARE.Model
 
             // Set dark mode if enabled.
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
+                
+            // Populate listview with local ref.
+            CustomRef.PopulateList(GlobalVariables.filteredCustomRef, refListView, true, true);
 
-            // Populate listview with ref.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView, true);
+            // Populate listview with nuget packages.
+            CustomRef.PopulateListNuget(GlobalVariables.nugetNames, refListView);
         }
 
         /// <summary>
