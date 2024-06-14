@@ -2,14 +2,10 @@
 using CIARE.Reference;
 using CIARE.Roslyn;
 using CIARE.Utils;
-using CIARE.Utils.Options;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
-using System.Xml.XPath;
 
 namespace CIARE.Model
 {
@@ -37,7 +33,7 @@ namespace CIARE.Model
             // Populate listview with ref.
             CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView, true);
         }
-        
+
         /// <summary>
         /// Overwrite the key press.
         /// </summary>
@@ -109,8 +105,8 @@ namespace CIARE.Model
             var pathItem = refList.Items[refList.Items.IndexOf(refList.SelectedItems[0])].SubItems[1].Text;
             DialogResult dialogResult;
             if (pathItem.Contains(GlobalVariables.downloadNugetPath))
-             dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference.\nNuGet package's can be only readded after application restart.\nAre you sure that you want to remove? ", "CIARE", MessageBoxButtons.YesNo,
-MessageBoxIcon.Warning);
+                dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference.\nNuGet package's can be only readded after application restart.\nAre you sure that you want to remove? ", "CIARE", MessageBoxButtons.YesNo,
+   MessageBoxIcon.Warning);
             else
                 dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference.\nAre you sure that you want to remove? ", "CIARE", MessageBoxButtons.YesNo,
    MessageBoxIcon.Warning);
@@ -123,8 +119,10 @@ MessageBoxIcon.Warning);
                 GlobalVariables.customRefAsm.RemoveAll(x => x.EndsWith(fileInfo.Name));
                 refList.SelectedItems[0].Remove();
                 GlobalVariables.customRefList.RemoveAll(x => x.EndsWith(fileInfo.Name));
+                GlobalVariables.filterdNugetPackage.RemoveAll(x => x.EndsWith(fileInfo.Name));
+                GlobalVariables.nugetNames.RemoveAll(x => x.StartsWith(selecItem));
             }
-           LibLoaded.RemoveRef(pathItem);
+            LibLoaded.RemoveRef(pathItem);
         }
 
 
@@ -151,7 +149,7 @@ MessageBoxIcon.Warning);
         /// <param name="e"></param>
         private void NugetManagerBtn_Click(object sender, EventArgs e)
         {
-           LoadNugetSearch();
+            LoadNugetSearch();
         }
 
         /// <summary>
