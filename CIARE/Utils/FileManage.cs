@@ -75,6 +75,8 @@ namespace CIARE.Utils
                     {
                         if (!GlobalVariables.customRefAsm.Contains(lib))
                             GlobalVariables.customRefAsm.Add(lib);
+                        if (!GlobalVariables.filteredCustomRef.Contains(lib))
+                            GlobalVariables.filteredCustomRef.Add(lib);
                     }
                     else
                         MessageBox.Show($"{lib} is not managed library!", "CIARE", MessageBoxButtons.OK,
