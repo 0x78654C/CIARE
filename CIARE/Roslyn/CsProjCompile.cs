@@ -32,7 +32,7 @@ namespace CIARE.Roslyn
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
   </PropertyGroup>
-" + SetReference(GlobalVariables.filterdNugetPackage, GlobalVariables.nugetNames) + @"
+" + SetReference(GlobalVariables.filteredCustomRef, GlobalVariables.nugetNames) + @"
 </Project>
 ";
         private string CsProjTemplateDll = $@"<Project Sdk=""Microsoft.NET.Sdk"">
@@ -48,7 +48,7 @@ namespace CIARE.Roslyn
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
   </PropertyGroup>
-" + SetReference(GlobalVariables.filterdNugetPackage, GlobalVariables.nugetNames) + @"
+" + SetReference(GlobalVariables.filteredCustomRef, GlobalVariables.nugetNames) + @"
 </Project>
 ";
         /// <summary>
