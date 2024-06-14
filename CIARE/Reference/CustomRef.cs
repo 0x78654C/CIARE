@@ -118,7 +118,7 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="libPath"></param>
         /// <param name="refList"></param>
-        public static void PopulateList(List<string> libPath, ListView refList, bool isFormLoading = false)
+        public static void PopulateList(List<string> libPath, ListView refList, bool isFormLoading = false, bool isCustom=false)
         {
             try
             {
@@ -136,7 +136,8 @@ namespace CIARE.Reference
                             var libFile = $"{assemblyNamespace}|{lib}";
                             if (!CheckItem(refList, fileInfo.Name) && (IsManaged(lib)))
                             {
-                                refList.Items.Add(item);
+                                if(isCustom)
+                                     refList.Items.Add(item);
                                 if (!GlobalVariables.customRefList.Contains(libFile))
                                      GlobalVariables.customRefList.Add(libFile);
                             }
@@ -152,13 +153,30 @@ namespace CIARE.Reference
                         var asmName = dItem.Split('|')[0];
                         var lib = dItem.Split('|')[1];
                         ListViewItem item = new ListViewItem(new[] { asmName, lib });
-                        refList.Items.Add(item);
+                        if (isCustom)
+                            refList.Items.Add(item);
                     }
                 }
             }
             catch
             {
                 // Ignore 
+            }
+        }
+        /// <summary>
+        /// Populate the listview with downloaded nuget packages.
+        /// </summary>
+        /// <param name="libPath"></param>
+        /// <param name="refList"></param>
+
+        public static void PopulateListNuget(List<string> nugetList, ListView refList)
+        {
+            foreach(var nuget in nugetList)
+            {
+                var name = nuget.Split('|')[0];
+                var version = nuget.Split('|')[1];
+                ListViewItem item = new ListViewItem(new[] { name, version });
+                refList.Items.Add(item);
             }
         }
 
