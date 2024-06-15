@@ -31,7 +31,10 @@ namespace CIARE.Model
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
                 
             // Populate listview with local ref.
-             CustomRef.PopulateList(GlobalVariables.filteredCustomRef, true);
+            CustomRef.PopulateList(GlobalVariables.filteredCustomRef, true);
+
+            // Repopulate listview with ref. from local after loading list.
+            CustomRef.PopulateListLocal(GlobalVariables.filteredCustomRef, refListView);
 
             // Populate listview with nuget packages.
             CustomRef.PopulateListNuget(GlobalVariables.nugetNames, refListView);
@@ -125,7 +128,8 @@ namespace CIARE.Model
                 GlobalVariables.filteredCustomRef.RemoveAll(x => x.EndsWith(fileInfo.Name));
                 GlobalVariables.nugetNames.RemoveAll(x => x.StartsWith(selecItem));
             }
-            LibLoaded.RemoveRef(pathItem);
+            if(pathItem.EndsWith(".dll"))
+                LibLoaded.RemoveRef(pathItem);
         }
 
 
@@ -186,6 +190,9 @@ namespace CIARE.Model
 
             // Repopulate listview with ref. after loading list.
             CustomRef.PopulateList(GlobalVariables.filteredCustomRef,false);
+
+            // Repopulate listview with ref. from local after loading list.
+            CustomRef.PopulateListLocal(GlobalVariables.filteredCustomRef, refListView);
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
