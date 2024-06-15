@@ -31,7 +31,7 @@ namespace CIARE.Model
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
                 
             // Populate listview with local ref.
-            CustomRef.PopulateList(GlobalVariables.filteredCustomRef, true);
+            CustomRef.PopulateList(GlobalVariables.filteredCustomRef,"", true);
 
             // Repopulate listview with ref. from local after loading list.
             CustomRef.PopulateListLocal(GlobalVariables.filteredCustomRef, refListView);
@@ -122,17 +122,41 @@ namespace CIARE.Model
                 foreach (var item in GlobalVariables.customRefAsm)
                     if (item.EndsWith(fileInfo.Name) && item.Contains(GlobalVariables.downloadNugetPath))
                         GlobalVariables.blackRefList.Add(item);
-                GlobalVariables.customRefAsm.RemoveAll(x => x.EndsWith(fileInfo.Name));
+                RemoveFromList(fileInfo.Name);
                 refList.SelectedItems[0].Remove();
-                GlobalVariables.customRefList.RemoveAll(x => x.EndsWith(fileInfo.Name));
-                GlobalVariables.filteredCustomRef.RemoveAll(x => x.EndsWith(fileInfo.Name));
                 GlobalVariables.nugetNames.RemoveAll(x => x.StartsWith(selecItem));
             }
-            if(pathItem.EndsWith(".dll"))
+
+            // Remove all libs that was lodead with nuget download.
+            if (!pathItem.EndsWith(".dll"))
+            {
+                var pathNugetFile = $"{GlobalVariables.downloadNugetPath}{selecItem}.ddb";
+                if (!File.Exists(pathNugetFile))
+                    return;
+                var libsNug = File.ReadAllLines(pathNugetFile);
+
+                foreach (var lib in libsNug)
+                {
+                    RemoveFromList(lib);
+                    LibLoaded.RemoveRef(lib);
+                }
+                File.Delete(pathNugetFile);
+            }
+            else
                 LibLoaded.RemoveRef(pathItem);
         }
 
-
+        /// <summary>
+        /// Clean ref lists with unused libraries.
+        /// </summary>
+        /// <param name="lib"></param>
+        private void RemoveFromList(string lib)
+        {
+            GlobalVariables.customRefAsm.RemoveAll(x => x.EndsWith(lib));
+            GlobalVariables.customRefList.RemoveAll(x => x.EndsWith(lib));
+            GlobalVariables.filteredCustomRef.RemoveAll(x => x.EndsWith(lib));
+        }
+            
         /// <summary>
         /// Set namespace to clipborad.
         /// </summary>
@@ -189,7 +213,7 @@ namespace CIARE.Model
             FileManage.AddReferenceDialog();
 
             // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.filteredCustomRef,false);
+            CustomRef.PopulateList(GlobalVariables.filteredCustomRef,"",false);
 
             // Repopulate listview with ref. from local after loading list.
             CustomRef.PopulateListLocal(GlobalVariables.filteredCustomRef, refListView);
