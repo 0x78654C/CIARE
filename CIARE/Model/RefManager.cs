@@ -31,7 +31,7 @@ namespace CIARE.Model
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
                 
             // Populate listview with local ref.
-            CustomRef.PopulateList(GlobalVariables.filteredCustomRef, refListView, true, true);
+            //  CustomRef.PopulateList(GlobalVariables.filteredCustomRef, refListView, true, true);
 
             // Populate listview with nuget packages.
             CustomRef.PopulateListNuget(GlobalVariables.nugetNames, refListView);
@@ -185,7 +185,7 @@ namespace CIARE.Model
             FileManage.AddReferenceDialog();
 
             // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
+            //CustomRef.PopulateList(GlobalVariables.filteredCustomRef, refListView,false, true);
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
