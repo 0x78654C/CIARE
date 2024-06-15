@@ -220,8 +220,11 @@ MessageBoxIcon.Warning);
             // Populate listview with nuget packages.
             CustomRef.PopulateListNuget(GlobalVariables.nugetNames, RefManager.Instance.refListView);
 
+            // Create the nuget file that you want to download
+            var pathNugetFile = $"{GlobalVariables.downloadNugetPath}{s_packageName}.ddb";
+
             // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, pathNugetFile);
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
