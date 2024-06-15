@@ -215,9 +215,7 @@ MessageBoxIcon.Warning);
         {
 
             NuGetDownloader nuGetDownloader = new NuGetDownloader(packageName, GlobalVariables.nugetApi, netFrameworks);
-
             nuGetDownloader.DownloadPackage();
-
 
             // Populate listview with nuget packages.
             CustomRef.PopulateListNuget(GlobalVariables.nugetNames, RefManager.Instance.refListView);
