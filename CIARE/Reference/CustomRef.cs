@@ -180,6 +180,11 @@ namespace CIARE.Reference
             }
         }
 
+        /// <summary>
+        /// Populate the listview with local libs.
+        /// </summary>
+        /// <param name="nugetList"></param>
+        /// <param name="refList"></param>
         public static void PopulateListLocal(List<string> nugetList, ListView refList)
         {
             foreach (var lib in nugetList)
