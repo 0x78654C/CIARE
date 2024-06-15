@@ -8,6 +8,7 @@ using System.IO;
 using CIARE.Roslyn;
 using CIARE.Utils;
 using System.Threading;
+using System;
 
 namespace CIARE.Reference
 {
@@ -45,7 +46,7 @@ namespace CIARE.Reference
             {
                 foreach (var libPath in refList)
                 {
-                    if (s_isInList) continue;
+                    //if (s_isInList) continue;
 
                     var checkASM = LibLoaded.CheckLoadedAssembly(libPath);
 
@@ -118,7 +119,7 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="libPath"></param>
         /// <param name="refList"></param>
-        public static void PopulateList(List<string> libPath, bool isFormLoading = false, bool isCustom=false)
+        public static void PopulateList(List<string> libPath, bool isFormLoading = false)
         {
             try
             {
@@ -179,6 +180,19 @@ namespace CIARE.Reference
             }
         }
 
+        public static void PopulateListLocal(List<string> nugetList, ListView refList)
+        {
+            foreach (var lib in nugetList)
+            {
+                if (string.IsNullOrEmpty(lib))
+                    continue;
+                string assemblyNamespace = GetAssemblyNamespace(lib);
+                ListViewItem item = new ListViewItem(new[] { assemblyNamespace,lib });
+                if (!CheckItem(refList, lib) && (IsManaged(lib)))
+                    refList.Items.Add(item);
+            }
+        }
+
         /// <summary>
         /// Check if listview contins string item.
         /// </summary>
@@ -193,6 +207,7 @@ namespace CIARE.Reference
                     isPresent = true;
             return isPresent;
         }
+
 
         /// <summary>
         /// Function for delete zip file from nuget forlder.
