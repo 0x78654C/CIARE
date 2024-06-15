@@ -8,6 +8,7 @@ using System.IO;
 using CIARE.Roslyn;
 using CIARE.Utils;
 using System.Threading;
+using System;
 
 namespace CIARE.Reference
 {
@@ -118,10 +119,11 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="libPath"></param>
         /// <param name="refList"></param>
-        public static void PopulateList(List<string> libPath, ListView refList, bool isFormLoading = false, bool isCustom=false)
+        public static void PopulateList(List<string> libPath, bool isFormLoading = false, bool isCustom=false)
         {
             try
             {
+                ListView lstRef = new ListView();
                 if (!isFormLoading)
                 {
                     foreach (var lib in libPath)
@@ -134,10 +136,10 @@ namespace CIARE.Reference
                                 continue;
                             FileInfo fileInfo = new FileInfo(lib);
                             var libFile = $"{assemblyNamespace}|{lib}";
-                            if (!CheckItem(refList, fileInfo.Name) && (IsManaged(lib)))
+
+                            if (!CheckItem(lstRef, fileInfo.Name) && (IsManaged(lib)))
                             {
-                                if(isCustom)
-                                     refList.Items.Add(item);
+                                lstRef.Items.Add(item);
                                 if (!GlobalVariables.customRefList.Contains(libFile))
                                      GlobalVariables.customRefList.Add(libFile);
                             }
@@ -153,8 +155,7 @@ namespace CIARE.Reference
                         var asmName = dItem.Split('|')[0];
                         var lib = dItem.Split('|')[1];
                         ListViewItem item = new ListViewItem(new[] { asmName, lib });
-                        if (isCustom)
-                            refList.Items.Add(item);
+                        lstRef.Items.Add(item);
                     }
                 }
             }
