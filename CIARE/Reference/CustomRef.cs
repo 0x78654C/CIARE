@@ -119,7 +119,7 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="libPath"></param>
         /// <param name="refList"></param>
-        public static void PopulateList(List<string> libPath, bool isFormLoading = false)
+        public static void PopulateList(List<string> libPath, string pathNugetFile, bool isFormLoading = false)
         {
             try
             {
@@ -128,23 +128,29 @@ namespace CIARE.Reference
                 {
                     foreach (var lib in libPath)
                     {
-                        if (!isFormLoading)
+                        string assemblyNamespace = GetAssemblyNamespace(lib);
+                        ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
+                        if (string.IsNullOrEmpty(assemblyNamespace))
+                            continue;
+                        FileInfo fileInfo = new FileInfo(lib);
+                        var libFile = $"{assemblyNamespace}|{lib}";
+                        if (!CheckItem(lstRef, fileInfo.Name) && (IsManaged(lib)))
                         {
-                            string assemblyNamespace = GetAssemblyNamespace(lib);
-                            ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
-                            if (string.IsNullOrEmpty(assemblyNamespace))
-                                continue;
-                            FileInfo fileInfo = new FileInfo(lib);
-                            var libFile = $"{assemblyNamespace}|{lib}";
-                            if (!CheckItem(lstRef, fileInfo.Name) && (IsManaged(lib)))
+                            lstRef.Items.Add(item);
+                            if (!GlobalVariables.customRefList.Contains(libFile))
                             {
-                                lstRef.Items.Add(item);
-                                if (!GlobalVariables.customRefList.Contains(libFile))
-                                     GlobalVariables.customRefList.Add(libFile);
+                                GlobalVariables.customRefList.Add(libFile);
+
+                                if (!File.Exists(pathNugetFile))
+                                    File.WriteAllText(pathNugetFile, "");
+
+                                var libsFile = File.ReadAllText(pathNugetFile);
+                                if (!libsFile.Contains(lib) && !GlobalVariables.customRefList.Contains(lib))
+                                    File.AppendAllText(pathNugetFile, $"{lib}\n");
                             }
-                            else
-                                s_isInList = true;
                         }
+                        else
+                            s_isInList = true;
                     }
                 }
                 else
@@ -168,15 +174,15 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="libPath"></param>
         /// <param name="refList"></param>
-
         public static void PopulateListNuget(List<string> nugetList, ListView refList)
         {
-            foreach(var nuget in nugetList)
+            foreach (var nuget in nugetList)
             {
                 var name = nuget.Split('|')[0];
                 var version = nuget.Split('|')[1];
                 ListViewItem item = new ListViewItem(new[] { name, version });
-                refList.Items.Add(item);
+                if (!CheckItem(refList, name, true))
+                    refList.Items.Add(item);
             }
         }
 
@@ -192,7 +198,7 @@ namespace CIARE.Reference
                 if (string.IsNullOrEmpty(lib))
                     continue;
                 string assemblyNamespace = GetAssemblyNamespace(lib);
-                ListViewItem item = new ListViewItem(new[] { assemblyNamespace,lib });
+                ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
                 if (!CheckItem(refList, lib) && (IsManaged(lib)))
                     refList.Items.Add(item);
             }
@@ -204,15 +210,23 @@ namespace CIARE.Reference
         /// <param name="listView"></param>
         /// <param name="text"></param>
         /// <returns></returns>
-        private static bool CheckItem(ListView listView, string text)
+        private static bool CheckItem(ListView listView, string text, bool isNuget = false)
         {
             bool isPresent = false;
-            for (int i = 0; i < listView.Items.Count; i++)
-                if (listView.Items[i].SubItems[1].Text.EndsWith(text))
-                    isPresent = true;
+            if (!isNuget)
+            {
+                for (int i = 0; i < listView.Items.Count; i++)
+                    if (listView.Items[i].SubItems[1].Text.EndsWith(text))
+                        isPresent = true;
+            }
+            else
+            {
+                for (int i = 0; i < listView.Items.Count; i++)
+                    if (listView.Items[i].SubItems[0].Text.Contains(text))
+                        isPresent = true;
+            }
             return isPresent;
         }
-
 
         /// <summary>
         /// Function for delete zip file from nuget forlder.
@@ -239,7 +253,7 @@ namespace CIARE.Reference
         /// Function for delete zip file from nuget forlder.
         /// </summary>
         /// <param name="pathNugetDir"></param>
-        public static void DeleteNuGetLibs(string pathNugetDir,string libFile)
+        public static void DeleteNuGetLibs(string pathNugetDir, string libFile)
         {
             Thread.Sleep(3000);
             try
