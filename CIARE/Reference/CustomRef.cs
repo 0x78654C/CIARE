@@ -8,7 +8,6 @@ using System.IO;
 using CIARE.Roslyn;
 using CIARE.Utils;
 using System.Threading;
-using System;
 
 namespace CIARE.Reference
 {
@@ -136,7 +135,6 @@ namespace CIARE.Reference
                                 continue;
                             FileInfo fileInfo = new FileInfo(lib);
                             var libFile = $"{assemblyNamespace}|{lib}";
-
                             if (!CheckItem(lstRef, fileInfo.Name) && (IsManaged(lib)))
                             {
                                 lstRef.Items.Add(item);
