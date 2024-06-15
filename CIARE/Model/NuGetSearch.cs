@@ -221,7 +221,7 @@ MessageBoxIcon.Warning);
             CustomRef.PopulateListNuget(GlobalVariables.nugetNames, RefManager.Instance.refListView);
 
             // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, RefManager.Instance.refListView);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm);
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
