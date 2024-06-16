@@ -227,7 +227,7 @@ MessageBoxIcon.Warning);
             CustomRef.PopulateList(GlobalVariables.customRefAsm, pathNugetFile);
 
             // Load assemblies from list.
-            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
+            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm,true);
 
             // Delete downloaded package.
             CustomRef.DelDownloadedPackage(GlobalVariables.downloadNugetPath);
