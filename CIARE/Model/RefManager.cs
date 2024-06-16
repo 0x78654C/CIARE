@@ -140,7 +140,6 @@ namespace CIARE.Model
                 {
                     RemoveFromList(lib);
                     LibLoaded.RemoveRef(lib);
-                    Task.Run(() => MainForm.pcRegistry.UnloadCustomAssembly(lib));
                 }
                 File.Delete(pathNugetFile);
                 MainForm.Instance.ReloadRef();
@@ -148,7 +147,6 @@ namespace CIARE.Model
             else
             {
                 LibLoaded.RemoveRef(pathItem);
-                Task.Run(() => MainForm.pcRegistry.UnloadCustomAssembly(pathItem));
                 MainForm.Instance.ReloadRef();
             }
         }
