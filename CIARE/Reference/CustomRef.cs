@@ -40,17 +40,15 @@ namespace CIARE.Reference
         /// </summary>
         /// <param name="textEditorControl"></param>
         /// <param name="logOutput"></param>
-        public static void SetCustomRefDirective(List<string> refList)
+        public static void SetCustomRefDirective(List<string> refList, bool isNuget = false)
         {
             try
             {
                 foreach (var libPath in refList)
                 {
-                    //if (s_isInList) continue;
+                    if (s_isInList) continue;
 
                     var checkASM = LibLoaded.CheckLoadedAssembly(libPath);
-
-                    if (checkASM) continue;
 
                     if (IsManaged(libPath))
                         Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
