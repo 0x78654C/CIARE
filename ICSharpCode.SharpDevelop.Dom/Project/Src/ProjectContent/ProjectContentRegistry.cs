@@ -57,16 +57,6 @@ namespace ICSharpCode.SharpDevelop.Dom
             }
         }
 
-        public void UnloadCustomAssembly(string assemblyName)
-        {
-            lock (s_lockAssembly)
-            {
-                var asmName = AssemblyName.GetAssemblyName(assemblyName);
-                if (_assemblies.ContainsKey(asmName.Name))
-                    _assemblies.Remove(asmName.Name);
-            }
-        }
-
         public IProjectContent[] LoadAll()
         {
             lock (s_lockAssembly)
