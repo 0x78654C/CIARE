@@ -48,10 +48,9 @@ namespace CIARE.Reference
                 {
                     if (s_isInList) continue;
 
-                    var checkASM = LibLoaded.CheckLoadedAssembly(libPath);
+                    //var checkASM = LibLoaded.CheckLoadedAssembly(libPath);
 
-                    if (IsManaged(libPath))
-                        Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
+                    Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
                 }
                 MainForm.Instance.ReloadRef();
             }
@@ -127,21 +126,23 @@ namespace CIARE.Reference
                     foreach (var lib in libPath)
                     {
                         string assemblyNamespace = GetAssemblyNamespace(lib);
+
                         ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
                         if (string.IsNullOrEmpty(assemblyNamespace))
                             continue;
                         FileInfo fileInfo = new FileInfo(lib);
                         var libFile = $"{assemblyNamespace}|{lib}";
-                        if (!CheckItem(lstRef, fileInfo.Name) && (IsManaged(lib)))
+
+
+                        if (!File.Exists(pathNugetFile))
+                            File.WriteAllText(pathNugetFile, "");
+
+                        if (!CheckItem(lstRef, fileInfo.Name))
                         {
                             lstRef.Items.Add(item);
                             if (!GlobalVariables.customRefList.Contains(libFile))
                             {
                                 GlobalVariables.customRefList.Add(libFile);
-
-                                if (!File.Exists(pathNugetFile))
-                                    File.WriteAllText(pathNugetFile, "");
-
                                 var libsFile = File.ReadAllText(pathNugetFile);
                                 if (!libsFile.Contains(lib) && !GlobalVariables.customRefList.Contains(lib))
                                     File.AppendAllText(pathNugetFile, $"{lib}\n");
