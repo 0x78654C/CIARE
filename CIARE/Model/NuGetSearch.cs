@@ -224,7 +224,7 @@ MessageBoxIcon.Warning);
             var pathNugetFile = $"{GlobalVariables.downloadNugetPath}{s_packageName}.ddb";
 
             // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, pathNugetFile, false, true);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, pathNugetFile, false);
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
