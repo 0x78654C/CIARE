@@ -135,7 +135,7 @@ namespace CIARE.Model
                 if (!File.Exists(pathNugetFile))
                     return;
                 var libsNug = File.ReadAllLines(pathNugetFile);
-
+                
                 foreach (var lib in libsNug)
                 {
                     RemoveFromList(lib);
