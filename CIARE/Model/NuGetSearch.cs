@@ -181,7 +181,7 @@ MessageBoxIcon.Warning);
             var nameVersion = $"{packageName}|{version}";
             if (!GlobalVariables.nugetNames.Contains(nameVersion))
                 GlobalVariables.nugetNames.Add(nameVersion);
-
+            
             Task.Run(() => Download(s_packageName));
         }
 
@@ -224,10 +224,10 @@ MessageBoxIcon.Warning);
             var pathNugetFile = $"{GlobalVariables.downloadNugetPath}{s_packageName}.ddb";
 
             // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, pathNugetFile);
+            CustomRef.PopulateList(GlobalVariables.customRefAsm, pathNugetFile, false, true);
 
             // Load assemblies from list.
-            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm,true);
+            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
 
             // Delete downloaded package.
             CustomRef.DelDownloadedPackage(GlobalVariables.downloadNugetPath);
