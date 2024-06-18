@@ -8,6 +8,8 @@ using System;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+using System.ComponentModel;
+using ICSharpCode.Core;
 
 namespace CIARE.Model
 {
@@ -16,6 +18,8 @@ namespace CIARE.Model
     {
         public static RefManager Instance { get; private set; }
         private int s_initialSizeForm = 0;
+        private string[] s_listRemove;
+        BackgroundWorker worker;
         public RefManager()
         {
             InitializeComponent();
@@ -136,18 +140,29 @@ namespace CIARE.Model
                 if (!File.Exists(pathNugetFile))
                     return;
                 var libsNug = File.ReadAllLines(pathNugetFile);
-                
-                foreach (var lib in libsNug)
-                {
-                    RemoveFromList(lib);
-                    LibLoaded.RemoveRef(lib);
-                }
-                MainForm.Instance.ReloadRef();
+                s_listRemove = libsNug;
+                worker = new BackgroundWorker();
+                HideControlers();
+                worker.DoWork += Worker_DoWork;
+                ShowControler();
             }
             else
             {
                 LibLoaded.RemoveRef(pathItem);
-                MainForm.Instance.ReloadRef();
+            }
+        }
+
+        private void Worker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            RemoveAsm(s_listRemove);
+        }
+
+        private void RemoveAsm(string[] libsNug)
+        {
+            foreach (var lib in libsNug)
+            {
+                RemoveFromList(lib);
+                LibLoaded.RemoveRef(lib);
             }
         }
 
@@ -225,6 +240,37 @@ namespace CIARE.Model
 
             // Load assemblies from list.
             CustomRef.SetCustomRefDirective(GlobalVariables.filteredCustomRef);
+        }
+
+        /// <summary>
+        /// Hide controlers and display progress bar.
+        /// </summary>
+        private void HideControlers()
+        {
+            refLisgGroupBox.Visible = false;
+            refListView.Visible = false;
+            AddRefFileBtn.Visible = false;
+            NugetManagerBtn.Visible = false;
+            CancelBtn.Visible = false;
+            ControlBox = false;
+            downloadLbl.Visible = true;
+            downloadBar.Visible = true;
+        }
+
+        /// <summary>
+        /// Show controlers and hide progress bar.
+        /// </summary>
+        private void ShowControler()
+        {
+     
+            refLisgGroupBox.Visible = true;
+            refListView.Visible = true;
+            AddRefFileBtn.Visible = true;
+            NugetManagerBtn.Visible = true;
+            CancelBtn.Visible = true;
+            ControlBox = true;
+            downloadLbl.Visible = false;
+            downloadBar.Visible = false;
         }
     }
 }
