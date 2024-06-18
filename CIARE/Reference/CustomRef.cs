@@ -136,7 +136,7 @@ namespace CIARE.Reference
                             ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
                             FileInfo fileInfo = new FileInfo(lib);
                             var libFile = $"{assemblyNamespace}|{lib}";
-                            if (!CheckItem(lstRef, fileInfo.Name) && (IsManaged(lib)))
+                            if (!CheckItem(lstRef, fileInfo.Name))
                             {
                                 lstRef.Items.Add(item);
                                 if (!GlobalVariables.customRefList.Contains(libFile))
