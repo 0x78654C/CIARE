@@ -9,6 +9,7 @@ using CIARE.Roslyn;
 using CIARE.Utils;
 using System.Threading;
 using System;
+using System.IO.Compression;
 
 namespace CIARE.Reference
 {
@@ -48,7 +49,7 @@ namespace CIARE.Reference
                 {
                     if (s_isInList) continue;
 
-                    //var checkASM = LibLoaded.CheckLoadedAssembly(libPath);
+                    var checkASM = LibLoaded.CheckLoadedAssembly(libPath);
 
                     Task.Run(() => MainForm.pcRegistry.LoadCustomAssembly(libPath));
                 }
@@ -123,26 +124,46 @@ namespace CIARE.Reference
                 ListView lstRef = new ListView();
                 if (!isFormLoading)
                 {
+                    // Precheck if the nuget pack was already downloaded
+                    if (File.Exists(pathNugetFile))
+                    {
+                        var libs = File.ReadAllLines(pathNugetFile);
+                        foreach (var lib in libs)
+                        {
+                            string assemblyNamespace = GetAssemblyNamespace(lib);
+                            if (string.IsNullOrEmpty(assemblyNamespace))
+                                continue;
+                            ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
+                            FileInfo fileInfo = new FileInfo(lib);
+                            var libFile = $"{assemblyNamespace}|{lib}";
+                            if (!CheckItem(lstRef, fileInfo.Name) && (IsManaged(lib)))
+                            {
+                                lstRef.Items.Add(item);
+                                if (!GlobalVariables.customRefList.Contains(libFile))
+                                    GlobalVariables.customRefList.Add(libFile);
+                            }
+                        }
+                        return;
+                    }
+
                     foreach (var lib in libPath)
                     {
                         string assemblyNamespace = GetAssemblyNamespace(lib);
-
-                        ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
                         if (string.IsNullOrEmpty(assemblyNamespace))
                             continue;
+                        ListViewItem item = new ListViewItem(new[] { assemblyNamespace, lib });
+
                         FileInfo fileInfo = new FileInfo(lib);
                         var libFile = $"{assemblyNamespace}|{lib}";
-
-
-                        if (!File.Exists(pathNugetFile))
-                            File.WriteAllText(pathNugetFile, "");
-
-                        if (!CheckItem(lstRef, fileInfo.Name))
+                        if (!CheckItem(lstRef, fileInfo.Name) && (IsManaged(lib)))
                         {
                             lstRef.Items.Add(item);
                             if (!GlobalVariables.customRefList.Contains(libFile))
                             {
                                 GlobalVariables.customRefList.Add(libFile);
+                                if (!File.Exists(pathNugetFile))
+                                    File.WriteAllText(pathNugetFile, "");
+
                                 var libsFile = File.ReadAllText(pathNugetFile);
                                 if (!libsFile.Contains(lib) && !GlobalVariables.customRefList.Contains(lib))
                                     File.AppendAllText(pathNugetFile, $"{lib}\n");
