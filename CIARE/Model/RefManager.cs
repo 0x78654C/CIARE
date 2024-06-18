@@ -1,11 +1,12 @@
-﻿using CIARE.GUI;
+﻿
+using System.Threading.Tasks;
+using CIARE.GUI;
 using CIARE.Reference;
 using CIARE.Roslyn;
 using CIARE.Utils;
 using System;
 using System.IO;
 using System.Runtime.Versioning;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CIARE.Model
@@ -141,7 +142,6 @@ namespace CIARE.Model
                     RemoveFromList(lib);
                     LibLoaded.RemoveRef(lib);
                 }
-                File.Delete(pathNugetFile);
                 MainForm.Instance.ReloadRef();
             }
             else
@@ -157,7 +157,7 @@ namespace CIARE.Model
         /// <param name="lib"></param>
         private void RemoveFromList(string lib)
         {
-            GlobalVariables.customRefAsm.RemoveAll(x => x.EndsWith(lib));
+            GlobalVariables.customRefAsm.Clear();
             GlobalVariables.customRefList.RemoveAll(x => x.EndsWith(lib));
             GlobalVariables.filteredCustomRef.RemoveAll(x => x.EndsWith(lib));
         }
