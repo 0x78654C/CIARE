@@ -78,7 +78,7 @@
             // 
             // filePath
             // 
-            filePath.Text = "Nuget Version / File Path";
+            filePath.Text = "Nuget Version / File Path (for local reference)";
             filePath.Width = 639;
             // 
             // AddRefFileBtn
