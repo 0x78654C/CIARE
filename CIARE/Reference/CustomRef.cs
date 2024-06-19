@@ -8,8 +8,6 @@ using System.IO;
 using CIARE.Roslyn;
 using CIARE.Utils;
 using System.Threading;
-using System;
-using System.IO.Compression;
 
 namespace CIARE.Reference
 {
