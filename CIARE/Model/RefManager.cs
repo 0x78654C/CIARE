@@ -35,15 +35,18 @@ namespace CIARE.Model
 
             // Set dark mode if enabled.
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
-                
+
             // Populate listview with local ref.
-            CustomRef.PopulateList(GlobalVariables.filteredCustomRef,"", true);
+            CustomRef.PopulateList(GlobalVariables.filteredCustomRef, "", true);
 
             // Repopulate listview with ref. from local after loading list.
             CustomRef.PopulateListLocal(GlobalVariables.filteredCustomRef, refListView);
 
             // Populate listview with nuget packages.
             CustomRef.PopulateListNuget(GlobalVariables.nugetNames, refListView);
+
+            // Set style download bar.
+            downloadBar.Style = ProgressBarStyle.Marquee;
         }
 
         /// <summary>
@@ -142,9 +145,8 @@ namespace CIARE.Model
                 var libsNug = File.ReadAllLines(pathNugetFile);
                 s_listRemove = libsNug;
                 worker = new BackgroundWorker();
-                HideControlers();
                 worker.DoWork += Worker_DoWork;
-                ShowControler();
+                worker.RunWorkerAsync();
             }
             else
             {
@@ -152,11 +154,22 @@ namespace CIARE.Model
             }
         }
 
+        /// <summary>
+        /// Background worker do_work call.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Worker_DoWork(object sender, DoWorkEventArgs e)
         {
+            HideControlers();
             RemoveAsm(s_listRemove);
+            ShowControlers();
         }
 
+        /// <summary>
+        /// Remove multi library paths from assembly.
+        /// </summary>
+        /// <param name="libsNug"></param>
         private void RemoveAsm(string[] libsNug)
         {
             foreach (var lib in libsNug)
@@ -176,7 +189,7 @@ namespace CIARE.Model
             GlobalVariables.customRefList.RemoveAll(x => x.EndsWith(lib));
             GlobalVariables.filteredCustomRef.RemoveAll(x => x.EndsWith(lib));
         }
-            
+
         /// <summary>
         /// Set namespace to clipborad.
         /// </summary>
@@ -233,7 +246,7 @@ namespace CIARE.Model
             FileManage.AddReferenceDialog();
 
             // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.filteredCustomRef,"",false);
+            CustomRef.PopulateList(GlobalVariables.filteredCustomRef, "", false);
 
             // Repopulate listview with ref. from local after loading list.
             CustomRef.PopulateListLocal(GlobalVariables.filteredCustomRef, refListView);
@@ -247,30 +260,35 @@ namespace CIARE.Model
         /// </summary>
         private void HideControlers()
         {
-            refLisgGroupBox.Visible = false;
-            refListView.Visible = false;
-            AddRefFileBtn.Visible = false;
-            NugetManagerBtn.Visible = false;
-            CancelBtn.Visible = false;
-            ControlBox = false;
-            downloadLbl.Visible = true;
-            downloadBar.Visible = true;
+            this.Invoke(() =>
+            {
+                refLisgGroupBox.Visible = false;
+                refListView.Visible = false;
+                AddRefFileBtn.Visible = false;
+                NugetManagerBtn.Visible = false;
+                CancelBtn.Visible = false;
+                ControlBox = false;
+                downloadLbl.Visible = true;
+                downloadBar.Visible = true;
+            });
         }
 
         /// <summary>
         /// Show controlers and hide progress bar.
         /// </summary>
-        private void ShowControler()
+        private void ShowControlers()
         {
-     
-            refLisgGroupBox.Visible = true;
-            refListView.Visible = true;
-            AddRefFileBtn.Visible = true;
-            NugetManagerBtn.Visible = true;
-            CancelBtn.Visible = true;
-            ControlBox = true;
-            downloadLbl.Visible = false;
-            downloadBar.Visible = false;
+            this.Invoke(() =>
+            {
+                refLisgGroupBox.Visible = true;
+                refListView.Visible = true;
+                AddRefFileBtn.Visible = true;
+                NugetManagerBtn.Visible = true;
+                CancelBtn.Visible = true;
+                ControlBox = true;
+                downloadLbl.Visible = false;
+                downloadBar.Visible = false;
+            });
         }
     }
 }
