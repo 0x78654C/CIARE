@@ -111,6 +111,8 @@ namespace CIARE.Utils
         //- NuGet-
         public static readonly string downloadNugetPath = $"{userProfileDirectory}nuget\\";
         public static List<string> nugetPackage = new List<string>();
+        public static List<string> filteredCustomRef { get; set; } = new List<string>();
+        public static List<string> nugetNames { get; set; } = new List<string>();
         public static List<string> downloadPackages = new List<string>();
         public static List<string> depNugetFiles = new List<string>();
         public const string nugetApi="https://api.nuget.org/v3/index.json";

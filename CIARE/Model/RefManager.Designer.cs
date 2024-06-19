@@ -40,6 +40,8 @@
             copyNamespaceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             NugetManagerBtn = new System.Windows.Forms.Button();
+            downloadLbl = new System.Windows.Forms.Label();
+            downloadBar = new System.Windows.Forms.ProgressBar();
             refLisgGroupBox.SuspendLayout();
             deleteStrip.SuspendLayout();
             SuspendLayout();
@@ -76,7 +78,7 @@
             // 
             // filePath
             // 
-            filePath.Text = "File Path";
+            filePath.Text = "Nuget Version / File Path (for local reference)";
             filePath.Width = 639;
             // 
             // AddRefFileBtn
@@ -133,12 +135,36 @@
             NugetManagerBtn.UseVisualStyleBackColor = true;
             NugetManagerBtn.Click += NugetManagerBtn_Click;
             // 
+            // downloadLbl
+            // 
+            downloadLbl.Anchor = System.Windows.Forms.AnchorStyles.None;
+            downloadLbl.AutoSize = true;
+            downloadLbl.BackColor = System.Drawing.SystemColors.ButtonHighlight;
+            downloadLbl.Location = new System.Drawing.Point(368, 207);
+            downloadLbl.Name = "downloadLbl";
+            downloadLbl.Size = new System.Drawing.Size(160, 15);
+            downloadLbl.TabIndex = 5;
+            downloadLbl.Text = "Removing NuGet package ....";
+            downloadLbl.Visible = false;
+            // 
+            // downloadBar
+            // 
+            downloadBar.Anchor = System.Windows.Forms.AnchorStyles.None;
+            downloadBar.Location = new System.Drawing.Point(319, 244);
+            downloadBar.MarqueeAnimationSpeed = 30;
+            downloadBar.Name = "downloadBar";
+            downloadBar.Size = new System.Drawing.Size(265, 23);
+            downloadBar.TabIndex = 6;
+            downloadBar.Visible = false;
+            // 
             // RefManager
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             CancelButton = CancelBtn;
             ClientSize = new System.Drawing.Size(902, 474);
+            Controls.Add(downloadLbl);
+            Controls.Add(downloadBar);
             Controls.Add(NugetManagerBtn);
             Controls.Add(CancelBtn);
             Controls.Add(AddRefFileBtn);
@@ -152,6 +178,7 @@
             refLisgGroupBox.ResumeLayout(false);
             deleteStrip.ResumeLayout(false);
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -166,5 +193,7 @@
         private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem copyNamespaceToolStripMenuItem;
         private System.Windows.Forms.Button NugetManagerBtn;
+        private System.Windows.Forms.Label downloadLbl;
+        private System.Windows.Forms.ProgressBar downloadBar;
     }
 }

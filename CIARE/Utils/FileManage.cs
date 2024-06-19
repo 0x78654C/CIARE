@@ -75,6 +75,8 @@ namespace CIARE.Utils
                     {
                         if (!GlobalVariables.customRefAsm.Contains(lib))
                             GlobalVariables.customRefAsm.Add(lib);
+                        if (!GlobalVariables.filteredCustomRef.Contains(lib))
+                            GlobalVariables.filteredCustomRef.Add(lib);
                     }
                     else
                         MessageBox.Show($"{lib} is not managed library!", "CIARE", MessageBoxButtons.OK,
@@ -510,6 +512,8 @@ MessageBoxIcon.Warning);
                             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{fileInfo.Name}";
                             TabControllerManage.StoreFileMD5(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                             SetFileMD5(filePath);
+                            MainForm.Instance.TopMost = true;
+                            MainForm.Instance.TopMost = false;
                         }
                     }
                 }

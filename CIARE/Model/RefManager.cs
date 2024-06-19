@@ -1,15 +1,15 @@
-﻿using CIARE.GUI;
+﻿
+using System.Threading.Tasks;
+using CIARE.GUI;
 using CIARE.Reference;
 using CIARE.Roslyn;
 using CIARE.Utils;
-using CIARE.Utils.Options;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
-using System.Xml.XPath;
+using System.ComponentModel;
+using ICSharpCode.Core;
 
 namespace CIARE.Model
 {
@@ -18,6 +18,8 @@ namespace CIARE.Model
     {
         public static RefManager Instance { get; private set; }
         private int s_initialSizeForm = 0;
+        private string[] s_listRemove;
+        BackgroundWorker worker;
         public RefManager()
         {
             InitializeComponent();
@@ -34,10 +36,19 @@ namespace CIARE.Model
             // Set dark mode if enabled.
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
 
-            // Populate listview with ref.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView, true);
+            // Populate listview with local ref.
+            CustomRef.PopulateList(GlobalVariables.filteredCustomRef, "", true);
+
+            // Repopulate listview with ref. from local after loading list.
+            CustomRef.PopulateListLocal(GlobalVariables.filteredCustomRef, refListView);
+
+            // Populate listview with nuget packages.
+            CustomRef.PopulateListNuget(GlobalVariables.nugetNames, refListView);
+
+            // Set style download bar.
+            downloadBar.Style = ProgressBarStyle.Marquee;
         }
-        
+
         /// <summary>
         /// Overwrite the key press.
         /// </summary>
@@ -109,8 +120,8 @@ namespace CIARE.Model
             var pathItem = refList.Items[refList.Items.IndexOf(refList.SelectedItems[0])].SubItems[1].Text;
             DialogResult dialogResult;
             if (pathItem.Contains(GlobalVariables.downloadNugetPath))
-             dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference.\nNuGet package's can be only readded after application restart.\nAre you sure that you want to remove? ", "CIARE", MessageBoxButtons.YesNo,
-MessageBoxIcon.Warning);
+                dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference.\nNuGet package's can be only readded after application restart.\nAre you sure that you want to remove? ", "CIARE", MessageBoxButtons.YesNo,
+   MessageBoxIcon.Warning);
             else
                 dialogResult = MessageBox.Show($"You are about to remove {selecItem} reference.\nAre you sure that you want to remove? ", "CIARE", MessageBoxButtons.YesNo,
    MessageBoxIcon.Warning);
@@ -120,13 +131,64 @@ MessageBoxIcon.Warning);
                 foreach (var item in GlobalVariables.customRefAsm)
                     if (item.EndsWith(fileInfo.Name) && item.Contains(GlobalVariables.downloadNugetPath))
                         GlobalVariables.blackRefList.Add(item);
-                GlobalVariables.customRefAsm.RemoveAll(x => x.EndsWith(fileInfo.Name));
+                RemoveFromList(fileInfo.Name);
                 refList.SelectedItems[0].Remove();
-                GlobalVariables.customRefList.RemoveAll(x => x.EndsWith(fileInfo.Name));
+                GlobalVariables.nugetNames.RemoveAll(x => x.StartsWith(selecItem));
             }
-           LibLoaded.RemoveRef(pathItem);
+
+            // Remove all libs that was lodead with nuget download.
+            if (!pathItem.EndsWith(".dll"))
+            {
+                var pathNugetFile = $"{GlobalVariables.downloadNugetPath}{selecItem}.ddb";
+                if (!File.Exists(pathNugetFile))
+                    return;
+                var libsNug = File.ReadAllLines(pathNugetFile);
+                s_listRemove = libsNug;
+                worker = new BackgroundWorker();
+                worker.DoWork += Worker_DoWork;
+                worker.RunWorkerAsync();
+            }
+            else
+            {
+                LibLoaded.RemoveRef(pathItem);
+            }
         }
 
+        /// <summary>
+        /// Background worker do_work call.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Worker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            HideControlers();
+            RemoveAsm(s_listRemove);
+            ShowControlers();
+        }
+
+        /// <summary>
+        /// Remove multi library paths from assembly.
+        /// </summary>
+        /// <param name="libsNug"></param>
+        private void RemoveAsm(string[] libsNug)
+        {
+            foreach (var lib in libsNug)
+            {
+                RemoveFromList(lib);
+                LibLoaded.RemoveRef(lib);
+            }
+        }
+
+        /// <summary>
+        /// Clean ref lists with unused libraries.
+        /// </summary>
+        /// <param name="lib"></param>
+        private void RemoveFromList(string lib)
+        {
+            GlobalVariables.customRefAsm.Clear();
+            GlobalVariables.customRefList.RemoveAll(x => x.EndsWith(lib));
+            GlobalVariables.filteredCustomRef.RemoveAll(x => x.EndsWith(lib));
+        }
 
         /// <summary>
         /// Set namespace to clipborad.
@@ -151,7 +213,7 @@ MessageBoxIcon.Warning);
         /// <param name="e"></param>
         private void NugetManagerBtn_Click(object sender, EventArgs e)
         {
-           LoadNugetSearch();
+            LoadNugetSearch();
         }
 
         /// <summary>
@@ -184,10 +246,49 @@ MessageBoxIcon.Warning);
             FileManage.AddReferenceDialog();
 
             // Repopulate listview with ref. after loading list.
-            CustomRef.PopulateList(GlobalVariables.customRefAsm, refListView);
+            CustomRef.PopulateList(GlobalVariables.filteredCustomRef, "", false);
+
+            // Repopulate listview with ref. from local after loading list.
+            CustomRef.PopulateListLocal(GlobalVariables.filteredCustomRef, refListView);
 
             // Load assemblies from list.
-            CustomRef.SetCustomRefDirective(GlobalVariables.customRefAsm);
+            CustomRef.SetCustomRefDirective(GlobalVariables.filteredCustomRef);
+        }
+
+        /// <summary>
+        /// Hide controlers and display progress bar.
+        /// </summary>
+        private void HideControlers()
+        {
+            this.Invoke(() =>
+            {
+                refLisgGroupBox.Visible = false;
+                refListView.Visible = false;
+                AddRefFileBtn.Visible = false;
+                NugetManagerBtn.Visible = false;
+                CancelBtn.Visible = false;
+                ControlBox = false;
+                downloadLbl.Visible = true;
+                downloadBar.Visible = true;
+            });
+        }
+
+        /// <summary>
+        /// Show controlers and hide progress bar.
+        /// </summary>
+        private void ShowControlers()
+        {
+            this.Invoke(() =>
+            {
+                refLisgGroupBox.Visible = true;
+                refListView.Visible = true;
+                AddRefFileBtn.Visible = true;
+                NugetManagerBtn.Visible = true;
+                CancelBtn.Visible = true;
+                ControlBox = true;
+                downloadLbl.Visible = false;
+                downloadBar.Visible = false;
+            });
         }
     }
 }

@@ -65,7 +65,7 @@ namespace CIARE.Roslyn
             FileInfo fileInfo = new FileInfo(libPath);
             var nameSpace = fileInfo.Name.Replace(".dll", string.Empty);
             var listRef = AppDomain.CurrentDomain.GetAssemblies();
-            bool isLoaded = listRef.Any(key=> key.FullName.StartsWith(nameSpace));
+            bool isLoaded = listRef.Any(key=> key.ToString().Split(',')[0].StartsWith(nameSpace));
             return isLoaded;
         }
 

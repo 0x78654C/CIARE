@@ -70,6 +70,7 @@
             packageList.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { packageName, versoion, description });
             packageList.Font = new System.Drawing.Font("Segoe UI", 9.75F);
             packageList.Location = new System.Drawing.Point(12, 56);
+            packageList.MultiSelect = false;
             packageList.Name = "packageList";
             packageList.Size = new System.Drawing.Size(1067, 512);
             packageList.TabIndex = 2;
