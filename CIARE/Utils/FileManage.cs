@@ -33,6 +33,7 @@ namespace CIARE.Utils
             s_openFileDialog.Title = "Select file top open:";
             s_openFileDialog.CheckFileExists = true;
             s_openFileDialog.CheckPathExists = true;
+            GlobalVariables.savedFileNoMD5Check = true;
             DialogResult dr = s_openFileDialog.ShowDialog();
             if (dr == DialogResult.OK)
             {
@@ -43,12 +44,14 @@ namespace CIARE.Utils
                     SetFileMD5(fileInfo.FullName);
                     GlobalVariables.openedFileName = fileInfo.Name;
                     s_isTabOpen = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, GlobalVariables.openedFilePath);
+                    GlobalVariables.savedFileNoMD5Check = false;
                     return reader.ReadToEnd();
                 }
             }
             else
             {
                 GlobalVariables.noFileSelected = true;
+                GlobalVariables.savedFileNoMD5Check = false;
             }
             return "";
         }
@@ -94,6 +97,7 @@ MessageBoxIcon.Warning);
         {
             s_saveFileDialog.Filter = "C# Files (*.cs)|*.cs|Text Files (*.txt)|*.txt|All Files (*.*)|*.*";
             s_saveFileDialog.Title = $"Save As... :";
+            GlobalVariables.savedFileNoMD5Check = true;
             DialogResult dr = s_saveFileDialog.ShowDialog();
             if (dr == DialogResult.OK)
             {
@@ -102,17 +106,40 @@ MessageBoxIcon.Warning);
                     File.WriteAllText(s_saveFileDialog.FileName, data);
                     if (File.Exists(s_saveFileDialog.FileName))
                     {
+                        // Check if the tab already exist. Select tab and reaload data.
+                        var selectedTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, s_saveFileDialog.FileName);
+                        if (selectedTab)
+                        {
+                            using (StreamReader reader = new StreamReader(s_saveFileDialog.FileName))
+                            {
+                                GlobalVariables.openedFilePath = s_saveFileDialog.FileName;
+                                var fileInfoOpened = new FileInfo(GlobalVariables.openedFilePath);
+                                SetFileMD5(s_saveFileDialog.FileName);
+                                GlobalVariables.openedFileName = fileInfoOpened.Name;
+                                SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
+                                GlobalVariables.savedFile = false;
+                                GlobalVariables.savedFileNoMD5Check = false;
+                                return;
+                            }
+                        }
                         GlobalVariables.openedFilePath = s_saveFileDialog.FileName;
                         FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                         GlobalVariables.openedFileName = fileInfo.Name;
                         GlobalVariables.savedFile = true;
+                        GlobalVariables.savedFileNoMD5Check = false;
                         SetFileMD5(fileInfo.FullName);
                     }
                 }
                 catch (Exception e)
                 {
+                    GlobalVariables.savedFileNoMD5Check = false;
                     MessageBox.Show(e.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+            }
+            else
+            {
+                GlobalVariables.savedFile = false;
+                GlobalVariables.savedFileNoMD5Check = false;
             }
         }
 
@@ -479,8 +506,14 @@ MessageBoxIcon.Warning);
         /// <param name="filePath"></param>
         /// <param name="fileSize"></param>
         /// <param name="textEditorControl"></param>
-        public static void CheckFileExternalEdited(string fileTabStore)
+        public static void CheckFileExternalEdited(string fileTabStore, bool isNoMD5Check)
         {
+            if (isNoMD5Check)
+            {
+                GlobalVariables.savedFileNoMD5Check = false;
+                return;
+            }
+
             if (!File.Exists(fileTabStore))
                 return;
 

@@ -597,7 +597,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_Activated(object sender, EventArgs e)
         {
-            FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath);
+            FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath, GlobalVariables.savedFileNoMD5Check);
         }
 
 
