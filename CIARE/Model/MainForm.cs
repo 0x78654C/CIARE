@@ -39,6 +39,7 @@ using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
 using CIARE.Utils.Encryption;
+using Newtonsoft.Json.Bson;
 
 
 namespace CIARE
@@ -1136,6 +1137,15 @@ namespace CIARE
             {
                 e.Handled = true;
             }
+        }
+
+        /// <summary>
+        /// Refresh top most.
+        /// </summary>
+        public void RefreshTopMost()
+        {
+           TopMost = true;
+           TopMost = false;
         }
     }
 }

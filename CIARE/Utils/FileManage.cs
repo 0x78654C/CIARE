@@ -545,8 +545,7 @@ MessageBoxIcon.Warning);
                             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = $"{GetFilePath(GlobalVariables.openedFilePath)}\\{fileInfo.Name}";
                             TabControllerManage.StoreFileMD5(filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                             SetFileMD5(filePath);
-                            MainForm.Instance.TopMost = true;
-                            MainForm.Instance.TopMost = false;
+                            MainForm.Instance.RefreshTopMost();
                         }
                     }
                 }
@@ -681,6 +680,8 @@ MessageBoxIcon.Information);
         /// <param name="textEditorControl"></param>
         private static void LoadParamFile(string data, TabControl tabControl)
         {
+          
+
             bool isTabPresent = false;
             var isFileOpenedInTab = false;
             if (data.StartsWith("cli|"))
@@ -688,12 +689,14 @@ MessageBoxIcon.Information);
                 GlobalVariables.isCLIOpen = true;
                 string file = data.Split('|')[1];
                 isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, file);
+                MainForm.Instance.RefreshTopMost();
                 if (isFileOpenedInTab) return;
                 bool fileExist = ManageCommandFileParamCLI(file);
                 if (!fileExist)
                     return;
                 FileInfo fileInfo = new FileInfo(file);
                 isTabPresent = SetEditorTabArgs(tabControl, file);
+                MainForm.Instance.RefreshTopMost();
                 if (isTabPresent) return;
                 using (var reader = new StreamReader(file))
                 {
@@ -710,6 +713,7 @@ MessageBoxIcon.Information);
                             TabControllerManage.StoreDeleteTabs(file, file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedIndex, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
                             TabControllerManage.StoreFileMD5(file, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
                         }
+                        MainForm.Instance.RefreshTopMost();
                     });
                 }
                 return;
@@ -722,6 +726,7 @@ MessageBoxIcon.Information);
                 GlobalVariables.isCLIOpen = true;
                 FileInfo fileInfo = new FileInfo(data);
                 SetFileMD5(fileInfo.FullName);
+                MainForm.Instance.RefreshTopMost();
                 isTabPresent = SetEditorTabArgs(tabControl, data);
                 if (isTabPresent) return;
                 TabControllerManage.AddNewTab(tabControl);
@@ -734,6 +739,7 @@ MessageBoxIcon.Information);
                 TabControllerManage.StoreFileMD5(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, 1);
                 if (GlobalVariables.OStartUp)
                     TabControllerManage.StoreDeleteTabs(previousTabPath, data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
+                MainForm.Instance.RefreshTopMost();
             }
         }
 
