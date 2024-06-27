@@ -24,6 +24,8 @@ namespace CIARE.GUI
         public static bool IsFileOpenedInTab(TabControl tabControl, string path)
         {
             var isPresent = false;
+            if (!File.Exists(path))
+                return isPresent;
             MainForm.Instance.Invoke(delegate
             {
                 foreach (TabPage tabPage in tabControl.TabPages)
