@@ -412,6 +412,7 @@ MessageBoxIcon.Warning);
                     MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
                     StoreTabs(GlobalVariables.openedFilePath);
+                    SetFileMD5(fileInfo.FullName);
                 }
             }
             catch (Exception ex)
