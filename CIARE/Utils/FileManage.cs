@@ -680,24 +680,26 @@ MessageBoxIcon.Information);
         /// <param name="textEditorControl"></param>
         private static void LoadParamFile(string data, TabControl tabControl)
         {
-          
-
             bool isTabPresent = false;
             var isFileOpenedInTab = false;
+            if (string.IsNullOrEmpty(data))
+                return;
             if (data.StartsWith("cli|"))
             {
                 GlobalVariables.isCLIOpen = true;
                 string file = data.Split('|')[1];
-                isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, file);
-                MainForm.Instance.RefreshTopMost();
-                if (isFileOpenedInTab) return;
                 bool fileExist = ManageCommandFileParamCLI(file);
                 if (!fileExist)
                     return;
+                isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, file);
+                MainForm.Instance.RefreshTopMost();
+                if (isFileOpenedInTab) return;
                 FileInfo fileInfo = new FileInfo(file);
                 isTabPresent = SetEditorTabArgs(tabControl, file);
                 MainForm.Instance.RefreshTopMost();
                 if (isTabPresent) return;
+                GlobalVariables.openedFilePath = fileInfo.FullName;
+                GlobalVariables.openedFileName = fileInfo.Name;
                 using (var reader = new StreamReader(file))
                 {
                     TabControllerManage.AddNewTab(tabControl);
@@ -736,9 +738,14 @@ MessageBoxIcon.Information);
                 MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                 MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = fileInfo.FullName;
+                GlobalVariables.openedFilePath = fileInfo.FullName;
+                GlobalVariables.openedFileName = fileInfo.Name;
                 TabControllerManage.StoreFileMD5(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, 1);
                 if (GlobalVariables.OStartUp)
+                {
                     TabControllerManage.StoreDeleteTabs(previousTabPath, data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
+                    TabControllerManage.StoreFileMD5(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
+                }
                 MainForm.Instance.RefreshTopMost();
             }
         }
@@ -760,9 +767,7 @@ MessageBoxIcon.Information);
                     string filePath = tabControl.SelectedTab.ToolTipText.Trim();
                     if (!string.IsNullOrEmpty(filePath))
                     {
-                        GlobalVariables.openedFilePath = filePath;
                         var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                        GlobalVariables.openedFileName = fileInfo.Name;
                         isTabPresent = true;
                     }
                     break;
