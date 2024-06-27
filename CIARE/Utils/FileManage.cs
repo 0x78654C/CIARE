@@ -528,8 +528,8 @@ MessageBoxIcon.Warning);
                 string filePath = line.Split('|')[0];
                 string fileSize = line.Split('|')[1];
                 int tabIndex = Int32.Parse(line.Split('|')[2]);
-                var fileData = File.ReadAllText(filePath); // test 
-                var fileMD5 = MD5Hash.GetMD5Hash(fileData); //test
+                var fileData = File.ReadAllText(filePath);  
+                var fileMD5 = MD5Hash.GetMD5Hash(fileData); 
                 FileInfo fileInfo = new FileInfo(filePath);
                 if (fileSize != fileMD5)
                 {
