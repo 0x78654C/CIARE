@@ -22,7 +22,7 @@ namespace CIARE.Utils
         public static readonly string tabsFilePathAll = $"{userProfileDirectory}tabsFilePathAll.cDat";
         public static string processArg = string.Empty;
         private static readonly string getGetVersionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-        public static readonly string versionName = getGetVersionName.Substring(0, getGetVersionName.Length - 2);
+        public static readonly string versionName = getGetVersionName.Substring(0, getGetVersionName.Length); // set -2 back on next release
         public static bool isStoringTabs = false;
         public static string openedFilePath { get; set; } = string.Empty;
         public static string openedFileName = string.Empty;
