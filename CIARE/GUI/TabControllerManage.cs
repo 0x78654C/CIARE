@@ -357,7 +357,7 @@ namespace CIARE.GUI
             bool isLine = false;
             foreach (TabPage tabPage in MainForm.Instance.EditorTabControl.TabPages)
             {
-                if (tabPage.ToolTipText.Contains(filePath) && tabPage.ToolTipText.StartsWith("Add Tab"))
+                if (tabPage.ToolTipText.Contains(filePath) && !tabPage.ToolTipText.StartsWith("Add Tab"))
                 {
                     isLine = true;
                     break;
