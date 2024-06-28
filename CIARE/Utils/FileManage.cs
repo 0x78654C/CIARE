@@ -741,12 +741,9 @@ MessageBoxIcon.Information);
                 MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = fileInfo.FullName;
                 GlobalVariables.openedFilePath = fileInfo.FullName;
                 GlobalVariables.openedFileName = fileInfo.Name;
-                TabControllerManage.StoreFileMD5(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, 1);
                 if (GlobalVariables.OStartUp)
-                {
                     TabControllerManage.StoreDeleteTabs(previousTabPath, data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, false, MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText);
-                    TabControllerManage.StoreFileMD5(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
-                }
+                TabControllerManage.StoreFileMD5(data, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
                 MainForm.Instance.RefreshTopMost();
             }
         }
