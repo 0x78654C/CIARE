@@ -114,7 +114,6 @@ namespace CIARE.GUI
                     if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
                     {
                         tabControl.SelectTab(count);
-
                         var pathFile = tabControl.SelectedTab.ToolTipText;
                         tabControl.TabPages.RemoveAt(tabCount--);
                         tabControl.SelectTab(count);
@@ -170,8 +169,9 @@ namespace CIARE.GUI
                 tabControl.SelectTab(2);
                 if (GlobalVariables.OStartUp)
                 {
-                    StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabControl.SelectedTab.ToolTipText, false);
-                    StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedTab.ToolTipText, true);
+                    var toolTip = tabControl.SelectedTab.ToolTipText;
+                    StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, toolTip, false);
+                    StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, toolTip, true);
                 }
             }
         }
@@ -200,18 +200,18 @@ namespace CIARE.GUI
         {
             if (!Directory.Exists(tempDir))
                 return;
+            var fileTabData = File.ReadAllText(fileTabStore);
             if (isSize)
             {
-                if (File.Exists(fileTabStore))
+                if (File.Exists(fileTabStore) && !fileTabData.Contains(filePath))
                 {
                     FileInfo fileInfo = new(filePath);
                     File.WriteAllText(fileTabStore, $"{filePath}|{fileInfo.Length}|2");
                 }
             }
             else
-                if (File.Exists(fileTabStore))
-                File.WriteAllText(fileTabStore, $"{filePath}|2");
-
+                if (File.Exists(fileTabStore) && !fileTabData.Contains(filePath))
+                     File.WriteAllText(fileTabStore, $"{filePath}|2");
         }
 
 
@@ -281,6 +281,9 @@ namespace CIARE.GUI
 
             if (!File.Exists(fileTabStore))
                 File.WriteAllText(fileTabStore, "");
+
+            if (!File.Exists(filePath))
+                return;
 
             var fileData = File.ReadAllText(filePath); // test 
             var fileMD5 = MD5Hash.GetMD5Hash(fileData); //test
@@ -354,7 +357,7 @@ namespace CIARE.GUI
             bool isLine = false;
             foreach (TabPage tabPage in MainForm.Instance.EditorTabControl.TabPages)
             {
-                if (tabPage.ToolTipText.Contains(filePath))
+                if (tabPage.ToolTipText.Contains(filePath) && tabPage.ToolTipText.StartsWith("Add Tab"))
                 {
                     isLine = true;
                     break;
