@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+using System.Windows.Shapes;
 using CIARE.GUI;
 using CIARE.Reference;
 using CIARE.Utils.Encryption;
@@ -392,7 +394,7 @@ MessageBoxIcon.Warning);
             {
                 string titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text.Trim();
                 bool isSameTitleName = titleTab.Contains(GlobalVariables.openedFilePath);
-
+                int tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
                 if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page"))
                 {
                     File.WriteAllText(GlobalVariables.openedFilePath, SelectedEditor.GetSelectedEditor().Text);
@@ -400,7 +402,7 @@ MessageBoxIcon.Warning);
                     MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{titleTab.Replace("*", "")}               ";
                     MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
-                    StoreTabs(GlobalVariables.openedFilePath);
+                    TabControllerManage.StoreFileMD5(GlobalVariables.openedFilePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                     SetFileMD5(fileInfo.FullName);
                     return;
                 }
@@ -411,7 +413,7 @@ MessageBoxIcon.Warning);
                     MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}               ";
                     MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
-                    StoreTabs(GlobalVariables.openedFilePath);
+                    TabControllerManage.StoreFileMD5(GlobalVariables.openedFilePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                     SetFileMD5(fileInfo.FullName);
                 }
             }
@@ -419,21 +421,6 @@ MessageBoxIcon.Warning);
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        /// <summary>
-        /// Store tabs if set in options on save.
-        /// </summary>
-        /// <param name="path"></param>
-        private static void StoreTabs(string path)
-        {
-            int tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
-
-            if (GlobalVariables.OStartUp)
-            {
-                TabControllerManage.StoreDeleteTabs("", path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabIndex);
-            }
-            TabControllerManage.StoreFileMD5(path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
         }
 
         /// <summary>
