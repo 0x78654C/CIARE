@@ -3,7 +3,6 @@ using CIARE.Utils.Encryption;
 using ICSharpCode.TextEditor;
 using System;
 using System.Collections.Generic;
-using System.DirectoryServices.ActiveDirectory;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -256,7 +255,6 @@ namespace CIARE.GUI
             }
 
             GlobalVariables.noClear = false;
-
         }
 
         /// <summary>
