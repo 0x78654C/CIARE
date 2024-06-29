@@ -1080,7 +1080,7 @@ namespace CIARE
                     Rectangle r = EditorTabControl.GetTabRect(i);
                     if (r.Contains(p))
                     {
-                        if (i > 1)
+                        if (i >= 1)
                         {
                             EditorTabControl.SelectedIndex = i;
                             tabMenu.Show(EditorTabControl, e.Location);
