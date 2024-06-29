@@ -144,7 +144,7 @@ namespace CIARE.GUI
 
             var tabPages = tabControl.TabPages;
             int tabCount = tabControl.TabCount - 1;
-            int count = 0;
+            int count;
             FileManage.ManageUnsavedData(textEditorControl, 0, true);
             if (GlobalVariables.noClear)
             {
