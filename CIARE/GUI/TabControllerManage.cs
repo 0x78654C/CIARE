@@ -306,10 +306,9 @@ namespace CIARE.GUI
 
             for (int i = 0; i < lines.Count(); i++)
             {
-                if (lines[i].EndsWith($"|{tabIndex}"))
+                if (lines[i].StartsWith($"{filePath}"))
                     lines.Remove(lines[i]);
             }
-
             lines.Add(line);
             File.WriteAllText(fileTabStore, string.Join("\n", lines));
         }
