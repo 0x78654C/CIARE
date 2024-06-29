@@ -249,7 +249,6 @@ namespace CIARE.GUI
             else
                 tabControl.SelectTab(index);
 
-
             if (GlobalVariables.OStartUp)
             {
                 StoreDeleteTabs(pathFile, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, pathFile);
