@@ -3,6 +3,7 @@ using CIARE.Utils.Encryption;
 using ICSharpCode.TextEditor;
 using System;
 using System.Collections.Generic;
+using System.DirectoryServices.ActiveDirectory;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -49,7 +50,7 @@ namespace CIARE.GUI
         private static void CloseTabEvent(TabControl tabControl, TextEditorControl textEditorControl, MouseEventArgs e)
         {
             var index = tabControl.SelectedIndex;
-            if (index <= 1) return;
+            if (index <= 0) return;
             Rectangle r = tabControl.GetTabRect(index);
             Rectangle closeButton = new Rectangle(r.Right - 16, r.Top + 3, 9, 9);
             if (closeButton.Contains(e.Location))
@@ -66,7 +67,7 @@ namespace CIARE.GUI
         public static void CloseTabEvent(TabControl tabControl, TextEditorControl textEditorControl)
         {
             var index = tabControl.SelectedIndex;
-            if (index <= 1) return;
+            if (index < 1) return;
             if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
                 CloseSelectedIndex(textEditorControl, tabControl, index, false);
             return;
@@ -76,7 +77,7 @@ namespace CIARE.GUI
         /// Close tab funciton on mouse down.
         /// </summary>
         /// <param name="tabControl"></param>
-        public static void CloseTab(TabControl tabControl, MouseEventArgs e)
+        public static void CloseTab(TabControl tabControl, MouseEventArgs e, bool isNotNew = false)
         {
             var tabCount = tabControl.TabCount;
             var lastIndex = tabControl.SelectedIndex;
@@ -117,15 +118,17 @@ namespace CIARE.GUI
                         var pathFile = tabControl.SelectedTab.ToolTipText;
                         tabControl.TabPages.RemoveAt(tabCount--);
                         tabControl.SelectTab(count);
-                        if (GlobalVariables.OStartUp)
-                        {
-                            ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
-                            ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
-                        }
                         GlobalVariables.noClear = false;
                     }
                 }
             }
+            if (GlobalVariables.OStartUp)
+            {
+                ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+                ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
+            }
+            AddNewTab(tabControl);
+            MainForm.Instance.EditorTabControl.TabPages.RemoveAt(1);
         }
 
         /// <summary>
@@ -135,6 +138,10 @@ namespace CIARE.GUI
         /// <param name="textEditorControl"></param>
         public static void CloseAllTabsOne(TabControl tabControl, TextEditorControl textEditorControl, int selectedIndex)
         {
+            // Do nothing if there is only 1 tab
+            if (tabControl.TabCount == 2)
+                return;
+
             var tabPages = tabControl.TabPages;
             int tabCount = tabControl.TabCount - 1;
             int count = 0;
@@ -152,13 +159,8 @@ namespace CIARE.GUI
                     if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
                     {
                         tabControl.SelectTab(count);
-
-                        var pathFile = tabControl.SelectedTab.ToolTipText;
                         var removeAt = tabCount--;
-                        if (removeAt == selectedIndex)
-                            continue;
-                        tabControl.TabPages.RemoveAt(removeAt);
-                        tabControl.SelectTab(count);
+                        tabControl.TabPages.RemoveAt(count);
                         GlobalVariables.noClear = false;
                     }
                 }
@@ -166,12 +168,18 @@ namespace CIARE.GUI
 
             if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
             {
-                tabControl.SelectTab(2);
+                tabControl.SelectTab(1);
                 if (GlobalVariables.OStartUp)
                 {
                     var toolTip = tabControl.SelectedTab.ToolTipText;
-                    StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, toolTip, false);
-                    StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, toolTip, true);
+                    var tabName = tabControl.SelectedTab.Name;
+                    if (!tabName.StartsWith("New Page"))
+                    {
+                        ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+                        ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
+                        StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, toolTip, false);
+                        StoreFileMD5(toolTip, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
+                    }
                 }
             }
         }
@@ -211,7 +219,7 @@ namespace CIARE.GUI
             }
             else
                 if (File.Exists(fileTabStore) && !fileTabData.Contains(filePath))
-                     File.WriteAllText(fileTabStore, $"{filePath}|2");
+                File.WriteAllText(fileTabStore, $"{filePath}|2");
         }
 
 
@@ -233,17 +241,23 @@ namespace CIARE.GUI
                 return;
             }
             tabControl.TabPages.RemoveAt(index);
+            if (tabControl.TabCount == 1)
+                AddNewTab(tabControl);
+
             if (index >= tabControl.TabCount)
                 tabControl.SelectTab(index - 1);
             else
                 tabControl.SelectTab(index);
+
 
             if (GlobalVariables.OStartUp)
             {
                 StoreDeleteTabs(pathFile, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, pathFile);
                 DeleteFileSize(tabControl, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index.ToString());
             }
+
             GlobalVariables.noClear = false;
+
         }
 
         /// <summary>
@@ -252,17 +266,20 @@ namespace CIARE.GUI
         /// <param name="tabControl"></param>
         /// <param name="textEditorControl"></param>
         /// <param name="e"></param>
-        public static void AddNewTab(TabControl tabControl, int index = 0)
+        public static void AddNewTab(TabControl tabControl, int index = 0, bool isNotNew = false)
         {
             try
             {
                 tabControl.Invoke(delegate
                 {
-                    tabControl.SelectedIndex = index;
-                    var tabCount = tabControl.TabCount;
-                    var lastIndex = tabControl.SelectedIndex;
-                    tabControl.TabPages.Insert(tabCount, $"New Page              ");
-                    tabControl.SelectedIndex = lastIndex + tabCount;
+                    if (!isNotNew)
+                    {
+                        tabControl.SelectedIndex = index;
+                        var tabCount = tabControl.TabCount;
+                        var lastIndex = tabControl.SelectedIndex;
+                        tabControl.TabPages.Insert(tabCount, $"New Page              ");
+                        tabControl.SelectedIndex = lastIndex + tabCount;
+                    }
                 });
             }
             catch { }
@@ -426,6 +443,10 @@ namespace CIARE.GUI
             // Sort by value
             list = list.OrderBy(x => x.Value).ToList();
 
+            // Close New Page tab if list counts more than 1 tab.
+            if (list.Count >= 1)
+                MainForm.Instance.EditorTabControl.TabPages.RemoveAt(1);
+
             foreach (var item in list)
             {
                 if (File.Exists(item.Key))
@@ -519,7 +540,7 @@ namespace CIARE.GUI
                 })
                 {
                     //g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, Brushes.Black, rt, sf);
-                    if (e.Index > 1)
+                    if (e.Index >= 1)
                         g.DrawString("r", f, s_hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
                 }
                 tp.Tag = rx;
