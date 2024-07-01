@@ -402,7 +402,7 @@ MessageBoxIcon.Warning);
                     MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{titleTab.Replace("*", "")}               ";
                     MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
-                    TabControllerManage.StoreFileMD5(GlobalVariables.openedFilePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                    StoreTabs(GlobalVariables.openedFilePath);
                     SetFileMD5(fileInfo.FullName);
                     return;
                 }
@@ -413,7 +413,7 @@ MessageBoxIcon.Warning);
                     MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{GlobalVariables.openedFileName}               ";
                     MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
-                    TabControllerManage.StoreFileMD5(GlobalVariables.openedFilePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                    StoreTabs(GlobalVariables.openedFilePath);
                     SetFileMD5(fileInfo.FullName);
                 }
             }
@@ -421,6 +421,19 @@ MessageBoxIcon.Warning);
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        /// <summary>
+        /// Store tabs if set in options on save.
+        /// </summary>
+        /// <param name="path"></param>
+        private static void StoreTabs(string path)
+        {
+            int tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
+
+            if (GlobalVariables.OStartUp)
+                TabControllerManage.StoreDeleteTabs("", path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, tabIndex);
+            TabControllerManage.StoreFileMD5(path, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
         }
 
         /// <summary>
