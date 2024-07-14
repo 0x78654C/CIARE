@@ -397,8 +397,14 @@ MessageBoxIcon.Warning);
                 int tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
                 if (GlobalVariables.openedFilePath.Length > 0 && !titleTab.Contains("New Page"))
                 {
-                    File.WriteAllText(GlobalVariables.openedFilePath, SelectedEditor.GetSelectedEditor().Text);
                     FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                    if (fileInfo.IsLocked())
+                    {
+                        MessageBox.Show("This file is in use. Close the file that's open in another program!", "CIARE", MessageBoxButtons.OK,
+        MessageBoxIcon.Warning);
+                        return;
+                    }
+                    File.WriteAllText(GlobalVariables.openedFilePath, SelectedEditor.GetSelectedEditor().Text);
                     MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{titleTab.Replace("*", "")}               ";
                     MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = GlobalVariables.openedFilePath;
                     MainForm.Instance.Text = $"{GlobalVariables.openedFileName} : {GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
