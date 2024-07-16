@@ -475,7 +475,7 @@ namespace CIARE.GUI
             {
                 if(eio.Message.Contains("The process cannot access the file"))
                 {
-                    MessageBox.Show($"This file is in use: '{fileName}'. Close the file that's open in another program!", "CIARE", MessageBoxButtons.OK,
+                    MessageBox.Show($"This file is in use: '{fileName}'. Close the file that's open in another program after reopen CIARE!", "CIARE", MessageBoxButtons.OK,
      MessageBoxIcon.Warning);
                 }
             }
