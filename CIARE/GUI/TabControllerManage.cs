@@ -417,56 +417,68 @@ namespace CIARE.GUI
         /// <param name="fileTabStore"></param>
         public static void ReadTabs(TabControl tabControl, TextEditorControl textEditor, string tempDir, string fileTabStore)
         {
-            if (!Directory.Exists(tempDir))
-                return;
-
-            if (!File.Exists(fileTabStore))
-                return;
-
-            var lines = File.ReadAllLines(fileTabStore);
-            List<KeyValuePair<string, int>> list = new List<KeyValuePair<string, int>>();
-            foreach (var line in lines)
+            var fileName = "";
+            try
             {
-                if (!string.IsNullOrEmpty(line))
+                if (!Directory.Exists(tempDir))
+                    return;
+
+                if (!File.Exists(fileTabStore))
+                    return;
+
+                var lines = File.ReadAllLines(fileTabStore);
+                List<KeyValuePair<string, int>> list = new List<KeyValuePair<string, int>>();
+                foreach (var line in lines)
                 {
-                    var path = line.Split('|')[0].Trim();
-                    int index = Int32.Parse(line.Split('|')[1].Trim());
-                    if (File.Exists(path))
-                        list.Add(new KeyValuePair<string, int>(path, index));
-                }
-            }
-
-            // Sort by value
-            list = list.OrderBy(x => x.Value).ToList();
-
-            // Close New Page tab if list counts more than 1 tab.
-            if (list.Count >= 1)
-                MainForm.Instance.EditorTabControl.TabPages.RemoveAt(1);
-
-            foreach (var item in list)
-            {
-                if (File.Exists(item.Key))
-                {
-                    FileInfo fileInfo = new FileInfo(item.Key);
-
-                    using (var reader = new StreamReader(item.Key))
+                    if (!string.IsNullOrEmpty(line))
                     {
-                        AddNewTab(tabControl);
-                        SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
-                        MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {GlobalVariables.versionName}";
-                        MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
-                        MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = item.Key;
-                        var tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
-                        StoreFileMD5(item.Key, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                        var path = line.Split('|')[0].Trim();
+                        int index = Int32.Parse(line.Split('|')[1].Trim());
+                        if (File.Exists(path))
+                            list.Add(new KeyValuePair<string, int>(path, index));
                     }
                 }
-                else
+
+                // Sort by value
+                list = list.OrderBy(x => x.Value).ToList();
+
+                // Close New Page tab if list counts more than 1 tab.
+                if (list.Count >= 1)
+                    MainForm.Instance.EditorTabControl.TabPages.RemoveAt(1);
+
+                foreach (var item in list)
                 {
-                    StoreDeleteTabs("", tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, item.Key);
+                    if (File.Exists(item.Key))
+                    {
+                        fileName = item.Key;
+                        FileInfo fileInfo = new FileInfo(item.Key);
+
+                        using (var reader = new StreamReader(item.Key))
+                        {
+                            AddNewTab(tabControl);
+                            SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
+                            MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {GlobalVariables.versionName}";
+                            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
+                            MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = item.Key;
+                            var tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
+                            StoreFileMD5(item.Key, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
+                        }
+                    }
+                    else
+                    {
+                        StoreDeleteTabs("", tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, item.Key);
+                    }
+                }
+                MainForm.Instance.EditorTabControl.SelectTab(1);
+                GlobalVariables.isStoringTabs = true;
+            }catch(IOException eio)
+            {
+                if(eio.Message.Contains("The process cannot access the file"))
+                {
+                    MessageBox.Show($"This file is in use: '{fileName}'. Close the file that's open in another program after reopen CIARE!", "CIARE", MessageBoxButtons.OK,
+     MessageBoxIcon.Warning);
                 }
             }
-            MainForm.Instance.EditorTabControl.SelectTab(1);
-            GlobalVariables.isStoringTabs = true;
         }
 
 

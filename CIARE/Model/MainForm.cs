@@ -597,7 +597,11 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_Activated(object sender, EventArgs e)
         {
-            FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath, GlobalVariables.savedFileNoMD5Check);
+            try
+            {
+                FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath, GlobalVariables.savedFileNoMD5Check);
+            }catch{          
+            }
         }
 
 
@@ -922,7 +926,13 @@ namespace CIARE
                 var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
                 GlobalVariables.openedFileName = fileInfo.Name;
                 if (File.Exists(filePath))
-                    FileManage.SetFileMD5(filePath);
+                {
+                    try
+                    {
+                        FileManage.SetFileMD5(filePath);
+                    }
+                    catch { }
+                }
             }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {

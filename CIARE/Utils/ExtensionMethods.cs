@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -65,6 +66,24 @@ namespace CIARE
                 richTextBox.Text += "\n";
             richTextBox.SelectionStart = richTextBox.Text.Length+1;
             richTextBox.ScrollToCaret();
+        }
+
+
+        /// <summary>
+        /// Check if file is locked.
+        /// </summary>
+        /// <param name="f"></param>
+        /// <returns></returns>
+        internal static bool IsLocked(this FileInfo f)
+        {
+            try
+            {
+                string fpath = f.FullName;
+                FileStream fs = File.OpenWrite(fpath);
+                fs.Close();
+                return false;
+            }
+            catch (Exception) { return true; }
         }
     }
 }
