@@ -29,6 +29,7 @@ namespace CIARE.Roslyn
         private static TimeSpan s_timeSpan;
         private static string[] s_commandLineArguments = null;
         private static AssemblyLoadContext s_assemblyLoad;
+        private static string s_errorCode = "";
         /// <summary>
         /// Compile and run C# using Roslyn.
         /// </summary>
@@ -251,15 +252,43 @@ namespace CIARE.Roslyn
         private static void ErrorDisplay(RichTextBox richTextBox, string errorId, string errorMessage, int lineNumber)
         {
             richTextBox.Text = $"ERROR: (Line {lineNumber}) | ID: {errorId} -> {errorMessage}";
+            s_errorCode = errorId;
             GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), lineNumber + 20);
             GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), lineNumber);
-            var liensCount = SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines;
-            SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.ScrollTo(liensCount);
-            SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.ScrollToCaret();
-            var colPos = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Column;
+            SendKeys.Send("{END}");
+            var screenPosition = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.ScreenPosition;
+            var colPos = screenPosition.Y;
             var start = new TextLocation(0, lineNumber - 1);
             var end = new TextLocation(colPos, lineNumber - 1);
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.SelectionManager.SetSelection(start, end);
+            var caretPosition = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Position;
+            screenPosition = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.ScreenPosition;
+            var X = screenPosition.X;
+            var Y = screenPosition.Y + 23;
+            var pos = new Point(X, Y);
+            var contextMenuStrip = new ContextMenuStrip();
+            contextMenuStrip.ImageScalingSize = new Size(200, 200);
+            var itemMenu = new  ToolStripMenuItem();
+            itemMenu.Text = $"\u2196      {errorId} -> {errorMessage}";
+            contextMenuStrip.Name = "Error";
+            contextMenuStrip.Items.Add(itemMenu);
+            itemMenu.BackColor = Color.FromArgb(30, 30, 30);
+            itemMenu.ForeColor = Color.Red;
+            itemMenu.Font = new Font(itemMenu.Font, FontStyle.Italic | FontStyle.Bold);
+            itemMenu.Click += ItemMenu_Click; 
+            contextMenuStrip.Show(SelectedEditor.GetSelectedEditor(),pos);
+        }
+
+        /// <summary>
+        /// Open link to error.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private static void ItemMenu_Click(object sender, EventArgs e)
+        {
+            var url = $"https://learn.microsoft.com/en-us/dotnet/csharp/misc/{s_errorCode.ToLower()}?f1url=%3FappId%3Droslyn%26k%3Dk({s_errorCode})";
+            url = url.Replace("&", "^&");
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
 
 
