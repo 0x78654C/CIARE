@@ -16,6 +16,7 @@ using System.Runtime.Versioning;
 using Path = System.IO.Path;
 using System.Collections.Immutable;
 using System.Runtime.Loader;
+using CIARE.Utils.Options;
 
 namespace CIARE.Roslyn
 {
@@ -74,6 +75,7 @@ namespace CIARE.Roslyn
                             richTextBox.ScrollToEnd();
                             var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
                             ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
+                            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), line);
                         }
                     }
                     else
@@ -206,6 +208,7 @@ namespace CIARE.Roslyn
                             richTextBox.ScrollToEnd();
                             var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
                             ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
+                            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), line);
                         }
                     }
                     else
