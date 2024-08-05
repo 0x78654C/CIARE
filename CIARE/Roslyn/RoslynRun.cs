@@ -17,6 +17,7 @@ using Path = System.IO.Path;
 using System.Collections.Immutable;
 using System.Runtime.Loader;
 using CIARE.Utils.Options;
+using System.Windows.Shapes;
 
 namespace CIARE.Roslyn
 {
@@ -75,7 +76,6 @@ namespace CIARE.Roslyn
                             richTextBox.ScrollToEnd();
                             var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
                             ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
-                            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), line);
                         }
                     }
                     else
@@ -208,7 +208,6 @@ namespace CIARE.Roslyn
                             richTextBox.ScrollToEnd();
                             var line = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1;
                             ErrorDisplay(richTextBox, diagnostic.Id, diagnostic.GetMessage(), line);
-                            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), line);
                         }
                     }
                     else
@@ -252,7 +251,17 @@ namespace CIARE.Roslyn
         private static void ErrorDisplay(RichTextBox richTextBox, string errorId, string errorMessage, int lineNumber)
         {
             richTextBox.Text = $"ERROR: (Line {lineNumber}) | ID: {errorId} -> {errorMessage}";
+            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), lineNumber + 20);
+            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), lineNumber);
+            var liensCount = SelectedEditor.GetSelectedEditor().Document.TotalNumberOfLines;
+            SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.ScrollTo(liensCount);
+            SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.ScrollToCaret();
+            var colPos = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Column;
+            var start = new TextLocation(0, lineNumber - 1);
+            var end = new TextLocation(colPos, lineNumber - 1);
+            SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.SelectionManager.SetSelection(start, end);
         }
+
 
 
         /// <summary>
