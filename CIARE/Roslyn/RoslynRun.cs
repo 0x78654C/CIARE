@@ -274,12 +274,12 @@ namespace CIARE.Roslyn
             itemMenu.ForeColor = Color.Red;
             itemMenu.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.0F, FontStyle.Italic | FontStyle.Bold);
             itemMenu.Click += ItemMenu_Click;
-            contextMenuStrip.Show(SelectedEditor.GetSelectedEditor(),pos);
+            contextMenuStrip.Show(SelectedEditor.GetSelectedEditor().ActiveTextAreaControl,pos);
         }
 
 
         /// <summary>
-        /// Open link to error.
+        /// Open link to error documentation.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
