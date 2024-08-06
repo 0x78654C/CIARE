@@ -265,15 +265,15 @@ namespace CIARE.Roslyn
             var Y = screenPosition.Y + 23;
             var pos = new Point(X, Y);
             var contextMenuStrip = new ContextMenuStrip();
-            contextMenuStrip.ImageScalingSize = new Size(200, 200);
             var itemMenu = new  ToolStripMenuItem();
-            itemMenu.Text = $"\u2196      {errorId} -> {errorMessage}";
-            contextMenuStrip.Name = "Error";
-            contextMenuStrip.Items.Add(itemMenu);
-            itemMenu.BackColor = Color.FromArgb(30, 30, 30);
-            itemMenu.ForeColor = Color.Red;
-            itemMenu.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.0F, FontStyle.Italic | FontStyle.Bold);
+            var errorMesasgeSplited = DataManage.SplitTextByWordsInLine($"\u2196\n{errorId} -> {errorMessage}", 6);
+            itemMenu.Text = errorMesasgeSplited;
+            contextMenuStrip.Name = "Error Notification";
+            itemMenu.BackColor = Color.FromArgb(30, 30, 31);
+            itemMenu.ForeColor = Color.IndianRed;
+            itemMenu.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.28f, FontStyle.Italic | FontStyle.Bold);
             itemMenu.Click += ItemMenu_Click;
+            contextMenuStrip.Items.Add(itemMenu);
             contextMenuStrip.Show(SelectedEditor.GetSelectedEditor().ActiveTextAreaControl,pos);
         }
 
