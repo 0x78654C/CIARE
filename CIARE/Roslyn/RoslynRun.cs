@@ -16,6 +16,7 @@ using System.Runtime.Versioning;
 using Path = System.IO.Path;
 using System.Collections.Immutable;
 using System.Runtime.Loader;
+using System.Drawing.Text;
 
 namespace CIARE.Roslyn
 {
@@ -27,6 +28,7 @@ namespace CIARE.Roslyn
         private static TimeSpan s_timeSpan;
         private static string[] s_commandLineArguments = null;
         private static AssemblyLoadContext s_assemblyLoad;
+        private static string s_errorCode = "";
         /// <summary>
         /// Compile and run C# using Roslyn.
         /// </summary>
@@ -249,7 +251,44 @@ namespace CIARE.Roslyn
         private static void ErrorDisplay(RichTextBox richTextBox, string errorId, string errorMessage, int lineNumber)
         {
             richTextBox.Text = $"ERROR: (Line {lineNumber}) | ID: {errorId} -> {errorMessage}";
+            s_errorCode = errorId;
+            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), lineNumber + 20);
+            GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), lineNumber);
+            SendKeys.Send("{END}");
+            var screenPosition = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.ScreenPosition;
+            var colPos = screenPosition.Y;
+            var start = new TextLocation(0, lineNumber - 1);
+            var end = new TextLocation(colPos, lineNumber - 1);
+            SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.SelectionManager.SetSelection(start, end);
+            screenPosition = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.ScreenPosition;
+            var X = screenPosition.X;
+            var Y = screenPosition.Y + 23;
+            var pos = new Point(X, Y);
+            var contextMenuStrip = new ContextMenuStrip();
+            var itemMenu = new  ToolStripMenuItem();
+            var errorMesasgeSplited = DataManage.SplitTextByWordsInLine($"\u2196\n{errorId} -> {errorMessage}", 6);
+            itemMenu.Text = errorMesasgeSplited;
+            contextMenuStrip.Name = "Error Notification";
+            itemMenu.BackColor = Color.FromArgb(30, 30, 31);
+            itemMenu.ForeColor = Color.IndianRed;
+            itemMenu.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.28f, FontStyle.Italic | FontStyle.Bold);
+            itemMenu.Click += ItemMenu_Click;
+            contextMenuStrip.Items.Add(itemMenu);
+            contextMenuStrip.Show(SelectedEditor.GetSelectedEditor().ActiveTextAreaControl,pos);
         }
+
+
+        /// <summary>
+        /// Open link to error documentation.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private static void ItemMenu_Click(object sender, EventArgs e)
+        {
+            var url = $"https://learn.microsoft.com/en-us/search/?terms={s_errorCode}&category=Documentation";
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+
 
 
         /// <summary>
