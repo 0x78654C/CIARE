@@ -16,8 +16,7 @@ using System.Runtime.Versioning;
 using Path = System.IO.Path;
 using System.Collections.Immutable;
 using System.Runtime.Loader;
-using CIARE.Utils.Options;
-using System.Windows.Shapes;
+using System.Drawing.Text;
 
 namespace CIARE.Roslyn
 {
@@ -261,7 +260,6 @@ namespace CIARE.Roslyn
             var start = new TextLocation(0, lineNumber - 1);
             var end = new TextLocation(colPos, lineNumber - 1);
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.SelectionManager.SetSelection(start, end);
-            var caretPosition = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.Position;
             screenPosition = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.ScreenPosition;
             var X = screenPosition.X;
             var Y = screenPosition.Y + 23;
@@ -274,10 +272,11 @@ namespace CIARE.Roslyn
             contextMenuStrip.Items.Add(itemMenu);
             itemMenu.BackColor = Color.FromArgb(30, 30, 30);
             itemMenu.ForeColor = Color.Red;
-            itemMenu.Font = new Font(itemMenu.Font, FontStyle.Italic | FontStyle.Bold);
-            itemMenu.Click += ItemMenu_Click; 
+            itemMenu.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.0F, FontStyle.Italic | FontStyle.Bold);
+            itemMenu.Click += ItemMenu_Click;
             contextMenuStrip.Show(SelectedEditor.GetSelectedEditor(),pos);
         }
+
 
         /// <summary>
         /// Open link to error.
@@ -286,8 +285,7 @@ namespace CIARE.Roslyn
         /// <param name="e"></param>
         private static void ItemMenu_Click(object sender, EventArgs e)
         {
-            var url = $"https://learn.microsoft.com/en-us/dotnet/csharp/misc/{s_errorCode.ToLower()}?f1url=%3FappId%3Droslyn%26k%3Dk({s_errorCode})";
-            url = url.Replace("&", "^&");
+            var url = $"https://learn.microsoft.com/en-us/search/?terms={s_errorCode}&category=Documentation";
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
 
