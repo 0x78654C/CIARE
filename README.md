@@ -41,6 +41,7 @@ Useful to run code on the fly and get instant result.
  - Add reference to custom managed libraries.
  - NuGet Manager
  - Usage of unsafe code.
+ - Error window notification in line.
 
 ## Requirements:
 
