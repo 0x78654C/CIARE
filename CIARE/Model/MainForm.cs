@@ -913,6 +913,7 @@ namespace CIARE
                 {
                     GlobalVariables.textAreaFirst = SelectedEditor.GetSelectedEditor().primaryTextArea;
                     GlobalVariables.textAreaSecond = SelectedEditor.GetSelectedEditor().secondaryTextArea;
+                    InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, SelectedEditor.GetSelectedEditor());
                 }
                 catch
                 {
