@@ -274,15 +274,23 @@ namespace CIARE
                 //Remove * depende of file size in comparison text size.
                 if (GlobalVariables.openedFileMD5 != md5Txt)
                 {
-                    this.Text = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
-                    string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
-                    EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
+                    var title = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
+                    if (Text != title)
+                    {
+                        this.Text = title;
+                        string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
+                        EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
+                    }
                 }
                 else
                 {
-                    this.Text = $"{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
-                    string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
-                    EditorTabControl.SelectedTab.Text = $"{curentTabTitle}";
+                    var title = $"{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
+                    if (Text != title)
+                    {
+                        this.Text = title;
+                        string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
+                        EditorTabControl.SelectedTab.Text = $"{curentTabTitle}";
+                    }
                 }
             }
 
@@ -600,7 +608,9 @@ namespace CIARE
             try
             {
                 FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath, GlobalVariables.savedFileNoMD5Check);
-            }catch{          
+            }
+            catch
+            {
             }
         }
 
@@ -1154,8 +1164,8 @@ namespace CIARE
         /// </summary>
         public void RefreshTopMost()
         {
-           TopMost = true;
-           TopMost = false;
+            TopMost = true;
+            TopMost = false;
         }
     }
 }
