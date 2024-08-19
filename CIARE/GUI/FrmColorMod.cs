@@ -12,6 +12,8 @@ namespace CIARE.GUI
         private static Color BackGroundColor;
         private static Color ForeColorForm;
         private static Color BackGroundColorForm;
+        public static Color ButtonDarkColor = Color.FromArgb(2, 0, 10);
+        public static Color ButtonDarkVSColor = Color.FromArgb(51, 51, 51);
 
         /// <summary>
         /// Toogle color mode on form (dark/light)
@@ -26,7 +28,7 @@ namespace CIARE.GUI
             else
                 BackGroundColor = dark ? Color.FromArgb(2, 0, 10) : SystemColors.Window;
             ForeColorForm = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
-            if(GlobalVariables.isVStheme)
+            if (GlobalVariables.isVStheme)
                 BackGroundColorForm = dark ? Color.FromArgb(51, 51, 51) : SystemColors.Window;
             else
                 BackGroundColorForm = dark ? Color.FromArgb(0, 1, 10) : SystemColors.Window;
@@ -57,6 +59,24 @@ namespace CIARE.GUI
 
             foreach (Control control2 in control.Controls)
                 ApplyColorMode(control2, dark);
+        }
+
+        /// <summary>
+        /// Set color for buttons on dark theme.
+        /// </summary>
+        /// <param name="button"></param>
+        /// <param name="textBox"></param>
+        /// <param name="isDark"></param>
+        public static void SetButtonColorDisable(Button button, TextBox textBox, bool isDark, bool isVsTheme)
+        {
+            if (isDark)
+            {
+                if (string.IsNullOrEmpty(textBox.Text) && isDark)
+                    button.BackColor = (isVsTheme) ? ButtonDarkVSColor : Color.Gray;
+                else
+
+                    button.BackColor = (isVsTheme) ? ButtonDarkVSColor : ButtonDarkColor;
+            }
         }
     }
 }
