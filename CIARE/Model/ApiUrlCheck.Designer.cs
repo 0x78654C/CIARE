@@ -29,75 +29,74 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ApiUrlCheck));
-            this.liveShareGb = new System.Windows.Forms.GroupBox();
-            this.saveApiUrlBtn = new System.Windows.Forms.Button();
-            this.apiUrlTxt = new System.Windows.Forms.TextBox();
-            this.apiUrlLbl = new System.Windows.Forms.Label();
-            this.liveShareGb.SuspendLayout();
-            this.SuspendLayout();
+            liveShareGb = new System.Windows.Forms.GroupBox();
+            saveApiUrlBtn = new System.Windows.Forms.Button();
+            apiUrlTxt = new System.Windows.Forms.TextBox();
+            apiUrlLbl = new System.Windows.Forms.Label();
+            liveShareGb.SuspendLayout();
+            SuspendLayout();
             // 
             // liveShareGb
             // 
-            this.liveShareGb.Controls.Add(this.saveApiUrlBtn);
-            this.liveShareGb.Controls.Add(this.apiUrlTxt);
-            this.liveShareGb.Controls.Add(this.apiUrlLbl);
-            this.liveShareGb.Location = new System.Drawing.Point(12, 12);
-            this.liveShareGb.Name = "liveShareGb";
-            this.liveShareGb.Size = new System.Drawing.Size(330, 142);
-            this.liveShareGb.TabIndex = 18;
-            this.liveShareGb.TabStop = false;
+            liveShareGb.Controls.Add(saveApiUrlBtn);
+            liveShareGb.Controls.Add(apiUrlTxt);
+            liveShareGb.Controls.Add(apiUrlLbl);
+            liveShareGb.Location = new System.Drawing.Point(12, 12);
+            liveShareGb.Name = "liveShareGb";
+            liveShareGb.Size = new System.Drawing.Size(330, 142);
+            liveShareGb.TabIndex = 18;
+            liveShareGb.TabStop = false;
             // 
             // saveApiUrlBtn
             // 
-            this.saveApiUrlBtn.Enabled = false;
-            this.saveApiUrlBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.saveApiUrlBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.saveApiUrlBtn.Location = new System.Drawing.Point(231, 103);
-            this.saveApiUrlBtn.Name = "saveApiUrlBtn";
-            this.saveApiUrlBtn.Size = new System.Drawing.Size(75, 23);
-            this.saveApiUrlBtn.TabIndex = 18;
-            this.saveApiUrlBtn.Text = "Save";
-            this.saveApiUrlBtn.UseVisualStyleBackColor = true;
-            this.saveApiUrlBtn.Click += new System.EventHandler(this.saveApiUrlBtn_Click);
+            saveApiUrlBtn.Enabled = false;
+            saveApiUrlBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            saveApiUrlBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
+            saveApiUrlBtn.Location = new System.Drawing.Point(249, 113);
+            saveApiUrlBtn.Name = "saveApiUrlBtn";
+            saveApiUrlBtn.Size = new System.Drawing.Size(75, 23);
+            saveApiUrlBtn.TabIndex = 18;
+            saveApiUrlBtn.Text = "Save";
+            saveApiUrlBtn.UseVisualStyleBackColor = true;
+            saveApiUrlBtn.Click += saveApiUrlBtn_Click;
             // 
             // apiUrlTxt
             // 
-            this.apiUrlTxt.Location = new System.Drawing.Point(10, 57);
-            this.apiUrlTxt.Name = "apiUrlTxt";
-            this.apiUrlTxt.Size = new System.Drawing.Size(296, 23);
-            this.apiUrlTxt.TabIndex = 1;
-            this.apiUrlTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.apiUrlTxt.TextChanged += new System.EventHandler(this.apiUrlTxt_TextChanged);
+            apiUrlTxt.Location = new System.Drawing.Point(6, 57);
+            apiUrlTxt.Name = "apiUrlTxt";
+            apiUrlTxt.Size = new System.Drawing.Size(318, 23);
+            apiUrlTxt.TabIndex = 1;
+            apiUrlTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            apiUrlTxt.TextChanged += apiUrlTxt_TextChanged;
             // 
             // apiUrlLbl
             // 
-            this.apiUrlLbl.AutoSize = true;
-            this.apiUrlLbl.Location = new System.Drawing.Point(6, 19);
-            this.apiUrlLbl.Name = "apiUrlLbl";
-            this.apiUrlLbl.Size = new System.Drawing.Size(108, 15);
-            this.apiUrlLbl.TabIndex = 0;
-            this.apiUrlLbl.Text = "Live Share API URL:";
+            apiUrlLbl.AutoSize = true;
+            apiUrlLbl.Location = new System.Drawing.Point(6, 19);
+            apiUrlLbl.Name = "apiUrlLbl";
+            apiUrlLbl.Size = new System.Drawing.Size(108, 15);
+            apiUrlLbl.TabIndex = 0;
+            apiUrlLbl.Text = "Live Share API URL:";
             // 
             // ApiUrlCheck
             // 
-            this.AcceptButton = this.saveApiUrlBtn;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.Window;
-            this.ClientSize = new System.Drawing.Size(354, 172);
-            this.Controls.Add(this.liveShareGb);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "ApiUrlCheck";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "CIARE - Save API URL";
-            this.Load += new System.EventHandler(this.ApiUrlCheck_Load);
-            this.liveShareGb.ResumeLayout(false);
-            this.liveShareGb.PerformLayout();
-            this.ResumeLayout(false);
-
+            AcceptButton = saveApiUrlBtn;
+            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            BackColor = System.Drawing.SystemColors.Window;
+            ClientSize = new System.Drawing.Size(354, 172);
+            Controls.Add(liveShareGb);
+            FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "ApiUrlCheck";
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            Text = "CIARE - Save API URL";
+            Load += ApiUrlCheck_Load;
+            liveShareGb.ResumeLayout(false);
+            liveShareGb.PerformLayout();
+            ResumeLayout(false);
         }
 
         #endregion
