@@ -52,6 +52,9 @@ namespace CIARE
         private void ApiUrlCheck_Load(object sender, EventArgs e)
         {
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
+            if (string.IsNullOrEmpty(apiUrlTxt.Text))
+                saveApiUrlBtn.Enabled = false;
+            FrmColorMod.SetButtonColorDisable(saveApiUrlBtn, apiUrlTxt, GlobalVariables.darkColor, GlobalVariables.isVStheme);
         }
 
         private void apiUrlTxt_TextChanged(object sender, EventArgs e)
@@ -60,6 +63,7 @@ namespace CIARE
                 saveApiUrlBtn.Enabled = false;
             else
                 saveApiUrlBtn.Enabled = true;
+            FrmColorMod.SetButtonColorDisable(saveApiUrlBtn, apiUrlTxt, GlobalVariables.darkColor, GlobalVariables.isVStheme);
         }
     }
 }
