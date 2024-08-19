@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 using CIARE.GUI;
@@ -50,6 +51,8 @@ namespace CIARE
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
             _tokenTxtLen = maxTokensTxtBox.Text.Length;
+            FrmColorMod.SetButtonColorDisable(saveApiUrlBtn, apiUrlTxt, GlobalVariables.darkColor, GlobalVariables.isVStheme);
+            FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
         }
 
         /// <summary>
@@ -61,7 +64,7 @@ namespace CIARE
         {
             var tabs = MainForm.Instance.EditorTabControl;
             int count = 0;
-            foreach(TabPage tab in tabs.TabPages)
+            foreach (TabPage tab in tabs.TabPages)
             {
                 if (count > 0)
                 {
@@ -72,6 +75,8 @@ namespace CIARE
                 count++;
             }
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
+            FrmColorMod.SetButtonColorDisable(saveApiUrlBtn, apiUrlTxt, GlobalVariables.darkColor, GlobalVariables.isVStheme);
+            FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
         }
 
         private void codeCompletionCkb_CheckedChanged(object sender, EventArgs e)
@@ -184,6 +189,7 @@ namespace CIARE
                 saveApiUrlBtn.Enabled = true;
             else
                 saveApiUrlBtn.Enabled = false;
+            FrmColorMod.SetButtonColorDisable(saveApiUrlBtn, apiUrlTxt, GlobalVariables.darkColor, GlobalVariables.isVStheme);
         }
 
         /// <summary>
@@ -208,6 +214,7 @@ namespace CIARE
                 openAISaveBtn.Enabled = true;
             else
                 openAISaveBtn.Enabled = false;
+            FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
         }
 
         /// <summary>
