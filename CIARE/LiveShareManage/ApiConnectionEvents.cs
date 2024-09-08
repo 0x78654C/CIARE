@@ -158,7 +158,8 @@ namespace CIARE.LiveShareManage
                     await hubConnection.InvokeAsync("GetSendCode", sessionId, encyrpted, $"{lineNumber}|{columnNumber}");
                 }
             }
-            catch{
+            catch
+            {
             }
         }
 
@@ -208,7 +209,7 @@ namespace CIARE.LiveShareManage
                     MessageBox.Show("No password provied!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-                
+
                 hubConnection.On<string, string, string>("GetSend", (code, position, remoteConnectionId) =>
                 {
                     GlobalVariables.remoteConnectionId = remoteConnectionId;
@@ -266,6 +267,7 @@ namespace CIARE.LiveShareManage
                     {
                         textEditorControl.Text = decrypt;
                         GoToLineNumber.SetPositionCaret(textEditorControl, position);
+                        //UserDisplay.Show(Environment.UserName, Int32.Parse(position));
                         textEditorControl.Refresh();
                     }
                 }
@@ -279,11 +281,11 @@ namespace CIARE.LiveShareManage
         /// </summary>
         /// <param name="connected"></param>
         /// <param name="connectionId"></param>
-        private static void DisplayConnectedUser(ref bool connected, string connectionId )
+        private static void DisplayConnectedUser(ref bool connected, string connectionId)
         {
             if (!connected)
             {
-                MessageBox.Show($"Remote user is connected!","CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"Remote user is connected!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 connected = true;
             }
         }
@@ -324,7 +326,7 @@ MessageBoxIcon.Warning);
                     await StartShare(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
                fakeButton, fakeButton, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
                 else
-                    await Connect(new Form(),hubConnection, fakeButton, fakeButton,
+                    await Connect(new Form(), hubConnection, fakeButton, fakeButton,
 GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex)); ;
             }
             else
