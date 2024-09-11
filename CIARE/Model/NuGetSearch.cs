@@ -75,6 +75,9 @@ MessageBoxIcon.Warning);
                 case Keys.Escape:
                     this.Close();
                     return true;
+                case Keys.F10 | Keys.Shift:
+                    AddNuGetPackageToRef(packageList);
+                    return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
@@ -127,11 +130,10 @@ MessageBoxIcon.Warning);
             if (e.Button == MouseButtons.Right)
             {
                 var focusedItem = packageList.FocusedItem;
-                if (focusedItem != null && focusedItem.Bounds.Contains(e.Location))
+                if (focusedItem != null)
                     ActionNugetMenu.Show(Cursor.Position);
             }
         }
-
 
         /// <summary>
         /// Set text to clipborad from reference list.
@@ -169,7 +171,7 @@ MessageBoxIcon.Warning);
 MessageBoxIcon.Warning);
                 return;
             }
-            var dialog = MessageBox.Show($"If the NuGet package contains dependencies it will be added to reference list!\nDo you want to download the package?", "CIARE", MessageBoxButtons.YesNo,
+            var dialog = MessageBox.Show($"If the NuGet package contains dependencies it will be added to reference list!\nDo you want to download the package {packageName}?", "CIARE", MessageBoxButtons.YesNo,
   MessageBoxIcon.Information);
 
             if (dialog == DialogResult.No)
@@ -181,7 +183,7 @@ MessageBoxIcon.Warning);
             var nameVersion = $"{packageName}|{version}";
             if (!GlobalVariables.nugetNames.Contains(nameVersion))
                 GlobalVariables.nugetNames.Add(nameVersion);
-            
+
             Task.Run(() => Download(s_packageName));
         }
 
