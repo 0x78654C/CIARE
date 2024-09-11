@@ -483,6 +483,9 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void NewFile(TextEditorControl textEditor, RichTextBox logOutput)
         {
+            var titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text;
+            if(string.IsNullOrEmpty(textEditor.Text) && titleTab.StartsWith("New Page"))
+                return;
             var index = MainForm.Instance.EditorTabControl.SelectedIndex;
             ManageUnsavedData(textEditor, index, false);
             if (GlobalVariables.noClear)
