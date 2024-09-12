@@ -19,13 +19,15 @@ namespace CIARE.LiveShareManage
         [SupportedOSPlatform("windows")]
 
         /// <summary>
-        /// Output Error message to richtextbox.
+        /// Output Error message to richtextbox. 
+        /// TODO: to be used in next futures for live share show user notification.
+        /// and change to public
         /// </summary>
         /// <param name="richTextBox"></param>
         /// <param name="errorId"></param>
         /// <param name="errorMessage"></param>
         /// <param name="lineNumber"></param>
-        public static void Show(string userName, int lineNumber)
+        private static void Show(string userName, int lineNumber)
         {
             var screenPosition = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.ScreenPosition;
             var colPos = screenPosition.Y;
