@@ -1,6 +1,9 @@
 ﻿using System.Net;
 using System;
 using System.Net.NetworkInformation;
+using System.Net.Http;
+using System.Security.Policy;
+using System.Threading.Tasks;
 
 namespace CIARE.Utils
 {
@@ -49,11 +52,9 @@ namespace CIARE.Utils
         {
             try
             {
-                HttpWebRequest request = WebRequest.Create(IpAdress) as HttpWebRequest;
-                request.Method = "HEAD";
-                HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+                HttpClient client = new HttpClient();
+                HttpResponseMessage response = Task.Run(()=> client.GetAsync(IpAdress)).Result;
                 bool isResponding = response.StatusCode == HttpStatusCode.OK;
-                response.Close();
                 return isResponding;
             }
             catch

@@ -324,6 +324,9 @@ namespace CIARE.GUI
             if (string.IsNullOrEmpty(filePath))
                 return;
 
+            if (filePath.Contains("CTRL + "))
+                return;
+
             if (!Directory.Exists(tempDir))
                 return;
 
