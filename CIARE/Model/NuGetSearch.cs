@@ -76,7 +76,9 @@ MessageBoxIcon.Warning);
                     this.Close();
                     return true;
                 case Keys.F10 | Keys.Shift:
-                    AddNuGetPackageToRef(packageList);
+                    var focusedItem = packageList.SelectedItems;
+                    if (focusedItem.Count > 0)
+                        AddNuGetPackageToRef(packageList);
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
