@@ -58,6 +58,7 @@ namespace CIARE
             goToLineStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             selectAllStripMenuItem3 = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
+            toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
             chatGPTCTRLShiftPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             compileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             compileToexeCtrlShiftBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -314,7 +315,7 @@ namespace CIARE
             // 
             // compileToolStripMenuItem
             // 
-            compileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { compileToexeCtrlShiftBToolStripMenuItem, compileToDLLCtrlSfitBToolStripMenuItem, toolStripSeparator5, cmdLinesArgsStripMenuItem, toolStripSeparator7, referenceAddToolStripMenuItem });
+            compileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { compileToexeCtrlShiftBToolStripMenuItem, toolStripSeparator8, compileToDLLCtrlSfitBToolStripMenuItem, toolStripSeparator5, cmdLinesArgsStripMenuItem, toolStripSeparator7, referenceAddToolStripMenuItem });
             compileToolStripMenuItem.Name = "compileToolStripMenuItem";
             compileToolStripMenuItem.Size = new System.Drawing.Size(64, 20);
             compileToolStripMenuItem.Text = "Compile";
@@ -323,14 +324,19 @@ namespace CIARE
             // 
             compileToexeCtrlShiftBToolStripMenuItem.Name = "compileToexeCtrlShiftBToolStripMenuItem";
             compileToexeCtrlShiftBToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
-            compileToexeCtrlShiftBToolStripMenuItem.Text = "Compile to EXE              ( Ctrl + B )";
+            compileToexeCtrlShiftBToolStripMenuItem.Text = "Compile                          ( Ctrl + B )";
             compileToexeCtrlShiftBToolStripMenuItem.Click += compileToexeCtrlShiftBToolStripMenuItem_Click;
+            // toolStripSeparator8
+            // 
+            toolStripSeparator8.Name = "toolStripSeparator8";
+            toolStripSeparator8.Size = new System.Drawing.Size(287, 6);
+            // 
             // 
             // compileToDLLCtrlSfitBToolStripMenuItem
             // 
             compileToDLLCtrlSfitBToolStripMenuItem.Name = "compileToDLLCtrlSfitBToolStripMenuItem";
             compileToDLLCtrlSfitBToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
-            compileToDLLCtrlSfitBToolStripMenuItem.Text = "Compile to DLL              ( Ctrl + Shift + B )";
+            compileToDLLCtrlSfitBToolStripMenuItem.Text = "Publish               ( Ctrl + Shift + B )";
             compileToDLLCtrlSfitBToolStripMenuItem.Click += compileToDLLCtrlSfitBToolStripMenuItem_Click;
             // 
             // toolStripSeparator5
@@ -765,6 +771,7 @@ namespace CIARE
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
         public System.Windows.Forms.ToolStripMenuItem chatGPTCTRLShiftPToolStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
+        public System.Windows.Forms.ToolStripSeparator toolStripSeparator8;
         public System.Windows.Forms.ToolStripMenuItem referenceAddToolStripMenuItem;
         public System.Windows.Forms.TabControl EditorTabControl;
         private System.Windows.Forms.TabPage tabPage1;
