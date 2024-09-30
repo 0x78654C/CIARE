@@ -43,6 +43,7 @@ namespace CIARE
             startBehaveCkb.Checked = GlobalVariables.OStartUp;
             winLoginCkb.Checked = GlobalVariables.OWinLoginState;
             unsafeCkb.Checked = GlobalVariables.OUnsafeCode;
+            publishCkb.Checked = GlobalVariables.OPublishNative;
             apiUrlTxt.Text = GlobalVariables.apiUrl;
             apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
@@ -124,7 +125,6 @@ namespace CIARE
         private void startBehaveCkb_CheckedChanged(object sender, EventArgs e)
         {
             StartFilesOS.SetOSStartStatus(startBehaveCkb, GlobalVariables.startUp);
-            //CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
         }
 
         /// <summary>
@@ -145,19 +145,7 @@ namespace CIARE
 
         private void winLoginCkb_CheckedChanged(object sender, EventArgs e)
         {
-            //if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
-            //{
-            //    winLoginCkb.Checked = false;
-            //    return;
-            //}
-
             var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
-            //if (!autoStartFile.CheckFileContent(GlobalVariables.markFile))
-            //{
-            //    winLoginCkb.Checked = false;
-            //    return;
-            //}
-            //StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
             autoStartFile.SetRegistryRunApp(winLoginCkb);
             StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
         }
