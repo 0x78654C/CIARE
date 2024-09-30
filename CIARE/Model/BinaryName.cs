@@ -26,10 +26,13 @@ namespace CIARE
             binaryNameTxt.Text = binaryNameTxt.Text.Trim();
             typeApp.Text = GlobalVariables.binarytype;
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
-            this.Text = "Set binary name";
+            if (GlobalVariables.binaryPublish)
+                this.Text = "Set binary name - Publish";
+            else
+                this.Text = "Set binary name - Compile";
             WaterMark.TextBoxWaterMark(binaryNameTxt, "Enter name of output file..");
-            if(typeApp.Text == ".exe")
-            typeCompileCkb.Visible = true;
+            if (typeApp.Text == ".exe")
+                typeCompileCkb.Visible = true;
             if (GlobalVariables.OutputKind == Microsoft.CodeAnalysis.OutputKind.WindowsApplication)
                 typeCompileCkb.Checked = true;
         }
