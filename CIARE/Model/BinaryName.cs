@@ -24,18 +24,14 @@ namespace CIARE
             GlobalVariables.checkFormOpen = true;
             binaryNameTxt.Text = GlobalVariables.binaryNameStore;
             binaryNameTxt.Text = binaryNameTxt.Text.Trim();
+            typeApp.Text = GlobalVariables.binarytype;
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
-            if (GlobalVariables.exeName)
-            {
-                this.Text = "Set EXE binary name";
-                WaterMark.TextBoxWaterMark(binaryNameTxt, "Enter name of output file..");
-                typeCompileCkb.Visible = true;
-                if (GlobalVariables.OutputKind == Microsoft.CodeAnalysis.OutputKind.WindowsApplication)
-                    typeCompileCkb.Checked = true;
-                return;
-            }
-            this.Text = "Set DLL binary name";
+            this.Text = "Set binary name";
             WaterMark.TextBoxWaterMark(binaryNameTxt, "Enter name of output file..");
+            if(typeApp.Text == ".exe")
+            typeCompileCkb.Visible = true;
+            if (GlobalVariables.OutputKind == Microsoft.CodeAnalysis.OutputKind.WindowsApplication)
+                typeCompileCkb.Checked = true;
         }
 
 
@@ -44,14 +40,11 @@ namespace CIARE
             binaryNameTxt.Text = binaryNameTxt.Text.Trim();
             if (binaryNameTxt.Text.Length > 0)
             {
-                if (GlobalVariables.exeName)
-                    GlobalVariables.binaryName = binaryNameTxt.Text + ".exe";
-                else
-                    GlobalVariables.binaryName = binaryNameTxt.Text + ".dll";
-
+                GlobalVariables.binaryName = binaryNameTxt.Text + typeApp.Text;
                 _checkConfirmationAction = true;
                 GlobalVariables.outPutDisplay = true;
                 GlobalVariables.binaryNameStore = binaryNameTxt.Text;
+                GlobalVariables.binarytype = typeApp.Text;
                 this.Close();
             }
             else
@@ -90,6 +83,16 @@ namespace CIARE
                 GlobalVariables.OutputKind = Microsoft.CodeAnalysis.OutputKind.WindowsApplication;
             else
                 GlobalVariables.OutputKind = Microsoft.CodeAnalysis.OutputKind.ConsoleApplication;
+        }
+
+        /// <summary>
+        /// Display type of application you want to compile
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void typeApp_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            typeCompileCkb.Visible = (typeApp.Text == ".exe") ? true : false;
         }
     }
 }

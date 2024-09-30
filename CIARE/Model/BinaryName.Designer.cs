@@ -34,6 +34,7 @@ namespace CIARE
             ConfirmButton = new System.Windows.Forms.Button();
             cancelButton = new System.Windows.Forms.Button();
             groupBox1 = new System.Windows.Forms.GroupBox();
+            typeApp = new System.Windows.Forms.ComboBox();
             typeCompileCkb = new System.Windows.Forms.CheckBox();
             groupBox1.SuspendLayout();
             SuspendLayout();
@@ -51,7 +52,7 @@ namespace CIARE
             // ConfirmButton
             // 
             ConfirmButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            ConfirmButton.Location = new System.Drawing.Point(14, 73);
+            ConfirmButton.Location = new System.Drawing.Point(14, 82);
             ConfirmButton.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             ConfirmButton.Name = "ConfirmButton";
             ConfirmButton.Size = new System.Drawing.Size(88, 27);
@@ -64,7 +65,7 @@ namespace CIARE
             // 
             cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             cancelButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            cancelButton.Location = new System.Drawing.Point(155, 73);
+            cancelButton.Location = new System.Drawing.Point(155, 82);
             cancelButton.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             cancelButton.Name = "cancelButton";
             cancelButton.Size = new System.Drawing.Size(88, 27);
@@ -75,6 +76,7 @@ namespace CIARE
             // 
             // groupBox1
             // 
+            groupBox1.Controls.Add(typeApp);
             groupBox1.Controls.Add(typeCompileCkb);
             groupBox1.Controls.Add(binaryNameTxt);
             groupBox1.Controls.Add(cancelButton);
@@ -83,14 +85,26 @@ namespace CIARE
             groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBox1.Size = new System.Drawing.Size(259, 111);
+            groupBox1.Size = new System.Drawing.Size(259, 159);
             groupBox1.TabIndex = 3;
             groupBox1.TabStop = false;
+            // 
+            // typeApp
+            // 
+            typeApp.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            typeApp.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            typeApp.FormattingEnabled = true;
+            typeApp.Items.AddRange(new object[] { ".exe", ".dll" });
+            typeApp.Location = new System.Drawing.Point(100, 122);
+            typeApp.Name = "typeApp";
+            typeApp.Size = new System.Drawing.Size(57, 23);
+            typeApp.TabIndex = 4;
+            typeApp.SelectedIndexChanged += typeApp_SelectedIndexChanged;
             // 
             // typeCompileCkb
             // 
             typeCompileCkb.AutoSize = true;
-            typeCompileCkb.Location = new System.Drawing.Point(59, 50);
+            typeCompileCkb.Location = new System.Drawing.Point(59, 55);
             typeCompileCkb.Name = "typeCompileCkb";
             typeCompileCkb.Size = new System.Drawing.Size(139, 19);
             typeCompileCkb.TabIndex = 3;
@@ -106,7 +120,7 @@ namespace CIARE
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             BackColor = System.Drawing.SystemColors.Window;
             CancelButton = cancelButton;
-            ClientSize = new System.Drawing.Size(286, 145);
+            ClientSize = new System.Drawing.Size(286, 185);
             Controls.Add(groupBox1);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
@@ -130,5 +144,6 @@ namespace CIARE
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.CheckBox typeCompileCkb;
+        private System.Windows.Forms.ComboBox typeApp;
     }
 }

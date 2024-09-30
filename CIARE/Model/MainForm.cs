@@ -436,7 +436,7 @@ namespace CIARE
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
-                    RoslynRun.CompileBinaryDll(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false);
+                    //RoslynRun.CompileBinaryDll(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false);
                     return true;
                 case Keys.W | Keys.Control:
                     worker = new BackgroundWorker();
