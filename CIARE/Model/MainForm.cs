@@ -432,12 +432,14 @@ namespace CIARE
                     FileManage.LoadCSTemplate(SelectedEditor.GetSelectedEditor());
                     return true;
                 case Keys.B | Keys.Control:
+                    GlobalVariables.binaryPublish = false;
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
                     RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
+                    GlobalVariables.binaryPublish = true;
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
-                    //RoslynRun.CompileBinaryDll(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false);
+                    RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
                     return true;
                 case Keys.W | Keys.Control:
                     worker = new BackgroundWorker();
@@ -536,6 +538,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            GlobalVariables.binaryPublish = false;
             RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
         }
 
@@ -546,7 +549,8 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToDLLCtrlSfitBToolStripMenuItem_Click(object sender, EventArgs e)
         {
-           // RoslynRun.CompileBinaryDll(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false);
+            GlobalVariables.binaryPublish = true;
+            RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
         }
 
 
