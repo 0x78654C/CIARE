@@ -20,15 +20,16 @@ namespace CIARE.Roslyn
         private bool Library { get; set; } = false;
         private bool Publish { get; set; } = false;
         private string _exeFilePath;
+        private string _pathNative;
         private string CsProjTemplateExe = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
-	  <UseWindowsForms>"+nameof(GlobalVariables.winForms)+@"</UseWindowsForms>
+	  <UseWindowsForms>"+GlobalVariables.winForms.ToString() + @"</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>" + nameof(GlobalVariables.OUnsafeCode)+@"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() +@"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
@@ -40,11 +41,11 @@ namespace CIARE.Roslyn
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
-	  <UseWindowsForms>"+nameof(GlobalVariables.winForms)+@"</UseWindowsForms>
+	  <UseWindowsForms>"+GlobalVariables.winForms.ToString() + @"</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>" + nameof(GlobalVariables.OUnsafeCode) + @"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() + @"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
@@ -60,7 +61,7 @@ namespace CIARE.Roslyn
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>"+GlobalVariables.publishAot+@"
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>" + nameof(GlobalVariables.OUnsafeCode) + @"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() + @"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile + @"|AnyCPU'"">
     <Optimize>True</Optimize>
@@ -167,8 +168,18 @@ namespace CIARE.Roslyn
                         logOutput.Text = build;
                     string framework = GlobalVariables.Framework.Split('-')[0];
                     PathExe(projectDir, exeName, framework, GlobalVariables.platformParam);
+                    var title = "Compile succeeded";
+                    if (GlobalVariables.binaryPublish)
+                        title =(!string.IsNullOrEmpty(GlobalVariables.publishAot))? "Publish (Native) succeeded": "Publish succeeded";
                     if (!string.IsNullOrEmpty(_exeFilePath))
-                        logOutput.Text += $"Build succeeded.\n\n  {exeName} -> {_exeFilePath}";
+                        logOutput.Text += $"{title}.\n\n  {exeName} -> {_exeFilePath}";
+                    if (GlobalVariables.binaryPublish)
+                    {
+                        var fileInfo = new FileInfo(_exeFilePath);
+                        var pathNative = @$"{projectDir}\bin\Release\net8.0\win-x64\publish\{exeName}{fileInfo.Extension}";
+                        if(File.Exists(pathNative))
+                            logOutput.Text += $"\n  {exeName} -> {pathNative}";
+                    }
                 }
                 logOutput.SelectionStart = logOutput.Text.Length;
                 logOutput.ScrollToCaret();
@@ -208,12 +219,14 @@ namespace CIARE.Roslyn
                             && fileInfo.FullName.Contains(parsePlatform) && GetState(fileInfo.FullName).Contains(StateCompile))
                         {
                             _exeFilePath = fileInfo.FullName;
+                            _pathNative = fileInfo.DirectoryName;
                             break;
                         }
                         if (fileInfo.FullName.EndsWith($"{projectName}.dll") && frameworkPath.Contains(framework)
                             && fileInfo.FullName.Contains(parsePlatform) && GetState(fileInfo.FullName).Contains(StateCompile))
                         {
                             _exeFilePath = fileInfo.FullName;
+                            _pathNative = fileInfo.DirectoryName;
                         }
                     }
                     PathExe(dir, projectName, framework, platform);
