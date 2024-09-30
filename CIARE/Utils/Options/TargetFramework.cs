@@ -27,7 +27,7 @@ namespace CIARE.Utils.Options
         {
             GlobalVariables.selectedIndex = framework.SelectedIndex;
 
-            if (framework.Text == ".NET 6")
+            if (framework.Text.StartsWith (".NET 6"))
             {
                 if (!SdkVersion.CheckSdk(framework.Text[^1..]))
                 {
@@ -36,8 +36,18 @@ namespace CIARE.Utils.Options
                     return;
                 }
 
-                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net6.0-windows");
-                GlobalVariables.Framework = "net6.0-windows";
+                if (framework.Text.Contains("Windows"))
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net6.0-windows");
+                    GlobalVariables.Framework = "net6.0-windows";
+                    GlobalVariables.winForms = true;
+                }
+                else
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net6.0");
+                    GlobalVariables.Framework = "net6.0";
+                    GlobalVariables.winForms = false;
+                }
                 return;
             }
 
@@ -50,8 +60,18 @@ namespace CIARE.Utils.Options
                     GetFramework(CIARE.Options.Instance.frameWorkCMB, GlobalVariables.registryPath);
                     return;
                 }
-                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net7.0-windows");
-                GlobalVariables.Framework = "net7.0-windows";
+                if (framework.Text.Contains("Windows"))
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net7.0-windows");
+                    GlobalVariables.Framework = "net7.0-windows";
+                    GlobalVariables.winForms = true;
+                }
+                else
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net7.0");
+                    GlobalVariables.Framework = "net7.0";
+                    GlobalVariables.winForms = false;
+                }
                 return;
             }
 
@@ -62,8 +82,18 @@ namespace CIARE.Utils.Options
                 return;
             }
 
-            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net8.0-windows");
-            GlobalVariables.Framework = "net8.0-windows";
+            if (framework.Text.Contains("Windows"))
+            {
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net8.0-windows");
+                GlobalVariables.Framework = "net8.0-windows";
+                GlobalVariables.winForms = true;
+            }
+            else
+            {
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net8.0");
+                GlobalVariables.Framework = "net8.0";
+                GlobalVariables.winForms = false;
+            }
         }
 
         /// <summary>
