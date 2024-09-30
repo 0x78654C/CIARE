@@ -18,16 +18,17 @@ namespace CIARE.Roslyn
         private string BinaryPath { get; set; }
         private string Code { get; set; }
         private bool Library { get; set; } = false;
+        private bool Publish { get; set; } = false;
         private string _exeFilePath;
         private string CsProjTemplateExe = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
-	  <UseWindowsForms>true</UseWindowsForms>
+	  <UseWindowsForms>"+nameof(GlobalVariables.winForms)+@"</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + nameof(GlobalVariables.OUnsafeCode)+@"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
@@ -39,11 +40,11 @@ namespace CIARE.Roslyn
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
-	  <UseWindowsForms>true</UseWindowsForms>
+	  <UseWindowsForms>"+nameof(GlobalVariables.winForms)+@"</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + nameof(GlobalVariables.OUnsafeCode) + @"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
@@ -57,10 +58,9 @@ namespace CIARE.Roslyn
     <OutputType>"+GlobalVariables.binarytypeTemplate +@"</OutputType>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <WarningLevel>0</WarningLevel>
-    <PublishAot>true</PublishAot>
+    <WarningLevel>0</WarningLevel>"+GlobalVariables.publishAot+@"
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() + @"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + nameof(GlobalVariables.OUnsafeCode) + @"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile + @"|AnyCPU'"">
     <Optimize>True</Optimize>
@@ -75,12 +75,13 @@ namespace CIARE.Roslyn
         /// <param name="binaryName">Binary file name</param>
         /// <param name="binaryPath">CIARE binary path</param>
         /// <param name="code">Provided code for compile.</param>
-        public CsProjCompile(string binaryName, string binaryPath, string code, bool library)
+        public CsProjCompile(string binaryName, string binaryPath, string code, bool library, bool publish)
         {
             FileName = binaryName;
             BinaryPath = binaryPath;
             Code = code;
             Library = library;
+            Publish = publish;
         }
 
         /// <summary>
@@ -144,12 +145,18 @@ namespace CIARE.Roslyn
                 if (!Directory.Exists(projectDir))
                     Directory.CreateDirectory(projectDir);
 
-                if (Library)
+                if (Publish)
+                    File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplatePublish);
+                else if (Library)
                     File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateDll);
                 else
                     File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateExe);
                 File.WriteAllText($"{projectDir}\\{exeName}.cs", Code);
-                string param = $"build {GlobalVariables.configParam} {GlobalVariables.platformParam}";
+                var param = "";
+                if(Publish)
+                    param = $"publish -r win-x64 -c {StateCompile}";
+                else
+                    param = $"build {GlobalVariables.configParam} {GlobalVariables.platformParam}";
                 ProcessRun processRun = new ProcessRun("dotnet", param, projectDir);
                 string build = processRun.Run();
                 if (build.Contains("error"))

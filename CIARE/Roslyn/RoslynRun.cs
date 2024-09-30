@@ -213,7 +213,7 @@ namespace CIARE.Roslyn
                     else
                     {
                         richTextBox.Clear();
-                        CsProjCompile projCompile = new CsProjCompile(outPut, pathOutput, code, !exeFile);
+                        CsProjCompile projCompile = new CsProjCompile(outPut, pathOutput, code, !exeFile, GlobalVariables.binaryPublish);
                         projCompile.Build(richTextBox);
                         s_stopWatch.Stop();
                         s_timeSpan = s_stopWatch.Elapsed;
