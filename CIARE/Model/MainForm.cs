@@ -132,6 +132,7 @@ namespace CIARE
             LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
             OpenAISetting.CheckOpenAIData(GlobalVariables.registryPath);
             UnsafeCode.CheckUnsafeStatus(GlobalVariables.registryPath);
+            Publish.CheckPublishStatus(GlobalVariables.registryPath);
             if (GlobalVariables.OStartUp)
                 TabControllerManage.ReadTabs(EditorTabControl, SelectedEditor.GetSelectedEditor(), GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
             else
