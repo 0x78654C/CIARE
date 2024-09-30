@@ -68,6 +68,7 @@ namespace CIARE.GUI
                 MainForm.Instance.toolStripSeparator5,
                 MainForm.Instance.toolStripSeparator6,
                 MainForm.Instance.toolStripSeparator7,
+                MainForm.Instance.toolStripSeparator8,
                 MainForm.Instance.compileStripSeparator1
             };
             return listToosStripS;
