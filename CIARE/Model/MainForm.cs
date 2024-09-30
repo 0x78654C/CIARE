@@ -432,7 +432,7 @@ namespace CIARE
                     return true;
                 case Keys.B | Keys.Control:
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
-                    RoslynRun.CompileBinaryExe(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
+                    RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
@@ -535,7 +535,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            RoslynRun.CompileBinaryExe(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
+            RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
         }
 
         /// <summary>
