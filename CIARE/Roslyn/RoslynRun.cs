@@ -265,7 +265,7 @@ namespace CIARE.Roslyn
             var Y = screenPosition.Y + 23;
             var pos = new Point(X, Y);
             var contextMenuStrip = new ContextMenuStrip();
-            var itemMenu = new  ToolStripMenuItem();
+            var itemMenu = new ToolStripMenuItem();
             var errorMesasgeSplited = DataManage.SplitTextByWordsInLine($"\u2196\n{errorId} -> {errorMessage}", 6);
             itemMenu.Text = errorMesasgeSplited;
             contextMenuStrip.Name = "Error Notification";
@@ -274,7 +274,7 @@ namespace CIARE.Roslyn
             itemMenu.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.28f, FontStyle.Italic | FontStyle.Bold);
             itemMenu.Click += ItemMenu_Click;
             contextMenuStrip.Items.Add(itemMenu);
-            contextMenuStrip.Show(SelectedEditor.GetSelectedEditor().ActiveTextAreaControl,pos);
+            contextMenuStrip.Show(SelectedEditor.GetSelectedEditor().ActiveTextAreaControl, pos);
         }
 
 
@@ -316,9 +316,8 @@ namespace CIARE.Roslyn
         /// <summary>
         /// Compile code to EXE binary file method.
         /// </summary>
-        public static void CompileBinaryExe(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb, bool runner, OutputKind outputKind = OutputKind.ConsoleApplication)
+        public static void CompileBinary(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb, bool runner, OutputKind outputKind = OutputKind.ConsoleApplication)
         {
-            GlobalVariables.exeName = true;
             BinaryName binaryName = new BinaryName();
             var code = textEditor.Text;
             if (string.IsNullOrEmpty(code))
@@ -330,29 +329,10 @@ namespace CIARE.Roslyn
             if (!GlobalVariables.checkFormOpen)
                 binaryName.ShowDialog();
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
-            BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb, GlobalVariables.OUnsafeCode, outputKind);
-            RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
-            GC.Collect();
-        }
-
-        /// <summary>
-        /// Compile code to DLL binary file method.
-        /// </summary>
-        public static void CompileBinaryDll(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb, bool runner)
-        {
-            GlobalVariables.exeName = false;
-            BinaryName binaryName = new BinaryName();
-            var code = textEditor.Text;
-            if (string.IsNullOrEmpty(code))
-            {
-                MessageBox.Show("There is no code in the editor to compile!", "CIARE", MessageBoxButtons.OK,
-            MessageBoxIcon.Warning);
-                return;
-            }
-            if (!GlobalVariables.checkFormOpen)
-                binaryName.ShowDialog();
-            OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
-            BinaryCompile(textEditor.Text, false, GlobalVariables.binaryName, outLogRtb, GlobalVariables.OUnsafeCode);
+            if (GlobalVariables.binarytype == ".exe")
+                BinaryCompile(textEditor.Text, true, GlobalVariables.binaryName, outLogRtb, GlobalVariables.OUnsafeCode, outputKind);
+            else
+                BinaryCompile(textEditor.Text, false, GlobalVariables.binaryName, outLogRtb, GlobalVariables.OUnsafeCode);
             RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             GC.Collect();
         }
