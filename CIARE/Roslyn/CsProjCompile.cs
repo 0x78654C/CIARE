@@ -51,6 +51,24 @@ namespace CIARE.Roslyn
 " + SetReference(GlobalVariables.filteredCustomRef, GlobalVariables.nugetNames) + @"
 </Project>
 ";
+
+        private string CsProjTemplatePublish = $@"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <OutputType>"+GlobalVariables.binarytypeTemplate +@"</OutputType>
+    <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <WarningLevel>0</WarningLevel>
+    <PublishAot>true</PublishAot>
+    <Nullable>enable</Nullable>
+<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() + @"</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile + @"|AnyCPU'"">
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+" + SetReference(GlobalVariables.filteredCustomRef, GlobalVariables.nugetNames) + @"
+</Project>
+";
+
         /// <summary>
         /// Compile csproject.
         /// </summary>
