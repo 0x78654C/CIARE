@@ -243,5 +243,15 @@ namespace CIARE
         {
             UnsafeCode.SetUnsafeStatus(unsafeCkb, GlobalVariables.unsafeCode);
         }
+
+        /// <summary>
+        /// Enalble publish
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void publishCkb_CheckedChanged(object sender, EventArgs e)
+        {
+            Publish.SetPublishStatus(publishCkb, GlobalVariables.publish);
+        }
     }
 }

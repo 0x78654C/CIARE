@@ -61,6 +61,7 @@ namespace CIARE
             maxTokensLbl = new System.Windows.Forms.Label();
             apiKeyAiTxtBox = new System.Windows.Forms.TextBox();
             apiKeyAIlbl = new System.Windows.Forms.Label();
+            publishCkb = new System.Windows.Forms.CheckBox();
             displayGroup.SuspendLayout();
             buildGroup.SuspendLayout();
             liveShareGb.SuspendLayout();
@@ -196,6 +197,7 @@ namespace CIARE
             // 
             // buildGroup
             // 
+            buildGroup.Controls.Add(publishCkb);
             buildGroup.Controls.Add(unsafeCkb);
             buildGroup.Controls.Add(frameworkLbl);
             buildGroup.Controls.Add(frameWorkCMB);
@@ -224,7 +226,7 @@ namespace CIARE
             // frameworkLbl
             // 
             frameworkLbl.AutoSize = true;
-            frameworkLbl.Location = new System.Drawing.Point(12, 115);
+            frameworkLbl.Location = new System.Drawing.Point(12, 137);
             frameworkLbl.Name = "frameworkLbl";
             frameworkLbl.Size = new System.Drawing.Size(185, 15);
             frameworkLbl.TabIndex = 18;
@@ -234,10 +236,10 @@ namespace CIARE
             // 
             frameWorkCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             frameWorkCMB.FormattingEnabled = true;
-            frameWorkCMB.Items.AddRange(new object[] { ".NET 6", ".NET 7", ".NET 8" });
-            frameWorkCMB.Location = new System.Drawing.Point(217, 112);
+            frameWorkCMB.Items.AddRange(new object[] { ".NET 6", ".NET 6 Windows", ".NET 7", ".NET 7 Windows", ".NET 8", ".NET 8 Windows" });
+            frameWorkCMB.Location = new System.Drawing.Point(203, 134);
             frameWorkCMB.Name = "frameWorkCMB";
-            frameWorkCMB.Size = new System.Drawing.Size(93, 23);
+            frameWorkCMB.Size = new System.Drawing.Size(107, 23);
             frameWorkCMB.TabIndex = 19;
             frameWorkCMB.Text = ".NET 6";
             frameWorkCMB.SelectedIndexChanged += frameWorkCMB_SelectedIndexChanged;
@@ -414,6 +416,17 @@ namespace CIARE
             apiKeyAIlbl.TabIndex = 0;
             apiKeyAIlbl.Text = "API Key: ";
             // 
+            // publishCkb
+            // 
+            publishCkb.AutoSize = true;
+            publishCkb.Location = new System.Drawing.Point(15, 110);
+            publishCkb.Name = "publishCkb";
+            publishCkb.Size = new System.Drawing.Size(128, 19);
+            publishCkb.TabIndex = 21;
+            publishCkb.Text = "Publish native AOT";
+            publishCkb.UseVisualStyleBackColor = true;
+            publishCkb.CheckedChanged += publishCkb_CheckedChanged;
+            // 
             // Options
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -478,5 +491,6 @@ namespace CIARE
         private System.Windows.Forms.TextBox modelTxt;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox unsafeCkb;
+        private System.Windows.Forms.CheckBox publishCkb;
     }
 }
