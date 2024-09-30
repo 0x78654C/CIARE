@@ -56,7 +56,8 @@ namespace CIARE.Roslyn
 
         private string CsProjTemplatePublish = $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
-    <OutputType>"+GlobalVariables.binarytypeTemplate +@"</OutputType>
+    <OutputType>"+GlobalVariables.binarytypeTemplate + @"</OutputType>
+    <UseWindowsForms>"+GlobalVariables.winForms.ToString() + @"</UseWindowsForms>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>"+GlobalVariables.publishAot+@"
@@ -171,14 +172,19 @@ namespace CIARE.Roslyn
                     var title = "Compile succeeded";
                     if (GlobalVariables.binaryPublish)
                         title =(!string.IsNullOrEmpty(GlobalVariables.publishAot))? "Publish (Native) succeeded": "Publish succeeded";
-                    if (!string.IsNullOrEmpty(_exeFilePath))
-                        logOutput.Text += $"{title}.\n\n  {exeName} -> {_exeFilePath}";
+ 
                     if (GlobalVariables.binaryPublish)
                     {
-                        var fileInfo = new FileInfo(_exeFilePath);
-                        var pathNative = @$"{projectDir}\bin\Release\net8.0\win-x64\publish\{exeName}{fileInfo.Extension}";
-                        if(File.Exists(pathNative))
-                            logOutput.Text += $"\n  {exeName} -> {pathNative}";
+                        var pathNative = @$"{projectDir}\bin\{StateCompile}\net8.0\win-x64\publish\{exeName}";
+                        if(File.Exists(pathNative+".exe"))
+                            logOutput.Text += $"{title}.\n\n  {exeName} -> {pathNative}.exe";
+                        else if (File.Exists(pathNative+".dll"))
+                            logOutput.Text += $"{title}.\n\n  {exeName} -> {pathNative}.dll";
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrEmpty(_exeFilePath))
+                            logOutput.Text += $"{title}.\n\n  {exeName} -> {_exeFilePath}";
                     }
                 }
                 logOutput.SelectionStart = logOutput.Text.Length;
