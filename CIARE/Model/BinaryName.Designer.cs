@@ -36,6 +36,7 @@ namespace CIARE
             groupBox1 = new System.Windows.Forms.GroupBox();
             typeApp = new System.Windows.Forms.ComboBox();
             typeCompileCkb = new System.Windows.Forms.CheckBox();
+            label1 = new System.Windows.Forms.Label();
             groupBox1.SuspendLayout();
             SuspendLayout();
             // 
@@ -76,6 +77,7 @@ namespace CIARE
             // 
             // groupBox1
             // 
+            groupBox1.Controls.Add(label1);
             groupBox1.Controls.Add(typeApp);
             groupBox1.Controls.Add(typeCompileCkb);
             groupBox1.Controls.Add(binaryNameTxt);
@@ -113,6 +115,15 @@ namespace CIARE
             typeCompileCkb.Visible = false;
             typeCompileCkb.CheckedChanged += typeCompileCkb_CheckedChanged;
             // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new System.Drawing.Point(59, 125);
+            label1.Name = "label1";
+            label1.Size = new System.Drawing.Size(34, 15);
+            label1.TabIndex = 4;
+            label1.Text = "Type:";
+            // 
             // BinaryName
             // 
             AcceptButton = ConfirmButton;
@@ -145,5 +156,6 @@ namespace CIARE
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.CheckBox typeCompileCkb;
         private System.Windows.Forms.ComboBox typeApp;
+        private System.Windows.Forms.Label label1;
     }
 }
