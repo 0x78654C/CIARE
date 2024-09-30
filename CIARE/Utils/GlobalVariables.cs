@@ -71,6 +71,7 @@ namespace CIARE.Utils
         public static string remoteConnectionId = string.Empty;
         public static string binaryNameStore = string.Empty;
         public static string binarytype= ".exe";
+        public static string binarytypeTemplate= "Exe";
         public static bool connected = false;
         public static bool liveDisconnected = false;
         public static bool apiConnected = false;
