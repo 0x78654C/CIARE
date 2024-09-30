@@ -45,6 +45,10 @@ namespace CIARE
                 GlobalVariables.outPutDisplay = true;
                 GlobalVariables.binaryNameStore = binaryNameTxt.Text;
                 GlobalVariables.binarytype = typeApp.Text;
+                if (typeApp.Text == ".exe")
+                    GlobalVariables.binarytypeTemplate = "Exe";
+                else
+                    GlobalVariables.binarytypeTemplate = "Library";
                 this.Close();
             }
             else
