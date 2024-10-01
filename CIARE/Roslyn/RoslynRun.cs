@@ -100,6 +100,7 @@ namespace CIARE.Roslyn
                     richTextBox.Text += $"\n---------------------------------\nCompile and code execution time: {s_timeSpan.Milliseconds} milliseconds";
                     richTextBox.ScrollToEnd();
                 }
+                richTextBox.ScrollToEnd();
             }
             catch (DivideByZeroException dbze)
             {
@@ -217,12 +218,7 @@ namespace CIARE.Roslyn
                         projCompile.Build(richTextBox);
                         s_stopWatch.Stop();
                         s_timeSpan = s_stopWatch.Elapsed;
-                        if (!GlobalVariables.compileTime)
-                        {
-                            richTextBox.Text += $"\n---------------------------------\nCompile execution time: {s_timeSpan.Milliseconds} milliseconds";
-                            richTextBox.ScrollToEnd();
-                        }
-                        GlobalVariables.compileTime = false;
+                        richTextBox.ScrollToEnd();
                     }
                     s_stopWatch.Stop();
                     ms.Close();
