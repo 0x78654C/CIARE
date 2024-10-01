@@ -175,8 +175,8 @@ CTRL + Shift + P : Get data from chatGPT by your provided text pattern.
 
 ---------------- Compile ------------------
 F5               : Run current cod.                
-CTRL + B         : Compile code from current tab to executable file. (.exe)
-CTRL + Shift + B : Compile code from current tab to dynamic-link library. (.dll)
+CTRL + B         : Compile code from current tab to binary. (.dll/.exe)
+CTRL + Shift + B : Publish code from current tab to binary. (.dll/.exe)
 CTRL + L         : Add command line arguments.
 CTRL + R         : Add external reference or download from NuGet.
 
