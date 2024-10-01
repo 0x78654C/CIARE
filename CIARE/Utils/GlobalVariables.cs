@@ -57,7 +57,6 @@ namespace CIARE.Utils
         public static bool OWinLoginState = false;
         public static bool OUnsafeCode = false;
         public static bool OPublishNative = false;
-        public static bool compileTime = false;
         public static bool codeWriter = false;
         public static bool isRed = false;
 
