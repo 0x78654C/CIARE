@@ -165,14 +165,8 @@ namespace CIARE.Roslyn
                     logOutput.Text = build.Trim();
                 else
                 {
-                    if (GlobalVariables.OWarnings)
-                        logOutput.Text = build.Trim();
+                    logOutput.Text = build.Trim();
                     string framework = GlobalVariables.Framework.Split('-')[0];
-                    PathExe(projectDir, exeName, framework, GlobalVariables.platformParam);
-                    var title = "Compile succeeded";
-                    if (GlobalVariables.binaryPublish)
-                        title =(!string.IsNullOrEmpty(GlobalVariables.publishAot))? "Publish (Native) succeeded": "Publish succeeded";
-     
                 }
                 logOutput.SelectionStart = logOutput.Text.Length;
                 logOutput.ScrollToCaret();
@@ -180,51 +174,10 @@ namespace CIARE.Roslyn
             catch (UnauthorizedAccessException uae)
             {
                 RichExtColor.ErrorDisplay(logOutput, $"ERROR: {uae.Message}. Process may be running!");
-                GlobalVariables.compileTime = true;
             }
             catch (Exception e)
             {
                 RichExtColor.ErrorDisplay(logOutput, $"ERROR: {e.Message}");
-                GlobalVariables.compileTime = true;
-            }
-        }
-
-        /// <summary>
-        /// Get compiled exe file path from project directory.
-        /// </summary>
-        /// <param name="pathProject"></param>
-        /// <param name="projectName"></param>
-        private void PathExe(string pathProject, string projectName, string framework, string platform)
-        {
-            var directories = Directory.GetDirectories(pathProject);
-            foreach (var dir in directories)
-            {
-                if (!dir.EndsWith("obj"))
-                {
-                    var files = Directory.GetFiles(dir);
-                    foreach (var file in files)
-                    {
-                        var fileInfo = new FileInfo(file);
-                        int pathSplit = fileInfo.FullName.Split(Path.DirectorySeparatorChar).Count();
-                        var frameworkPath = fileInfo.FullName.Split(Path.DirectorySeparatorChar).Any(f=>f == framework);
-                       // string frameworkPath = fileInfo.FullName.Split(Path.DirectorySeparatorChar)[pathSplit - 2];
-                        string parsePlatform = platform.Split('"')[1];
-                        if (fileInfo.FullName.EndsWith($"{projectName}.exe") && frameworkPath
-                            && fileInfo.FullName.Contains(parsePlatform) && GetState(fileInfo.FullName).Contains(StateCompile))
-                        {
-                            _exeFilePath = fileInfo.FullName;
-                            _pathNative = fileInfo.DirectoryName;
-                            break;
-                        }
-                        if (fileInfo.FullName.EndsWith($"{projectName}.dll") && frameworkPath
-                            && fileInfo.FullName.Contains(parsePlatform) && GetState(fileInfo.FullName).Contains(StateCompile))
-                        {
-                            _exeFilePath = fileInfo.FullName;
-                            _pathNative = fileInfo.DirectoryName;
-                        }
-                    }
-                    PathExe(dir, projectName, framework, platform);
-                }
             }
         }
 
