@@ -146,7 +146,7 @@ namespace CIARE.Roslyn
                 string projectDir = BinaryPath + exeName;
                 if (!Directory.Exists(projectDir))
                     Directory.CreateDirectory(projectDir);
-
+                File.Delete($"{projectDir}\\{exeName}.csproj");
                 if (Publish)
                     File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplatePublish);
                 else if (Library)
@@ -162,30 +162,17 @@ namespace CIARE.Roslyn
                 ProcessRun processRun = new ProcessRun("dotnet", param, projectDir);
                 string build = processRun.Run();
                 if (build.Contains("error"))
-                    logOutput.Text = build;
+                    logOutput.Text = build.Trim();
                 else
                 {
                     if (GlobalVariables.OWarnings)
-                        logOutput.Text = build;
+                        logOutput.Text = build.Trim();
                     string framework = GlobalVariables.Framework.Split('-')[0];
                     PathExe(projectDir, exeName, framework, GlobalVariables.platformParam);
                     var title = "Compile succeeded";
                     if (GlobalVariables.binaryPublish)
                         title =(!string.IsNullOrEmpty(GlobalVariables.publishAot))? "Publish (Native) succeeded": "Publish succeeded";
- 
-                    if (GlobalVariables.binaryPublish)
-                    {
-                        var pathNative = @$"{projectDir}\bin\{StateCompile}\net8.0\win-x64\publish\{exeName}";
-                        if(File.Exists(pathNative+".exe"))
-                            logOutput.Text += $"{title}.\n\n  {exeName} -> {pathNative}.exe";
-                        else if (File.Exists(pathNative+".dll"))
-                            logOutput.Text += $"{title}.\n\n  {exeName} -> {pathNative}.dll";
-                    }
-                    else
-                    {
-                        if (!string.IsNullOrEmpty(_exeFilePath))
-                            logOutput.Text += $"{title}.\n\n  {exeName} -> {_exeFilePath}";
-                    }
+     
                 }
                 logOutput.SelectionStart = logOutput.Text.Length;
                 logOutput.ScrollToCaret();
@@ -219,16 +206,17 @@ namespace CIARE.Roslyn
                     {
                         var fileInfo = new FileInfo(file);
                         int pathSplit = fileInfo.FullName.Split(Path.DirectorySeparatorChar).Count();
-                        string frameworkPath = fileInfo.FullName.Split(Path.DirectorySeparatorChar)[pathSplit - 2];
+                        var frameworkPath = fileInfo.FullName.Split(Path.DirectorySeparatorChar).Any(f=>f == framework);
+                       // string frameworkPath = fileInfo.FullName.Split(Path.DirectorySeparatorChar)[pathSplit - 2];
                         string parsePlatform = platform.Split('"')[1];
-                        if (fileInfo.FullName.EndsWith($"{projectName}.exe") && frameworkPath.Contains(framework) 
+                        if (fileInfo.FullName.EndsWith($"{projectName}.exe") && frameworkPath
                             && fileInfo.FullName.Contains(parsePlatform) && GetState(fileInfo.FullName).Contains(StateCompile))
                         {
                             _exeFilePath = fileInfo.FullName;
                             _pathNative = fileInfo.DirectoryName;
                             break;
                         }
-                        if (fileInfo.FullName.EndsWith($"{projectName}.dll") && frameworkPath.Contains(framework)
+                        if (fileInfo.FullName.EndsWith($"{projectName}.dll") && frameworkPath
                             && fileInfo.FullName.Contains(parsePlatform) && GetState(fileInfo.FullName).Contains(StateCompile))
                         {
                             _exeFilePath = fileInfo.FullName;

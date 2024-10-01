@@ -123,7 +123,6 @@ namespace CIARE
             InitializeEditor.GenerateLiveSessionId();
             InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
-            Warnings.CheckWarnings(GlobalVariables.registryPath);
             StartFilesOS.CheckOSStartFile(GlobalVariables.registryPath);
             StartFilesOS.CheckWinLoginState(GlobalVariables.registryPath);
             BuildConfig.CheckConfig(GlobalVariables.registryPath);

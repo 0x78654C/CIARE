@@ -53,7 +53,6 @@ namespace CIARE.Utils
         public static bool OLineNumber = true;
         public static bool OFoldingCode = true;
         public static string apiUrl = string.Empty;
-        public static bool OWarnings = false;
         public static bool OStartUp = false;
         public static bool OWinLoginState = false;
         public static bool OUnsafeCode = false;
@@ -90,7 +89,6 @@ namespace CIARE.Utils
         public static readonly string codeCompletionKey = "OCodeCompletion";
         public static readonly string foldingCodeKey = "OFoldingCode";
         public static readonly string lineNumberKey = "OLineNumber";
-        public static readonly string warnings = "OWarnings";
         public static readonly string liveShare = "OLiveShare";
         public static readonly string startUp = "OStartUp";
         public static readonly string unsafeCode = "OUnsafeCode";

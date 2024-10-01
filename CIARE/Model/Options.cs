@@ -39,7 +39,6 @@ namespace CIARE
             codeCompletionCkb.Checked = GlobalVariables.OCodeCompletion;
             lineNumberCkb.Checked = GlobalVariables.OLineNumber;
             codeFoldingCkb.Checked = GlobalVariables.OFoldingCode;
-            warningsCkb.Checked = GlobalVariables.OWarnings;
             startBehaveCkb.Checked = GlobalVariables.OStartUp;
             winLoginCkb.Checked = GlobalVariables.OWinLoginState;
             unsafeCkb.Checked = GlobalVariables.OUnsafeCode;
@@ -93,17 +92,6 @@ namespace CIARE
         private void codeFoldingCkb_CheckedChanged(object sender, EventArgs e)
         {
             FoldingCode.SetFoldingCodeStatus(codeFoldingCkb, GlobalVariables.foldingCodeKey);
-        }
-
-
-        /// <summary>
-        /// Enable build warnings.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void warningsCkb_CheckedChanged(object sender, EventArgs e)
-        {
-            Warnings.SetWarnings(warningsCkb, GlobalVariables.warnings);
         }
 
         private void configurationBox_SelectedIndexChanged(object sender, EventArgs e)
