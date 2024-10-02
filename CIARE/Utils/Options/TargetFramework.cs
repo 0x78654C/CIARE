@@ -106,7 +106,6 @@ namespace CIARE.Utils.Options
             string regFramework = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.OFramework);
             if (regFramework.Length > 0)
             {
-                //framework.SelectedIndex = regFramework.StartsWith("net6") ? 0 : 1; 
                 if (regFramework =="net6.0")
                     framework.SelectedIndex = 0;
                 else if (regFramework == "net6.0-windows")
