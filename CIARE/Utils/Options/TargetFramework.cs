@@ -29,7 +29,7 @@ namespace CIARE.Utils.Options
 
             if (framework.Text.StartsWith(".NET 6"))
             {
-                if (!SdkVersion.CheckSdk(framework.Text.Substring(0, 6)))
+                if (!SdkVersion.CheckSdk(framework.Text.Substring(5, 1)))
                 {
                     MessageBox.Show("The targeted framework (.NET 6) is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     GetFramework(CIARE.Options.Instance.frameWorkCMB, GlobalVariables.registryPath);
@@ -109,11 +109,11 @@ namespace CIARE.Utils.Options
                 //framework.SelectedIndex = regFramework.StartsWith("net6") ? 0 : 1; 
                 if (regFramework =="net6.0")
                     framework.SelectedIndex = 0;
-                else if (regFramework == "net6-windows")
+                else if (regFramework == "net6.0-windows")
                     framework.SelectedIndex = 1;
                 else if (regFramework == "net7.0")
                     framework.SelectedIndex = 2;
-                else if (regFramework == "net7-windows")
+                else if (regFramework == "net7.0-windows")
                     framework.SelectedIndex = 3;
                 else if (regFramework == "net8.0")
                     framework.SelectedIndex = 4;
@@ -123,6 +123,7 @@ namespace CIARE.Utils.Options
                     framework.SelectedIndex = 0;
                 return;
             }
+            framework.SelectedIndex = 0;
         }
     }
 }
