@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -37,6 +38,6 @@ namespace CIARE.Utils.Options
         /// </summary>
         /// <param name="comboBox"></param>
         /// <param name="sdkVersionStart"></param>
-        public static bool CheckSdk(string selectedVersion) => Versions().Contains(selectedVersion);
+        public static bool CheckSdk(string selectedVersion) => Versions().Any(f => f.StartsWith(selectedVersion));
     }
 }
