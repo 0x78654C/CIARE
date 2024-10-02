@@ -169,7 +169,7 @@ namespace CIARE.Roslyn
                 ProcessRun processRun = new ProcessRun("dotnet", param, projectDir);
                 string build = processRun.Run();
                 if (build.Contains("error"))
-                    logOutput.Text = build.Trim();
+                    logOutput.Text = build.Trim() + "\nCompleted task with errors!";
                 else
                 {
                     logOutput.Text = build.Trim()+"\nDone!";
