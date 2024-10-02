@@ -482,6 +482,10 @@ namespace CIARE.GUI
      MessageBoxIcon.Warning);
                 }
             }
+            catch
+            {
+
+            }
         }
 
 
