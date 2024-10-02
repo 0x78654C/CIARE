@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
@@ -30,6 +31,7 @@ namespace CIARE.GUI
             {
                 foreach (TabPage tabPage in tabControl.TabPages)
                 {
+
                     if (tabPage.ToolTipText.ToLower() == path.ToLower())
                     {
                         tabControl.SelectTab(tabPage);
@@ -472,11 +474,12 @@ namespace CIARE.GUI
                         StoreDeleteTabs("", tabControl.SelectedTab.Text, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, item.Key);
                     }
                 }
-                MainForm.Instance.EditorTabControl.SelectTab(1);
+                //MainForm.Instance.EditorTabControl.SelectTab(1);
                 GlobalVariables.isStoringTabs = true;
-            }catch(IOException eio)
+            }
+            catch (IOException eio)
             {
-                if(eio.Message.Contains("The process cannot access the file"))
+                if (eio.Message.Contains("The process cannot access the file"))
                 {
                     MessageBox.Show($"This file is in use: '{fileName}'. Close the file that's open in another program after reopen CIARE!", "CIARE", MessageBoxButtons.OK,
      MessageBoxIcon.Warning);

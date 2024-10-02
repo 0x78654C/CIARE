@@ -232,33 +232,36 @@ namespace CIARE.GUI
         /// <param name="regPos"></param>
         public static void GetTabIndexPosLine(string regKeyName, string regPos, TabControl tabControl)
         {
-            string regLastPos = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regPos);
-            if (regLastPos.Length > 0)
+            try
             {
-                if(regLastPos.StartsWith("Add Tab"))
-                {
-                    tabControl.SelectTab(1);
-                    return;
-                }
+                string regLastPos = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regPos);
                 if (regLastPos.Length > 0)
                 {
-                    foreach (TabPage tab in tabControl.TabPages)
+                    if (regLastPos.StartsWith("Add Tab"))
                     {
-                        if (tab.ToolTipText.Trim() == regLastPos)
+                        tabControl.SelectTab(1);
+                        return;
+                    }
+                    if (regLastPos.Length > 0)
+                    {
+                        foreach (TabPage tab in tabControl.TabPages)
                         {
-                            tabControl.SelectTab(tab);
-                            string filePath = tabControl.SelectedTab.ToolTipText.Trim();
-                            if (!string.IsNullOrEmpty(filePath))
+                            if (tab.ToolTipText.Trim() == regLastPos)
                             {
-                                GlobalVariables.openedFilePath = filePath;
-                                var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
-                                GlobalVariables.openedFileName = fileInfo.Name;
+                                tabControl.SelectTab(tab);
+                                string filePath = tabControl.SelectedTab.ToolTipText.Trim();
+                                if (!string.IsNullOrEmpty(filePath))
+                                {
+                                    GlobalVariables.openedFilePath = filePath;
+                                    var fileInfo = new FileInfo(GlobalVariables.openedFilePath);
+                                    GlobalVariables.openedFileName = fileInfo.Name;
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
                 }
-            }
+            }catch (Exception) { }
         }
     }
 }
