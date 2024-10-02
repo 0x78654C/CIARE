@@ -18,16 +18,18 @@ namespace CIARE.Roslyn
         private string BinaryPath { get; set; }
         private string Code { get; set; }
         private bool Library { get; set; } = false;
+        private bool Publish { get; set; } = false;
         private string _exeFilePath;
+        private string _pathNative;
         private string CsProjTemplateExe = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
-	  <UseWindowsForms>true</UseWindowsForms>
+	  <UseWindowsForms>"+GlobalVariables.winForms.ToString() + @"</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() +@"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
@@ -39,11 +41,11 @@ namespace CIARE.Roslyn
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
-	  <UseWindowsForms>true</UseWindowsForms>
+	  <UseWindowsForms>"+GlobalVariables.winForms.ToString() + @"</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
-<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString()+@"</AllowUnsafeBlocks>
+<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() + @"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
     <Optimize>True</Optimize>
@@ -51,18 +53,37 @@ namespace CIARE.Roslyn
 " + SetReference(GlobalVariables.filteredCustomRef, GlobalVariables.nugetNames) + @"
 </Project>
 ";
+
+        private string CsProjTemplatePublish = $@"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <OutputType>"+GlobalVariables.binarytypeTemplate + @"</OutputType>
+    <UseWindowsForms>"+GlobalVariables.winForms.ToString() + @"</UseWindowsForms>
+    <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <WarningLevel>0</WarningLevel>"+GlobalVariables.publishAot+@"
+    <Nullable>enable</Nullable>
+<AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() + @"</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile + @"|AnyCPU'"">
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+" + SetReference(GlobalVariables.filteredCustomRef, GlobalVariables.nugetNames) + @"
+</Project>
+";
+
         /// <summary>
         /// Compile csproject.
         /// </summary>
         /// <param name="binaryName">Binary file name</param>
         /// <param name="binaryPath">CIARE binary path</param>
         /// <param name="code">Provided code for compile.</param>
-        public CsProjCompile(string binaryName, string binaryPath, string code, bool library)
+        public CsProjCompile(string binaryName, string binaryPath, string code, bool library, bool publish)
         {
             FileName = binaryName;
             BinaryPath = binaryPath;
             Code = code;
             Library = library;
+            Publish = publish;
         }
 
         /// <summary>
@@ -125,25 +146,33 @@ namespace CIARE.Roslyn
                 string projectDir = BinaryPath + exeName;
                 if (!Directory.Exists(projectDir))
                     Directory.CreateDirectory(projectDir);
-
-                if (Library)
+                File.Delete($"{projectDir}\\{exeName}.csproj");
+                if (Publish)
+                    File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplatePublish);
+                else if (Library)
                     File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateDll);
                 else
                     File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateExe);
                 File.WriteAllText($"{projectDir}\\{exeName}.cs", Code);
-                string param = $"build {GlobalVariables.configParam} {GlobalVariables.platformParam}";
+                var param = "";
+                if (Publish)
+                {
+                    if (!GlobalVariables.platformParam.Contains("x64"))
+                    {
+                        RichExtColor.ErrorDisplay(logOutput, $"ERROR: Native AOT publish works only with x64 arhitecture!");
+                        return;
+                    }
+                    param = $"publish -r win-x64 -c {StateCompile}";
+                }
+                else
+                    param = $"build {GlobalVariables.configParam} {GlobalVariables.platformParam}";
                 ProcessRun processRun = new ProcessRun("dotnet", param, projectDir);
                 string build = processRun.Run();
                 if (build.Contains("error"))
-                    logOutput.Text = build;
+                    logOutput.Text = build.Trim() + "\nCompleted task with errors!";
                 else
                 {
-                    if (GlobalVariables.OWarnings)
-                        logOutput.Text = build;
-                    string framework = GlobalVariables.Framework.Split('-')[0];
-                    PathExe(projectDir, exeName, framework, GlobalVariables.platformParam);
-                    if (!string.IsNullOrEmpty(_exeFilePath))
-                        logOutput.Text += $"Build succeeded.\n\n  {exeName} -> {_exeFilePath}";
+                    logOutput.Text = build.Trim()+"\nDone!";
                 }
                 logOutput.SelectionStart = logOutput.Text.Length;
                 logOutput.ScrollToCaret();
@@ -151,48 +180,10 @@ namespace CIARE.Roslyn
             catch (UnauthorizedAccessException uae)
             {
                 RichExtColor.ErrorDisplay(logOutput, $"ERROR: {uae.Message}. Process may be running!");
-                GlobalVariables.compileTime = true;
             }
             catch (Exception e)
             {
                 RichExtColor.ErrorDisplay(logOutput, $"ERROR: {e.Message}");
-                GlobalVariables.compileTime = true;
-            }
-        }
-
-        /// <summary>
-        /// Get compiled exe file path from project directory.
-        /// </summary>
-        /// <param name="pathProject"></param>
-        /// <param name="projectName"></param>
-        private void PathExe(string pathProject, string projectName, string framework, string platform)
-        {
-            var directories = Directory.GetDirectories(pathProject);
-            foreach (var dir in directories)
-            {
-                if (!dir.EndsWith("obj"))
-                {
-                    var files = Directory.GetFiles(dir);
-                    foreach (var file in files)
-                    {
-                        var fileInfo = new FileInfo(file);
-                        int pathSplit = fileInfo.FullName.Split(Path.DirectorySeparatorChar).Count();
-                        string frameworkPath = fileInfo.FullName.Split(Path.DirectorySeparatorChar)[pathSplit - 2];
-                        string parsePlatform = platform.Split('"')[1];
-                        if (fileInfo.FullName.EndsWith($"{projectName}.exe") && frameworkPath.Contains(framework) 
-                            && fileInfo.FullName.Contains(parsePlatform) && GetState(fileInfo.FullName).Contains(StateCompile))
-                        {
-                            _exeFilePath = fileInfo.FullName;
-                            break;
-                        }
-                        if (fileInfo.FullName.EndsWith($"{projectName}.dll") && frameworkPath.Contains(framework)
-                            && fileInfo.FullName.Contains(parsePlatform) && GetState(fileInfo.FullName).Contains(StateCompile))
-                        {
-                            _exeFilePath = fileInfo.FullName;
-                        }
-                    }
-                    PathExe(dir, projectName, framework, platform);
-                }
             }
         }
 

@@ -47,16 +47,16 @@ namespace CIARE.Utils
         public static bool darkColor = false;
         public static string configParam = "/p:configuration=Debug";
         public static string platformParam = "/p:Platform=\"Any CPU\"";
+        public static string publishAot = string.Empty;
         public static OutputKind OutputKind;
         public static bool OCodeCompletion = true;
         public static bool OLineNumber = true;
         public static bool OFoldingCode = true;
         public static string apiUrl = string.Empty;
-        public static bool OWarnings = false;
         public static bool OStartUp = false;
         public static bool OWinLoginState = false;
         public static bool OUnsafeCode = false;
-        public static bool compileTime = false;
+        public static bool OPublishNative = false;
         public static bool codeWriter = false;
         public static bool isRed = false;
 
@@ -70,6 +70,10 @@ namespace CIARE.Utils
         public static string remoteSessionId = string.Empty;
         public static string remoteConnectionId = string.Empty;
         public static string binaryNameStore = string.Empty;
+        public static string binarytype= ".exe";
+        public static string binarytypeTemplate= "Exe";
+        public static bool binaryPublish = false;
+        public static bool winForms = false;
         public static bool connected = false;
         public static bool liveDisconnected = false;
         public static bool apiConnected = false;
@@ -84,10 +88,10 @@ namespace CIARE.Utils
         public static readonly string codeCompletionKey = "OCodeCompletion";
         public static readonly string foldingCodeKey = "OFoldingCode";
         public static readonly string lineNumberKey = "OLineNumber";
-        public static readonly string warnings = "OWarnings";
         public static readonly string liveShare = "OLiveShare";
         public static readonly string startUp = "OStartUp";
         public static readonly string unsafeCode = "OUnsafeCode";
+        public static readonly string publish = "OPublishNative";
         public static readonly string OWinLogin = "OWinLogin";
         public static readonly string activeForm = "activeForm";
         public static readonly string OConfigParam = "OConfigParam";

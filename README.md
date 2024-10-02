@@ -16,6 +16,8 @@ Useful to run code on the fly and get instant result.
  - Display current edited file (Using * on application title near file path ).
  - Compile and run code on ram using Roslyn.
  - Compile code to binary files(.exe or .dll).
+ - Publish code to binary files(.exe or .dll).
+ - Native AOT publish option.
  - Show runtime(ms) for code compile and exectuion or compile only.
  - Hotkeys for mentioned above features. 
  - Drag & Drop
@@ -175,8 +177,8 @@ CTRL + Shift + P : Get data from chatGPT by your provided text pattern.
 
 ---------------- Compile ------------------
 F5               : Run current cod.                
-CTRL + B         : Compile code from current tab to executable file. (.exe)
-CTRL + Shift + B : Compile code from current tab to dynamic-link library. (.dll)
+CTRL + B         : Compile code from current tab to binary. (.dll/.exe)
+CTRL + Shift + B : Publish code from current tab to binary. (.dll/.exe)
 CTRL + L         : Add command line arguments.
 CTRL + R         : Add external reference or download from NuGet.
 

@@ -39,10 +39,10 @@ namespace CIARE
             codeCompletionCkb.Checked = GlobalVariables.OCodeCompletion;
             lineNumberCkb.Checked = GlobalVariables.OLineNumber;
             codeFoldingCkb.Checked = GlobalVariables.OFoldingCode;
-            warningsCkb.Checked = GlobalVariables.OWarnings;
             startBehaveCkb.Checked = GlobalVariables.OStartUp;
             winLoginCkb.Checked = GlobalVariables.OWinLoginState;
             unsafeCkb.Checked = GlobalVariables.OUnsafeCode;
+            publishCkb.Checked = GlobalVariables.OPublishNative;
             apiUrlTxt.Text = GlobalVariables.apiUrl;
             apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
@@ -94,17 +94,6 @@ namespace CIARE
             FoldingCode.SetFoldingCodeStatus(codeFoldingCkb, GlobalVariables.foldingCodeKey);
         }
 
-
-        /// <summary>
-        /// Enable build warnings.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void warningsCkb_CheckedChanged(object sender, EventArgs e)
-        {
-            Warnings.SetWarnings(warningsCkb, GlobalVariables.warnings);
-        }
-
         private void configurationBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (configurationBox.Text == "Release")
@@ -124,7 +113,6 @@ namespace CIARE
         private void startBehaveCkb_CheckedChanged(object sender, EventArgs e)
         {
             StartFilesOS.SetOSStartStatus(startBehaveCkb, GlobalVariables.startUp);
-            //CheckMarkFileActivation(startBehaveCkb, winLoginCkb);
         }
 
         /// <summary>
@@ -145,19 +133,7 @@ namespace CIARE
 
         private void winLoginCkb_CheckedChanged(object sender, EventArgs e)
         {
-            //if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
-            //{
-            //    winLoginCkb.Checked = false;
-            //    return;
-            //}
-
             var autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
-            //if (!autoStartFile.CheckFileContent(GlobalVariables.markFile))
-            //{
-            //    winLoginCkb.Checked = false;
-            //    return;
-            //}
-            //StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
             autoStartFile.SetRegistryRunApp(winLoginCkb);
             StartFilesOS.SetWinLoginState(winLoginCkb, GlobalVariables.OWinLogin);
         }
@@ -242,6 +218,16 @@ namespace CIARE
         private void unsafeCkb_CheckedChanged(object sender, EventArgs e)
         {
             UnsafeCode.SetUnsafeStatus(unsafeCkb, GlobalVariables.unsafeCode);
+        }
+
+        /// <summary>
+        /// Enalble publish
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void publishCkb_CheckedChanged(object sender, EventArgs e)
+        {
+            Publish.SetPublishStatus(publishCkb, GlobalVariables.publish);
         }
     }
 }

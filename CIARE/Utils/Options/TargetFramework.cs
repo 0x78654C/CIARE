@@ -27,43 +27,73 @@ namespace CIARE.Utils.Options
         {
             GlobalVariables.selectedIndex = framework.SelectedIndex;
 
-            if (framework.Text == ".NET 6")
+            if (framework.Text.StartsWith(".NET 6"))
             {
-                if (!SdkVersion.CheckSdk(framework.Text[^1..]))
+                if (!SdkVersion.CheckSdk(framework.Text.Substring(5, 1)))
                 {
                     MessageBox.Show("The targeted framework (.NET 6) is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     GetFramework(CIARE.Options.Instance.frameWorkCMB, GlobalVariables.registryPath);
                     return;
                 }
 
-                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net6.0-windows");
-                GlobalVariables.Framework = "net6.0-windows";
+                if (framework.Text.Contains("Windows"))
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net6.0-windows");
+                    GlobalVariables.Framework = "net6.0-windows";
+                    GlobalVariables.winForms = true;
+                }
+                else
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net6.0");
+                    GlobalVariables.Framework = "net6.0";
+                    GlobalVariables.winForms = false;
+                }
                 return;
             }
 
-            if (framework.Text == ".NET 7")
+            if (framework.Text.StartsWith(".NET 7"))
             {
 
-                if (!SdkVersion.CheckSdk(framework.Text[^1..]))
+                if (!SdkVersion.CheckSdk(framework.Text.Substring(5, 1)))
                 {
                     MessageBox.Show("The targeted framework (.NET 7) is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     GetFramework(CIARE.Options.Instance.frameWorkCMB, GlobalVariables.registryPath);
                     return;
                 }
-                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net7.0-windows");
-                GlobalVariables.Framework = "net7.0-windows";
+                if (framework.Text.Contains("Windows"))
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net7.0-windows");
+                    GlobalVariables.Framework = "net7.0-windows";
+                    GlobalVariables.winForms = true;
+                }
+                else
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net7.0");
+                    GlobalVariables.Framework = "net7.0";
+                    GlobalVariables.winForms = false;
+                }
                 return;
             }
 
-            if (!SdkVersion.CheckSdk(framework.Text[^1..]))
+            if (!SdkVersion.CheckSdk(framework.Text.Substring(5, 1)))
             {
                 MessageBox.Show("The targeted framework (.NET 8) is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 GetFramework(CIARE.Options.Instance.frameWorkCMB, GlobalVariables.registryPath);
                 return;
             }
 
-            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net8.0-windows");
-            GlobalVariables.Framework = "net8.0-windows";
+            if (framework.Text.Contains("Windows"))
+            {
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net8.0-windows");
+                GlobalVariables.Framework = "net8.0-windows";
+                GlobalVariables.winForms = true;
+            }
+            else
+            {
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net8.0");
+                GlobalVariables.Framework = "net8.0";
+                GlobalVariables.winForms = false;
+            }
         }
 
         /// <summary>
@@ -76,13 +106,20 @@ namespace CIARE.Utils.Options
             string regFramework = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.OFramework);
             if (regFramework.Length > 0)
             {
-                //framework.SelectedIndex = regFramework.StartsWith("net6") ? 0 : 1; 
-                if(regFramework.StartsWith("net6"))
+                if (regFramework =="net6.0")
                     framework.SelectedIndex = 0;
-                else if(regFramework.StartsWith("net7"))
+                else if (regFramework == "net6.0-windows")
                     framework.SelectedIndex = 1;
-                else
+                else if (regFramework == "net7.0")
                     framework.SelectedIndex = 2;
+                else if (regFramework == "net7.0-windows")
+                    framework.SelectedIndex = 3;
+                else if (regFramework == "net8.0")
+                    framework.SelectedIndex = 4;
+                else if (regFramework == "net8.0-windows")
+                    framework.SelectedIndex = 5;
+                else
+                    framework.SelectedIndex = 0;
                 return;
             }
             framework.SelectedIndex = 0;

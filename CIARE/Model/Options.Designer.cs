@@ -42,10 +42,10 @@ namespace CIARE
             behaveSetLbl = new System.Windows.Forms.Label();
             displaySepLbl = new System.Windows.Forms.Label();
             buildGroup = new System.Windows.Forms.GroupBox();
+            publishCkb = new System.Windows.Forms.CheckBox();
             unsafeCkb = new System.Windows.Forms.CheckBox();
             frameworkLbl = new System.Windows.Forms.Label();
             frameWorkCMB = new System.Windows.Forms.ComboBox();
-            warningsCkb = new System.Windows.Forms.CheckBox();
             platformBox = new System.Windows.Forms.ComboBox();
             configurationBox = new System.Windows.Forms.ComboBox();
             platformLbl = new System.Windows.Forms.Label();
@@ -196,10 +196,10 @@ namespace CIARE
             // 
             // buildGroup
             // 
+            buildGroup.Controls.Add(publishCkb);
             buildGroup.Controls.Add(unsafeCkb);
             buildGroup.Controls.Add(frameworkLbl);
             buildGroup.Controls.Add(frameWorkCMB);
-            buildGroup.Controls.Add(warningsCkb);
             buildGroup.Controls.Add(platformBox);
             buildGroup.Controls.Add(configurationBox);
             buildGroup.Controls.Add(platformLbl);
@@ -210,10 +210,21 @@ namespace CIARE
             buildGroup.TabStop = false;
             buildGroup.Text = "Build/Run";
             // 
+            // publishCkb
+            // 
+            publishCkb.AutoSize = true;
+            publishCkb.Location = new System.Drawing.Point(16, 91);
+            publishCkb.Name = "publishCkb";
+            publishCkb.Size = new System.Drawing.Size(128, 19);
+            publishCkb.TabIndex = 21;
+            publishCkb.Text = "Publish native AOT";
+            publishCkb.UseVisualStyleBackColor = true;
+            publishCkb.CheckedChanged += publishCkb_CheckedChanged;
+            // 
             // unsafeCkb
             // 
             unsafeCkb.AutoSize = true;
-            unsafeCkb.Location = new System.Drawing.Point(15, 85);
+            unsafeCkb.Location = new System.Drawing.Point(16, 66);
             unsafeCkb.Name = "unsafeCkb";
             unsafeCkb.Size = new System.Drawing.Size(118, 19);
             unsafeCkb.TabIndex = 20;
@@ -224,34 +235,23 @@ namespace CIARE
             // frameworkLbl
             // 
             frameworkLbl.AutoSize = true;
-            frameworkLbl.Location = new System.Drawing.Point(12, 115);
+            frameworkLbl.Location = new System.Drawing.Point(12, 128);
             frameworkLbl.Name = "frameworkLbl";
-            frameworkLbl.Size = new System.Drawing.Size(185, 15);
+            frameworkLbl.Size = new System.Drawing.Size(148, 15);
             frameworkLbl.TabIndex = 18;
-            frameworkLbl.Text = "Target Run/Compile Framework:";
+            frameworkLbl.Text = "Target Run/Compile SDK:";
             // 
             // frameWorkCMB
             // 
             frameWorkCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             frameWorkCMB.FormattingEnabled = true;
-            frameWorkCMB.Items.AddRange(new object[] { ".NET 6", ".NET 7", ".NET 8" });
-            frameWorkCMB.Location = new System.Drawing.Point(217, 112);
+            frameWorkCMB.Items.AddRange(new object[] { ".NET 6", ".NET 6 Windows", ".NET 7", ".NET 7 Windows", ".NET 8", ".NET 8 Windows" });
+            frameWorkCMB.Location = new System.Drawing.Point(166, 125);
             frameWorkCMB.Name = "frameWorkCMB";
-            frameWorkCMB.Size = new System.Drawing.Size(93, 23);
+            frameWorkCMB.Size = new System.Drawing.Size(121, 23);
             frameWorkCMB.TabIndex = 19;
             frameWorkCMB.Text = ".NET 6";
             frameWorkCMB.SelectedIndexChanged += frameWorkCMB_SelectedIndexChanged;
-            // 
-            // warningsCkb
-            // 
-            warningsCkb.AutoSize = true;
-            warningsCkb.Location = new System.Drawing.Point(15, 60);
-            warningsCkb.Name = "warningsCkb";
-            warningsCkb.Size = new System.Drawing.Size(165, 19);
-            warningsCkb.TabIndex = 14;
-            warningsCkb.Text = "Enable compile warnings";
-            warningsCkb.UseVisualStyleBackColor = true;
-            warningsCkb.CheckedChanged += warningsCkb_CheckedChanged;
             // 
             // platformBox
             // 
@@ -458,7 +458,6 @@ namespace CIARE
         private System.Windows.Forms.ComboBox platformBox;
         private System.Windows.Forms.ComboBox configurationBox;
         private System.Windows.Forms.Label platformLbl;
-        private System.Windows.Forms.CheckBox warningsCkb;
         private System.Windows.Forms.CheckBox startBehaveCkb;
         private System.Windows.Forms.Label behaveSetLbl;
         private System.Windows.Forms.Label displaySepLbl;
@@ -478,5 +477,6 @@ namespace CIARE
         private System.Windows.Forms.TextBox modelTxt;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox unsafeCkb;
+        private System.Windows.Forms.CheckBox publishCkb;
     }
 }
