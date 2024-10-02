@@ -155,8 +155,15 @@ namespace CIARE.Roslyn
                     File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateExe);
                 File.WriteAllText($"{projectDir}\\{exeName}.cs", Code);
                 var param = "";
-                if(Publish)
+                if (Publish)
+                {
+                    if (!GlobalVariables.platformParam.Contains("x64"))
+                    {
+                        RichExtColor.ErrorDisplay(logOutput, $"ERROR: Native AOT publish works only with x64 arhitecture!");
+                        return;
+                    }
                     param = $"publish -r win-x64 -c {StateCompile}";
+                }
                 else
                     param = $"build {GlobalVariables.configParam} {GlobalVariables.platformParam}";
                 ProcessRun processRun = new ProcessRun("dotnet", param, projectDir);
@@ -165,8 +172,7 @@ namespace CIARE.Roslyn
                     logOutput.Text = build.Trim();
                 else
                 {
-                    logOutput.Text = build.Trim();
-                    string framework = GlobalVariables.Framework.Split('-')[0];
+                    logOutput.Text = build.Trim()+"\nDone!";
                 }
                 logOutput.SelectionStart = logOutput.Text.Length;
                 logOutput.ScrollToCaret();
