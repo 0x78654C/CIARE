@@ -58,10 +58,10 @@ namespace CIARE
             goToLineStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             selectAllStripMenuItem3 = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
-            toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
             chatGPTCTRLShiftPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             compileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             compileToexeCtrlShiftBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
             compileToDLLCtrlSfitBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             cmdLinesArgsStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -119,7 +119,7 @@ namespace CIARE
             outputRBT.Name = "outputRBT";
             outputRBT.ReadOnly = true;
             outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            outputRBT.Size = new System.Drawing.Size(1388, 113);
+            outputRBT.Size = new System.Drawing.Size(1388, 157);
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
             outputRBT.MouseWheel += outputRBT_MouseWheel;
@@ -323,43 +323,43 @@ namespace CIARE
             // compileToexeCtrlShiftBToolStripMenuItem
             // 
             compileToexeCtrlShiftBToolStripMenuItem.Name = "compileToexeCtrlShiftBToolStripMenuItem";
-            compileToexeCtrlShiftBToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            compileToexeCtrlShiftBToolStripMenuItem.Size = new System.Drawing.Size(253, 22);
             compileToexeCtrlShiftBToolStripMenuItem.Text = "Compile                          ( Ctrl + B )";
             compileToexeCtrlShiftBToolStripMenuItem.Click += compileToexeCtrlShiftBToolStripMenuItem_Click;
+            // 
             // toolStripSeparator8
             // 
             toolStripSeparator8.Name = "toolStripSeparator8";
-            toolStripSeparator8.Size = new System.Drawing.Size(287, 6);
-            // 
+            toolStripSeparator8.Size = new System.Drawing.Size(250, 6);
             // 
             // compileToDLLCtrlSfitBToolStripMenuItem
             // 
             compileToDLLCtrlSfitBToolStripMenuItem.Name = "compileToDLLCtrlSfitBToolStripMenuItem";
-            compileToDLLCtrlSfitBToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            compileToDLLCtrlSfitBToolStripMenuItem.Size = new System.Drawing.Size(253, 22);
             compileToDLLCtrlSfitBToolStripMenuItem.Text = "Publish               ( Ctrl + Shift + B )";
             compileToDLLCtrlSfitBToolStripMenuItem.Click += compileToDLLCtrlSfitBToolStripMenuItem_Click;
             // 
             // toolStripSeparator5
             // 
             toolStripSeparator5.Name = "toolStripSeparator5";
-            toolStripSeparator5.Size = new System.Drawing.Size(287, 6);
+            toolStripSeparator5.Size = new System.Drawing.Size(250, 6);
             // 
             // cmdLinesArgsStripMenuItem
             // 
             cmdLinesArgsStripMenuItem.Name = "cmdLinesArgsStripMenuItem";
-            cmdLinesArgsStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            cmdLinesArgsStripMenuItem.Size = new System.Drawing.Size(253, 22);
             cmdLinesArgsStripMenuItem.Text = "Command Line Args...  ( Ctrl + L )";
             cmdLinesArgsStripMenuItem.Click += cmdLinesArgsStripMenuItem_Click;
             // 
             // toolStripSeparator7
             // 
             toolStripSeparator7.Name = "toolStripSeparator7";
-            toolStripSeparator7.Size = new System.Drawing.Size(287, 6);
+            toolStripSeparator7.Size = new System.Drawing.Size(250, 6);
             // 
             // referenceAddToolStripMenuItem
             // 
             referenceAddToolStripMenuItem.Name = "referenceAddToolStripMenuItem";
-            referenceAddToolStripMenuItem.Size = new System.Drawing.Size(290, 22);
+            referenceAddToolStripMenuItem.Size = new System.Drawing.Size(253, 22);
             referenceAddToolStripMenuItem.Text = "Add Reference                ( Ctrl + R )";
             referenceAddToolStripMenuItem.Click += referenceAddToolStripMenuItem_Click;
             // 
@@ -454,7 +454,7 @@ namespace CIARE
             groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBox1.Size = new System.Drawing.Size(1402, 137);
+            groupBox1.Size = new System.Drawing.Size(1402, 181);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
             groupBox1.Text = "Output:";
@@ -475,7 +475,7 @@ namespace CIARE
             // 
             splitContainer1.Panel2.Controls.Add(groupBox1);
             splitContainer1.Size = new System.Drawing.Size(1410, 838);
-            splitContainer1.SplitterDistance = 684;
+            splitContainer1.SplitterDistance = 646;
             splitContainer1.SplitterWidth = 5;
             splitContainer1.TabIndex = 6;
             // 
@@ -490,14 +490,14 @@ namespace CIARE
             EditorTabControl.Name = "EditorTabControl";
             EditorTabControl.SelectedIndex = 0;
             EditorTabControl.ShowToolTips = true;
-            EditorTabControl.Size = new System.Drawing.Size(1403, 678);
+            EditorTabControl.Size = new System.Drawing.Size(1403, 640);
             EditorTabControl.TabIndex = 1;
             EditorTabControl.DrawItem += EditorTabControl_DrawItem;
             EditorTabControl.Selecting += EditorTabControl_Selecting;
             EditorTabControl.HandleCreated += EditorTabControl_HandleCreated;
+            EditorTabControl.KeyDown += EditorTabControl_KeyDown;
             EditorTabControl.MouseClick += EditorTabControl_MouseClick;
             EditorTabControl.MouseDown += EditorTabControl_MouseDown;
-            EditorTabControl.KeyDown += EditorTabControl_KeyDown;
             // 
             // tabPage1
             // 
@@ -505,7 +505,7 @@ namespace CIARE
             tabPage1.Location = new System.Drawing.Point(4, 24);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            tabPage1.Size = new System.Drawing.Size(1395, 650);
+            tabPage1.Size = new System.Drawing.Size(1395, 612);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "   +        ";
             tabPage1.ToolTipText = "Add Tab (CTRL + Tab)";
@@ -515,7 +515,7 @@ namespace CIARE
             // 
             tabPage2.Location = new System.Drawing.Point(4, 24);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new System.Drawing.Size(1395, 650);
+            tabPage2.Size = new System.Drawing.Size(1395, 612);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "New Page             ";
             tabPage2.UseVisualStyleBackColor = true;
@@ -645,30 +645,28 @@ namespace CIARE
             // 
             // tabMenu
             // 
-            tabMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { closeTab });
-            tabMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { closeAllTabs });
-            tabMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { closeAllTabsOne });
+            tabMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { closeTab, closeAllTabs, closeAllTabsOne });
             tabMenu.Name = "tabMenu";
-            tabMenu.Size = new System.Drawing.Size(181, 48);
+            tabMenu.Size = new System.Drawing.Size(169, 70);
             // 
             // closeTab
             // 
             closeTab.Name = "closeTab";
-            closeTab.Size = new System.Drawing.Size(180, 22);
+            closeTab.Size = new System.Drawing.Size(168, 22);
             closeTab.Text = "Close Tab";
             closeTab.Click += closeTab_Click;
             // 
             // closeAllTabs
             // 
             closeAllTabs.Name = "closeAllTabs";
-            closeAllTabs.Size = new System.Drawing.Size(180, 22);
+            closeAllTabs.Size = new System.Drawing.Size(168, 22);
             closeAllTabs.Text = "Close All Tabs";
             closeAllTabs.Click += closeAllTabs_Click;
             // 
             // closeAllTabsOne
             // 
             closeAllTabsOne.Name = "closeAllTabsOne";
-            closeAllTabsOne.Size = new System.Drawing.Size(180, 22);
+            closeAllTabsOne.Size = new System.Drawing.Size(168, 22);
             closeAllTabsOne.Text = "Close All BUT This";
             closeAllTabsOne.Click += closeAllTabsOne_Click;
             // 
