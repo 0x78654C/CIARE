@@ -4,10 +4,10 @@ using ICSharpCode.TextEditor;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
@@ -31,8 +31,7 @@ namespace CIARE.GUI
             {
                 foreach (TabPage tabPage in tabControl.TabPages)
                 {
-
-                    if (tabPage.ToolTipText.ToLower() == path.ToLower())
+                    if (tabPage.ToolTipText.Trim().ToLower() == path.Trim().ToLower())
                     {
                         tabControl.SelectTab(tabPage);
                         isPresent = true;
@@ -375,7 +374,7 @@ namespace CIARE.GUI
             bool isLine = false;
             foreach (TabPage tabPage in MainForm.Instance.EditorTabControl.TabPages)
             {
-                if (tabPage.ToolTipText.Contains(filePath) && !tabPage.ToolTipText.StartsWith("Add Tab"))
+                if (tabPage.ToolTipText.Contains(filePath, StringComparison.InvariantCultureIgnoreCase) && !tabPage.ToolTipText.StartsWith("Add Tab"))
                 {
                     isLine = true;
                     break;
