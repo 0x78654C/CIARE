@@ -4,7 +4,6 @@ using ICSharpCode.TextEditor;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
@@ -35,6 +34,10 @@ namespace CIARE.GUI
                     {
                         tabControl.SelectTab(tabPage);
                         isPresent = true;
+                        var fileInfo = new FileInfo(tabPage.ToolTipText.Trim());
+                        GlobalVariables.openedFilePath = fileInfo.FullName;
+                        GlobalVariables.openedFileName = fileInfo.Name;
+                        break;
                     }
                 }
             });
@@ -307,7 +310,7 @@ namespace CIARE.GUI
 
             for (int i = 0; i < lines.Count(); i++)
             {
-                if (lines[i].StartsWith($"{filePath}"))
+                if (lines[i].StartsWith($"{filePath}", StringComparison.InvariantCultureIgnoreCase))
                     lines.Remove(lines[i]);
             }
             lines.Add(line);
