@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
@@ -768,7 +769,7 @@ MessageBoxIcon.Information);
             bool isTabPresent = false;
             foreach (TabPage tab in tabControl.TabPages)
             {
-                if (tab.ToolTipText.Trim() == path.Trim())
+                if (tab.ToolTipText.Trim().ToLower() == path.Trim().ToLower())
                 {
                     tabControl.SelectTab(tab);
                     string filePath = tabControl.SelectedTab.ToolTipText.Trim();

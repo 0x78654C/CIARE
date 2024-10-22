@@ -7,7 +7,6 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace CIARE.GUI
@@ -31,11 +30,14 @@ namespace CIARE.GUI
             {
                 foreach (TabPage tabPage in tabControl.TabPages)
                 {
-
-                    if (tabPage.ToolTipText.ToLower() == path.ToLower())
+                    if (tabPage.ToolTipText.Trim().ToLower() == path.Trim().ToLower())
                     {
                         tabControl.SelectTab(tabPage);
                         isPresent = true;
+                        var fileInfo = new FileInfo(tabPage.ToolTipText.Trim());
+                        GlobalVariables.openedFilePath = fileInfo.FullName;
+                        GlobalVariables.openedFileName = fileInfo.Name;
+                        break;
                     }
                 }
             });
@@ -308,7 +310,7 @@ namespace CIARE.GUI
 
             for (int i = 0; i < lines.Count(); i++)
             {
-                if (lines[i].StartsWith($"{filePath}"))
+                if (lines[i].StartsWith($"{filePath}", StringComparison.InvariantCultureIgnoreCase))
                     lines.Remove(lines[i]);
             }
             lines.Add(line);
@@ -375,7 +377,7 @@ namespace CIARE.GUI
             bool isLine = false;
             foreach (TabPage tabPage in MainForm.Instance.EditorTabControl.TabPages)
             {
-                if (tabPage.ToolTipText.Contains(filePath) && !tabPage.ToolTipText.StartsWith("Add Tab"))
+                if (tabPage.ToolTipText.Contains(filePath, StringComparison.InvariantCultureIgnoreCase) && !tabPage.ToolTipText.StartsWith("Add Tab"))
                 {
                     isLine = true;
                     break;
