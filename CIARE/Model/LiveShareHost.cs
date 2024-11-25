@@ -79,6 +79,11 @@ namespace CIARE
         /// <param name="e"></param>
         private async void startLiveBtn_Click(object sender, EventArgs e)
         {
+            Network network = new Network(GlobalVariables.apiUrl);
+            if (!network.IsLiveApiConnected())
+                MessageBox.Show("The API link seems down for the moment!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+
             if (passwordTxt.Text.Length < 5)
             {
                 MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -186,6 +191,10 @@ namespace CIARE
         /// <param name="e"></param>
         private async void connectHostBtn_Click(object sender, EventArgs e)
         {
+            Network network = new Network(GlobalVariables.apiUrl);
+            if (!network.IsLiveApiConnected())
+                MessageBox.Show("The API link seems down for the moment!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
             if (remotePasswordTxt.Text.Length < 5)
             {
                 MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
