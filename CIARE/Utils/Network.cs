@@ -1,19 +1,26 @@
 ﻿using System.Net;
-using System;
 using System.Net.NetworkInformation;
 using System.Net.Http;
-using System.Security.Policy;
 using System.Threading.Tasks;
+using System.Net.Sockets;
+using System.Resources;
 
 namespace CIARE.Utils
 {
     public class Network
     {
         private string IpAdress { get; set; }
+        private int Port { get; set; } = 80;
 
-        public Network(string ipAdress) 
+        /// <summary>
+        /// Check network connections.
+        /// </summary>
+        /// <param name="ipAdress"></param>
+        /// <param name="port">Default 80</param>
+        public Network(string ipAdress, int port = 80) 
         {
-            IpAdress = ipAdress;    
+            IpAdress = ipAdress;
+            Port = port;
         }
         /// <summary>
         /// Verifies if IP is up or not
@@ -54,6 +61,8 @@ namespace CIARE.Utils
             {
                 HttpClient client = new HttpClient();
                 HttpResponseMessage response = Task.Run(()=> client.GetAsync(IpAdress)).Result;
+                HttpContent httpContent = response.Content;
+                var  response2=  Task.Run(() => client.PostAsync(IpAdress, httpContent)).Result;
                 bool isResponding = response.StatusCode == HttpStatusCode.OK;
                 return isResponding;
             }
@@ -61,6 +70,40 @@ namespace CIARE.Utils
             {
                return false;
             }
+        }
+
+        /// <summary>
+        /// Check socket connections;
+        /// </summary>
+        /// <returns></returns>
+        public bool IsSocketConnected()
+        {
+            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
+            {
+                try
+                {
+                    socket.Connect(IpAdress, Port);
+                    return socket.Connected;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Check if api domain is up.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsLiveApiConnected()
+        {
+            var url = GlobalVariables.apiUrl.Replace("https://", "");
+            url = url.Replace("http://", "");
+            if(url.Contains("/"))
+                url = url.Split("/")[0];
+            IpAdress = url;
+            return IsSocketConnected();
         }
     }
 }
