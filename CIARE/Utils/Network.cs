@@ -3,10 +3,11 @@ using System.Net.NetworkInformation;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Net.Sockets;
-using System.Resources;
+using System.Runtime.Versioning;
 
 namespace CIARE.Utils
 {
+    [SupportedOSPlatform("windows")]
     public class Network
     {
         private string IpAdress { get; set; }
@@ -27,14 +28,14 @@ namespace CIARE.Utils
         /// </summary>
         /// <param name="ipAddress"></param>
         /// <returns>verifies if IP is up or not</returns>
-        public bool PingHost()
+        public bool PingHost(int timeOut =1)
         {
             bool pingable = false;
             Ping pinger = null;
             try
             {
                 pinger = new Ping();
-                PingReply reply = pinger.Send(IpAdress);
+                PingReply reply = pinger.Send(IpAdress,timeOut);
                 pingable = reply.Status == IPStatus.Success;
             }
             catch
