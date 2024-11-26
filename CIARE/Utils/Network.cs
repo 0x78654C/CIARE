@@ -23,12 +23,13 @@ namespace CIARE.Utils
             IpAdress = ipAdress;
             Port = port;
         }
+
         /// <summary>
         /// Verifies if IP is up or not
         /// </summary>
-        /// <param name="ipAddress"></param>
-        /// <returns>verifies if IP is up or not</returns>
-        public bool PingHost(int timeOut =1)
+        /// <param name="timeOut"></param>
+        /// <returns></returns>
+        public bool PingHost(int timeOut = 100)
         {
             bool pingable = false;
             Ping pinger = null;
@@ -63,7 +64,6 @@ namespace CIARE.Utils
                 HttpClient client = new HttpClient();
                 HttpResponseMessage response = Task.Run(()=> client.GetAsync(IpAdress)).Result;
                 HttpContent httpContent = response.Content;
-                var  response2=  Task.Run(() => client.PostAsync(IpAdress, httpContent)).Result;
                 bool isResponding = response.StatusCode == HttpStatusCode.OK;
                 return isResponding;
             }
