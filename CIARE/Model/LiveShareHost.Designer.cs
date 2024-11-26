@@ -177,7 +177,7 @@
             // liveApiPb
             // 
             liveApiPb.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            liveApiPb.Location = new System.Drawing.Point(12, 229);
+            liveApiPb.Location = new System.Drawing.Point(7, 229);
             liveApiPb.Name = "liveApiPb";
             liveApiPb.Size = new System.Drawing.Size(18, 19);
             liveApiPb.TabIndex = 20;
