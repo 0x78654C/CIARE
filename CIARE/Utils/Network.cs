@@ -10,7 +10,7 @@ namespace CIARE.Utils
     [SupportedOSPlatform("windows")]
     public class Network
     {
-        private string IpAdress { get; set; }
+        private string IpAddress { get; set; }
         private int Port { get; set; } = 80;
 
         /// <summary>
@@ -20,7 +20,7 @@ namespace CIARE.Utils
         /// <param name="port">Default 80</param>
         public Network(string ipAdress, int port = 80) 
         {
-            IpAdress = ipAdress;
+            IpAddress = ipAdress;
             Port = port;
         }
 
@@ -36,7 +36,7 @@ namespace CIARE.Utils
             try
             {
                 pinger = new Ping();
-                PingReply reply = pinger.Send(IpAdress,timeOut);
+                PingReply reply = pinger.Send(IpAddress,timeOut);
                 pingable = reply.Status == IPStatus.Success;
             }
             catch
@@ -62,7 +62,7 @@ namespace CIARE.Utils
             try
             {
                 HttpClient client = new HttpClient();
-                HttpResponseMessage response = Task.Run(()=> client.GetAsync(IpAdress)).Result;
+                HttpResponseMessage response = Task.Run(()=> client.GetAsync(IpAddress)).Result;
                 HttpContent httpContent = response.Content;
                 bool isResponding = response.StatusCode == HttpStatusCode.OK;
                 return isResponding;
@@ -83,7 +83,7 @@ namespace CIARE.Utils
             {
                 try
                 {
-                    socket.Connect(IpAdress, Port);
+                    socket.Connect(IpAddress, Port);
                     return socket.Connected;
                 }
                 catch
@@ -99,12 +99,19 @@ namespace CIARE.Utils
         /// <returns></returns>
         public bool IsLiveApiConnected()
         {
-            var url = GlobalVariables.apiUrl.Replace("https://", "");
-            url = url.Replace("http://", "");
-            if(url.Contains("/"))
-                url = url.Split("/")[0];
-            IpAdress = url;
-            return IsSocketConnected();
+            var url = IpAddress.EndsWith("/live") ? GlobalVariables.apiUrl.Replace("/live", "/ping"):"";
+            try
+            {
+                HttpClient client = new HttpClient();
+                HttpResponseMessage response = Task.Run(() => client.GetAsync(url)).Result;
+                HttpContent httpContent = response.Content;
+                bool isResponding = response.StatusCode == HttpStatusCode.OK;
+                return isResponding;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

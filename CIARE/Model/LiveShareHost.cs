@@ -52,6 +52,9 @@ namespace CIARE
 
             // Set remote connect button dark mode for disable status.
             SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
+
+            // Check if live share API is up.
+            CheckIfAPIisALIVE();
         }
 
         /// <summary>
@@ -81,8 +84,10 @@ namespace CIARE
         {
             Network network = new Network(GlobalVariables.apiUrl);
             if (!network.IsLiveApiConnected())
+            {
                 MessageBox.Show("The API link seems down for the moment!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-
+                return;
+            }
 
             if (passwordTxt.Text.Length < 5)
             {
@@ -185,6 +190,15 @@ namespace CIARE
         }
 
         /// <summary>
+        /// Check if live share API is up.
+        /// </summary>
+        private void CheckIfAPIisALIVE()
+        {
+            Network network = new Network(GlobalVariables.apiUrl);
+            liveApiPb.Image = (network.IsLiveApiConnected()) ? Properties.Resources.green_dot : Properties.Resources.red_dot;
+        }
+
+        /// <summary>
         /// Connect to remote session.
         /// </summary>
         /// <param name="sender"></param>
@@ -193,7 +207,10 @@ namespace CIARE
         {
             Network network = new Network(GlobalVariables.apiUrl);
             if (!network.IsLiveApiConnected())
+            {
                 MessageBox.Show("The API link seems down for the moment!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             if (remotePasswordTxt.Text.Length < 5)
             {
