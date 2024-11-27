@@ -292,6 +292,7 @@ namespace CIARE
                 this.Close();
             }
         }
+
         /// <summary>
         /// Check if API url is loaded from registry and store it.
         /// </summary>
@@ -315,6 +316,11 @@ namespace CIARE
             }
         }
 
+        /// <summary>
+        /// Timer function for call API live check if is up in background.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void checkLiveAPITimer_Tick(object sender, EventArgs e)
         {
             var worker = new BackgroundWorker();
@@ -330,7 +336,11 @@ namespace CIARE
         private void APICheck_DoWork(object sender, DoWorkEventArgs e) =>
             CheckIfAPIisALIVE();
 
-
+        /// <summary>
+        /// Close timer on form closing.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void LiveShareHost_FormClosing(object sender, FormClosingEventArgs e)
         {
             checkLiveAPITimer.Stop();
