@@ -28,6 +28,7 @@ namespace CIARE.LiveShareManage
             // Closed event.
             hubConnection.Closed += (sender) =>
             {
+                CleanDot(MainForm.Instance.liveStatusPb);
                 GlobalVariables.liveDisconnected = true;
                 MainForm.Instance.liveStatusPb.Image = Properties.Resources.orange_dot;
                 return Task.CompletedTask;
