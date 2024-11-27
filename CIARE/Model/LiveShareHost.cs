@@ -3,6 +3,7 @@ using CIARE.LiveShareManage;
 using CIARE.Utils;
 using Microsoft.AspNetCore.SignalR.Client;
 using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -53,8 +54,9 @@ namespace CIARE
             // Set remote connect button dark mode for disable status.
             SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
 
-            // Check if live share API is up.
-            CheckIfAPIisALIVE();
+            // Start timer for check if live share API is up.
+            checkLiveAPITimer.Enabled = true;
+            checkLiveAPITimer.Start();
         }
 
         /// <summary>
@@ -82,6 +84,7 @@ namespace CIARE
         /// <param name="e"></param>
         private async void startLiveBtn_Click(object sender, EventArgs e)
         {
+            // Check if live share API is up.
             Network network = new Network(GlobalVariables.apiUrl);
             if (!network.IsLiveApiConnected())
             {
@@ -195,7 +198,7 @@ namespace CIARE
         private void CheckIfAPIisALIVE()
         {
             Network network = new Network(GlobalVariables.apiUrl);
-            liveApiPb.Image = (network.IsLiveApiConnected()) ? Properties.Resources.green_dot : Properties.Resources.red_dot;
+                liveApiPb.Image = (network.IsLiveApiConnected()) ? Properties.Resources.green_dot : Properties.Resources.red_dot;
         }
 
         /// <summary>
@@ -310,6 +313,28 @@ namespace CIARE
                 if (string.IsNullOrWhiteSpace(apiUrl))
                     this.Close();
             }
+        }
+
+        private void checkLiveAPITimer_Tick(object sender, EventArgs e)
+        {
+            var worker = new BackgroundWorker();
+            worker.DoWork += APICheck_DoWork;
+            worker.RunWorkerAsync();
+        }
+
+        /// <summary>
+        /// BW function for check if live API is UP;
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void APICheck_DoWork(object sender, DoWorkEventArgs e) =>
+            CheckIfAPIisALIVE();
+
+
+        private void LiveShareHost_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            checkLiveAPITimer.Stop();
+            checkLiveAPITimer.Enabled = false;
         }
     }
 }
