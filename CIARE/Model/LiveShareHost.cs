@@ -3,6 +3,7 @@ using CIARE.LiveShareManage;
 using CIARE.Utils;
 using Microsoft.AspNetCore.SignalR.Client;
 using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -52,6 +53,10 @@ namespace CIARE
 
             // Set remote connect button dark mode for disable status.
             SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
+
+            // Start timer for check if live share API is up.
+            checkLiveAPITimer.Enabled = true;
+            checkLiveAPITimer.Start();
         }
 
         /// <summary>
@@ -79,6 +84,14 @@ namespace CIARE
         /// <param name="e"></param>
         private async void startLiveBtn_Click(object sender, EventArgs e)
         {
+            // Check if live share API is up.
+            Network network = new Network(GlobalVariables.apiUrl);
+            if (!network.IsLiveApiConnected())
+            {
+                MessageBox.Show("The API link seems down for the moment!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             if (passwordTxt.Text.Length < 5)
             {
                 MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -180,12 +193,28 @@ namespace CIARE
         }
 
         /// <summary>
+        /// Check if live share API is up.
+        /// </summary>
+        private void CheckIfAPIisALIVE()
+        {
+            Network network = new Network(GlobalVariables.apiUrl);
+                liveApiPb.Image = (network.IsLiveApiConnected()) ? Properties.Resources.green_dot : Properties.Resources.red_dot;
+        }
+
+        /// <summary>
         /// Connect to remote session.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private async void connectHostBtn_Click(object sender, EventArgs e)
         {
+            Network network = new Network(GlobalVariables.apiUrl);
+            if (!network.IsLiveApiConnected())
+            {
+                MessageBox.Show("The API link seems down for the moment!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             if (remotePasswordTxt.Text.Length < 5)
             {
                 MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -263,6 +292,7 @@ namespace CIARE
                 this.Close();
             }
         }
+
         /// <summary>
         /// Check if API url is loaded from registry and store it.
         /// </summary>
@@ -284,6 +314,37 @@ namespace CIARE
                 if (string.IsNullOrWhiteSpace(apiUrl))
                     this.Close();
             }
+        }
+
+        /// <summary>
+        /// Timer function for call API live check if is up in background.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void checkLiveAPITimer_Tick(object sender, EventArgs e)
+        {
+            var worker = new BackgroundWorker();
+            worker.DoWork += APICheck_DoWork;
+            worker.RunWorkerAsync();
+        }
+
+        /// <summary>
+        /// BW function for check if live API is UP;
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void APICheck_DoWork(object sender, DoWorkEventArgs e) =>
+            CheckIfAPIisALIVE();
+
+        /// <summary>
+        /// Close timer on form closing.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void LiveShareHost_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            checkLiveAPITimer.Stop();
+            checkLiveAPITimer.Enabled = false;
         }
     }
 }

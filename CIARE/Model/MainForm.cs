@@ -159,6 +159,10 @@ namespace CIARE
             }
             isLoaded = true;
             ReloadRef();
+
+            // Get last opened tab MD5.
+            if(!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
+                GlobalVariables.openedFileMD5 = MD5Hash.GetMD5Hash(SelectedEditor.GetSelectedEditor().Text);
         }
 
         private void SetCodeCompletion(int index)

@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LiveShareHost));
             liveShareStartGrp = new System.Windows.Forms.GroupBox();
             passwordTxt = new System.Windows.Forms.TextBox();
@@ -41,8 +42,11 @@
             connectHostBtn = new System.Windows.Forms.Button();
             remoteSessioniDtxt = new System.Windows.Forms.TextBox();
             remoteSessionLbl = new System.Windows.Forms.Label();
+            liveApiPb = new System.Windows.Forms.PictureBox();
+            checkLiveAPITimer = new System.Windows.Forms.Timer(components);
             liveShareStartGrp.SuspendLayout();
             remoteGrp.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)liveApiPb).BeginInit();
             SuspendLayout();
             // 
             // liveShareStartGrp
@@ -172,12 +176,27 @@
             remoteSessionLbl.TabIndex = 0;
             remoteSessionLbl.Text = "Remote Session Id:";
             // 
+            // liveApiPb
+            // 
+            liveApiPb.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            liveApiPb.Location = new System.Drawing.Point(7, 229);
+            liveApiPb.Name = "liveApiPb";
+            liveApiPb.Size = new System.Drawing.Size(18, 19);
+            liveApiPb.TabIndex = 20;
+            liveApiPb.TabStop = false;
+            // 
+            // checkLiveAPITimer
+            // 
+            checkLiveAPITimer.Interval = 1000;
+            checkLiveAPITimer.Tick += checkLiveAPITimer_Tick;
+            // 
             // LiveShareHost
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             BackColor = System.Drawing.SystemColors.Window;
-            ClientSize = new System.Drawing.Size(551, 241);
+            ClientSize = new System.Drawing.Size(551, 254);
+            Controls.Add(liveApiPb);
             Controls.Add(remoteGrp);
             Controls.Add(liveShareStartGrp);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -186,11 +205,13 @@
             Name = "LiveShareHost";
             StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             Text = "Live Share Management";
+            FormClosing += LiveShareHost_FormClosing;
             Load += LiveShareHost_Load;
             liveShareStartGrp.ResumeLayout(false);
             liveShareStartGrp.PerformLayout();
             remoteGrp.ResumeLayout(false);
             remoteGrp.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)liveApiPb).EndInit();
             ResumeLayout(false);
         }
 
@@ -208,5 +229,7 @@
         private System.Windows.Forms.Button connectHostBtn;
         private System.Windows.Forms.TextBox remoteSessioniDtxt;
         private System.Windows.Forms.Label remoteSessionLbl;
+        public System.Windows.Forms.PictureBox liveApiPb;
+        private System.Windows.Forms.Timer checkLiveAPITimer;
     }
 }
