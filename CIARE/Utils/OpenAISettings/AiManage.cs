@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using System.Collections.Generic;
 using OpenAI.Api.Client.Models;
 using System.Runtime.Versioning;
+using OpenRouter;
 
 namespace CIARE.Utils.OpenAISettings
 {
@@ -40,17 +41,21 @@ namespace CIARE.Utils.OpenAISettings
 
                 if (string.IsNullOrEmpty(Qestion))
                     return "";
-                OpenAiApiV1Client client = new OpenAiApiV1Client(HttpClient, ApiKey);
+                //OpenAiApiV1Client client = new OpenAiApiV1Client(HttpClient, ApiKey);
 
-                var resu = await client.PostCompletion(new CompletionRequest
-                {
-                    Max_Tokens = Int32.Parse(GlobalVariables.aiMaxTokens),
-                    Temperature = 0.8m,
-                    Model = GlobalVariables.model,
-                    Prompt = Qestion
-                });
+                //var resu = await client.PostCompletion(new CompletionRequest
+                //{
+                //    Max_Tokens = Int32.Parse(GlobalVariables.aiMaxTokens),
+                //    Temperature = 0.8m,
+                //    Model = GlobalVariables.model,
+                //    Prompt = Qestion
+                //});
 
-                result= resu.Choices.First().Text;
+                OpenRouterClient openRouterClient = new OpenRouterClient(ApiKey);
+                var response = await openRouterClient.SendPromptAsync(Qestion);
+         
+
+                result = response;
             }
             catch (Exception ex)
             {
@@ -102,7 +107,7 @@ namespace CIARE.Utils.OpenAISettings
             {
                 outPut += $"{Environment.NewLine}{line}";
             }
-            outPut = $"//----------{question}----------{outPut}\n//-----------------------------------";
+            outPut = $"//---------------- {{Result}} ----------------\n{outPut}\n//----------------------------------------";
             textEditorControl.Text = InsertData(textEditorControl.Text, "]*/",outPut).Replace($"/*[{question}]*/","");
             GoToLineNumber.GoToLine(textEditorControl, s_line);
         }
