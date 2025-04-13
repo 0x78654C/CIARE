@@ -53,6 +53,7 @@
     <ProjectReference Include="..\ICSharpCode.SharpDevelop.Dom\Project\ICSharpCode.SharpDevelop.Dom.csproj" />
     <ProjectReference Include="..\ICSharpCode.TextEditor\ICSharpCode.TextEditor.csproj" />
     <ProjectReference Include="..\NRefactory\Project\NRefactory.csproj" />
+    <ProjectReference Include="..\OpenRouter\OpenRouter.csproj" />
   </ItemGroup>
   <ItemGroup>
     <FileAssociation Include=".cs">
