@@ -54,6 +54,7 @@ namespace CIARE
             apiUrlTxt = new System.Windows.Forms.TextBox();
             apiUrlLbl = new System.Windows.Forms.Label();
             openAIGroup = new System.Windows.Forms.GroupBox();
+            AiTypeCombo = new System.Windows.Forms.ComboBox();
             modelTxt = new System.Windows.Forms.TextBox();
             label1 = new System.Windows.Forms.Label();
             openAISaveBtn = new System.Windows.Forms.Button();
@@ -331,6 +332,7 @@ namespace CIARE
             // 
             // openAIGroup
             // 
+            openAIGroup.Controls.Add(AiTypeCombo);
             openAIGroup.Controls.Add(modelTxt);
             openAIGroup.Controls.Add(label1);
             openAIGroup.Controls.Add(openAISaveBtn);
@@ -345,9 +347,22 @@ namespace CIARE
             openAIGroup.TabStop = false;
             openAIGroup.Text = "OpenAI";
             // 
+            // AiTypeCombo
+            // 
+            AiTypeCombo.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
+            AiTypeCombo.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
+            AiTypeCombo.ForeColor = System.Drawing.SystemColors.WindowText;
+            AiTypeCombo.FormattingEnabled = true;
+            AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenRouter" });
+            AiTypeCombo.Location = new System.Drawing.Point(409, 64);
+            AiTypeCombo.Name = "AiTypeCombo";
+            AiTypeCombo.Size = new System.Drawing.Size(121, 22);
+            AiTypeCombo.TabIndex = 24;
+            AiTypeCombo.Text = "OpenAI";
+            // 
             // modelTxt
             // 
-            modelTxt.Location = new System.Drawing.Point(311, 64);
+            modelTxt.Location = new System.Drawing.Point(234, 64);
             modelTxt.Name = "modelTxt";
             modelTxt.Size = new System.Drawing.Size(166, 21);
             modelTxt.TabIndex = 23;
@@ -357,7 +372,7 @@ namespace CIARE
             // 
             label1.AutoSize = true;
             label1.CausesValidation = false;
-            label1.Location = new System.Drawing.Point(260, 66);
+            label1.Location = new System.Drawing.Point(183, 67);
             label1.Name = "label1";
             label1.Size = new System.Drawing.Size(45, 15);
             label1.TabIndex = 22;
@@ -478,5 +493,6 @@ namespace CIARE
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox unsafeCkb;
         private System.Windows.Forms.CheckBox publishCkb;
+        private System.Windows.Forms.ComboBox AiTypeCombo;
     }
 }
