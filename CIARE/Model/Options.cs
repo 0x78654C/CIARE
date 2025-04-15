@@ -229,5 +229,10 @@ namespace CIARE
         {
             Publish.SetPublishStatus(publishCkb, GlobalVariables.publish);
         }
+
+        private void AiTypeCombo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            //TODO: make it save registry
+        }
     }
 }

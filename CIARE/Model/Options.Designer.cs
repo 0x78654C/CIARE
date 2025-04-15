@@ -350,15 +350,15 @@ namespace CIARE
             // AiTypeCombo
             // 
             AiTypeCombo.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
-            AiTypeCombo.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            AiTypeCombo.ForeColor = System.Drawing.SystemColors.WindowText;
+            AiTypeCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             AiTypeCombo.FormattingEnabled = true;
             AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenRouter" });
             AiTypeCombo.Location = new System.Drawing.Point(409, 64);
             AiTypeCombo.Name = "AiTypeCombo";
             AiTypeCombo.Size = new System.Drawing.Size(121, 22);
             AiTypeCombo.TabIndex = 24;
-            AiTypeCombo.Text = "OpenAI";
+            AiTypeCombo.Text = "OpenAi";
+            AiTypeCombo.SelectedIndexChanged += AiTypeCombo_SelectedIndexChanged;
             // 
             // modelTxt
             // 
