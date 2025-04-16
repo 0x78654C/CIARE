@@ -1,4 +1,5 @@
-﻿using System.Runtime.Versioning;
+﻿using System.Reflection.Metadata;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.Utils.Options
@@ -15,6 +16,7 @@ namespace CIARE.Utils.Options
             string regOpenAIKey = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.openAIKey);
             string regOpenAITokens = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.openAIMaxTokens);
             string regOpenAIModel = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.openModel);
+            string regAiType = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.aiType);
             if (regOpenAIKey.Length > 0)
                 GlobalVariables.aiKey = regOpenAIKey;
             if (regOpenAITokens.Length > 0)
@@ -26,6 +28,11 @@ namespace CIARE.Utils.Options
                 GlobalVariables.model = regOpenAIModel;
             else
                 GlobalVariables.model = "text-davinci-003";
+
+            if (regAiType.Length > 0)
+                GlobalVariables.aiType = regAiType;
+            else
+                GlobalVariables.aiType = "OpenAI";
         }
 
         /// <summary>
@@ -37,11 +44,17 @@ namespace CIARE.Utils.Options
         /// <param name="regKeyAPI"></param>
         /// <param name="regKeyTokens"></param>
         /// <param name="regModel"></param>
-        public static void SetOpenAIData(TextBox openAIApiKey, TextBox aiMaxTokens, TextBox openModel, string regKeyAPI, string regKeyTokens, string regModel)
+        public static void SetOpenAIData(TextBox openAIApiKey, TextBox aiMaxTokens, TextBox openModel, ComboBox aitype, string regKeyAPI, string regKeyTokens, string regModel,string regAiType)
         {
             var trimKey = openAIApiKey.Text.Trim();
             var trimTokens = aiMaxTokens.Text.Trim();
             var trimModel = openModel.Text.Trim();
+            var trimAyType = aitype.Text.Trim();
+            if (string.IsNullOrWhiteSpace(trimAyType))
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regAiType, "OpenAI");
+            else
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regAiType, trimAyType);
+
             if (!string.IsNullOrWhiteSpace(trimModel))
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regModel, trimModel);
             else
@@ -55,6 +68,7 @@ namespace CIARE.Utils.Options
             GlobalVariables.aiKey = trimKey;
             GlobalVariables.aiMaxTokens = trimTokens;
             GlobalVariables.model = trimModel;
+            GlobalVariables.aiType = trimAyType;
         }
     }
 }
