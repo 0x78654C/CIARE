@@ -47,6 +47,7 @@ namespace CIARE
             apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
+            AiTypeCombo.Text = GlobalVariables.aiType;
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
@@ -175,8 +176,8 @@ namespace CIARE
         /// <param name="e"></param>
         private void openAISaveBtn_Click(object sender, EventArgs e)
         {
-            OpenAISetting.SetOpenAIData(apiKeyAiTxtBox, maxTokensTxtBox, modelTxt, GlobalVariables.openAIKey, GlobalVariables.openAIMaxTokens, GlobalVariables.openModel);
-            MessageBox.Show("OpenAI settings are saved!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            OpenAISetting.SetOpenAIData(apiKeyAiTxtBox, maxTokensTxtBox, modelTxt, AiTypeCombo, GlobalVariables.openAIKey, GlobalVariables.openAIMaxTokens, GlobalVariables.openModel, GlobalVariables.aiType);
+            MessageBox.Show("AI settings are saved!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         /// <summary>
