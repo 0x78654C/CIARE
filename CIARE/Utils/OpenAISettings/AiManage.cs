@@ -41,21 +41,32 @@ namespace CIARE.Utils.OpenAISettings
 
                 if (string.IsNullOrEmpty(Qestion))
                     return "";
-                //OpenAiApiV1Client client = new OpenAiApiV1Client(HttpClient, ApiKey);
+                var aiType = GlobalVariables.aiType;
 
-                //var resu = await client.PostCompletion(new CompletionRequest
-                //{
-                //    Max_Tokens = Int32.Parse(GlobalVariables.aiMaxTokens),
-                //    Temperature = 0.8m,
-                //    Model = GlobalVariables.model,
-                //    Prompt = Qestion
-                //});
+                if (aiType == "OpenAI")
+                {
+                    OpenAiApiV1Client client = new OpenAiApiV1Client(HttpClient, ApiKey);
 
-                OpenRouterClient openRouterClient = new OpenRouterClient(ApiKey);
-                var response = await openRouterClient.SendPromptAsync(Qestion);
-         
-
-                result = response;
+                    var resu = await client.PostCompletion(new CompletionRequest
+                    {
+                        Max_Tokens = Int32.Parse(GlobalVariables.aiMaxTokens),
+                        Temperature = 0.8m,
+                        Model = GlobalVariables.model,
+                        Prompt = Qestion
+                    });
+                    result = resu.Choices.FirstOrDefault()?.Text;
+                }
+                else if (aiType == "OpenRouter")
+                {
+                    OpenRouterClient openRouterClient = new OpenRouterClient(ApiKey);
+                    var response = await openRouterClient.SendPromptAsync(Qestion);
+                    result = response;
+                }
+                else
+                {
+                    MessageBox.Show("Wrong AI type!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return "";
+                }
             }
             catch (Exception ex)
             {
