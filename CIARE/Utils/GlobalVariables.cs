@@ -110,6 +110,8 @@ namespace CIARE.Utils
         public static string aiMaxTokens = string.Empty;
         public static string aiKey = string.Empty;
         public static string model = string.Empty;
+        public static string aiType = "OpenAI";
+
         // --Reference----
         public static List<string> customRefAsm { get; set; } = new List<string>(); // Used to store custom asspably path file.
         public static List<string> customRefList { get; set; } = new List<string>();
