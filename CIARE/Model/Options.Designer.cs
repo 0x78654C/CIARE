@@ -62,6 +62,7 @@ namespace CIARE
             maxTokensLbl = new System.Windows.Forms.Label();
             apiKeyAiTxtBox = new System.Windows.Forms.TextBox();
             apiKeyAIlbl = new System.Windows.Forms.Label();
+            aiTypeLbl = new System.Windows.Forms.Label();
             displayGroup.SuspendLayout();
             buildGroup.SuspendLayout();
             liveShareGb.SuspendLayout();
@@ -127,7 +128,7 @@ namespace CIARE
             closeBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             closeBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             closeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
-            closeBtn.Location = new System.Drawing.Point(603, 485);
+            closeBtn.Location = new System.Drawing.Point(603, 518);
             closeBtn.Name = "closeBtn";
             closeBtn.Size = new System.Drawing.Size(75, 23);
             closeBtn.TabIndex = 14;
@@ -332,6 +333,7 @@ namespace CIARE
             // 
             // openAIGroup
             // 
+            openAIGroup.Controls.Add(aiTypeLbl);
             openAIGroup.Controls.Add(AiTypeCombo);
             openAIGroup.Controls.Add(modelTxt);
             openAIGroup.Controls.Add(label1);
@@ -342,27 +344,26 @@ namespace CIARE
             openAIGroup.Controls.Add(apiKeyAIlbl);
             openAIGroup.Location = new System.Drawing.Point(12, 359);
             openAIGroup.Name = "openAIGroup";
-            openAIGroup.Size = new System.Drawing.Size(666, 110);
+            openAIGroup.Size = new System.Drawing.Size(666, 146);
             openAIGroup.TabIndex = 18;
             openAIGroup.TabStop = false;
             openAIGroup.Text = "OpenAI";
             // 
             // AiTypeCombo
             // 
-            AiTypeCombo.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             AiTypeCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             AiTypeCombo.FormattingEnabled = true;
             AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenRouter" });
-            AiTypeCombo.Location = new System.Drawing.Point(409, 64);
+            AiTypeCombo.Location = new System.Drawing.Point(73, 98);
             AiTypeCombo.Name = "AiTypeCombo";
-            AiTypeCombo.Size = new System.Drawing.Size(121, 22);
+            AiTypeCombo.Size = new System.Drawing.Size(121, 23);
             AiTypeCombo.TabIndex = 24;
-            AiTypeCombo.Text = "OpenAi";
+            AiTypeCombo.Text = "OpenAI";
             AiTypeCombo.SelectedIndexChanged += AiTypeCombo_SelectedIndexChanged;
             // 
             // modelTxt
             // 
-            modelTxt.Location = new System.Drawing.Point(234, 64);
+            modelTxt.Location = new System.Drawing.Point(304, 66);
             modelTxt.Name = "modelTxt";
             modelTxt.Size = new System.Drawing.Size(166, 21);
             modelTxt.TabIndex = 23;
@@ -372,7 +373,7 @@ namespace CIARE
             // 
             label1.AutoSize = true;
             label1.CausesValidation = false;
-            label1.Location = new System.Drawing.Point(183, 67);
+            label1.Location = new System.Drawing.Point(253, 69);
             label1.Name = "label1";
             label1.Size = new System.Drawing.Size(45, 15);
             label1.TabIndex = 22;
@@ -383,7 +384,7 @@ namespace CIARE
             openAISaveBtn.Enabled = false;
             openAISaveBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             openAISaveBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
-            openAISaveBtn.Location = new System.Drawing.Point(573, 75);
+            openAISaveBtn.Location = new System.Drawing.Point(573, 113);
             openAISaveBtn.Name = "openAISaveBtn";
             openAISaveBtn.Size = new System.Drawing.Size(75, 23);
             openAISaveBtn.TabIndex = 19;
@@ -429,13 +430,23 @@ namespace CIARE
             apiKeyAIlbl.TabIndex = 0;
             apiKeyAIlbl.Text = "API Key: ";
             // 
+            // aiTypeLbl
+            // 
+            aiTypeLbl.AutoSize = true;
+            aiTypeLbl.CausesValidation = false;
+            aiTypeLbl.Location = new System.Drawing.Point(18, 101);
+            aiTypeLbl.Name = "aiTypeLbl";
+            aiTypeLbl.Size = new System.Drawing.Size(49, 15);
+            aiTypeLbl.TabIndex = 25;
+            aiTypeLbl.Text = "AI Type:";
+            // 
             // Options
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             BackColor = System.Drawing.SystemColors.Window;
             CancelButton = closeBtn;
-            ClientSize = new System.Drawing.Size(690, 525);
+            ClientSize = new System.Drawing.Size(690, 554);
             Controls.Add(openAIGroup);
             Controls.Add(liveShareGb);
             Controls.Add(buildGroup);
@@ -494,5 +505,6 @@ namespace CIARE
         private System.Windows.Forms.CheckBox unsafeCkb;
         private System.Windows.Forms.CheckBox publishCkb;
         private System.Windows.Forms.ComboBox AiTypeCombo;
+        private System.Windows.Forms.Label aiTypeLbl;
     }
 }
