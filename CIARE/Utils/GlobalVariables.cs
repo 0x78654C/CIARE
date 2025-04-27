@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.AI;
+using System.Diagnostics;
 
 namespace CIARE.Utils
 {
