@@ -54,6 +54,7 @@ namespace CIARE
             apiUrlTxt = new System.Windows.Forms.TextBox();
             apiUrlLbl = new System.Windows.Forms.Label();
             openAIGroup = new System.Windows.Forms.GroupBox();
+            modelLocalLbl = new System.Windows.Forms.Label();
             aiTypeLbl = new System.Windows.Forms.Label();
             AiTypeCombo = new System.Windows.Forms.ComboBox();
             modelTxt = new System.Windows.Forms.TextBox();
@@ -63,8 +64,7 @@ namespace CIARE
             maxTokensLbl = new System.Windows.Forms.Label();
             apiKeyAiTxtBox = new System.Windows.Forms.TextBox();
             apiKeyAIlbl = new System.Windows.Forms.Label();
-            modelLocalCombo = new System.Windows.Forms.TextBox();
-            modelLocalLbl = new System.Windows.Forms.Label();
+            modelLocalCombo = new System.Windows.Forms.ComboBox();
             displayGroup.SuspendLayout();
             buildGroup.SuspendLayout();
             liveShareGb.SuspendLayout();
@@ -353,6 +353,16 @@ namespace CIARE
             openAIGroup.TabStop = false;
             openAIGroup.Text = "OpenAI";
             // 
+            // modelLocalLbl
+            // 
+            modelLocalLbl.AutoSize = true;
+            modelLocalLbl.CausesValidation = false;
+            modelLocalLbl.Location = new System.Drawing.Point(253, 98);
+            modelLocalLbl.Name = "modelLocalLbl";
+            modelLocalLbl.Size = new System.Drawing.Size(74, 15);
+            modelLocalLbl.TabIndex = 26;
+            modelLocalLbl.Text = "Model local:";
+            // 
             // aiTypeLbl
             // 
             aiTypeLbl.AutoSize = true;
@@ -446,21 +456,12 @@ namespace CIARE
             // 
             // modelLocalCombo
             // 
-            modelLocalCombo.Location = new System.Drawing.Point(333, 95);
+            modelLocalCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            modelLocalCombo.FormattingEnabled = true;
+            modelLocalCombo.Location = new System.Drawing.Point(327, 95);
             modelLocalCombo.Name = "modelLocalCombo";
-            modelLocalCombo.Size = new System.Drawing.Size(137, 21);
+            modelLocalCombo.Size = new System.Drawing.Size(143, 23);
             modelLocalCombo.TabIndex = 27;
-            modelLocalCombo.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            // 
-            // modelLocalLbl
-            // 
-            modelLocalLbl.AutoSize = true;
-            modelLocalLbl.CausesValidation = false;
-            modelLocalLbl.Location = new System.Drawing.Point(253, 98);
-            modelLocalLbl.Name = "modelLocalLbl";
-            modelLocalLbl.Size = new System.Drawing.Size(74, 15);
-            modelLocalLbl.TabIndex = 26;
-            modelLocalLbl.Text = "Model local:";
             // 
             // Options
             // 
@@ -528,7 +529,7 @@ namespace CIARE
         private System.Windows.Forms.CheckBox publishCkb;
         private System.Windows.Forms.ComboBox AiTypeCombo;
         private System.Windows.Forms.Label aiTypeLbl;
-        private System.Windows.Forms.TextBox modelLocalCombo;
         private System.Windows.Forms.Label modelLocalLbl;
+        private System.Windows.Forms.ComboBox modelLocalCombo;
     }
 }
