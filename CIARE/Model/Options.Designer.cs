@@ -361,6 +361,7 @@ namespace CIARE
             modelLocalCombo.Name = "modelLocalCombo";
             modelLocalCombo.Size = new System.Drawing.Size(143, 23);
             modelLocalCombo.TabIndex = 27;
+            modelLocalCombo.Visible = false;
             // 
             // modelLocalLbl
             // 
@@ -371,6 +372,7 @@ namespace CIARE
             modelLocalLbl.Size = new System.Drawing.Size(74, 15);
             modelLocalLbl.TabIndex = 26;
             modelLocalLbl.Text = "Model local:";
+            modelLocalLbl.Visible = false;
             // 
             // aiTypeLbl
             // 
@@ -386,7 +388,7 @@ namespace CIARE
             // 
             AiTypeCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             AiTypeCombo.FormattingEnabled = true;
-            AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenRouter", "Ollama(local)" });
+            AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenRouter" });
             AiTypeCombo.Location = new System.Drawing.Point(73, 98);
             AiTypeCombo.Name = "AiTypeCombo";
             AiTypeCombo.Size = new System.Drawing.Size(121, 23);

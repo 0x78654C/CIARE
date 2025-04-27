@@ -8,6 +8,7 @@ using CIARE.Utils.FilesOpenOS;
 using CIARE.Utils.OpenAISettings;
 using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
+using OllamaInt;
 
 namespace CIARE
 {
@@ -55,6 +56,7 @@ namespace CIARE
             _tokenTxtLen = maxTokensTxtBox.Text.Length;
             FrmColorMod.SetButtonColorDisable(saveApiUrlBtn, apiUrlTxt, GlobalVariables.darkColor, GlobalVariables.isVStheme);
             FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
+            CheckOllama();
         }
 
         /// <summary>
@@ -232,15 +234,44 @@ namespace CIARE
             Publish.SetPublishStatus(publishCkb, GlobalVariables.publish);
         }
 
+        /// <summary>
+        /// AI selection logic.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void AiTypeCombo_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var isOllama = !AiTypeCombo.Text.StartsWith("Ollama");
-            apiKeyAiTxtBox.Enabled = isOllama;
-            maxTokensTxtBox.Enabled = isOllama;
-            modelTxt.Enabled = isOllama;
-            modelLocalCombo.Enabled = !isOllama;
-            if(isOllama)
-                AiManage.LoadOllamaModels(ref modelLocalCombo);
+            var isOllama = AiTypeCombo.Text.StartsWith("Ollama");
+            if (isOllama)
+            {
+                apiKeyAiTxtBox.Enabled = !isOllama;
+                maxTokensTxtBox.Enabled = !isOllama;
+                modelTxt.Enabled = !isOllama;
+                if (isOllama)
+                    AiManage.LoadOllamaModels(ref modelLocalCombo);
+                modelLocalCombo.Visible = true;
+                modelLocalLbl.Visible = true;
+            }
+            else
+            {
+                apiKeyAiTxtBox.Enabled = true;
+                maxTokensTxtBox.Enabled = true;
+                modelTxt.Enabled = true;
+                modelLocalCombo.Visible = false;
+                modelLocalLbl.Visible = false;
+            }
+        }
+
+        /// <summary>
+        /// Load ollama in AI combo if installed
+        /// </summary>
+        private void CheckOllama()
+        {
+            var client = new OllamaLLM();
+            var isOllama = client.IsOllamaInstalled();
+            if (!isOllama)
+                return;
+            AiTypeCombo.Items.Add("Ollama(Local)");
         }
     }
 }
