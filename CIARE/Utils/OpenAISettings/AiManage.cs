@@ -34,7 +34,7 @@ namespace CIARE.Utils.OpenAISettings
         /// <returns></returns>
         private async Task<string> AskOpenAI()
         {
-            var result =string.Empty;
+            var result = string.Empty;
             try
             {
                 if (string.IsNullOrEmpty(ApiKey))
@@ -85,12 +85,6 @@ namespace CIARE.Utils.OpenAISettings
             try
             {
                 var client = new OllamaLLM();
-                var isOllama = client.IsOllamaInstalled();
-                if (!isOllama)
-                {
-                    MessageBox.Show("Ollama is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
                 var models = client.LocalModels();
                 comboBox.Items.Clear();
                 foreach (var model in models)
@@ -148,7 +142,7 @@ namespace CIARE.Utils.OpenAISettings
                 outPut += $"{Environment.NewLine}{line}";
             }
             outPut = $"//---------------- {{Result}} ----------------\n{outPut}\n//----------------------------------------";
-            textEditorControl.Text = InsertData(textEditorControl.Text, "]*/",outPut).Replace($"/*[{question}]*/","");
+            textEditorControl.Text = InsertData(textEditorControl.Text, "]*/", outPut).Replace($"/*[{question}]*/", "");
             GoToLineNumber.GoToLine(textEditorControl, s_line);
         }
 
@@ -165,8 +159,8 @@ namespace CIARE.Utils.OpenAISettings
             List<string> dataList = new List<string>();
             StringReader reader = new StringReader(data);
             string line = string.Empty;
-            int result = 0 ,count = 0;
-            
+            int result = 0, count = 0;
+
             while ((line = reader.ReadLine()) != null)
             {
                 count++;
@@ -176,7 +170,7 @@ namespace CIARE.Utils.OpenAISettings
             }
             dataList.Insert(result, insertedData);
             outData = string.Join("\n", dataList);
-            s_line = result + insertedData.Split('\n').Count()+10;
+            s_line = result + insertedData.Split('\n').Count() + 10;
             return outData;
         }
     }
