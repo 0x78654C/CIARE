@@ -42,7 +42,7 @@ namespace CIARE.Utils.OpenAISettings
 
                 if (string.IsNullOrEmpty(Qestion))
                     return "";
-                var aiType = GlobalVariables.aiType;
+                var aiType = GlobalVariables.aiTypeVar;
 
                 if (aiType == "OpenAI")
                 {
@@ -61,6 +61,15 @@ namespace CIARE.Utils.OpenAISettings
                 {
                     OpenRouterClient openRouterClient = new OpenRouterClient(ApiKey);
                     var response = await openRouterClient.SendPromptAsync(Qestion);
+                    result = response;
+                }else if (aiType.StartsWith("Ollama"))
+                {
+                    OllamaLLM ollamaClient = new OllamaLLM();
+                    ollamaClient.Model = GlobalVariables.modelOllamaVar;
+                    ollamaClient.Promt = Qestion;
+                    ollamaClient.Uri = GlobalVariables.ollamaUri;
+                    ollamaClient.ChatHistory = GlobalVariables.chatHistory;
+                    var response = Task.Run(ollamaClient.AskOllama).Result;
                     result = response;
                 }
                 else
