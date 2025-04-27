@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata;
-using System.Runtime.Versioning;
+﻿using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.Utils.Options
