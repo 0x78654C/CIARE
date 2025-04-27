@@ -6,12 +6,35 @@ namespace OllamaInt
     {
         public string Model { get; set; }
         public string Uri { get; set; }
+        public string Promt { get; set; } = string.Empty;
+
+        public List<ChatMessage> ChatHistory { get; set; }
 
         /// <summary>
         /// Constructor for Ollama.
         /// </summary>
         public OllamaLLM()
         {
+        }
+
+        /// <summary>
+        /// ASk ollma
+        /// </summary>
+        /// <returns></returns>
+        public async Task<string> AskOllama()
+        {
+            IChatClient chatClient = new OllamaChatClient(new Uri(Uri), Model);
+            // Get user prompt and add to chat history  
+            ChatHistory.Add(new ChatMessage(ChatRole.User, Promt));
+
+            // Stream the AI response and add to chat history  
+            var response = "";
+            await foreach (var item in chatClient.GetStreamingResponseAsync(ChatHistory))
+            {
+                response += item.Text;
+            }
+            ChatHistory.Add(new ChatMessage(ChatRole.Assistant, response));
+            return response;
         }
 
 
