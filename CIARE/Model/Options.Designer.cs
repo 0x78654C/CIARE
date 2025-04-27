@@ -54,6 +54,7 @@ namespace CIARE
             apiUrlTxt = new System.Windows.Forms.TextBox();
             apiUrlLbl = new System.Windows.Forms.Label();
             openAIGroup = new System.Windows.Forms.GroupBox();
+            modelLocalCombo = new System.Windows.Forms.ComboBox();
             modelLocalLbl = new System.Windows.Forms.Label();
             aiTypeLbl = new System.Windows.Forms.Label();
             AiTypeCombo = new System.Windows.Forms.ComboBox();
@@ -64,7 +65,6 @@ namespace CIARE
             maxTokensLbl = new System.Windows.Forms.Label();
             apiKeyAiTxtBox = new System.Windows.Forms.TextBox();
             apiKeyAIlbl = new System.Windows.Forms.Label();
-            modelLocalCombo = new System.Windows.Forms.ComboBox();
             displayGroup.SuspendLayout();
             buildGroup.SuspendLayout();
             liveShareGb.SuspendLayout();
@@ -353,11 +353,20 @@ namespace CIARE
             openAIGroup.TabStop = false;
             openAIGroup.Text = "OpenAI";
             // 
+            // modelLocalCombo
+            // 
+            modelLocalCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            modelLocalCombo.FormattingEnabled = true;
+            modelLocalCombo.Location = new System.Drawing.Point(327, 98);
+            modelLocalCombo.Name = "modelLocalCombo";
+            modelLocalCombo.Size = new System.Drawing.Size(143, 23);
+            modelLocalCombo.TabIndex = 27;
+            // 
             // modelLocalLbl
             // 
             modelLocalLbl.AutoSize = true;
             modelLocalLbl.CausesValidation = false;
-            modelLocalLbl.Location = new System.Drawing.Point(253, 98);
+            modelLocalLbl.Location = new System.Drawing.Point(253, 101);
             modelLocalLbl.Name = "modelLocalLbl";
             modelLocalLbl.Size = new System.Drawing.Size(74, 15);
             modelLocalLbl.TabIndex = 26;
@@ -453,15 +462,6 @@ namespace CIARE
             apiKeyAIlbl.Size = new System.Drawing.Size(54, 15);
             apiKeyAIlbl.TabIndex = 0;
             apiKeyAIlbl.Text = "API Key: ";
-            // 
-            // modelLocalCombo
-            // 
-            modelLocalCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            modelLocalCombo.FormattingEnabled = true;
-            modelLocalCombo.Location = new System.Drawing.Point(327, 95);
-            modelLocalCombo.Name = "modelLocalCombo";
-            modelLocalCombo.Size = new System.Drawing.Size(143, 23);
-            modelLocalCombo.TabIndex = 27;
             // 
             // Options
             // 
