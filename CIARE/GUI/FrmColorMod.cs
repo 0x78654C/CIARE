@@ -62,7 +62,7 @@ namespace CIARE.GUI
         }
 
         /// <summary>
-        /// Set color for buttons on dark theme.
+        /// Set color for buttons on dark theme by text box.
         /// </summary>
         /// <param name="button"></param>
         /// <param name="textBox"></param>
@@ -72,6 +72,25 @@ namespace CIARE.GUI
             if (isDark)
             {
                 if (string.IsNullOrEmpty(textBox.Text) && isDark)
+                    button.BackColor = (isVsTheme) ? ButtonDarkVSColor : Color.Gray;
+                else
+
+                    button.BackColor = (isVsTheme) ? ButtonDarkVSColor : ButtonDarkColor;
+            }
+        }
+
+        /// <summary>
+        ///  Set color for buttons on dark theme by combobox.
+        /// </summary>
+        /// <param name="button"></param>
+        /// <param name="comboBox"></param>
+        /// <param name="isDark"></param>
+        /// <param name="isVsTheme"></param>
+        public static void SetButtonColorDisableCombo(Button button, ComboBox comboBox, bool isDark, bool isVsTheme)
+        {
+            if (isDark)
+            {
+                if (string.IsNullOrEmpty(comboBox.Text) && isDark)
                     button.BackColor = (isVsTheme) ? ButtonDarkVSColor : Color.Gray;
                 else
 
