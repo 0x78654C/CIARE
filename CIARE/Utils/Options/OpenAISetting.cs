@@ -1,4 +1,5 @@
-﻿using System.Runtime.Versioning;
+﻿using OllamaInt;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace CIARE.Utils.Options
@@ -34,7 +35,9 @@ namespace CIARE.Utils.Options
             else
                 GlobalVariables.aiTypeVar = "OpenAI";
 
-            if (regAiType.StartsWith("Ollama"))
+            var client = new OllamaLLM();
+            var isOllama = client.IsOllamaInstalled();
+            if (regAiType.StartsWith("Ollama") && isOllama)
             {
                 GlobalVariables.modelOllamaVar = regOllamaAIModel;
                 GlobalVariables.aiTypeVar = regAiType;
