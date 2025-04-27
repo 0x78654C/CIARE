@@ -53,7 +53,11 @@ namespace CIARE
                 apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
                 maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
                 modelLocalCombo.Text = GlobalVariables.modelOllamaVar;
+                openAISaveBtn.Enabled = true;
+                FrmColorMod.SetButtonColorDisableCombo(openAISaveBtn, modelLocalCombo, GlobalVariables.darkColor, GlobalVariables.isVStheme);
             }
+            else
+                FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
             AiTypeCombo.Text = GlobalVariables.aiTypeVar;
             apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
@@ -63,7 +67,6 @@ namespace CIARE
             BuildConfig.SetPlatformControl(platformBox);
             _tokenTxtLen = maxTokensTxtBox.Text.Length;
             FrmColorMod.SetButtonColorDisable(saveApiUrlBtn, apiUrlTxt, GlobalVariables.darkColor, GlobalVariables.isVStheme);
-            FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
         }
 
         /// <summary>
@@ -258,6 +261,8 @@ namespace CIARE
                     AiManage.LoadOllamaModels(ref modelLocalCombo);
                 modelLocalCombo.Visible = true;
                 modelLocalLbl.Visible = true;
+                openAISaveBtn.Enabled = true;
+                FrmColorMod.SetButtonColorDisableCombo(openAISaveBtn, modelLocalCombo, GlobalVariables.darkColor, GlobalVariables.isVStheme);
             }
             else
             {
@@ -266,6 +271,11 @@ namespace CIARE
                 modelTxt.Enabled = true;
                 modelLocalCombo.Visible = false;
                 modelLocalLbl.Visible = false;
+                if (string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
+                    openAISaveBtn.Enabled = false;
+                else
+                    openAISaveBtn.Enabled = true;
+                FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
             }
         }
 
