@@ -92,7 +92,7 @@ namespace CIARE.Utils.Options
             GlobalVariables.aiKey = trimKey;
             GlobalVariables.aiMaxTokens = trimTokens;
             GlobalVariables.model = trimModel;
-            GlobalVariables.aiType = trimAyType;
+            GlobalVariables.aiTypeVar = trimAyType;
         }
     }
 }
