@@ -54,6 +54,7 @@ namespace CIARE
             apiUrlTxt = new System.Windows.Forms.TextBox();
             apiUrlLbl = new System.Windows.Forms.Label();
             openAIGroup = new System.Windows.Forms.GroupBox();
+            aiTypeLbl = new System.Windows.Forms.Label();
             AiTypeCombo = new System.Windows.Forms.ComboBox();
             modelTxt = new System.Windows.Forms.TextBox();
             label1 = new System.Windows.Forms.Label();
@@ -62,7 +63,8 @@ namespace CIARE
             maxTokensLbl = new System.Windows.Forms.Label();
             apiKeyAiTxtBox = new System.Windows.Forms.TextBox();
             apiKeyAIlbl = new System.Windows.Forms.Label();
-            aiTypeLbl = new System.Windows.Forms.Label();
+            modelLocalCombo = new System.Windows.Forms.TextBox();
+            modelLocalLbl = new System.Windows.Forms.Label();
             displayGroup.SuspendLayout();
             buildGroup.SuspendLayout();
             liveShareGb.SuspendLayout();
@@ -333,6 +335,8 @@ namespace CIARE
             // 
             // openAIGroup
             // 
+            openAIGroup.Controls.Add(modelLocalCombo);
+            openAIGroup.Controls.Add(modelLocalLbl);
             openAIGroup.Controls.Add(aiTypeLbl);
             openAIGroup.Controls.Add(AiTypeCombo);
             openAIGroup.Controls.Add(modelTxt);
@@ -349,11 +353,21 @@ namespace CIARE
             openAIGroup.TabStop = false;
             openAIGroup.Text = "OpenAI";
             // 
+            // aiTypeLbl
+            // 
+            aiTypeLbl.AutoSize = true;
+            aiTypeLbl.CausesValidation = false;
+            aiTypeLbl.Location = new System.Drawing.Point(18, 101);
+            aiTypeLbl.Name = "aiTypeLbl";
+            aiTypeLbl.Size = new System.Drawing.Size(49, 15);
+            aiTypeLbl.TabIndex = 25;
+            aiTypeLbl.Text = "AI Type:";
+            // 
             // AiTypeCombo
             // 
             AiTypeCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             AiTypeCombo.FormattingEnabled = true;
-            AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenRouter" });
+            AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenRouter", "Ollama(local)" });
             AiTypeCombo.Location = new System.Drawing.Point(73, 98);
             AiTypeCombo.Name = "AiTypeCombo";
             AiTypeCombo.Size = new System.Drawing.Size(121, 23);
@@ -430,15 +444,23 @@ namespace CIARE
             apiKeyAIlbl.TabIndex = 0;
             apiKeyAIlbl.Text = "API Key: ";
             // 
-            // aiTypeLbl
+            // modelLocalCombo
             // 
-            aiTypeLbl.AutoSize = true;
-            aiTypeLbl.CausesValidation = false;
-            aiTypeLbl.Location = new System.Drawing.Point(18, 101);
-            aiTypeLbl.Name = "aiTypeLbl";
-            aiTypeLbl.Size = new System.Drawing.Size(49, 15);
-            aiTypeLbl.TabIndex = 25;
-            aiTypeLbl.Text = "AI Type:";
+            modelLocalCombo.Location = new System.Drawing.Point(333, 95);
+            modelLocalCombo.Name = "modelLocalCombo";
+            modelLocalCombo.Size = new System.Drawing.Size(137, 21);
+            modelLocalCombo.TabIndex = 27;
+            modelLocalCombo.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // modelLocalLbl
+            // 
+            modelLocalLbl.AutoSize = true;
+            modelLocalLbl.CausesValidation = false;
+            modelLocalLbl.Location = new System.Drawing.Point(253, 98);
+            modelLocalLbl.Name = "modelLocalLbl";
+            modelLocalLbl.Size = new System.Drawing.Size(74, 15);
+            modelLocalLbl.TabIndex = 26;
+            modelLocalLbl.Text = "Model local:";
             // 
             // Options
             // 
@@ -506,5 +528,7 @@ namespace CIARE
         private System.Windows.Forms.CheckBox publishCkb;
         private System.Windows.Forms.ComboBox AiTypeCombo;
         private System.Windows.Forms.Label aiTypeLbl;
+        private System.Windows.Forms.TextBox modelLocalCombo;
+        private System.Windows.Forms.Label modelLocalLbl;
     }
 }

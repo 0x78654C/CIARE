@@ -234,6 +234,11 @@ namespace CIARE
         private void AiTypeCombo_SelectedIndexChanged(object sender, EventArgs e)
         {
             //TODO: make it save registry
+            var isOllama = !AiTypeCombo.Text.StartsWith("Ollama");
+            apiKeyAiTxtBox.Enabled = isOllama;
+            maxTokensTxtBox.Enabled = isOllama;
+            modelTxt.Enabled = isOllama;
+            modelLocalCombo.Enabled = !isOllama;
         }
     }
 }
