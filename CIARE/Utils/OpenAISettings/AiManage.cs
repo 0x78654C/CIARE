@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using OpenAI.Api.Client.Models;
 using System.Runtime.Versioning;
 using OpenRouter;
+using OllamaInt;
 
 namespace CIARE.Utils.OpenAISettings
 {
@@ -74,6 +75,34 @@ namespace CIARE.Utils.OpenAISettings
             }
             return result;
         }
+
+        /// <summary>
+        /// Load models from local Ollama.
+        /// </summary>
+        /// <param name="comboBox"></param>
+        public static void LoadOllamaModels(ref ComboBox comboBox)
+        {
+            try
+            {
+                var client = new OllamaLLM();
+                var isOllama = client.IsOllamaInstalled();
+                if (!isOllama)
+                {
+                    MessageBox.Show("Ollama is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                var models = client.LocalModels();
+                comboBox.Items.Clear();
+                foreach (var model in models)
+                    comboBox.Items.Add(model);
+                comboBox.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
 
         /// <summary>
         /// Get data from OpenAI
