@@ -7,6 +7,9 @@ namespace OllamaInt
         public string Model { get; set; }
         public string Uri { get; set; }
 
+        /// <summary>
+        /// Constructor for Ollama.
+        /// </summary>
         public OllamaLLM()
         {
         }
@@ -18,7 +21,8 @@ namespace OllamaInt
         /// <returns></returns>
         public bool IsOllamaInstalled()
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo("ollama");
+            ProcessStartInfo startInfo = new ProcessStartInfo("cmd");
+            startInfo.Arguments = "/c ollama -h";
             startInfo.UseShellExecute = false;
             startInfo.CreateNoWindow = true;
             startInfo.RedirectStandardOutput = true;
@@ -38,16 +42,15 @@ namespace OllamaInt
         public List<string> LocalModels()
         {
             List<string> modelList = new List<string>();
-            ProcessStartInfo startInfo = new ProcessStartInfo("");
+            ProcessStartInfo startInfo = new ProcessStartInfo("cmd");
             startInfo.UseShellExecute = false;
-            startInfo.Arguments = "list";
+            startInfo.Arguments = "/c ollama list";
             startInfo.CreateNoWindow = true;
             startInfo.RedirectStandardOutput = true;
             startInfo.WindowStyle = ProcessWindowStyle.Hidden;
             Process process = new Process();
             process.StartInfo = startInfo;
             process.Start();
-            process.BeginOutputReadLine();
             process.WaitForExit();
             var outData = process.StandardOutput.ReadToEnd();
             using (var reader = new StringReader(outData))
