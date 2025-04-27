@@ -106,11 +106,14 @@ namespace CIARE.Utils
         // --OpenAI--
         public static readonly string openAIKey = "openAIKey";
         public static readonly string openModel = "Model";
+        public static readonly string ollamModel = "OllamaModel";
         public static readonly string openAIMaxTokens = "openAIMaxTokens";
         public static string aiMaxTokens = string.Empty;
         public static string aiKey = string.Empty;
         public static string model = string.Empty;
+        public static string modelOllamaVar = string.Empty;
         public static string aiType = "OpenAI";
+        public static string aiTypeVar = "";
 
         // --Reference----
         public static List<string> customRefAsm { get; set; } = new List<string>(); // Used to store custom asspably path file.
