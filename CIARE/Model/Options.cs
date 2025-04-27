@@ -46,17 +46,24 @@ namespace CIARE
             unsafeCkb.Checked = GlobalVariables.OUnsafeCode;
             publishCkb.Checked = GlobalVariables.OPublishNative;
             apiUrlTxt.Text = GlobalVariables.apiUrl;
+            CheckOllama();
+            if (GlobalVariables.aiTypeVar.StartsWith("Ollama"))
+            {
+                AiTypeCombo.Text = GlobalVariables.aiTypeVar;
+                apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
+                maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
+                modelLocalCombo.Text = GlobalVariables.modelOllamaVar;
+            }
+            AiTypeCombo.Text = GlobalVariables.aiTypeVar;
             apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
-            AiTypeCombo.Text = GlobalVariables.aiType;
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
             _tokenTxtLen = maxTokensTxtBox.Text.Length;
             FrmColorMod.SetButtonColorDisable(saveApiUrlBtn, apiUrlTxt, GlobalVariables.darkColor, GlobalVariables.isVStheme);
             FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
-            CheckOllama();
         }
 
         /// <summary>
@@ -179,7 +186,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void openAISaveBtn_Click(object sender, EventArgs e)
         {
-            OpenAISetting.SetOpenAIData(apiKeyAiTxtBox, maxTokensTxtBox, modelTxt, AiTypeCombo, GlobalVariables.openAIKey, GlobalVariables.openAIMaxTokens, GlobalVariables.openModel, GlobalVariables.aiType);
+            OpenAISetting.SetOpenAIData(apiKeyAiTxtBox, maxTokensTxtBox, modelTxt, AiTypeCombo, modelLocalCombo, GlobalVariables.openAIKey, GlobalVariables.openAIMaxTokens, GlobalVariables.openModel, GlobalVariables.ollamModel, GlobalVariables.aiType);
             MessageBox.Show("AI settings are saved!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
