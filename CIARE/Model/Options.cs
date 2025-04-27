@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Utils;
 using CIARE.Utils.FilesOpenOS;
+using CIARE.Utils.OpenAISettings;
 using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 
@@ -233,12 +234,13 @@ namespace CIARE
 
         private void AiTypeCombo_SelectedIndexChanged(object sender, EventArgs e)
         {
-            //TODO: make it save registry
             var isOllama = !AiTypeCombo.Text.StartsWith("Ollama");
             apiKeyAiTxtBox.Enabled = isOllama;
             maxTokensTxtBox.Enabled = isOllama;
             modelTxt.Enabled = isOllama;
             modelLocalCombo.Enabled = !isOllama;
+            if(isOllama)
+                AiManage.LoadOllamaModels(ref modelLocalCombo);
         }
     }
 }
