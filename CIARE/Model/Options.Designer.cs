@@ -357,9 +357,9 @@ namespace CIARE
             // 
             modelLocalCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             modelLocalCombo.FormattingEnabled = true;
-            modelLocalCombo.Location = new System.Drawing.Point(327, 98);
+            modelLocalCombo.Location = new System.Drawing.Point(346, 98);
             modelLocalCombo.Name = "modelLocalCombo";
-            modelLocalCombo.Size = new System.Drawing.Size(143, 23);
+            modelLocalCombo.Size = new System.Drawing.Size(150, 23);
             modelLocalCombo.TabIndex = 27;
             modelLocalCombo.Visible = false;
             // 
@@ -369,9 +369,9 @@ namespace CIARE
             modelLocalLbl.CausesValidation = false;
             modelLocalLbl.Location = new System.Drawing.Point(253, 101);
             modelLocalLbl.Name = "modelLocalLbl";
-            modelLocalLbl.Size = new System.Drawing.Size(74, 15);
+            modelLocalLbl.Size = new System.Drawing.Size(87, 15);
             modelLocalLbl.TabIndex = 26;
-            modelLocalLbl.Text = "Model local:";
+            modelLocalLbl.Text = "Ollama LLM's:";
             modelLocalLbl.Visible = false;
             // 
             // aiTypeLbl
@@ -400,7 +400,7 @@ namespace CIARE
             // 
             modelTxt.Location = new System.Drawing.Point(304, 66);
             modelTxt.Name = "modelTxt";
-            modelTxt.Size = new System.Drawing.Size(166, 21);
+            modelTxt.Size = new System.Drawing.Size(192, 21);
             modelTxt.TabIndex = 23;
             modelTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
