@@ -11,6 +11,7 @@ using OpenAI.Api.Client.Models;
 using System.Runtime.Versioning;
 using OpenRouter;
 using OllamaInt;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace CIARE.Utils.OpenAISettings
 {
@@ -151,7 +152,8 @@ namespace CIARE.Utils.OpenAISettings
                 outPut += $"{Environment.NewLine}{line}";
             }
             outPut = $"//---------------- {{Result}} ----------------\n{outPut}\n//----------------------------------------";
-            textEditorControl.Text = InsertData(textEditorControl.Text, "]*/", outPut).Replace($"/*[{question}]*/", "");
+            var newAIData = InsertData(textEditorControl.Text, "]*/", outPut).Replace($"/*[{question}]*/", "");
+            textEditorControl.Document.Replace(0, textEditorControl.Text.Length, newAIData);
             GoToLineNumber.GoToLine(textEditorControl, s_line);
         }
 
