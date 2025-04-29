@@ -161,7 +161,7 @@ namespace CIARE
             ReloadRef();
 
             // Get last opened tab MD5.
-            if(!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
+            if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
                 GlobalVariables.openedFileMD5 = MD5Hash.GetMD5Hash(SelectedEditor.GetSelectedEditor().Text);
         }
 
@@ -268,7 +268,12 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void textEditorControl1_TextChanged(object sender, EventArgs e)
+        private void textEditorControl1_TextChanged(object sender, EventArgs e)  => TextDataChangedAction();
+
+        /// <summary>
+        /// Function for check if text is changed in editor.
+        /// </summary>
+        private void TextDataChangedAction()
         {
             var path = EditorTabControl.SelectedTab.ToolTipText;
             if (File.Exists(path))
