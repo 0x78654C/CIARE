@@ -471,7 +471,7 @@ namespace CIARE
                     cmdLineArgs.ShowDialog();
                     return true;
                 case Keys.P | Keys.Control | Keys.Shift:
-                    AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey);
+                    AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
                     return true;
                 case Keys.R | Keys.Control:
                     RefManager refManager = new RefManager();
@@ -710,7 +710,7 @@ namespace CIARE
 
         private void chatGPTCTRLShiftPToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey);
+            AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
         }
 
         private void referenceAddToolStripMenuItem_Click(object sender, EventArgs e)
