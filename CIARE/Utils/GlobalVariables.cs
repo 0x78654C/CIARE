@@ -6,6 +6,9 @@ using System.Reflection;
 using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 using System.Runtime.Versioning;
+using Microsoft.Extensions.AI;
+using System.Diagnostics;
+using System.Security;
 
 namespace CIARE.Utils
 {
@@ -103,13 +106,20 @@ namespace CIARE.Utils
         //output richtextbox zoomfactor varlue store;
         public static float zoomFactor = 1f;
         //-----------
-        // --OpenAI--
+        // --AI vars--
         public static readonly string openAIKey = "openAIKey";
         public static readonly string openModel = "Model";
+        public static readonly string ollamModel = "OllamaModel";
         public static readonly string openAIMaxTokens = "openAIMaxTokens";
         public static string aiMaxTokens = string.Empty;
-        public static string aiKey = string.Empty;
+        public static SecureString aiKey;
         public static string model = string.Empty;
+        public static string modelOllamaVar = string.Empty;
+        public static string aiType = "OpenAI";
+        public static string aiTypeVar = "";
+        public static string ollamaUri = "http://localhost:11434/";
+        public static List<ChatMessage> chatHistory = new();
+
         // --Reference----
         public static List<string> customRefAsm { get; set; } = new List<string>(); // Used to store custom asspably path file.
         public static List<string> customRefList { get; set; } = new List<string>();

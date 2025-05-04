@@ -5,8 +5,10 @@ using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Utils;
 using CIARE.Utils.FilesOpenOS;
+using CIARE.Utils.OpenAISettings;
 using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
+using OllamaInt;
 
 namespace CIARE
 {
@@ -44,7 +46,23 @@ namespace CIARE
             unsafeCkb.Checked = GlobalVariables.OUnsafeCode;
             publishCkb.Checked = GlobalVariables.OPublishNative;
             apiUrlTxt.Text = GlobalVariables.apiUrl;
-            apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
+            CheckOllama();
+            var isNullAPIKey = false;
+            if (GlobalVariables.aiTypeVar.StartsWith("Ollama"))
+            {
+                AiTypeCombo.Text = GlobalVariables.aiTypeVar;
+                isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
+                apiKeyAiTxtBox.Text = (isNullAPIKey)? "": "******************************************";
+                maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
+                modelLocalCombo.Text = GlobalVariables.modelOllamaVar;
+                openAISaveBtn.Enabled = true;
+                FrmColorMod.SetButtonColorDisableCombo(openAISaveBtn, modelLocalCombo, GlobalVariables.darkColor, GlobalVariables.isVStheme);
+            }
+            else
+                FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
+            AiTypeCombo.Text = GlobalVariables.aiTypeVar;
+            isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
+            apiKeyAiTxtBox.Text = (isNullAPIKey) ? "" : "******************************************";
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
@@ -52,7 +70,6 @@ namespace CIARE
             BuildConfig.SetPlatformControl(platformBox);
             _tokenTxtLen = maxTokensTxtBox.Text.Length;
             FrmColorMod.SetButtonColorDisable(saveApiUrlBtn, apiUrlTxt, GlobalVariables.darkColor, GlobalVariables.isVStheme);
-            FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
         }
 
         /// <summary>
@@ -175,8 +192,8 @@ namespace CIARE
         /// <param name="e"></param>
         private void openAISaveBtn_Click(object sender, EventArgs e)
         {
-            OpenAISetting.SetOpenAIData(apiKeyAiTxtBox, maxTokensTxtBox, modelTxt, GlobalVariables.openAIKey, GlobalVariables.openAIMaxTokens, GlobalVariables.openModel);
-            MessageBox.Show("OpenAI settings are saved!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            OpenAISetting.SetOpenAIData(apiKeyAiTxtBox, maxTokensTxtBox, modelTxt, AiTypeCombo, modelLocalCombo, GlobalVariables.openAIKey, GlobalVariables.openAIMaxTokens, GlobalVariables.openModel, GlobalVariables.ollamModel, GlobalVariables.aiType);
+            MessageBox.Show("AI settings are saved!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         /// <summary>
@@ -228,6 +245,53 @@ namespace CIARE
         private void publishCkb_CheckedChanged(object sender, EventArgs e)
         {
             Publish.SetPublishStatus(publishCkb, GlobalVariables.publish);
+        }
+
+        /// <summary>
+        /// AI selection logic.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void AiTypeCombo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            var isOllama = AiTypeCombo.Text.StartsWith("Ollama");
+            if (isOllama)
+            {
+                apiKeyAiTxtBox.Enabled = !isOllama;
+                maxTokensTxtBox.Enabled = !isOllama;
+                modelTxt.Enabled = !isOllama;
+                if (isOllama)
+                    AiManage.LoadOllamaModels(ref modelLocalCombo);
+                modelLocalCombo.Visible = true;
+                modelLocalLbl.Visible = true;
+                openAISaveBtn.Enabled = true;
+                FrmColorMod.SetButtonColorDisableCombo(openAISaveBtn, modelLocalCombo, GlobalVariables.darkColor, GlobalVariables.isVStheme);
+            }
+            else
+            {
+                apiKeyAiTxtBox.Enabled = true;
+                maxTokensTxtBox.Enabled = true;
+                modelTxt.Enabled = true;
+                modelLocalCombo.Visible = false;
+                modelLocalLbl.Visible = false;
+                if (string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
+                    openAISaveBtn.Enabled = false;
+                else
+                    openAISaveBtn.Enabled = true;
+                FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
+            }
+        }
+
+        /// <summary>
+        /// Load ollama in AI combo if installed
+        /// </summary>
+        private void CheckOllama()
+        {
+            var client = new OllamaLLM();
+            var isOllama = client.IsOllamaInstalled();
+            if (!isOllama)
+                return;
+            AiTypeCombo.Items.Add("Ollama(Local)");
         }
     }
 }

@@ -9,6 +9,9 @@ using System.Windows.Forms;
 using System.Collections.Generic;
 using OpenAI.Api.Client.Models;
 using System.Runtime.Versioning;
+using OpenRouter;
+using OllamaInt;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace CIARE.Utils.OpenAISettings
 {
@@ -32,7 +35,7 @@ namespace CIARE.Utils.OpenAISettings
         /// <returns></returns>
         private async Task<string> AskOpenAI()
         {
-            var result =string.Empty;
+            var result = string.Empty;
             try
             {
                 if (string.IsNullOrEmpty(ApiKey))
@@ -40,17 +43,41 @@ namespace CIARE.Utils.OpenAISettings
 
                 if (string.IsNullOrEmpty(Qestion))
                     return "";
-                OpenAiApiV1Client client = new OpenAiApiV1Client(HttpClient, ApiKey);
+                var aiType = GlobalVariables.aiTypeVar;
 
-                var resu = await client.PostCompletion(new CompletionRequest
+                if (aiType == "OpenAI")
                 {
-                    Max_Tokens = Int32.Parse(GlobalVariables.aiMaxTokens),
-                    Temperature = 0.8m,
-                    Model = GlobalVariables.model,
-                    Prompt = Qestion
-                });
+                    OpenAiApiV1Client client = new OpenAiApiV1Client(HttpClient, ApiKey);
 
-                result= resu.Choices.First().Text;
+                    var resu = await client.PostCompletion(new CompletionRequest
+                    {
+                        Max_Tokens = Int32.Parse(GlobalVariables.aiMaxTokens),
+                        Temperature = 0.8m,
+                        Model = GlobalVariables.model,
+                        Prompt = Qestion
+                    });
+                    result = resu.Choices.FirstOrDefault()?.Text;
+                }
+                else if (aiType == "OpenRouter")
+                {
+                    OpenRouterClient openRouterClient = new OpenRouterClient(ApiKey);
+                    var response = await openRouterClient.SendPromptAsync(Qestion);
+                    result = response;
+                }else if (aiType.StartsWith("Ollama"))
+                {
+                    OllamaLLM ollamaClient = new OllamaLLM();
+                    ollamaClient.Model = GlobalVariables.modelOllamaVar;
+                    ollamaClient.Promt = Qestion;
+                    ollamaClient.Uri = GlobalVariables.ollamaUri;
+                    ollamaClient.ChatHistory = GlobalVariables.chatHistory;
+                    var response = Task.Run(ollamaClient.AskOllama).Result;
+                    result = response;
+                }
+                else
+                {
+                    MessageBox.Show("Wrong AI type!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return "";
+                }
             }
             catch (Exception ex)
             {
@@ -58,6 +85,28 @@ namespace CIARE.Utils.OpenAISettings
             }
             return result;
         }
+
+        /// <summary>
+        /// Load models from local Ollama.
+        /// </summary>
+        /// <param name="comboBox"></param>
+        public static void LoadOllamaModels(ref ComboBox comboBox)
+        {
+            try
+            {
+                var client = new OllamaLLM();
+                var models = client.LocalModels();
+                comboBox.Items.Clear();
+                foreach (var model in models)
+                    comboBox.Items.Add(model);
+                comboBox.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
 
         /// <summary>
         /// Get data from OpenAI
@@ -102,8 +151,9 @@ namespace CIARE.Utils.OpenAISettings
             {
                 outPut += $"{Environment.NewLine}{line}";
             }
-            outPut = $"//----------{question}----------{outPut}\n//-----------------------------------";
-            textEditorControl.Text = InsertData(textEditorControl.Text, "]*/",outPut).Replace($"/*[{question}]*/","");
+            outPut = $"//---------------- {{Result}} ----------------\n{outPut}\n//----------------------------------------";
+            var newAIData = InsertData(textEditorControl.Text, "]*/", outPut).Replace($"/*[{question}]*/", "");
+            textEditorControl.Document.Replace(0, textEditorControl.Text.Length, newAIData);
             GoToLineNumber.GoToLine(textEditorControl, s_line);
         }
 
@@ -120,8 +170,8 @@ namespace CIARE.Utils.OpenAISettings
             List<string> dataList = new List<string>();
             StringReader reader = new StringReader(data);
             string line = string.Empty;
-            int result = 0 ,count = 0;
-            
+            int result = 0, count = 0;
+
             while ((line = reader.ReadLine()) != null)
             {
                 count++;
@@ -131,7 +181,7 @@ namespace CIARE.Utils.OpenAISettings
             }
             dataList.Insert(result, insertedData);
             outData = string.Join("\n", dataList);
-            s_line = result + insertedData.Split('\n').Count()+10;
+            s_line = result + insertedData.Split('\n').Count() + 10;
             return outData;
         }
     }

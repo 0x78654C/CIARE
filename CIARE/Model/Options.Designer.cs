@@ -54,6 +54,10 @@ namespace CIARE
             apiUrlTxt = new System.Windows.Forms.TextBox();
             apiUrlLbl = new System.Windows.Forms.Label();
             openAIGroup = new System.Windows.Forms.GroupBox();
+            modelLocalCombo = new System.Windows.Forms.ComboBox();
+            modelLocalLbl = new System.Windows.Forms.Label();
+            aiTypeLbl = new System.Windows.Forms.Label();
+            AiTypeCombo = new System.Windows.Forms.ComboBox();
             modelTxt = new System.Windows.Forms.TextBox();
             label1 = new System.Windows.Forms.Label();
             openAISaveBtn = new System.Windows.Forms.Button();
@@ -126,7 +130,7 @@ namespace CIARE
             closeBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             closeBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             closeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
-            closeBtn.Location = new System.Drawing.Point(603, 485);
+            closeBtn.Location = new System.Drawing.Point(603, 518);
             closeBtn.Name = "closeBtn";
             closeBtn.Size = new System.Drawing.Size(75, 23);
             closeBtn.TabIndex = 14;
@@ -331,6 +335,10 @@ namespace CIARE
             // 
             // openAIGroup
             // 
+            openAIGroup.Controls.Add(modelLocalCombo);
+            openAIGroup.Controls.Add(modelLocalLbl);
+            openAIGroup.Controls.Add(aiTypeLbl);
+            openAIGroup.Controls.Add(AiTypeCombo);
             openAIGroup.Controls.Add(modelTxt);
             openAIGroup.Controls.Add(label1);
             openAIGroup.Controls.Add(openAISaveBtn);
@@ -340,16 +348,59 @@ namespace CIARE
             openAIGroup.Controls.Add(apiKeyAIlbl);
             openAIGroup.Location = new System.Drawing.Point(12, 359);
             openAIGroup.Name = "openAIGroup";
-            openAIGroup.Size = new System.Drawing.Size(666, 110);
+            openAIGroup.Size = new System.Drawing.Size(666, 146);
             openAIGroup.TabIndex = 18;
             openAIGroup.TabStop = false;
             openAIGroup.Text = "OpenAI";
             // 
+            // modelLocalCombo
+            // 
+            modelLocalCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            modelLocalCombo.FormattingEnabled = true;
+            modelLocalCombo.Location = new System.Drawing.Point(346, 98);
+            modelLocalCombo.Name = "modelLocalCombo";
+            modelLocalCombo.Size = new System.Drawing.Size(150, 23);
+            modelLocalCombo.TabIndex = 27;
+            modelLocalCombo.Visible = false;
+            // 
+            // modelLocalLbl
+            // 
+            modelLocalLbl.AutoSize = true;
+            modelLocalLbl.CausesValidation = false;
+            modelLocalLbl.Location = new System.Drawing.Point(253, 101);
+            modelLocalLbl.Name = "modelLocalLbl";
+            modelLocalLbl.Size = new System.Drawing.Size(87, 15);
+            modelLocalLbl.TabIndex = 26;
+            modelLocalLbl.Text = "Ollama LLM's:";
+            modelLocalLbl.Visible = false;
+            // 
+            // aiTypeLbl
+            // 
+            aiTypeLbl.AutoSize = true;
+            aiTypeLbl.CausesValidation = false;
+            aiTypeLbl.Location = new System.Drawing.Point(18, 101);
+            aiTypeLbl.Name = "aiTypeLbl";
+            aiTypeLbl.Size = new System.Drawing.Size(49, 15);
+            aiTypeLbl.TabIndex = 25;
+            aiTypeLbl.Text = "AI Type:";
+            // 
+            // AiTypeCombo
+            // 
+            AiTypeCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            AiTypeCombo.FormattingEnabled = true;
+            AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenRouter" });
+            AiTypeCombo.Location = new System.Drawing.Point(73, 98);
+            AiTypeCombo.Name = "AiTypeCombo";
+            AiTypeCombo.Size = new System.Drawing.Size(121, 23);
+            AiTypeCombo.TabIndex = 24;
+            AiTypeCombo.Text = "OpenAI";
+            AiTypeCombo.SelectedIndexChanged += AiTypeCombo_SelectedIndexChanged;
+            // 
             // modelTxt
             // 
-            modelTxt.Location = new System.Drawing.Point(311, 64);
+            modelTxt.Location = new System.Drawing.Point(304, 66);
             modelTxt.Name = "modelTxt";
-            modelTxt.Size = new System.Drawing.Size(166, 21);
+            modelTxt.Size = new System.Drawing.Size(192, 21);
             modelTxt.TabIndex = 23;
             modelTxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
@@ -357,7 +408,7 @@ namespace CIARE
             // 
             label1.AutoSize = true;
             label1.CausesValidation = false;
-            label1.Location = new System.Drawing.Point(260, 66);
+            label1.Location = new System.Drawing.Point(253, 69);
             label1.Name = "label1";
             label1.Size = new System.Drawing.Size(45, 15);
             label1.TabIndex = 22;
@@ -368,7 +419,7 @@ namespace CIARE
             openAISaveBtn.Enabled = false;
             openAISaveBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             openAISaveBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
-            openAISaveBtn.Location = new System.Drawing.Point(573, 75);
+            openAISaveBtn.Location = new System.Drawing.Point(573, 113);
             openAISaveBtn.Name = "openAISaveBtn";
             openAISaveBtn.Size = new System.Drawing.Size(75, 23);
             openAISaveBtn.TabIndex = 19;
@@ -420,7 +471,7 @@ namespace CIARE
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             BackColor = System.Drawing.SystemColors.Window;
             CancelButton = closeBtn;
-            ClientSize = new System.Drawing.Size(690, 525);
+            ClientSize = new System.Drawing.Size(690, 554);
             Controls.Add(openAIGroup);
             Controls.Add(liveShareGb);
             Controls.Add(buildGroup);
@@ -478,5 +529,9 @@ namespace CIARE
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox unsafeCkb;
         private System.Windows.Forms.CheckBox publishCkb;
+        private System.Windows.Forms.ComboBox AiTypeCombo;
+        private System.Windows.Forms.Label aiTypeLbl;
+        private System.Windows.Forms.Label modelLocalLbl;
+        private System.Windows.Forms.ComboBox modelLocalCombo;
     }
 }

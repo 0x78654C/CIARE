@@ -22,14 +22,12 @@ namespace CIARE.Utils.Encryption
         {
             try
             {
-                RijndaelManaged aes = new RijndaelManaged
-                {
-                    KeySize = 256,
-                    BlockSize = 128,
-                    Padding = PaddingMode.PKCS7,
-                    Mode = CipherMode.CBC,
-                    Key = CreateKey(password)
-                };
+                using Aes aes = Aes.Create();
+                aes.KeySize = 256;
+                aes.BlockSize = 128;
+                aes.Padding = PaddingMode.PKCS7;
+                aes.Mode = CipherMode.CBC;
+                aes.Key = CreateKey(password);
                 aes.GenerateIV();
                 ICryptoTransform AESEncrypt = aes.CreateEncryptor(aes.Key, aes.IV);
                 byte[] buffer = encoding.GetBytes(plainText);
@@ -57,14 +55,12 @@ namespace CIARE.Utils.Encryption
         {
             try
             {
-                RijndaelManaged aes = new RijndaelManaged
-                {
-                    KeySize = 256,
-                    BlockSize = 128,
-                    Padding = PaddingMode.PKCS7,
-                    Mode = CipherMode.CBC,
-                    Key = CreateKey(password)
-                };
+                using Aes aes = Aes.Create();
+                aes.KeySize = 256;
+                aes.BlockSize = 128;
+                aes.Padding = PaddingMode.PKCS7;
+                aes.Mode = CipherMode.CBC;
+                aes.Key = CreateKey(password);
                 byte[] base64Decoded = Convert.FromBase64String(plainText);
                 string base64DecodedStr = encoding.GetString(base64Decoded);
                 var payload = JsonSerializer.Deserialize<Dictionary<string, string>>(base64DecodedStr);
