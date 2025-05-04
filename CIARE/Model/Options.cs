@@ -50,7 +50,7 @@ namespace CIARE
             if (GlobalVariables.aiTypeVar.StartsWith("Ollama"))
             {
                 AiTypeCombo.Text = GlobalVariables.aiTypeVar;
-                apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
+                apiKeyAiTxtBox.Text = "******************************************";
                 maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
                 modelLocalCombo.Text = GlobalVariables.modelOllamaVar;
                 openAISaveBtn.Enabled = true;
@@ -59,7 +59,7 @@ namespace CIARE
             else
                 FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
             AiTypeCombo.Text = GlobalVariables.aiTypeVar;
-            apiKeyAiTxtBox.Text = GlobalVariables.aiKey;
+            apiKeyAiTxtBox.Text = "******************************************";
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
