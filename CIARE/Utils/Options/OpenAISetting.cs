@@ -1,4 +1,5 @@
-﻿using OllamaInt;
+﻿using CIARE.Utils.Encryption;
+using OllamaInt;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -19,7 +20,22 @@ namespace CIARE.Utils.Options
             string regOllamaAIModel = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.ollamModel);
             string regAiType = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.aiType);
             if (regOpenAIKey.Length > 0)
-                GlobalVariables.aiKey = regOpenAIKey;
+            {
+                try
+                {
+                    var decryptKey = DPAPI.Decrypt(regOpenAIKey);
+                    GlobalVariables.aiKey = decryptKey.StringToSecureString();
+                }
+                catch
+                {
+                    var clientOllama = new OllamaLLM();
+                    var isOllamaInstalled = clientOllama.IsOllamaInstalled();
+                    if (!regAiType.StartsWith("Ollama"))
+                    {
+                        MessageBox.Show("Invalid AI key read. Please check your key!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
             if (regOpenAITokens.Length > 0)
                 GlobalVariables.aiMaxTokens = regOpenAITokens;
             else
@@ -64,12 +80,12 @@ namespace CIARE.Utils.Options
             {
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regAiType, "Ollama(Local)");
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regOllamModel, trimOllamaModel);
-                GlobalVariables.aiKey = trimKey;
                 GlobalVariables.aiMaxTokens = trimTokens;
                 GlobalVariables.modelOllamaVar = trimOllamaModel;
                 GlobalVariables.aiTypeVar = trimAyType;
                 return;
             }
+
             if (string.IsNullOrWhiteSpace(trimAyType))
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regAiType, "OpenAI");
             else
@@ -82,17 +98,19 @@ namespace CIARE.Utils.Options
             else
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regModel, "text-davinci-003");
 
-            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyAPI, trimKey);
+            var encrytedKey = DPAPI.Encrypt(trimKey);
+            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyAPI, encrytedKey);
             if (!string.IsNullOrWhiteSpace(trimTokens))
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyTokens, trimTokens);
             else
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyTokens, "999"); // default 999
 
 
-            GlobalVariables.aiKey = trimKey;
+            GlobalVariables.aiKey = trimKey.StringToSecureString();
             GlobalVariables.aiMaxTokens = trimTokens;
             GlobalVariables.model = trimModel;
             GlobalVariables.aiTypeVar = trimAyType;
+            openAIApiKey.Text = "******************************************";
         }
     }
 }
