@@ -8,6 +8,7 @@ using ICSharpCode.TextEditor;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.AI;
 using System.Diagnostics;
+using System.Security;
 
 namespace CIARE.Utils
 {
@@ -111,7 +112,7 @@ namespace CIARE.Utils
         public static readonly string ollamModel = "OllamaModel";
         public static readonly string openAIMaxTokens = "openAIMaxTokens";
         public static string aiMaxTokens = string.Empty;
-        public static string aiKey = string.Empty;
+        public static SecureString aiKey;
         public static string model = string.Empty;
         public static string modelOllamaVar = string.Empty;
         public static string aiType = "OpenAI";
