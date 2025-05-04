@@ -47,10 +47,12 @@ namespace CIARE
             publishCkb.Checked = GlobalVariables.OPublishNative;
             apiUrlTxt.Text = GlobalVariables.apiUrl;
             CheckOllama();
+            var isNullAPIKey = false;
             if (GlobalVariables.aiTypeVar.StartsWith("Ollama"))
             {
                 AiTypeCombo.Text = GlobalVariables.aiTypeVar;
-                apiKeyAiTxtBox.Text = "******************************************";
+                isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
+                apiKeyAiTxtBox.Text = (isNullAPIKey)? "": "******************************************";
                 maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
                 modelLocalCombo.Text = GlobalVariables.modelOllamaVar;
                 openAISaveBtn.Enabled = true;
@@ -59,7 +61,8 @@ namespace CIARE
             else
                 FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
             AiTypeCombo.Text = GlobalVariables.aiTypeVar;
-            apiKeyAiTxtBox.Text = "******************************************";
+            isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
+            apiKeyAiTxtBox.Text = (isNullAPIKey) ? "" : "******************************************";
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
