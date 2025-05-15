@@ -1061,7 +1061,6 @@ namespace CIARE
         {
             this.Invoke(delegate
             {
-
                 foreach (var file in _filesDrag)
                 {
                     var isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, file);
@@ -1163,13 +1162,9 @@ namespace CIARE
         private void EditorTabControl_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right)
-            {
                 e.Handled = true;
-            }
             if (e.KeyCode == Keys.End || e.KeyCode == Keys.Home)
-            {
                 e.Handled = true;
-            }
         }
 
         /// <summary>
