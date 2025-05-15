@@ -158,6 +158,36 @@ namespace CIARE.Utils.OpenAISettings
         }
 
         /// <summary>
+        /// Display error message solution from OpenAI.
+        /// </summary>
+        /// <param name="textEditorControl"></param>
+        /// <param name="apiAi"></param>
+        /// <param name="lineError"></param>
+        /// <param name="errorMessage"></param>
+        public static async void GetDataAIERR(TextEditorControl textEditorControl, string apiAi, string lineError, string errorMessage, RichTextBox richTextBox)
+        {
+            if (string.IsNullOrEmpty(apiAi))
+            {
+                MessageBox.Show("OpenAI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var question = $"{lineError}\nHow to fix the error: {errorMessage} for the code above? Thank you!";
+            AiManage openAI = new AiManage(apiAi, question);
+            StringReader reader = new StringReader(await openAI.AskOpenAI());
+            string line = "";
+            string outPut = string.Empty;
+
+            while ((line = reader.ReadLine()) != null)
+            {
+                outPut += $"{Environment.NewLine}{line}";
+            }
+            outPut = $"\n\n---------------- {{AI respond on error message}} ----------------\n{outPut}\n-------------------------------------------------------------";
+            richTextBox.Text += outPut;
+        }
+
+
+        /// <summary>
         /// Instert data in string by a specfic patern
         /// </summary>
         /// <param name="data"></param>
