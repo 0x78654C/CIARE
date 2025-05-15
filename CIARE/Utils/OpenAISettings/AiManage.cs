@@ -164,15 +164,15 @@ namespace CIARE.Utils.OpenAISettings
         /// <param name="apiAi"></param>
         /// <param name="lineError"></param>
         /// <param name="errorMessage"></param>
-        public static async void GetDataAIERR(TextEditorControl textEditorControl, string apiAi, string lineError, string errorMessage, RichTextBox richTextBox)
+        public static async void GetDataAIERR(TextEditorControl textEditorControl, string apiAi, string code, string errorMessage,string lineNumber, RichTextBox richTextBox)
         {
             if (string.IsNullOrEmpty(apiAi))
             {
                 MessageBox.Show("OpenAI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
-            var question = $"{lineError}\nHow to fix the error: {errorMessage} for the code above? Thank you!";
+            var lineErrSplit = errorMessage.Split(':');
+            var question = $"{code}\nHow to fix the error '{errorMessage}' at line {lineNumber} for the code above? Thank you!";
             AiManage openAI = new AiManage(apiAi, question);
             StringReader reader = new StringReader(await openAI.AskOpenAI());
             string line = "";
