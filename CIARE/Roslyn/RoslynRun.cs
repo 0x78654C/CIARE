@@ -18,6 +18,7 @@ using System.Collections.Immutable;
 using System.Runtime.Loader;
 using System.Drawing.Text;
 using CIARE.Utils.OpenAISettings;
+using CIARE.Utils.Options;
 
 namespace CIARE.Roslyn
 {
@@ -31,7 +32,8 @@ namespace CIARE.Roslyn
         private static AssemblyLoadContext s_assemblyLoad;
         private static string s_errorCode = "";
         private static string s_errorMessage = "";
-        private static string s_lineCode = "";
+        private static string s_codeAI = "";
+        private static string s_line = "";
         /// <summary>
         /// Compile and run C# using Roslyn.
         /// </summary>
@@ -252,6 +254,7 @@ namespace CIARE.Roslyn
             richTextBox.Text = $"ERROR: (Line {lineNumber}) | ID: {errorId} -> {errorMessage}";
             s_errorCode = errorId;
             s_errorMessage = $"{errorId}: {errorMessage}";
+            s_line = (lineNumber - 1).ToString();
             GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), lineNumber + 20);
             GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), lineNumber);
             SendKeys.Send("{END}");
@@ -261,7 +264,7 @@ namespace CIARE.Roslyn
             var end = new TextLocation(colPos, lineNumber - 1);
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.SelectionManager.SetSelection(start, end);
             var lineSegment = SelectedEditor.GetSelectedEditor().Document.GetLineSegment(lineNumber - 1);
-            s_lineCode = SelectedEditor.GetSelectedEditor().Document.GetText(lineSegment);
+            s_codeAI = SelectedEditor.GetSelectedEditor().Text;
             screenPosition = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.ScreenPosition;
             var X = screenPosition.X;
             var Y = screenPosition.Y + 23;
@@ -313,7 +316,7 @@ namespace CIARE.Roslyn
         /// <param name="e"></param>
         private static void AskAI_Click(object sender, EventArgs e)
         {
-            AiManage.GetDataAIERR(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString(), s_lineCode, s_errorMessage, MainForm.Instance.outputRBT);
+            AiManage.GetDataAIERR(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString(), s_codeAI, s_errorMessage, s_line, MainForm.Instance.outputRBT);
         }
 
 
