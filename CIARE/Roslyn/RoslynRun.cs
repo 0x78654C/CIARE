@@ -278,23 +278,17 @@ namespace CIARE.Roslyn
             itemMenu.ForeColor = Color.IndianRed;
             itemMenu.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.28f, FontStyle.Italic | FontStyle.Bold);
             itemMenu.Click += ItemMenu_Click;
-
             var itemMenuAI = new ToolStripMenuItem();
             var separator = new ToolStripSeparator();
             separator.Paint += RenderToolStripSeparator.RenderToolStripSeparator_PaintDarkAI_Error;
-            var separatorEnd = new ToolStripSeparator();
-            separatorEnd.Paint += RenderToolStripSeparator.RenderToolStripSeparator_PaintDarkAI_Error;
             itemMenuAI.Text = "Ask AI for help you with this error?";
             itemMenuAI.BackColor = Color.FromArgb(30, 30, 31);
             itemMenuAI.ForeColor = Color.White;
-            itemMenuAI.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 10.28f, FontStyle.Italic | FontStyle.Bold);
+            itemMenuAI.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.28f, FontStyle.Italic | FontStyle.Bold);
             itemMenuAI.Click += AskAI_Click;
-
-            itemMenuAI.Size = new Size(itemMenu.Width / 2, 5);
             contextMenuStrip.Items.Add(itemMenu);
             contextMenuStrip.Items.Add(separator);
             contextMenuStrip.Items.Add(itemMenuAI);
-            contextMenuStrip.Items.Add(separatorEnd);
             contextMenuStrip.Show(SelectedEditor.GetSelectedEditor().ActiveTextAreaControl, pos);
         }
 
@@ -316,6 +310,7 @@ namespace CIARE.Roslyn
         /// <param name="e"></param>
         private static void AskAI_Click(object sender, EventArgs e)
         {
+            AiManage.LoadProgressBar();
             AiManage.GetDataAIERR(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString(), s_codeAI, s_errorMessage, s_line, MainForm.Instance.outputRBT);
         }
 
