@@ -7,6 +7,7 @@ using System.Runtime.Versioning;
 
 namespace CIARE
 {
+    [SupportedOSPlatform("windows")]
     partial class AboutBox : Form
     {
         [SupportedOSPlatform("windows")]
