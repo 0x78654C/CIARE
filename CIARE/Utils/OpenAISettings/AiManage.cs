@@ -14,6 +14,7 @@ using OllamaInt;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using System.Drawing;
 using CIARE.GUI;
+using CIARE.Model;
 
 namespace CIARE.Utils.OpenAISettings
 {
@@ -181,10 +182,13 @@ namespace CIARE.Utils.OpenAISettings
             string outPut = string.Empty;
             while ((line = reader.ReadLine()) != null)
                 outPut += $"{Environment.NewLine}{line}";
-            outPut = $"\n\n---------------- {{AI respond on error message}} ----------------\n{outPut}\n-------------------------------------------------------------";
-            richTextBox.Text += outPut;
+            //outPut = $"\n\n---------------- {{AI respond on error message}} ----------------\n{outPut}\n-------------------------------------------------------------";
+            //richTextBox.Text += outPut;
             MainForm.Instance.progressBar.Visible = false;
             MainForm.Instance.aiLabel.Visible = false;
+            GlobalVariables.errorAiResponse = outPut;
+            AiResponseError aiResponseError = new AiResponseError();
+            aiResponseError.Show();
         }
 
 
