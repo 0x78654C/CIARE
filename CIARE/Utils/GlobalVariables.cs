@@ -119,6 +119,7 @@ namespace CIARE.Utils
         public static string aiTypeVar = "";
         public static string ollamaUri = "http://localhost:11434/";
         public static List<ChatMessage> chatHistory = new();
+        public static string errorAiResponse = string.Empty;
 
         // --Reference----
         public static List<string> customRefAsm { get; set; } = new List<string>(); // Used to store custom asspably path file.
