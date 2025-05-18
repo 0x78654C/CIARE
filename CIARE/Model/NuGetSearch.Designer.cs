@@ -1,4 +1,6 @@
-﻿namespace CIARE.Model
+﻿using System.Windows.Forms;
+
+namespace CIARE.Model
 {
     partial class NuGetSearch
     {
@@ -134,6 +136,7 @@
             downloadBar.Size = new System.Drawing.Size(265, 23);
             downloadBar.TabIndex = 4;
             downloadBar.Visible = false;
+            downloadBar.Style = ProgressBarStyle.Marquee;
             // 
             // NuGetSearch
             // 
