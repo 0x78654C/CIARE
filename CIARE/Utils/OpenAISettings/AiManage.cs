@@ -11,9 +11,7 @@ using OpenAI.Api.Client.Models;
 using System.Runtime.Versioning;
 using OpenRouter;
 using OllamaInt;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using System.Drawing;
-using CIARE.GUI;
 using CIARE.Model;
 
 namespace CIARE.Utils.OpenAISettings
