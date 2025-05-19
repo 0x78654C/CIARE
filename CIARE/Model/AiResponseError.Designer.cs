@@ -35,22 +35,22 @@
             // textEditorControl
             // 
             textEditorControl.AllowDrop = true;
-            textEditorControl.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            textEditorControl.Dock = System.Windows.Forms.DockStyle.Fill;
             textEditorControl.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
             textEditorControl.Highlighting = "C#-Dark";
-            textEditorControl.Location = new System.Drawing.Point(12, 12);
+            textEditorControl.Location = new System.Drawing.Point(0, 0);
             textEditorControl.Name = "textEditorControl";
             textEditorControl.ReadOnly = true;
             textEditorControl.ShowLineNumbers = false;
             textEditorControl.ShowVRuler = false;
-            textEditorControl.Size = new System.Drawing.Size(827, 760);
+            textEditorControl.Size = new System.Drawing.Size(649, 661);
             textEditorControl.TabIndex = 1;
             // 
             // AiResponseError
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(851, 784);
+            ClientSize = new System.Drawing.Size(649, 661);
             Controls.Add(textEditorControl);
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             Name = "AiResponseError";
