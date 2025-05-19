@@ -3,17 +3,16 @@
 */
 using CIARE.GUI;
 using CIARE.Utils;
-using ICSharpCode.TextEditor.Document;
 using System;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace CIARE.Model
 {
     [SupportedOSPlatform("windows")]
     public partial class AiResponseError : Form
     {
+        private string _editFontSize = "editorFontSizeZoom";
         public AiResponseError()
         {
             InitializeComponent();
@@ -25,6 +24,7 @@ namespace CIARE.Model
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             textEditorControl.Text = GlobalVariables.errorAiResponse;
             GlobalVariables.errorAiResponse = "";
+            InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl);
         }
     }
 }
