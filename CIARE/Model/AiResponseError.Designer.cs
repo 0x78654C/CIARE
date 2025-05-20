@@ -45,6 +45,7 @@
             textEditorControl.ShowVRuler = false;
             textEditorControl.Size = new System.Drawing.Size(649, 661);
             textEditorControl.TabIndex = 1;
+            textEditorControl.Resize += textEditorControl_Resize;
             // 
             // AiResponseError
             // 
@@ -56,6 +57,7 @@
             Name = "AiResponseError";
             StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             Text = "AI respond on error message";
+            FormClosed += AiResponseError_FormClosed;
             Load += AiResponseError_Load;
             ResumeLayout(false);
         }
