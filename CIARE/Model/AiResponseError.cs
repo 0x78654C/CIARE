@@ -22,9 +22,28 @@ namespace CIARE.Model
         {
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl, new ComboBox { });
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
-            textEditorControl.Text = GlobalVariables.errorAiResponse;
-            GlobalVariables.errorAiResponse = "";
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl);
+            TextBoxWrap();
         }
+
+        private void textEditorControl_Resize(object sender, EventArgs e) => TextBoxWrap();
+
+        /// <summary>
+        /// Wrap text in the TextBox based on the current width.
+        /// </summary>
+        private void TextBoxWrap()
+        {
+            var length = this.Width;
+            MainForm.Instance.outputRBT.Text = length.ToString();
+            var textWrap = CustomWrap.CustomWordWrap(GlobalVariables.errorAiResponse, textEditorControl);
+            textEditorControl.Text = textWrap;
+        }
+
+        /// <summary>
+        /// Clear AI response global variable on form close.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void AiResponseError_FormClosed(object sender, FormClosedEventArgs e) => GlobalVariables.errorAiResponse = ""; 
     }
 }
