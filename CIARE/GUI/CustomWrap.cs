@@ -20,7 +20,7 @@ namespace CIARE.GUI
         /// <returns></returns>
         public static string CustomWordWrap(string input, Control control)
         {
-            var maxLineLength = EstimateCharactersPerLine(control)+10;
+            var maxLineLength = EstimateCharactersPerLine(control)+20;
             var lines = input.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
             var wrappedText = new StringBuilder();
 
