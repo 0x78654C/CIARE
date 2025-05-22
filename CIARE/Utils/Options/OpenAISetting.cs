@@ -72,6 +72,8 @@ namespace CIARE.Utils.Options
         public static void SetOpenAIData(TextBox openAIApiKey, TextBox aiMaxTokens, TextBox openModel, ComboBox aitype, ComboBox ollamaModel, string regKeyAPI, string regKeyTokens, string regModel, string regOllamModel, string regAiType)
         {
             var trimKey = openAIApiKey.Text.Trim();
+            if (trimKey == "******************************************")
+                trimKey = GlobalVariables.aiKey.ConvertSecureStringToString();
             var trimTokens = aiMaxTokens.Text.Trim();
             var trimModel = openModel.Text.Trim();
             var trimAyType = aitype.Text.Trim();

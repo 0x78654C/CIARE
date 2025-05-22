@@ -52,7 +52,10 @@ namespace CIARE
             {
                 AiTypeCombo.Text = GlobalVariables.aiTypeVar;
                 isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
-                apiKeyAiTxtBox.Text = (isNullAPIKey)? "": "******************************************";
+                if (isNullAPIKey)
+                    WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, "Enter OpenAI/OpenRouter API key.........");
+                else
+                    apiKeyAiTxtBox.Text = "******************************************";
                 maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
                 modelLocalCombo.Text = GlobalVariables.modelOllamaVar;
                 openAISaveBtn.Enabled = true;
@@ -62,7 +65,10 @@ namespace CIARE
                 FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
             AiTypeCombo.Text = GlobalVariables.aiTypeVar;
             isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
-            apiKeyAiTxtBox.Text = (isNullAPIKey) ? "" : "******************************************";
+            if(isNullAPIKey)
+                WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, "Enter OpenAI/OpenRouter API key.........");
+            else
+                apiKeyAiTxtBox.Text = "******************************************";
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);

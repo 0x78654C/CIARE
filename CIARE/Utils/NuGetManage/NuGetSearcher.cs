@@ -5,9 +5,11 @@ using System.Threading.Tasks;
 using NuGet.Protocol;
 using ILogger = NuGet.Common.ILogger;
 using NullLogger = NuGet.Common.NullLogger;
+using System.Runtime.Versioning;
 
 namespace CIARE.Utils.NuGet
 {
+    [SupportedOSPlatform("windows")]
     public class NuGetSearcher
     {
         /// <summary>

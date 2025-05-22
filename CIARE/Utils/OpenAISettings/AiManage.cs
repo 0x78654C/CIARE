@@ -11,7 +11,8 @@ using OpenAI.Api.Client.Models;
 using System.Runtime.Versioning;
 using OpenRouter;
 using OllamaInt;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
+using System.Drawing;
+using CIARE.Model;
 
 namespace CIARE.Utils.OpenAISettings
 {
@@ -146,16 +147,48 @@ namespace CIARE.Utils.OpenAISettings
             StringReader reader = new StringReader(await openAI.AskOpenAI());
             string line = "";
             string outPut = string.Empty;
-
             while ((line = reader.ReadLine()) != null)
-            {
                 outPut += $"{Environment.NewLine}{line}";
-            }
             outPut = $"//---------------- {{Result}} ----------------\n{outPut}\n//----------------------------------------";
             var newAIData = InsertData(textEditorControl.Text, "]*/", outPut).Replace($"/*[{question}]*/", "");
             textEditorControl.Document.Replace(0, textEditorControl.Text.Length, newAIData);
             GoToLineNumber.GoToLine(textEditorControl, s_line);
+            MainForm.Instance.progressBar.Visible = false;
+            MainForm.Instance.aiLabel.Visible = false;
         }
+
+        /// <summary>
+        /// Display error message solution from OpenAI.
+        /// </summary>
+        /// <param name="textEditorControl"></param>
+        /// <param name="apiAi"></param>
+        /// <param name="lineError"></param>
+        /// <param name="errorMessage"></param>
+        public static async void GetDataAIERR(TextEditorControl textEditorControl, string apiAi, string code, string errorMessage,string lineNumber, RichTextBox richTextBox)
+        {
+            if (string.IsNullOrEmpty(apiAi))
+            {
+                MessageBox.Show("OpenAI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var lineErrSplit = errorMessage.Split(':');
+            var question = $"{code}\nHow to fix the error '{errorMessage}' at line {lineNumber} for the code above? Thank you!";
+            AiManage openAI = new AiManage(apiAi, question); //for test now
+            StringReader reader = new StringReader(await openAI.AskOpenAI());
+            string line = "";
+            string outPut = string.Empty;
+            while ((line = reader.ReadLine()) != null)
+                outPut += $"{Environment.NewLine}{line}";
+            //outPut = $"\n\n---------------- {{AI respond on error message}} ----------------\n{outPut}\n-------------------------------------------------------------";
+            //richTextBox.Text += outPut;
+            MainForm.Instance.progressBar.Visible = false;
+            MainForm.Instance.aiLabel.Visible = false;
+            GlobalVariables.errorAiResponse = outPut;
+            AiResponseError aiResponseError = new AiResponseError();
+            aiResponseError.Show();
+        }
+
 
         /// <summary>
         /// Instert data in string by a specfic patern
@@ -183,6 +216,21 @@ namespace CIARE.Utils.OpenAISettings
             outData = string.Join("\n", dataList);
             s_line = result + insertedData.Split('\n').Count() + 10;
             return outData;
+        }
+
+        /// <summary>
+        /// Load progress bar.
+        /// </summary>
+        public static void LoadProgressBar()
+        {
+            MainForm.Instance.progressBar.Visible = true;
+            MainForm.Instance.aiLabel.Visible = true;
+            int centerX = (MainForm.Instance.Width - MainForm.Instance.progressBar.Width) / 2;
+            int centerY = (MainForm.Instance.Height - MainForm.Instance.progressBar.Height) / 2;
+            MainForm.Instance.progressBar.Location = new Point(centerX, centerY);
+            MainForm.Instance.aiLabel.Location = new Point(centerX - 4, centerY - 20);
+            MainForm.Instance.progressBar.BringToFront();
+            MainForm.Instance.aiLabel.BringToFront();
         }
     }
 }

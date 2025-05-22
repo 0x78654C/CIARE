@@ -17,6 +17,8 @@ using Path = System.IO.Path;
 using System.Collections.Immutable;
 using System.Runtime.Loader;
 using System.Drawing.Text;
+using CIARE.Utils.OpenAISettings;
+using CIARE.Utils.Options;
 
 namespace CIARE.Roslyn
 {
@@ -29,6 +31,9 @@ namespace CIARE.Roslyn
         private static string[] s_commandLineArguments = null;
         private static AssemblyLoadContext s_assemblyLoad;
         private static string s_errorCode = "";
+        private static string s_errorMessage = "";
+        private static string s_codeAI = "";
+        private static string s_line = "";
         /// <summary>
         /// Compile and run C# using Roslyn.
         /// </summary>
@@ -248,6 +253,8 @@ namespace CIARE.Roslyn
         {
             richTextBox.Text = $"ERROR: (Line {lineNumber}) | ID: {errorId} -> {errorMessage}";
             s_errorCode = errorId;
+            s_errorMessage = $"{errorId}: {errorMessage}";
+            s_line = (lineNumber - 1).ToString();
             GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), lineNumber + 20);
             GoToLineNumber.GoToLine(SelectedEditor.GetSelectedEditor(), lineNumber);
             SendKeys.Send("{END}");
@@ -256,6 +263,8 @@ namespace CIARE.Roslyn
             var start = new TextLocation(0, lineNumber - 1);
             var end = new TextLocation(colPos, lineNumber - 1);
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.SelectionManager.SetSelection(start, end);
+            var lineSegment = SelectedEditor.GetSelectedEditor().Document.GetLineSegment(lineNumber - 1);
+            s_codeAI = SelectedEditor.GetSelectedEditor().Text;
             screenPosition = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.TextArea.Caret.ScreenPosition;
             var X = screenPosition.X;
             var Y = screenPosition.Y + 23;
@@ -269,10 +278,22 @@ namespace CIARE.Roslyn
             itemMenu.ForeColor = Color.IndianRed;
             itemMenu.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.28f, FontStyle.Italic | FontStyle.Bold);
             itemMenu.Click += ItemMenu_Click;
+            var itemMenuAI = new ToolStripMenuItem();
+            var separator = new ToolStripSeparator();
+            separator.Paint += RenderToolStripSeparator.RenderToolStripSeparator_PaintDarkAI_Error;
+            itemMenuAI.Text = "[ Ask AI for help you with this error? ]";
+            itemMenuAI.BackColor = Color.FromArgb(30, 30, 31);
+            itemMenuAI.ForeColor = Color.White;
+            itemMenuAI.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.28f, FontStyle.Italic | FontStyle.Bold);
+            itemMenuAI.Click += AskAI_Click;
             contextMenuStrip.Items.Add(itemMenu);
+            if (!string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString()))
+            {
+                contextMenuStrip.Items.Add(separator);
+                contextMenuStrip.Items.Add(itemMenuAI);
+            }
             contextMenuStrip.Show(SelectedEditor.GetSelectedEditor().ActiveTextAreaControl, pos);
         }
-
 
         /// <summary>
         /// Open link to error documentation.
@@ -285,6 +306,16 @@ namespace CIARE.Roslyn
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
 
+        /// <summary>
+        /// Get result from AI for error message.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private static void AskAI_Click(object sender, EventArgs e)
+        {
+            AiManage.LoadProgressBar();
+            AiManage.GetDataAIERR(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString(), s_codeAI, s_errorMessage, s_line, MainForm.Instance.outputRBT);
+        }
 
 
         /// <summary>

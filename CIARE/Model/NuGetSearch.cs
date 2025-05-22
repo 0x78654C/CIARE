@@ -58,8 +58,6 @@ MessageBoxIcon.Warning);
 
             // Set water marg on search textbox.
             WaterMark.TextBoxWaterMark(SearchBox, "Enter package name...");
-
-            downloadBar.Style = ProgressBarStyle.Marquee;
         }
 
         /// <summary>

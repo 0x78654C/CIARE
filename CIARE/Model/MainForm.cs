@@ -163,6 +163,7 @@ namespace CIARE
             // Get last opened tab MD5.
             if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
                 GlobalVariables.openedFileMD5 = MD5Hash.GetMD5Hash(SelectedEditor.GetSelectedEditor().Text);
+            
         }
 
         private void SetCodeCompletion(int index)
@@ -471,6 +472,7 @@ namespace CIARE
                     cmdLineArgs.ShowDialog();
                     return true;
                 case Keys.P | Keys.Control | Keys.Shift:
+                    AiManage.LoadProgressBar();
                     AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
                     return true;
                 case Keys.R | Keys.Control:
@@ -710,6 +712,7 @@ namespace CIARE
 
         private void chatGPTCTRLShiftPToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            AiManage.LoadProgressBar();
             AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
         }
 
@@ -1061,7 +1064,6 @@ namespace CIARE
         {
             this.Invoke(delegate
             {
-
                 foreach (var file in _filesDrag)
                 {
                     var isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, file);
@@ -1163,13 +1165,9 @@ namespace CIARE
         private void EditorTabControl_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right)
-            {
                 e.Handled = true;
-            }
             if (e.KeyCode == Keys.End || e.KeyCode == Keys.Home)
-            {
                 e.Handled = true;
-            }
         }
 
         /// <summary>

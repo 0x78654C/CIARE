@@ -28,6 +28,22 @@ namespace CIARE.GUI
         }
 
         /// <summary>
+        /// Render ToolStripSeparator backgound/foreground color for light witch custom RBG for error toolstripmenu.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public static void RenderToolStripSeparator_PaintDarkAI_Error(object sender, PaintEventArgs e)
+        {
+            ToolStripSeparator toolStripSeparator = (ToolStripSeparator)sender;
+            int width = toolStripSeparator.Width;
+            int height = toolStripSeparator.Height;
+            Color foreColor = Color.FromArgb(192, 215, 207);
+            Color backColor = Color.FromArgb(30, 30, 31);
+            e.Graphics.FillRectangle(new SolidBrush(backColor), 0, 0, width, height);
+            e.Graphics.DrawLine(new Pen(foreColor), 4, height / 2, width - 4, height / 2);
+        }
+
+        /// <summary>
         /// Render ToolStripSeparator backgound/foreground color.
         /// </summary>
         /// <param name="sender"></param>
