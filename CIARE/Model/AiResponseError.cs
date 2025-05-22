@@ -23,6 +23,7 @@ namespace CIARE.Model
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl, new ComboBox { });
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl);
+            Text = $"{GlobalVariables.aiTypeVar} {Text}";
             TextBoxWrap();
         }
 
