@@ -34,7 +34,6 @@ namespace CIARE.Model
         private void TextBoxWrap()
         {
             var length = this.Width;
-            MainForm.Instance.outputRBT.Text = length.ToString();
             var textWrap = CustomWrap.CustomWordWrap(GlobalVariables.errorAiResponse, textEditorControl);
             textEditorControl.Text = textWrap;
         }
