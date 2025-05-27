@@ -62,7 +62,7 @@ namespace CIARE.Utils.OpenAISettings
                 else if (aiType == "OpenRouter")
                 {
                     OpenRouterClient openRouterClient = new OpenRouterClient(ApiKey);
-                    var response = await openRouterClient.SendPromptAsync(Qestion);
+                    var response = await openRouterClient.SendPromptAsync(Qestion, GlobalVariables.model);
                     result = response;
                 }else if (aiType.StartsWith("Ollama"))
                 {
