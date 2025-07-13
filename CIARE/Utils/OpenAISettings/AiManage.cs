@@ -143,8 +143,7 @@ namespace CIARE.Utils.OpenAISettings
             else
             {
                 MessageBox.Show("Wrong question format!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                MainForm.Instance.progressBar.Visible = false;
-                MainForm.Instance.aiLabel.Visible = false;
+                CancelProgressBar();
                 return;
             }
             AiManage openAI = new AiManage(apiAi, question.Trim());
