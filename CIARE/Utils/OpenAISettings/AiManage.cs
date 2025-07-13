@@ -119,6 +119,7 @@ namespace CIARE.Utils.OpenAISettings
             if (string.IsNullOrEmpty(apiAi))
             {
                 MessageBox.Show("OpenAI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                CancelProgressBar();
                 return;
             }
             string question = string.Empty;
@@ -130,6 +131,7 @@ namespace CIARE.Utils.OpenAISettings
                     if (string.IsNullOrWhiteSpace(question))
                     {
                         MessageBox.Show("No question provided!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        CancelProgressBar();
                         return;
                     }
                 }
@@ -141,6 +143,8 @@ namespace CIARE.Utils.OpenAISettings
             else
             {
                 MessageBox.Show("Wrong question format!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MainForm.Instance.progressBar.Visible = false;
+                MainForm.Instance.aiLabel.Visible = false;
                 return;
             }
             AiManage openAI = new AiManage(apiAi, question.Trim());
@@ -153,6 +157,16 @@ namespace CIARE.Utils.OpenAISettings
             var newAIData = InsertData(textEditorControl.Text, "]*/", outPut).Replace($"/*[{question}]*/", "");
             textEditorControl.Document.Replace(0, textEditorControl.Text.Length, newAIData);
             GoToLineNumber.GoToLine(textEditorControl, s_line);
+            CancelProgressBar();
+        }
+
+        /// <summary>
+        /// Hides the progress bar and associated label in the application's main form.
+        /// </summary>
+        /// <remarks>This method disables the visibility of the progress bar and the AI label. It is
+        /// typically used to indicate that a background operation has completed or been canceled.</remarks>
+        private static void CancelProgressBar()
+        {
             MainForm.Instance.progressBar.Visible = false;
             MainForm.Instance.aiLabel.Visible = false;
         }
