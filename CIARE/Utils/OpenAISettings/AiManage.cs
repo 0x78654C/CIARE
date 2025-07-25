@@ -13,6 +13,7 @@ using OpenRouter;
 using OllamaInt;
 using System.Drawing;
 using CIARE.Model;
+using CIARE.GUI;
 
 namespace CIARE.Utils.OpenAISettings
 {
@@ -64,7 +65,8 @@ namespace CIARE.Utils.OpenAISettings
                     OpenRouterClient openRouterClient = new OpenRouterClient(ApiKey);
                     var response = await openRouterClient.SendPromptAsync(Qestion, GlobalVariables.model);
                     result = response;
-                }else if (aiType.StartsWith("Ollama"))
+                }
+                else if (aiType.StartsWith("Ollama"))
                 {
                     OllamaLLM ollamaClient = new OllamaLLM();
                     ollamaClient.Model = GlobalVariables.modelOllamaVar;
@@ -177,7 +179,7 @@ namespace CIARE.Utils.OpenAISettings
         /// <param name="apiAi"></param>
         /// <param name="lineError"></param>
         /// <param name="errorMessage"></param>
-        public static async void GetDataAIERR(TextEditorControl textEditorControl, string apiAi, string code, string errorMessage,string lineNumber, RichTextBox richTextBox)
+        public static async void GetDataAIERR(TextEditorControl textEditorControl, string apiAi, string code, string errorMessage, string lineNumber, RichTextBox richTextBox)
         {
             if (string.IsNullOrEmpty(apiAi))
             {
@@ -236,6 +238,18 @@ namespace CIARE.Utils.OpenAISettings
         /// </summary>
         public static void LoadProgressBar()
         {
+            const string defaultHighLight = "C#-Dark";
+            const string vsTheme = "C#-DarkVS";
+            const string regName = "highlight";
+            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", regName);
+            MainForm.Instance.aiLabel.BackColor = Color.White;
+            if (regHighlight.Length > 0)
+            {
+                if (regHighlight == vsTheme)
+                    MainForm.Instance.aiLabel.BackColor = Color.FromArgb(30, 30, 30);
+                if (regHighlight == defaultHighLight)
+                    MainForm.Instance.aiLabel.BackColor = Color.FromArgb(2, 0, 10);
+            }
             MainForm.Instance.progressBar.Visible = true;
             MainForm.Instance.aiLabel.Visible = true;
             int centerX = (MainForm.Instance.Width - MainForm.Instance.progressBar.Width) / 2;
