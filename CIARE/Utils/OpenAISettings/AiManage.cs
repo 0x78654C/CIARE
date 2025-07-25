@@ -154,11 +154,15 @@ namespace CIARE.Utils.OpenAISettings
             string outPut = string.Empty;
             while ((line = reader.ReadLine()) != null)
                 outPut += $"{Environment.NewLine}{line}";
-            outPut = $"//---------------- {{Result}} ----------------\n{outPut}\n//----------------------------------------";
-            var newAIData = InsertData(textEditorControl.Text, "]*/", outPut).Replace($"/*[{question}]*/", "");
-            textEditorControl.Document.Replace(0, textEditorControl.Text.Length, newAIData);
-            GoToLineNumber.GoToLine(textEditorControl, s_line);
+            //outPut = $"//---------------- {{Result}} ----------------\n{outPut}\n//----------------------------------------";
+            //var newAIData = InsertData(textEditorControl.Text, "]*/", outPut).Replace($"/*[{question}]*/", "");
+            //textEditorControl.Document.Replace(0, textEditorControl.Text.Length, newAIData);
+            //GoToLineNumber.GoToLine(textEditorControl, s_line);
             CancelProgressBar();
+
+            GlobalVariables.errorAiResponse = outPut;
+            AiResponseError aiResponseError = new AiResponseError();
+            aiResponseError.Show();
         }
 
         /// <summary>
@@ -197,8 +201,7 @@ namespace CIARE.Utils.OpenAISettings
                 outPut += $"{Environment.NewLine}{line}";
             //outPut = $"\n\n---------------- {{AI respond on error message}} ----------------\n{outPut}\n-------------------------------------------------------------";
             //richTextBox.Text += outPut;
-            MainForm.Instance.progressBar.Visible = false;
-            MainForm.Instance.aiLabel.Visible = false;
+            CancelProgressBar(); 
             GlobalVariables.errorAiResponse = outPut;
             AiResponseError aiResponseError = new AiResponseError();
             aiResponseError.Show();
