@@ -25,14 +25,17 @@
         private void InitializeComponent() {
             System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+            System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
             this.undo = new System.Windows.Forms.ToolStripMenuItem();
             this.cut = new System.Windows.Forms.ToolStripMenuItem();
             this.copy = new System.Windows.Forms.ToolStripMenuItem();
             this.paste = new System.Windows.Forms.ToolStripMenuItem();
             this.delete = new System.Windows.Forms.ToolStripMenuItem();
             this.selectAll = new System.Windows.Forms.ToolStripMenuItem();
+            this.askAI = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.SuspendLayout();
             // 
             // toolStripSeparator1
@@ -44,6 +47,11 @@
             // 
             toolStripSeparator2.Name = "toolStripSeparator2";
             toolStripSeparator2.Size = new System.Drawing.Size(141, 6);
+            // 
+            // toolStripSeparator3
+            // 
+            toolStripSeparator3.Name = "toolStripSeparator2";
+            toolStripSeparator3.Size = new System.Drawing.Size(141, 6);
             // 
             // undo
             // 
@@ -87,6 +95,13 @@
             this.selectAll.Size = new System.Drawing.Size(144, 22);
             this.selectAll.Text = "&Select All";
             // 
+            // askAI
+            // 
+            this.askAI.Image = global::ICSharpCode.TextEditor.Properties.Resources.aiToolStripMenuItem;
+            this.askAI.Name = "askAI";
+            this.askAI.Size = new System.Drawing.Size(144, 22);
+            this.askAI.Text = "&Ask AI";
+            // 
             // ContextMenu
             // 
             this.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -97,7 +112,9 @@
             this.paste,
             this.delete,
             toolStripSeparator2,
-            this.selectAll});
+            this.selectAll,
+            toolStripSeparator3,
+            askAI});
             this.Size = new System.Drawing.Size(145, 148);
             this.Opening += new System.ComponentModel.CancelEventHandler(this.OnOpening);
             this.ResumeLayout(false);
@@ -112,5 +129,6 @@
         private System.Windows.Forms.ToolStripMenuItem paste;
         private System.Windows.Forms.ToolStripMenuItem delete;
         private System.Windows.Forms.ToolStripMenuItem selectAll;
+        private System.Windows.Forms.ToolStripMenuItem askAI;
     }
 }
