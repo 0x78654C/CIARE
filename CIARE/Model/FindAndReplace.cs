@@ -1,10 +1,11 @@
-﻿using System;
+﻿using CIARE.GUI;
 using CIARE.Utils;
-using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Document;
-using CIARE.GUI;
+using Microsoft.CodeAnalysis.Differencing;
+using System;
 using System.Runtime.Versioning;
+using System.Windows.Forms;
 
 namespace CIARE
 {
@@ -60,6 +61,11 @@ namespace CIARE
                 repalceWithTxt.Text = replaceWith;
         }
 
+        /// <summary>
+        /// Single data replace.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void singleReplaceBtn_Click(object sender, EventArgs e)
         {
             if (MainForm.Instance != null)
@@ -67,11 +73,18 @@ namespace CIARE
             StoreReplaceData(findTxt.Text, repalceWithTxt.Text);
         }
 
-
+        /// <summary>
+        /// Multi data replace.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void multiReplaceBtn_Click(object sender, EventArgs e)
         {
             if (MainForm.Instance != null)
-                SelectedEditor.GetSelectedEditor().Text = ReplaceAll(SelectedEditor.GetSelectedEditor().Text, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
+            {
+                var newData = ReplaceAll(SelectedEditor.GetSelectedEditor().Text, findTxt.Text, repalceWithTxt.Text, _ignoreCaseFR, _matchCase);
+                SelectedEditor.GetSelectedEditor().Document.Replace(0, SelectedEditor.GetSelectedEditor().Text.Length, newData);
+            }
             StoreReplaceData(findTxt.Text, repalceWithTxt.Text);
         }
 
@@ -126,7 +139,6 @@ namespace CIARE
    MessageBoxIcon.Information);
                     return editor.Text;
                 }
-
                 int pos = _startPos;
                 int leng = editor.Text.Length;
                 string searchText;
@@ -205,7 +217,6 @@ MessageBoxIcon.Information);
 MessageBoxIcon.Information);
                 return data;
             }
-
 
             if (ignoreCase)
                 return data.Replace(findWhat, replaceWith, true, null);
