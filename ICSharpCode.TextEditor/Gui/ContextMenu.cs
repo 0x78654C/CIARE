@@ -7,10 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace ICSharpCode.TextEditor {
-    public partial class ContextMenu : ContextMenuStrip {
+namespace ICSharpCode.TextEditor
+{
+    public partial class ContextMenu : ContextMenuStrip
+    {
         TextAreaControl parent;
-        public ContextMenu(TextAreaControl parent) {
+        public ContextMenu(TextAreaControl parent)
+        {
             this.parent = parent;
             InitializeComponent();
 
@@ -19,41 +22,52 @@ namespace ICSharpCode.TextEditor {
             copy.Click += OnClickCopy;
             paste.Click += OnClickPaste;
             selectAll.Click += OnSelectAll;
+            askAI.Click += OnAskAI;
         }
 
-        void OnClickCut(object sender, EventArgs e) {
+        void OnClickCut(object sender, EventArgs e)
+        {
             new Cut().Execute(parent.TextArea);
             parent.TextArea.Focus();
         }
 
-        void OnClickUndo(object sender, EventArgs e) {
+        void OnClickUndo(object sender, EventArgs e)
+        {
             parent.Undo();
             parent.TextArea.Focus();
         }
 
-        void OnClickCopy(object sender, EventArgs e) {
+        void OnClickCopy(object sender, EventArgs e)
+        {
             new Copy().Execute(parent.TextArea);
             parent.TextArea.Focus();
         }
 
-        void OnClickPaste(object sender, EventArgs e) {
+        void OnClickPaste(object sender, EventArgs e)
+        {
             new Paste().Execute(parent.TextArea);
             parent.TextArea.Focus();
         }
 
-        void OnSelectAll(object sender, EventArgs e) {
+        void OnSelectAll(object sender, EventArgs e)
+        {
             new SelectWholeDocument().Execute(parent.TextArea);
             parent.TextArea.Focus();
         }
 
+        void OnAskAI(object sender, EventArgs e)
+        {
+            var selectedText = parent.TextArea.SelectionManager.SelectedText;
+            
+        }
 
 
 
-
-        void OnOpening(object sender, CancelEventArgs e) {
+        void OnOpening(object sender, CancelEventArgs e)
+        {
             undo.Enabled = parent.Document.UndoStack.CanUndo;
             cut.Enabled = copy.Enabled = delete.Enabled = parent.SelectionManager.HasSomethingSelected;
-            paste.Enabled =  parent.TextArea.ClipboardHandler.EnablePaste;
+            paste.Enabled = parent.TextArea.ClipboardHandler.EnablePaste;
             selectAll.Enabled = !string.IsNullOrEmpty(parent.Document.TextContent);
         }
 
