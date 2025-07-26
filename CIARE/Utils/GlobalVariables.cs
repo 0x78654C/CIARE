@@ -9,6 +9,7 @@ using System.Runtime.Versioning;
 using Microsoft.Extensions.AI;
 using System.Diagnostics;
 using System.Security;
+using CIARE.Utils.Options;
 
 namespace CIARE.Utils
 {
@@ -25,7 +26,7 @@ namespace CIARE.Utils
         public static readonly string tabsFilePathAll = $"{userProfileDirectory}tabsFilePathAll.cDat";
         public static string processArg = string.Empty;
         private static readonly string getGetVersionName = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-        public static readonly string versionName = getGetVersionName.Substring(0, getGetVersionName.Length); // set -2  for next release
+        public static readonly string versionName = getGetVersionName.Substring(0, getGetVersionName.Length - 2); // set -2  for next release
         //public static readonly string versionName = getGetVersionName; // patch only till new feature is out
         public static bool isStoringTabs = false;
         public static string openedFilePath { get; set; } = string.Empty;
@@ -117,9 +118,10 @@ namespace CIARE.Utils
         public static string modelOllamaVar = string.Empty;
         public static string aiType = "OpenAI";
         public static string aiTypeVar = "";
+        public static string aiQuestion = "";
         public static string ollamaUri = "http://localhost:11434/";
         public static List<ChatMessage> chatHistory = new();
-        public static string errorAiResponse = string.Empty;
+        public static string aiResponse = string.Empty;
 
         // --Reference----
         public static List<string> customRefAsm { get; set; } = new List<string>(); // Used to store custom asspably path file.

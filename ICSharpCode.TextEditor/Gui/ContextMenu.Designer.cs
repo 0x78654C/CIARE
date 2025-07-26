@@ -25,6 +25,7 @@
         private void InitializeComponent() {
             System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+            System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
             this.undo = new System.Windows.Forms.ToolStripMenuItem();
             this.cut = new System.Windows.Forms.ToolStripMenuItem();
             this.copy = new System.Windows.Forms.ToolStripMenuItem();
@@ -97,7 +98,8 @@
             this.paste,
             this.delete,
             toolStripSeparator2,
-            this.selectAll});
+            this.selectAll 
+            });
             this.Size = new System.Drawing.Size(145, 148);
             this.Opening += new System.ComponentModel.CancelEventHandler(this.OnOpening);
             this.ResumeLayout(false);

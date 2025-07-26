@@ -10,10 +10,10 @@ using System.Windows.Forms;
 namespace CIARE.Model
 {
     [SupportedOSPlatform("windows")]
-    public partial class AiResponseError : Form
+    public partial class AiResponse : Form
     {
         private string _editFontSize = "editorFontSizeZoom";
-        public AiResponseError()
+        public AiResponse()
         {
             InitializeComponent();
         }
@@ -23,7 +23,7 @@ namespace CIARE.Model
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl, new ComboBox { });
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl);
-            Text = $"{GlobalVariables.aiTypeVar} {Text}";
+            Text = $"{GlobalVariables.aiTypeVar} response:";
             TextBoxWrap();
         }
 
@@ -35,7 +35,7 @@ namespace CIARE.Model
         private void TextBoxWrap()
         {
             var length = this.Width;
-            var textWrap = CustomWrap.CustomWordWrap(GlobalVariables.errorAiResponse, textEditorControl);
+            var textWrap = CustomWrap.CustomWordWrap(GlobalVariables.aiResponse, textEditorControl);
             textEditorControl.Text = textWrap;
         }
 
@@ -44,6 +44,6 @@ namespace CIARE.Model
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void AiResponseError_FormClosed(object sender, FormClosedEventArgs e) => GlobalVariables.errorAiResponse = ""; 
+        private void AiResponseError_FormClosed(object sender, FormClosedEventArgs e) => GlobalVariables.aiResponse = ""; 
     }
 }

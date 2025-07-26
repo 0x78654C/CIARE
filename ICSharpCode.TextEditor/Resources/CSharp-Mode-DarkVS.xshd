@@ -148,7 +148,7 @@
         <Key word="fixed" />
         <Key word="unsafe" />
       </KeyWords>
-      <KeyWords name="ValueTypes" bold="true" italic="false" color="#e5786d">
+      <KeyWords name="ValueTypes" bold="true" italic="false" color="#349B08">
         <Key word="bool" />
         <Key word="byte" />
         <Key word="char" />
@@ -164,6 +164,13 @@
         <Key word="uint" />
         <Key word="ushort" />
         <Key word="ulong" />
+        <Key word="IntPtr" />
+        <Key word="UIntPtr" />
+        <Key word="UInt32" />
+        <Key word="UInt64" />
+        <Key word="Int32" />
+        <Key word="Int64" />
+        <Key word="string" />
       </KeyWords>
       <KeyWords name="ReferenceTypes" bold="false" italic="false" color="#CAE682">
         <Key word="class" />

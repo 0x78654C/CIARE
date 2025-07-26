@@ -39,7 +39,7 @@ Useful to run code on the fly and get instant result.
  - Mark files for open on next application start or Windows logon.
  - Target desired framework(.NET6, .NET 7 or .NET 8) for use when a application is compiled.
  - Live share: share and work in same time at a project/file data.
- - Generate code/data with chatGPT from OpenAI.
+ - Generate code/data with AI or work with selected tex.
  - Add reference to custom managed libraries.
  - NuGet Manager
  - Usage of unsafe code.
@@ -119,16 +119,15 @@ https://user-images.githubusercontent.com/13780514/201774933-e53d3ba2-95e0-434e-
  OpenRouter (https://openrouter.ai/) is a platform that allows you to use multiple AI models from different providers.
  That been said chatGPT/OpenRouter can be even be used as code generator for your projects.
  * Usage:
- 1. Add your OpenAI API key in Settings>Options. Model and tokens can be edited as well.
+ 1. Add your OpenAI/OpenRouter API key in Settings>Options. Model and tokens can be edited as well.
  2. (OpenAI)Add the amount of maxim tokens to be displayed. More info at https://platform.openai.com/tokenizer
- 1. Write your question in editor using the following format ![image](https://user-images.githubusercontent.com/13780514/208530240-81cc2960-c6a8-484b-9e35-06f5a1f151ba.png)
- 2. Got to Edit>ChatGPT or press hotkeys CTRL + Shift + P
+ 2. Got to Edit>Ask AI or press hotkeys CTRL + Shift + P. (You can select text from editor and ask the AI what to do with it)
 
  Answer will be display automatically in your editor.
 
-# ChatGPT code generator video sample
+# AI code generator video sample
 
-https://user-images.githubusercontent.com/13780514/208532011-bd2327fd-fcdd-47ad-8818-306739317326.mp4
+https://github.com/user-attachments/assets/65b82bf9-de19-4ca7-8b51-bac53a8ca31c
 
 # Ollama LLM's integration.
 

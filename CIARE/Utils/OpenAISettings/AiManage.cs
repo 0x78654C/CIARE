@@ -6,7 +6,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Collections.Generic;
 using OpenAI.Api.Client.Models;
 using System.Runtime.Versioning;
 using OpenRouter;
@@ -64,7 +63,8 @@ namespace CIARE.Utils.OpenAISettings
                     OpenRouterClient openRouterClient = new OpenRouterClient(ApiKey);
                     var response = await openRouterClient.SendPromptAsync(Qestion, GlobalVariables.model);
                     result = response;
-                }else if (aiType.StartsWith("Ollama"))
+                }
+                else if (aiType.StartsWith("Ollama"))
                 {
                     OllamaLLM ollamaClient = new OllamaLLM();
                     ollamaClient.Model = GlobalVariables.modelOllamaVar;
@@ -116,43 +116,43 @@ namespace CIARE.Utils.OpenAISettings
         /// <param name="apiAi"></param>
         public static async void GetDataAI(TextEditorControl textEditorControl, string apiAi)
         {
+            GlobalVariables.aiQuestion = "";
             if (string.IsNullOrEmpty(apiAi))
             {
                 MessageBox.Show("OpenAI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                CancelProgressBar();
                 return;
             }
-            string question = string.Empty;
-            if (textEditorControl.Text.Contains("/*[") && textEditorControl.Text.Contains("]*/"))
+
+            var askAI = new AskAI();
+            askAI.ShowDialog();
+            LoadProgressBar();
+            if (string.IsNullOrWhiteSpace(GlobalVariables.aiQuestion))
             {
-                try
-                {
-                    question = textEditorControl.Text.MiddleString("/*[", "]*/");
-                    if (string.IsNullOrWhiteSpace(question))
-                    {
-                        MessageBox.Show("No question provided!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-                }
-                catch
-                {
-                    // Do nothing.
-                }
-            }
-            else
-            {
-                MessageBox.Show("Wrong question format!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                CancelProgressBar();
                 return;
             }
-            AiManage openAI = new AiManage(apiAi, question.Trim());
+            AiManage openAI = new AiManage(apiAi, GlobalVariables.aiQuestion.Trim());
             StringReader reader = new StringReader(await openAI.AskOpenAI());
             string line = "";
             string outPut = string.Empty;
             while ((line = reader.ReadLine()) != null)
                 outPut += $"{Environment.NewLine}{line}";
-            outPut = $"//---------------- {{Result}} ----------------\n{outPut}\n//----------------------------------------";
-            var newAIData = InsertData(textEditorControl.Text, "]*/", outPut).Replace($"/*[{question}]*/", "");
-            textEditorControl.Document.Replace(0, textEditorControl.Text.Length, newAIData);
-            GoToLineNumber.GoToLine(textEditorControl, s_line);
+
+            CancelProgressBar();
+            GlobalVariables.aiQuestion = "";
+            GlobalVariables.aiResponse = outPut;
+            AiResponse aiResponse = new AiResponse();
+            aiResponse.Show();
+        }
+
+        /// <summary>
+        /// Hides the progress bar and associated label in the application's main form.
+        /// </summary>
+        /// <remarks>This method disables the visibility of the progress bar and the AI label. It is
+        /// typically used to indicate that a background operation has completed or been canceled.</remarks>
+        private static void CancelProgressBar()
+        {
             MainForm.Instance.progressBar.Visible = false;
             MainForm.Instance.aiLabel.Visible = false;
         }
@@ -164,7 +164,7 @@ namespace CIARE.Utils.OpenAISettings
         /// <param name="apiAi"></param>
         /// <param name="lineError"></param>
         /// <param name="errorMessage"></param>
-        public static async void GetDataAIERR(TextEditorControl textEditorControl, string apiAi, string code, string errorMessage,string lineNumber, RichTextBox richTextBox)
+        public static async void GetDataAIERR(TextEditorControl textEditorControl, string apiAi, string code, string errorMessage, string lineNumber, RichTextBox richTextBox)
         {
             if (string.IsNullOrEmpty(apiAi))
             {
@@ -180,42 +180,10 @@ namespace CIARE.Utils.OpenAISettings
             string outPut = string.Empty;
             while ((line = reader.ReadLine()) != null)
                 outPut += $"{Environment.NewLine}{line}";
-            //outPut = $"\n\n---------------- {{AI respond on error message}} ----------------\n{outPut}\n-------------------------------------------------------------";
-            //richTextBox.Text += outPut;
-            MainForm.Instance.progressBar.Visible = false;
-            MainForm.Instance.aiLabel.Visible = false;
-            GlobalVariables.errorAiResponse = outPut;
-            AiResponseError aiResponseError = new AiResponseError();
+            CancelProgressBar(); 
+            GlobalVariables.aiResponse = outPut;
+            AiResponse aiResponseError = new AiResponse();
             aiResponseError.Show();
-        }
-
-
-        /// <summary>
-        /// Instert data in string by a specfic patern
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="patern"></param>
-        /// <param name="insertedData"></param>
-        /// <returns></returns>
-        private static string InsertData(string data, string patern, string insertedData)
-        {
-            string outData = string.Empty;
-            List<string> dataList = new List<string>();
-            StringReader reader = new StringReader(data);
-            string line = string.Empty;
-            int result = 0, count = 0;
-
-            while ((line = reader.ReadLine()) != null)
-            {
-                count++;
-                if (line.Contains("]*/"))
-                    result = count;
-                dataList.Add(line);
-            }
-            dataList.Insert(result, insertedData);
-            outData = string.Join("\n", dataList);
-            s_line = result + insertedData.Split('\n').Count() + 10;
-            return outData;
         }
 
         /// <summary>
@@ -223,6 +191,18 @@ namespace CIARE.Utils.OpenAISettings
         /// </summary>
         public static void LoadProgressBar()
         {
+            const string defaultHighLight = "C#-Dark";
+            const string vsTheme = "C#-DarkVS";
+            const string regName = "highlight";
+            string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", regName);
+            MainForm.Instance.aiLabel.BackColor = Color.White;
+            if (regHighlight.Length > 0)
+            {
+                if (regHighlight == vsTheme)
+                    MainForm.Instance.aiLabel.BackColor = Color.FromArgb(30, 30, 30);
+                if (regHighlight == defaultHighLight)
+                    MainForm.Instance.aiLabel.BackColor = Color.FromArgb(2, 0, 10);
+            }
             MainForm.Instance.progressBar.Visible = true;
             MainForm.Instance.aiLabel.Visible = true;
             int centerX = (MainForm.Instance.Width - MainForm.Instance.progressBar.Width) / 2;

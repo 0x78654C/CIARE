@@ -1,6 +1,6 @@
 ﻿namespace CIARE.Model
 {
-    partial class AiResponseError
+    partial class AiResponse
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AiResponseError));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AiResponse));
             textEditorControl = new ICSharpCode.TextEditor.TextEditorControl();
             SuspendLayout();
             // 
