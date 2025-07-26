@@ -1,7 +1,5 @@
 ﻿using CIARE.GUI;
-using CIARE.Roslyn;
 using CIARE.Utils;
-using CIARE.Utils.OpenAISettings;
 using System;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
