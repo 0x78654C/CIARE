@@ -161,7 +161,7 @@ namespace CIARE.Utils.OpenAISettings
             CancelProgressBar();
 
             GlobalVariables.errorAiResponse = outPut;
-            AiResponseError aiResponseError = new AiResponseError();
+            AiResponse aiResponseError = new AiResponse();
             aiResponseError.Show();
         }
 
@@ -203,7 +203,7 @@ namespace CIARE.Utils.OpenAISettings
             //richTextBox.Text += outPut;
             CancelProgressBar(); 
             GlobalVariables.errorAiResponse = outPut;
-            AiResponseError aiResponseError = new AiResponseError();
+            AiResponse aiResponseError = new AiResponse();
             aiResponseError.Show();
         }
 

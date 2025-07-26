@@ -10,10 +10,10 @@ using System.Windows.Forms;
 namespace CIARE.Model
 {
     [SupportedOSPlatform("windows")]
-    public partial class AiResponseError : Form
+    public partial class AiResponse : Form
     {
         private string _editFontSize = "editorFontSizeZoom";
-        public AiResponseError()
+        public AiResponse()
         {
             InitializeComponent();
         }
