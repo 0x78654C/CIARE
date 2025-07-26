@@ -124,42 +124,24 @@ namespace CIARE.Utils.OpenAISettings
                 CancelProgressBar();
                 return;
             }
-            string question = string.Empty;
-            if (textEditorControl.Text.Contains("/*[") && textEditorControl.Text.Contains("]*/"))
+
+            var askAI = new AskAI();
+            askAI.ShowDialog();
+            LoadProgressBar();
+            if (string.IsNullOrWhiteSpace(GlobalVariables.aiQuestion))
             {
-                try
-                {
-                    question = textEditorControl.Text.MiddleString("/*[", "]*/");
-                    if (string.IsNullOrWhiteSpace(question))
-                    {
-                        MessageBox.Show("No question provided!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        CancelProgressBar();
-                        return;
-                    }
-                }
-                catch
-                {
-                    // Do nothing.
-                }
-            }
-            else
-            {
-                MessageBox.Show("Wrong question format!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 CancelProgressBar();
                 return;
             }
-            AiManage openAI = new AiManage(apiAi, question.Trim());
+            AiManage openAI = new AiManage(apiAi, GlobalVariables.aiQuestion.Trim());
             StringReader reader = new StringReader(await openAI.AskOpenAI());
             string line = "";
             string outPut = string.Empty;
             while ((line = reader.ReadLine()) != null)
                 outPut += $"{Environment.NewLine}{line}";
-            //outPut = $"//---------------- {{Result}} ----------------\n{outPut}\n//----------------------------------------";
-            //var newAIData = InsertData(textEditorControl.Text, "]*/", outPut).Replace($"/*[{question}]*/", "");
-            //textEditorControl.Document.Replace(0, textEditorControl.Text.Length, newAIData);
-            //GoToLineNumber.GoToLine(textEditorControl, s_line);
-            CancelProgressBar();
 
+            CancelProgressBar();
+            GlobalVariables.aiQuestion = "";
             GlobalVariables.errorAiResponse = outPut;
             AiResponse aiResponseError = new AiResponse();
             aiResponseError.Show();
