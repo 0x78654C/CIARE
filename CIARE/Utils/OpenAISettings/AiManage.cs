@@ -141,9 +141,9 @@ namespace CIARE.Utils.OpenAISettings
 
             CancelProgressBar();
             GlobalVariables.aiQuestion = "";
-            GlobalVariables.errorAiResponse = outPut;
-            AiResponse aiResponseError = new AiResponse();
-            aiResponseError.Show();
+            GlobalVariables.aiResponse = outPut;
+            AiResponse aiResponse = new AiResponse();
+            aiResponse.Show();
         }
 
         /// <summary>
@@ -181,7 +181,7 @@ namespace CIARE.Utils.OpenAISettings
             while ((line = reader.ReadLine()) != null)
                 outPut += $"{Environment.NewLine}{line}";
             CancelProgressBar(); 
-            GlobalVariables.errorAiResponse = outPut;
+            GlobalVariables.aiResponse = outPut;
             AiResponse aiResponseError = new AiResponse();
             aiResponseError.Show();
         }

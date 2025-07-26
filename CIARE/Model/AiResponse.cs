@@ -35,7 +35,7 @@ namespace CIARE.Model
         private void TextBoxWrap()
         {
             var length = this.Width;
-            var textWrap = CustomWrap.CustomWordWrap(GlobalVariables.errorAiResponse, textEditorControl);
+            var textWrap = CustomWrap.CustomWordWrap(GlobalVariables.aiResponse, textEditorControl);
             textEditorControl.Text = textWrap;
         }
 
@@ -44,6 +44,6 @@ namespace CIARE.Model
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void AiResponseError_FormClosed(object sender, FormClosedEventArgs e) => GlobalVariables.errorAiResponse = ""; 
+        private void AiResponseError_FormClosed(object sender, FormClosedEventArgs e) => GlobalVariables.aiResponse = ""; 
     }
 }
