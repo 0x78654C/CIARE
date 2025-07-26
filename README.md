@@ -127,7 +127,7 @@ https://user-images.githubusercontent.com/13780514/201774933-e53d3ba2-95e0-434e-
 
 # AI code generator video sample
 
-https://user-images.githubusercontent.com/13780514/208532011-bd2327fd-fcdd-47ad-8818-306739317326.mp4
+https://github.com/user-attachments/assets/65b82bf9-de19-4ca7-8b51-bac53a8ca31c
 
 # Ollama LLM's integration.
 
