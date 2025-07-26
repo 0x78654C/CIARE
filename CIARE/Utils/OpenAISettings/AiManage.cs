@@ -118,6 +118,7 @@ namespace CIARE.Utils.OpenAISettings
         /// <param name="apiAi"></param>
         public static async void GetDataAI(TextEditorControl textEditorControl, string apiAi)
         {
+            GlobalVariables.aiQuestion = "";
             if (string.IsNullOrEmpty(apiAi))
             {
                 MessageBox.Show("OpenAI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
