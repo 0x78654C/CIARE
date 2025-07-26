@@ -316,7 +316,7 @@ namespace CIARE
             // 
             chatGPTCTRLShiftPToolStripMenuItem.Name = "chatGPTCTRLShiftPToolStripMenuItem";
             chatGPTCTRLShiftPToolStripMenuItem.Size = new System.Drawing.Size(229, 22);
-            chatGPTCTRLShiftPToolStripMenuItem.Text = "ChatGPT   ( CTRL + Shift + P )";
+            chatGPTCTRLShiftPToolStripMenuItem.Text = "Ask AI       ( CTRL + Shift + P )";
             chatGPTCTRLShiftPToolStripMenuItem.Click += chatGPTCTRLShiftPToolStripMenuItem_Click;
             // 
             // compileToolStripMenuItem
