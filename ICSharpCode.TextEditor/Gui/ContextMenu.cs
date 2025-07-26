@@ -22,7 +22,6 @@ namespace ICSharpCode.TextEditor
             copy.Click += OnClickCopy;
             paste.Click += OnClickPaste;
             selectAll.Click += OnSelectAll;
-            askAI.Click += OnAskAI;
         }
 
         void OnClickCut(object sender, EventArgs e)
@@ -54,13 +53,6 @@ namespace ICSharpCode.TextEditor
             new SelectWholeDocument().Execute(parent.TextArea);
             parent.TextArea.Focus();
         }
-
-        void OnAskAI(object sender, EventArgs e)
-        {
-            var selectedText = parent.TextArea.SelectionManager.SelectedText;
-            
-        }
-
 
 
         void OnOpening(object sender, CancelEventArgs e)
