@@ -39,13 +39,13 @@
             askAiTxt.Location = new System.Drawing.Point(12, 12);
             askAiTxt.Multiline = true;
             askAiTxt.Name = "askAiTxt";
-            askAiTxt.Size = new System.Drawing.Size(679, 43);
+            askAiTxt.Size = new System.Drawing.Size(686, 43);
             askAiTxt.TabIndex = 0;
             // 
             // askBtn
             // 
             askBtn.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            askBtn.Location = new System.Drawing.Point(713, 12);
+            askBtn.Location = new System.Drawing.Point(712, 12);
             askBtn.Name = "askBtn";
             askBtn.Size = new System.Drawing.Size(75, 43);
             askBtn.TabIndex = 1;
