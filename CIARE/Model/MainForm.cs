@@ -472,7 +472,7 @@ namespace CIARE
                     cmdLineArgs.ShowDialog();
                     return true;
                 case Keys.P | Keys.Control | Keys.Shift:
-                    AiManage.LoadProgressBar();
+                   
                     AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
                     return true;
                 case Keys.R | Keys.Control:
@@ -712,7 +712,6 @@ namespace CIARE
 
         private void chatGPTCTRLShiftPToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            AiManage.LoadProgressBar();
             AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
         }
 
