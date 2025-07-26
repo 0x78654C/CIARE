@@ -6,14 +6,12 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Collections.Generic;
 using OpenAI.Api.Client.Models;
 using System.Runtime.Versioning;
 using OpenRouter;
 using OllamaInt;
 using System.Drawing;
 using CIARE.Model;
-using CIARE.GUI;
 
 namespace CIARE.Utils.OpenAISettings
 {
@@ -182,41 +180,10 @@ namespace CIARE.Utils.OpenAISettings
             string outPut = string.Empty;
             while ((line = reader.ReadLine()) != null)
                 outPut += $"{Environment.NewLine}{line}";
-            //outPut = $"\n\n---------------- {{AI respond on error message}} ----------------\n{outPut}\n-------------------------------------------------------------";
-            //richTextBox.Text += outPut;
             CancelProgressBar(); 
             GlobalVariables.errorAiResponse = outPut;
             AiResponse aiResponseError = new AiResponse();
             aiResponseError.Show();
-        }
-
-
-        /// <summary>
-        /// Instert data in string by a specfic patern
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="patern"></param>
-        /// <param name="insertedData"></param>
-        /// <returns></returns>
-        private static string InsertData(string data, string patern, string insertedData)
-        {
-            string outData = string.Empty;
-            List<string> dataList = new List<string>();
-            StringReader reader = new StringReader(data);
-            string line = string.Empty;
-            int result = 0, count = 0;
-
-            while ((line = reader.ReadLine()) != null)
-            {
-                count++;
-                if (line.Contains("]*/"))
-                    result = count;
-                dataList.Add(line);
-            }
-            dataList.Insert(result, insertedData);
-            outData = string.Join("\n", dataList);
-            s_line = result + insertedData.Split('\n').Count() + 10;
-            return outData;
         }
 
         /// <summary>
