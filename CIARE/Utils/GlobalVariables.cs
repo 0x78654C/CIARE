@@ -52,7 +52,7 @@ namespace CIARE.Utils
         public static string configParam = "/p:configuration=Debug";
         public static string platformParam = "/p:Platform=\"Any CPU\"";
         public static string publishAot = string.Empty;
-        public static OutputKind OutputKind;
+        public static OutputKind OutputKind { get; set; }
         public static bool OCodeCompletion = true;
         public static bool OLineNumber = true;
         public static bool OFoldingCode = true;
