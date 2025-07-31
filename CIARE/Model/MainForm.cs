@@ -1015,6 +1015,7 @@ namespace CIARE
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.AllowDrop = true;
             dynamicTextEdtior.ActiveTextAreaControl.HScrollBar.Visible = true;
             dynamicTextEdtior.ActiveTextAreaControl.VScrollBar.Visible = true;
+            dynamicTextEdtior.ActiveTextAreaControl.TextArea.KeyPress += CurlyBraket.TextArea_KeyPress;
             dynamicTextEdtior.ActiveTextAreaControl.AutoHideScrollbars = true;
             dynamicTextEdtior.ActiveTextAreaControl.TextEditorProperties.AutoInsertCurlyBracket = true;
             dynamicTextEdtior.ActiveTextAreaControl.VerticalScroll.Enabled = true;
