@@ -49,7 +49,12 @@ namespace CIARE
                 GlobalVariables.binaryNameStore = binaryNameTxt.Text;
                 GlobalVariables.binarytype = typeApp.Text;
                 if (typeApp.Text == ".exe")
-                    GlobalVariables.binarytypeTemplate = "Exe";
+                {
+                    if (typeCompileCkb.Checked)
+                        GlobalVariables.binarytypeTemplate = "WinExe";
+                    else
+                        GlobalVariables.binarytypeTemplate = "Exe";
+                }
                 else
                     GlobalVariables.binarytypeTemplate = "Library";
                 this.Close();
@@ -87,9 +92,15 @@ namespace CIARE
         private void typeCompileCkb_CheckedChanged(object sender, EventArgs e)
         {
             if (typeCompileCkb.Checked)
+            {
                 GlobalVariables.OutputKind = Microsoft.CodeAnalysis.OutputKind.WindowsApplication;
+                GlobalVariables.WinExe = "WinExe";
+            }
             else
+            {
                 GlobalVariables.OutputKind = Microsoft.CodeAnalysis.OutputKind.ConsoleApplication;
+                GlobalVariables.WinExe = "Exe";
+            }
         }
 
         /// <summary>
