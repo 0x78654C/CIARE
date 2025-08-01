@@ -52,6 +52,7 @@ namespace CIARE.Utils
         public static string configParam = "/p:configuration=Debug";
         public static string platformParam = "/p:Platform=\"Any CPU\"";
         public static string publishAot = string.Empty;
+        public static string WinExe { get; set; } = "Exe";
         public static OutputKind OutputKind { get; set; }
         public static bool OCodeCompletion = true;
         public static bool OLineNumber = true;
@@ -75,7 +76,7 @@ namespace CIARE.Utils
         public static string remoteConnectionId = string.Empty;
         public static string binaryNameStore = string.Empty;
         public static string binarytype = ".exe";
-        public static string binarytypeTemplate = "Exe";
+        public static string binarytypeTemplate { get; set; } = "Exe";
         public static bool binaryPublish = false;
         public static bool winForms = false;
         public static bool connected = false;
