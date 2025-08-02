@@ -47,7 +47,7 @@ Useful to run code on the fly and get instant result.
 
 ## Requirements:
 
-.NET 6 SDK
+.NET 8 SDK
 
  For Roslyn C# code runner use NuGet command in Commands project:
  ```
