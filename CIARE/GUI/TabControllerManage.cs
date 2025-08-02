@@ -464,7 +464,7 @@ namespace CIARE.GUI
                         {
                             AddNewTab(tabControl);
                             SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
-                            MainForm.Instance.Text = $"{fileInfo.Name} - CIARE {GlobalVariables.versionName}";
+                            MainForm.Instance.Text = $"{fileInfo.Name} : {FileManage.GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
                             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
                             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = item.Key;
                             var tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;

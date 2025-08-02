@@ -23,7 +23,7 @@ namespace CIARE.Roslyn
         private string _pathNative;
         private string CsProjTemplateExe = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>"+GlobalVariables.WinExe+@"</OutputType>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
 	  <UseWindowsForms>"+GlobalVariables.winForms.ToString() + @"</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
