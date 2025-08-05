@@ -71,7 +71,7 @@ namespace CIARE.Utils.OpenAISettings
                     ollamaClient.Promt = Qestion;
                     ollamaClient.Uri = GlobalVariables.ollamaUri;
                     ollamaClient.ChatHistory = GlobalVariables.chatHistory;
-                    var response = Task.Run(ollamaClient.AskOllama).Result;
+                    var response = await ollamaClient.AskOllama();
                     result = response;
                 }
                 else
@@ -195,14 +195,14 @@ namespace CIARE.Utils.OpenAISettings
             const string vsTheme = "C#-DarkVS";
             const string regName = "highlight";
             string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", regName);
-            MainForm.Instance.aiLabel.BackColor = Color.White;
-            if (regHighlight.Length > 0)
-            {
-                if (regHighlight == vsTheme)
-                    MainForm.Instance.aiLabel.BackColor = Color.FromArgb(30, 30, 30);
-                if (regHighlight == defaultHighLight)
-                    MainForm.Instance.aiLabel.BackColor = Color.FromArgb(2, 0, 10);
-            }
+            MainForm.Instance.aiLabel.BackColor = Color.Transparent;
+            //if (regHighlight.Length > 0)
+            //{
+            //    if (regHighlight == vsTheme)
+            //        MainForm.Instance.aiLabel.BackColor = Color.FromArgb(30, 30, 30);
+            //    if (regHighlight == defaultHighLight)
+            //        MainForm.Instance.aiLabel.BackColor = Color.FromArgb(2, 0, 10);
+            //}
             MainForm.Instance.progressBar.Visible = true;
             MainForm.Instance.aiLabel.Visible = true;
             int centerX = (MainForm.Instance.Width - MainForm.Instance.progressBar.Width) / 2;
