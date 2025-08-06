@@ -204,13 +204,13 @@ namespace CIARE.Utils.OpenAISettings
             //        MainForm.Instance.aiLabel.BackColor = Color.FromArgb(2, 0, 10);
             //}
             MainForm.Instance.progressBar.Visible = true;
-            MainForm.Instance.aiLabel.Visible = true;
+           // MainForm.Instance.aiLabel.Visible = true;
             int centerX = (MainForm.Instance.Width - MainForm.Instance.progressBar.Width) / 2;
             int centerY = (MainForm.Instance.Height - MainForm.Instance.progressBar.Height) / 2;
             MainForm.Instance.progressBar.Location = new Point(centerX, centerY);
-            MainForm.Instance.aiLabel.Location = new Point(centerX - 4, centerY - 20);
+          //  MainForm.Instance.aiLabel.Location = new Point(centerX - 4, centerY - 20);
             MainForm.Instance.progressBar.BringToFront();
-            MainForm.Instance.aiLabel.BringToFront();
+            //MainForm.Instance.aiLabel.BringToFront();
         }
     }
 }
