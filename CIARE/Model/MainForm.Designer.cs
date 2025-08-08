@@ -99,7 +99,6 @@ namespace CIARE
             closeAllTabs = new System.Windows.Forms.ToolStripMenuItem();
             closeAllTabsOne = new System.Windows.Forms.ToolStripMenuItem();
             progressBar = new System.Windows.Forms.ProgressBar();
-            aiLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)runCodePb).BeginInit();
             menuStrip1.SuspendLayout();
             groupBox1.SuspendLayout();
@@ -688,18 +687,6 @@ namespace CIARE
             progressBar.BringToFront();
             progressBar.Style = ProgressBarStyle.Marquee;
             // 
-            // progressLbl
-            // 
-            aiLabel.Anchor = System.Windows.Forms.AnchorStyles.None;
-            aiLabel.AutoSize = true;
-            aiLabel.Location = new System.Drawing.Point(459, 257);
-            aiLabel.Name = "progressLbl";
-            aiLabel.Size = new System.Drawing.Size(265, 15);
-            aiLabel.TabIndex = 3;
-            aiLabel.Text = "Waiting response from AI....";
-            aiLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.25F);
-            aiLabel.Visible = false;
-            // 
             // MainForm
             // 
             AllowDrop = true;
@@ -717,7 +704,6 @@ namespace CIARE
             Controls.Add(runCodePb);
             Controls.Add(menuStrip1);
             Controls.Add(progressBar);
-            Controls.Add(aiLabel);
             ForeColor = System.Drawing.SystemColors.ControlText;
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip1;
@@ -811,7 +797,6 @@ namespace CIARE
         private System.Windows.Forms.ToolStripMenuItem closeAllTabs;
         private System.Windows.Forms.ToolStripMenuItem closeAllTabsOne;
         public System.Windows.Forms.ProgressBar progressBar;
-        public System.Windows.Forms.Label aiLabel;
     }
 }
 

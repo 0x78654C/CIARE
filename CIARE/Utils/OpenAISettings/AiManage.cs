@@ -154,7 +154,6 @@ namespace CIARE.Utils.OpenAISettings
         private static void CancelProgressBar()
         {
             MainForm.Instance.progressBar.Visible = false;
-            MainForm.Instance.aiLabel.Visible = false;
         }
 
         /// <summary>
@@ -191,26 +190,13 @@ namespace CIARE.Utils.OpenAISettings
         /// </summary>
         public static void LoadProgressBar()
         {
-            const string defaultHighLight = "C#-Dark";
-            const string vsTheme = "C#-DarkVS";
             const string regName = "highlight";
             string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", regName);
-            MainForm.Instance.aiLabel.BackColor = Color.Transparent;
-            //if (regHighlight.Length > 0)
-            //{
-            //    if (regHighlight == vsTheme)
-            //        MainForm.Instance.aiLabel.BackColor = Color.FromArgb(30, 30, 30);
-            //    if (regHighlight == defaultHighLight)
-            //        MainForm.Instance.aiLabel.BackColor = Color.FromArgb(2, 0, 10);
-            //}
             MainForm.Instance.progressBar.Visible = true;
-           // MainForm.Instance.aiLabel.Visible = true;
             int centerX = (MainForm.Instance.Width - MainForm.Instance.progressBar.Width) / 2;
             int centerY = (MainForm.Instance.Height - MainForm.Instance.progressBar.Height) / 2;
             MainForm.Instance.progressBar.Location = new Point(centerX, centerY);
-          //  MainForm.Instance.aiLabel.Location = new Point(centerX - 4, centerY - 20);
             MainForm.Instance.progressBar.BringToFront();
-            //MainForm.Instance.aiLabel.BringToFront();
         }
     }
 }
