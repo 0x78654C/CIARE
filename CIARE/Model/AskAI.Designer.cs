@@ -31,6 +31,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AskAI));
             askAiTxt = new System.Windows.Forms.TextBox();
             askBtn = new System.Windows.Forms.Button();
+            diplayCodeCkb = new System.Windows.Forms.CheckBox();
             SuspendLayout();
             // 
             // askAiTxt
@@ -53,12 +54,24 @@
             askBtn.UseVisualStyleBackColor = true;
             askBtn.Click += askBtn_Click;
             // 
+            // diplayCodeCkb
+            // 
+            diplayCodeCkb.AutoSize = true;
+            diplayCodeCkb.Location = new System.Drawing.Point(584, 58);
+            diplayCodeCkb.Name = "diplayCodeCkb";
+            diplayCodeCkb.Size = new System.Drawing.Size(119, 19);
+            diplayCodeCkb.TabIndex = 2;
+            diplayCodeCkb.Text = "Display only code";
+            diplayCodeCkb.UseVisualStyleBackColor = true;
+            diplayCodeCkb.CheckedChanged += diplayCodeCkb_CheckedChanged;
+            // 
             // AskAI
             // 
             AcceptButton = askBtn;
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(800, 67);
+            ClientSize = new System.Drawing.Size(800, 79);
+            Controls.Add(diplayCodeCkb);
             Controls.Add(askBtn);
             Controls.Add(askAiTxt);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
@@ -77,5 +90,6 @@
 
         private System.Windows.Forms.TextBox askAiTxt;
         private System.Windows.Forms.Button askBtn;
+        private System.Windows.Forms.CheckBox diplayCodeCkb;
     }
 }

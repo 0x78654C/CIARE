@@ -10,6 +10,7 @@ namespace CIARE.Model
 
     public partial class AskAI : Form
     {
+        private string _displayCode = "";
         public AskAI()
         {
             InitializeComponent();
@@ -21,7 +22,7 @@ namespace CIARE.Model
             bool isSelected = false;
             var aiType = GlobalVariables.aiTypeVar;
             GetSelectedText(out isSelected);
-            Text = (isSelected) ? $"Ask AI for selected text ({aiType}):": $"Ask AI ({aiType}):";
+            Text = (isSelected) ? $"Ask AI for selected text ({aiType}):" : $"Ask AI ({aiType}):";
         }
 
         /// <summary>
@@ -32,7 +33,7 @@ namespace CIARE.Model
         private void askBtn_Click(object sender, EventArgs e)
         {
             var selectedText = GetSelectedText(out _);
-            GlobalVariables.aiQuestion = (string.IsNullOrEmpty(selectedText)) ? askAiTxt.Text : $"{selectedText}\n {askAiTxt}";
+            GlobalVariables.aiQuestion = (string.IsNullOrEmpty(selectedText)) ? $"{askAiTxt.Text}. {_displayCode}" : $"{selectedText}\n {askAiTxt}. {_displayCode}";
             if (string.IsNullOrWhiteSpace(GlobalVariables.aiQuestion))
             {
                 MessageBox.Show("No question provided!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -46,7 +47,8 @@ namespace CIARE.Model
         /// </summary>
         /// <param name="isSelected"></param>
         /// <returns></returns>
-        private string GetSelectedText(out bool isSelected) {
+        private string GetSelectedText(out bool isSelected)
+        {
             var selectedText = SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.SelectionManager.SelectedText;
             isSelected = !string.IsNullOrEmpty(selectedText);
             return selectedText;
@@ -67,6 +69,16 @@ namespace CIARE.Model
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        /// <summary>
+        /// Add prompt to display code only.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void diplayCodeCkb_CheckedChanged(object sender, EventArgs e)
+        {
+            _displayCode = (diplayCodeCkb.Checked) ? " Display only code." : "";
         }
     }
 }
