@@ -30,7 +30,6 @@ namespace CIARE.LiveShareManage
             {
                 CleanDot(MainForm.Instance.liveStatusPb);
                 GlobalVariables.liveDisconnected = true;
-                MainForm.Instance.liveStatusPb.Image = Properties.Resources.orange_dot;
                 return Task.CompletedTask;
             };
         }
@@ -169,6 +168,7 @@ namespace CIARE.LiveShareManage
         /// </summary>
         public async Task CloseConnection(HubConnection hubConnection)
         {
+            MainForm.Instance.liveStatusPb.Image = Properties.Resources.orange_dot;
             if (hubConnection != null)
                 await hubConnection.StopAsync();
         }
@@ -314,7 +314,7 @@ namespace CIARE.LiveShareManage
             GlobalVariables.connected = false;
             if (hubConnection != null)
                 await hubConnection.StopAsync();
-
+            MainForm.Instance.liveStatusPb.Image = Properties.Resources.orange_dot;
             DialogResult dr = DialogResult.No;
             dr = MessageBox.Show("The live share connection or API is down. Do you want to reconnect?", "CIARE - Live Share", MessageBoxButtons.YesNo,
 MessageBoxIcon.Warning);
