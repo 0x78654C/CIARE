@@ -23,7 +23,12 @@ namespace CIARE.Model
             InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, textEditorControl, new ComboBox { });
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, textEditorControl);
-            Text = $"{GlobalVariables.aiTypeVar} response:";
+            var model = "";
+            if(GlobalVariables.aiTypeVar.Contains("Ollama"))
+                model  = GlobalVariables.modelOllamaVar;
+            else
+                model = GlobalVariables.model;
+            Text = $"{GlobalVariables.aiTypeVar} - {model} response:";
             TextBoxWrap();
         }
         
