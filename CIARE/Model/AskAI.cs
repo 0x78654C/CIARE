@@ -21,8 +21,13 @@ namespace CIARE.Model
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
             bool isSelected = false;
             var aiType = GlobalVariables.aiTypeVar;
+            var model = "";
+            if (aiType.Contains("Ollama"))
+                model = GlobalVariables.modelOllamaVar;
+            else
+                model = GlobalVariables.model;
             GetSelectedText(out isSelected);
-            Text = (isSelected) ? $"Ask AI for selected text ({aiType}):" : $"Ask AI ({aiType}):";
+            Text = (isSelected) ? $"Ask AI for selected text ({aiType} - {model}):" : $"Ask AI ({aiType} - {model}):";
         }
 
         /// <summary>
