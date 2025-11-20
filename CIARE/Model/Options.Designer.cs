@@ -249,7 +249,7 @@ namespace CIARE
             // 
             frameWorkCMB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             frameWorkCMB.FormattingEnabled = true;
-            frameWorkCMB.Items.AddRange(new object[] { ".NET 6", ".NET 6 Windows", ".NET 7", ".NET 7 Windows", ".NET 8", ".NET 8 Windows" });
+            frameWorkCMB.Items.AddRange(new object[] { ".NET 6", ".NET 6 Windows", ".NET 7", ".NET 7 Windows", ".NET 8", ".NET 8 Windows", ".NET 9", ".NET 9 Windows", ".NET 10", ".NET 10 Windows" });
             frameWorkCMB.Location = new System.Drawing.Point(166, 125);
             frameWorkCMB.Name = "frameWorkCMB";
             frameWorkCMB.Size = new System.Drawing.Size(121, 23);
