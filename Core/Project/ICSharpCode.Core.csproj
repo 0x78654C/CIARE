@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0-windows7.0</TargetFramework>
     <OutputTarget>Library</OutputTarget>
@@ -46,4 +46,7 @@
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
   </ItemGroup>
   <PropertyGroup />
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);WFO1000</NoWarn>
+  </PropertyGroup>
 </Project>

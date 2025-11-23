@@ -52,4 +52,7 @@
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.17" />
   </ItemGroup>
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);WFO1000</NoWarn>
+</PropertyGroup>  
 </Project>
