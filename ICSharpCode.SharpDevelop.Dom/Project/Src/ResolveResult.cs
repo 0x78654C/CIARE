@@ -286,24 +286,20 @@ namespace ICSharpCode.SharpDevelop.Dom
 		/// Gets if the variable is a parameter (true) or a local variable (false).
 		/// </summary>
 		public bool IsParameter {
-			get { return field.IsParameter; }
+			get; set;
 		}
 		
 		/// <summary>
 		/// Gets the name of the parameter/local variable.
 		/// </summary>
-		public string VariableName {
-			get { return field.Name; }
-		}
+		public string VariableName { get; set; }
 		
 		/// <summary>
 		/// Gets th position where the parameter/local variable is declared.
 		/// </summary>
-		public DomRegion VariableDefinitionRegion {
-			get { return field.Region; }
-		}
-		
-		public override FilePosition GetDefinitionPosition()
+		public DomRegion VariableDefinitionRegion {get; set; }
+
+        public override FilePosition GetDefinitionPosition()
 		{
 			ICompilationUnit cu = this.CallingClass.CompilationUnit;
 			if (cu == null) {

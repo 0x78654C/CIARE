@@ -75,6 +75,56 @@ namespace CIARE.Utils.Options
                 return;
             }
 
+
+            if (framework.Text.StartsWith(".NET 9"))
+            {
+
+                if (!SdkVersion.CheckSdk(framework.Text.Substring(5, 1)))
+                {
+                    MessageBox.Show("The targeted framework (.NET 9) is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    GetFramework(CIARE.Options.Instance.frameWorkCMB, GlobalVariables.registryPath);
+                    return;
+                }
+                if (framework.Text.Contains("Windows"))
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net9.0-windows");
+                    GlobalVariables.Framework = "net9.0-windows";
+                    GlobalVariables.winForms = true;
+                }
+                else
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net9.0");
+                    GlobalVariables.Framework = "net9.0";
+                    GlobalVariables.winForms = false;
+                }
+                return;
+            }
+
+            if (framework.Text.StartsWith(".NET 10"))
+            {
+
+                if (!SdkVersion.CheckSdk(framework.Text.Substring(5, 1)))
+                {
+                    MessageBox.Show("The targeted framework (.NET 10) is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    GetFramework(CIARE.Options.Instance.frameWorkCMB, GlobalVariables.registryPath);
+                    return;
+                }
+                if (framework.Text.Contains("Windows"))
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net10.0-windows");
+                    GlobalVariables.Framework = "net10.0-windows";
+                    GlobalVariables.winForms = true;
+                }
+                else
+                {
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, "net10.0");
+                    GlobalVariables.Framework = "net10.0";
+                    GlobalVariables.winForms = false;
+                }
+                return;
+            }
+
+
             if (!SdkVersion.CheckSdk(framework.Text.Substring(5, 1)))
             {
                 MessageBox.Show("The targeted framework (.NET 8) is not installed!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -118,6 +168,14 @@ namespace CIARE.Utils.Options
                     framework.SelectedIndex = 4;
                 else if (regFramework == "net8.0-windows")
                     framework.SelectedIndex = 5;
+                else if (regFramework == "net9.0")
+                    framework.SelectedIndex = 6;
+                else if (regFramework == "net9.0-windows")
+                    framework.SelectedIndex = 7;
+                else if (regFramework == "net10.0")
+                    framework.SelectedIndex = 8;
+                else if (regFramework == "net10.0-windows")
+                    framework.SelectedIndex = 9;
                 else
                     framework.SelectedIndex = 0;
                 return;

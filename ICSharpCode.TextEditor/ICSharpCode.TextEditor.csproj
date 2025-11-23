@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>.net8.0-windows7.0</TargetFramework>
+    <TargetFramework>net10.0-windows8.0</TargetFramework>
     <OutputTarget>Library</OutputTarget>
     <NoStdLib>False</NoStdLib>
     <NoConfig>False</NoConfig>
@@ -89,8 +89,11 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="8.0.6" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
   </ItemGroup>
   <PropertyGroup />
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);WFO1000</NoWarn>
+  </PropertyGroup>
   <PropertyGroup />
 </Project>

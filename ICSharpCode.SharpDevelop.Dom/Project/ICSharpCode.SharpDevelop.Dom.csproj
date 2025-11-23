@@ -27,7 +27,7 @@
     <DebugType>None</DebugType>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <TargetFramework>net10.0-windows8.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
@@ -52,4 +52,7 @@
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.17" />
   </ItemGroup>
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);WFO1000</NoWarn>
+</PropertyGroup>  
 </Project>
