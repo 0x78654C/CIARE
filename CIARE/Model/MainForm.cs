@@ -472,7 +472,6 @@ namespace CIARE
                     cmdLineArgs.ShowDialog();
                     return true;
                 case Keys.P | Keys.Control | Keys.Shift:
-                   
                     AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
                     return true;
                 case Keys.R | Keys.Control:

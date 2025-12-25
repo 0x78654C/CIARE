@@ -12,6 +12,7 @@ using OpenRouter;
 using OllamaInt;
 using System.Drawing;
 using CIARE.Model;
+using CIARE.GUI;
 
 namespace CIARE.Utils.OpenAISettings
 {
@@ -153,6 +154,8 @@ namespace CIARE.Utils.OpenAISettings
         /// typically used to indicate that a background operation has completed or been canceled.</remarks>
         private static void CancelProgressBar()
         {
+            MainForm.Instance.EditorTabControl.Visible = true;
+            MainForm.Instance.EditorTabControl.Enabled = true;
             MainForm.Instance.progressBar.Visible = false;
         }
 
@@ -193,6 +196,8 @@ namespace CIARE.Utils.OpenAISettings
             const string regName = "highlight";
             string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", regName);
             MainForm.Instance.progressBar.Visible = true;
+            MainForm.Instance.EditorTabControl.Visible = false;
+            MainForm.Instance.EditorTabControl.Enabled = false;
             int centerX = (MainForm.Instance.Width - MainForm.Instance.progressBar.Width) / 2;
             int centerY = (MainForm.Instance.Height - MainForm.Instance.progressBar.Height) / 2;
             MainForm.Instance.progressBar.Location = new Point(centerX, centerY);
