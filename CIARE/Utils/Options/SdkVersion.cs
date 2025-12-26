@@ -25,8 +25,10 @@ namespace CIARE.Utils.Options
                 {
                     if (!string.IsNullOrWhiteSpace(line))
                     {
-                        int len = line.Length - 1;
-                        outList.Add(line[..^len]);
+                        //int len = line.Length - 1;
+                        //outList.Add(line[..^len]);
+                        var skdVersion = line.Split('.')[0].Trim();
+                        outList.Add(skdVersion);
                     }
                 }
             }
