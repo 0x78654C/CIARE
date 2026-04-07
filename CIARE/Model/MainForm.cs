@@ -163,7 +163,13 @@ namespace CIARE
             // Get last opened tab MD5.
             if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
                 GlobalVariables.openedFileMD5 = MD5Hash.GetMD5Hash(SelectedEditor.GetSelectedEditor().Text);
-            
+
+            if (GlobalVariables.darkColor)
+            {
+                FrmColorMod.EnableDarkTitleBar(this.Handle);
+                FrmColorMod.EnableDarkTitleBar(EditorTabControl.Handle);
+            }
+
         }
 
         private void SetCodeCompletion(int index)
@@ -390,20 +396,20 @@ namespace CIARE
                     }
                     return true;
                 case Keys.PageDown | Keys.Control:
-                    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
+                    TabControllerManage.SwitchTabs(EditorTabControl, true);
                     return true;
                 case Keys.PageUp | Keys.Control:
-                    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
+                    TabControllerManage.SwitchTabs(EditorTabControl, false);
                     return true;
                 case Keys.Q | Keys.Control:
                     LiveShareHost liveShareHost = new LiveShareHost();
                     liveShareHost.ShowDialog();
                     return true;
                 case Keys.Left | Keys.Control:
-                    TabControllerManage.SwitchTabs(ref EditorTabControl, true);
+                    TabControllerManage.SwitchTabs(EditorTabControl, true);
                     return true;
                 case Keys.Right | Keys.Control:
-                    TabControllerManage.SwitchTabs(ref EditorTabControl, false);
+                    TabControllerManage.SwitchTabs(EditorTabControl, false);
                     return true;
                 case Keys.Tab | Keys.Control:
                     worker = new BackgroundWorker();

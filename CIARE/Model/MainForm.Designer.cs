@@ -84,7 +84,7 @@ namespace CIARE
             hotKeyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             groupBox1 = new System.Windows.Forms.GroupBox();
             splitContainer1 = new System.Windows.Forms.SplitContainer();
-            EditorTabControl = new System.Windows.Forms.TabControl();
+            EditorTabControl = new CIARE.GUI.DarkTabControl();
             tabPage1 = new System.Windows.Forms.TabPage();
             tabPage2 = new System.Windows.Forms.TabPage();
             label2 = new System.Windows.Forms.Label();
@@ -789,7 +789,7 @@ namespace CIARE
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator8;
         public System.Windows.Forms.ToolStripMenuItem referenceAddToolStripMenuItem;
-        public System.Windows.Forms.TabControl EditorTabControl;
+        public CIARE.GUI.DarkTabControl EditorTabControl;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.ContextMenuStrip tabMenu;

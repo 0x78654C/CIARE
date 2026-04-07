@@ -499,7 +499,7 @@ namespace CIARE.GUI
         /// </summary>
         /// <param name="tabControl"></param>
         /// <param name="left"></param>
-        public static void SwitchTabs(ref TabControl tabControl, bool left)
+        public static void SwitchTabs(TabControl tabControl, bool left)
         {
             var tabCount = tabControl.TabCount;
             var tabIndex = tabControl.SelectedIndex;
@@ -524,18 +524,22 @@ namespace CIARE.GUI
         {
             try
             {
-                Rectangle rec = tabControl.ClientRectangle;
+                bool dark = GlobalVariables.darkColor;
+
+                // In dark mode use a dark highlight for the selected tab instead of LightGray.
+                if (dark && color == Color.LightGray)
+                    color = GlobalVariables.isVStheme ? Color.FromArgb(63, 63, 70) : Color.FromArgb(20, 20, 35);
+
                 StringFormat StrFormat = new StringFormat();
                 StrFormat.LineAlignment = StringAlignment.Center;
                 StrFormat.Alignment = StringAlignment.Center;
-                SolidBrush fontColor;
                 Font fntTab = e.Font;
-                Brush bshBack = new SolidBrush(color);
                 Rectangle recBounds = tabControl.GetTabRect(index);
                 RectangleF tabTextArea = (RectangleF)tabControl.GetTabRect(index);
-                e.Graphics.FillRectangle(bshBack, recBounds);
-                fontColor = new SolidBrush(Color.Black);
-                e.Graphics.DrawString(tabControl.TabPages[index].Text, fntTab, fontColor, tabTextArea, StrFormat);
+                using (Brush bshBack = new SolidBrush(color))
+                    e.Graphics.FillRectangle(bshBack, recBounds);
+                using (SolidBrush fontColor = dark ? new SolidBrush(Color.FromArgb(192, 215, 207)) : new SolidBrush(Color.Black))
+                    e.Graphics.DrawString(tabControl.TabPages[index].Text, fntTab, fontColor, tabTextArea, StrFormat);
 
                 var g = e.Graphics;
                 var tp = tabControl.TabPages[e.Index];
@@ -559,9 +563,8 @@ namespace CIARE.GUI
                     FormatFlags = StringFormatFlags.NoWrap,
                 })
                 {
-                    //g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, Brushes.Black, rt, sf);
                     if (e.Index >= 1)
-                        g.DrawString("r", f, s_hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
+                        g.DrawString("r", f, s_hoverIndex == e.Index ? (dark ? Brushes.White : Brushes.Black) : Brushes.Gray, rx, sf);
                 }
                 tp.Tag = rx;
             }
@@ -581,9 +584,21 @@ namespace CIARE.GUI
         {
             try
             {
+                bool dark = GlobalVariables.darkColor;
                 var g = e.Graphics;
                 var tp = tabControl.TabPages[e.Index];
                 var rt = e.Bounds;
+
+                // Fill tab background in dark mode so the OS default light strip is hidden.
+                if (dark)
+                {
+                    Color tabBackColor = GlobalVariables.isVStheme
+                        ? Color.FromArgb(45, 45, 48)
+                        : Color.FromArgb(10, 10, 20);
+                    using (SolidBrush bgBrush = new SolidBrush(tabBackColor))
+                        g.FillRectangle(bgBrush, rt);
+                }
+
                 var rx = new Rectangle(rt.Right - 20, (rt.Y + (rt.Height - 12)) / 2 + 1, 12, 12);
 
                 if ((e.State & DrawItemState.Selected) != DrawItemState.Selected)
@@ -594,6 +609,8 @@ namespace CIARE.GUI
                 rt.Inflate(-rx.Width, 0);
                 rt.Offset(-(rx.Width / 2), 0);
 
+                Brush textBrush = dark ? new SolidBrush(Color.FromArgb(192, 215, 207)) : Brushes.Black;
+
                 using (Font f = new Font("Marlett", 8f))
                 using (StringFormat sf = new StringFormat()
                 {
@@ -603,10 +620,14 @@ namespace CIARE.GUI
                     FormatFlags = StringFormatFlags.NoWrap,
                 })
                 {
-                    g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, Brushes.Black, rt, sf);
+                    g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, textBrush, rt, sf);
                     if (e.Index > 1)
-                        g.DrawString("r", f, s_hoverIndex == e.Index ? Brushes.Black : Brushes.Gray, rx, sf);
+                        g.DrawString("r", f, s_hoverIndex == e.Index ? (dark ? Brushes.White : Brushes.Black) : Brushes.Gray, rx, sf);
                 }
+
+                if (dark)
+                    textBrush.Dispose();
+
                 tp.Tag = rx;
             }
             catch
