@@ -30,79 +30,84 @@ namespace CIARE
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CmdLineArgs));
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.cancelBtn = new System.Windows.Forms.Button();
-            this.confirmBtn = new System.Windows.Forms.Button();
-            this.cmdLineArgTxtBox = new System.Windows.Forms.TextBox();
-            this.groupBox1.SuspendLayout();
-            this.SuspendLayout();
+            groupBox1 = new System.Windows.Forms.GroupBox();
+            cancelBtn = new System.Windows.Forms.Button();
+            confirmBtn = new System.Windows.Forms.Button();
+            cmdLineArgTxtBox = new System.Windows.Forms.TextBox();
+            groupBox1.SuspendLayout();
+            SuspendLayout();
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.cancelBtn);
-            this.groupBox1.Controls.Add(this.confirmBtn);
-            this.groupBox1.Controls.Add(this.cmdLineArgTxtBox);
-            this.groupBox1.Location = new System.Drawing.Point(12, 12);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(318, 151);
-            this.groupBox1.TabIndex = 0;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Set Command Line Arguments:";
+            groupBox1.Controls.Add(cancelBtn);
+            groupBox1.Controls.Add(confirmBtn);
+            groupBox1.Controls.Add(cmdLineArgTxtBox);
+            groupBox1.Location = new System.Drawing.Point(14, 14);
+            groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            groupBox1.Name = "groupBox1";
+            groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            groupBox1.Size = new System.Drawing.Size(371, 174);
+            groupBox1.TabIndex = 0;
+            groupBox1.TabStop = false;
+            groupBox1.Text = "Set Command Line Arguments:";
             // 
             // cancelBtn
             // 
-            this.cancelBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.cancelBtn.Location = new System.Drawing.Point(236, 116);
-            this.cancelBtn.Name = "cancelBtn";
-            this.cancelBtn.Size = new System.Drawing.Size(75, 23);
-            this.cancelBtn.TabIndex = 2;
-            this.cancelBtn.Text = "Cancel";
-            this.cancelBtn.UseVisualStyleBackColor = true;
-            this.cancelBtn.Click += new System.EventHandler(this.cancelBtn_Click);
+            cancelBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            cancelBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            cancelBtn.Location = new System.Drawing.Point(275, 134);
+            cancelBtn.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            cancelBtn.Name = "cancelBtn";
+            cancelBtn.Size = new System.Drawing.Size(88, 27);
+            cancelBtn.TabIndex = 2;
+            cancelBtn.Text = "Cancel";
+            cancelBtn.UseVisualStyleBackColor = true;
+            cancelBtn.Click += cancelBtn_Click;
             // 
             // confirmBtn
             // 
-            this.confirmBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.confirmBtn.Location = new System.Drawing.Point(6, 116);
-            this.confirmBtn.Margin = new System.Windows.Forms.Padding(0);
-            this.confirmBtn.Name = "confirmBtn";
-            this.confirmBtn.Size = new System.Drawing.Size(75, 23);
-            this.confirmBtn.TabIndex = 1;
-            this.confirmBtn.Text = "OK";
-            this.confirmBtn.UseVisualStyleBackColor = true;
-            this.confirmBtn.Click += new System.EventHandler(this.confirmBtn_Click);
+            confirmBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            confirmBtn.Location = new System.Drawing.Point(7, 134);
+            confirmBtn.Margin = new System.Windows.Forms.Padding(0);
+            confirmBtn.Name = "confirmBtn";
+            confirmBtn.Size = new System.Drawing.Size(88, 27);
+            confirmBtn.TabIndex = 1;
+            confirmBtn.Text = "OK";
+            confirmBtn.UseVisualStyleBackColor = true;
+            confirmBtn.Click += confirmBtn_Click;
             // 
             // cmdLineArgTxtBox
             // 
-            this.cmdLineArgTxtBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.cmdLineArgTxtBox.Location = new System.Drawing.Point(6, 19);
-            this.cmdLineArgTxtBox.Multiline = true;
-            this.cmdLineArgTxtBox.Name = "cmdLineArgTxtBox";
-            this.cmdLineArgTxtBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.cmdLineArgTxtBox.Size = new System.Drawing.Size(305, 78);
-            this.cmdLineArgTxtBox.TabIndex = 0;
+            cmdLineArgTxtBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+            cmdLineArgTxtBox.Location = new System.Drawing.Point(7, 22);
+            cmdLineArgTxtBox.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            cmdLineArgTxtBox.Multiline = true;
+            cmdLineArgTxtBox.Name = "cmdLineArgTxtBox";
+            cmdLineArgTxtBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            cmdLineArgTxtBox.Size = new System.Drawing.Size(355, 89);
+            cmdLineArgTxtBox.TabIndex = 0;
             // 
             // CmdLineArgs
             // 
-            this.AcceptButton = this.confirmBtn;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.Window;
-            this.CancelButton = this.cancelBtn;
-            this.ClientSize = new System.Drawing.Size(344, 179);
-            this.Controls.Add(this.groupBox1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "CmdLineArgs";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Command Line Arguments";
-            this.Load += new System.EventHandler(this.CmdLineArgs_Load);
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
-            this.ResumeLayout(false);
+            AcceptButton = confirmBtn;
+            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            BackColor = System.Drawing.SystemColors.Window;
+            CancelButton = cancelBtn;
+            ClientSize = new System.Drawing.Size(401, 207);
+            Controls.Add(groupBox1);
+            FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
+            Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "CmdLineArgs";
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            Text = "Command Line Arguments";
+            Load += CmdLineArgs_Load;
+            groupBox1.ResumeLayout(false);
+            groupBox1.PerformLayout();
+            ResumeLayout(false);
 
         }
 

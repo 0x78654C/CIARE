@@ -47,14 +47,14 @@
             textEditorControl.TabIndex = 1;
             textEditorControl.Resize += textEditorControl_Resize;
             // 
-            // AiResponseError
+            // AiResponse
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             ClientSize = new System.Drawing.Size(649, 661);
             Controls.Add(textEditorControl);
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
-            Name = "AiResponseError";
+            Name = "AiResponse";
             StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             Text = "AI respond on error message";
             FormClosed += AiResponseError_FormClosed;

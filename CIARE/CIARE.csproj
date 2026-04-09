@@ -32,7 +32,7 @@
 		<DefineConstants>Windows</DefineConstants>
 	</PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>ciare.ico</ApplicationIcon>
+    <ApplicationIcon>logoCiare.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <OutputPath>bin\x64\Debug\</OutputPath>
@@ -46,6 +46,9 @@
   <ItemGroup>
     <Analyzer Include="$(UserProfile)\.nuget\packages\microsoft.codeanalysis.analyzers\3.3.4\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
     <Analyzer Include="$(UserProfile)\.nuget\packages\microsoft.codeanalysis.analyzers\3.3.4\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="logoCiare.ico" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CIARE\OpenAI.Api.Client\OpenAI.Api.Client.csproj" />
