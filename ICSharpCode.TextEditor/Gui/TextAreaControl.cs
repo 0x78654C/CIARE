@@ -163,6 +163,20 @@ namespace ICSharpCode.TextEditor
 			base.OnResize(e);
 			ResizeTextArea();
 		}
+
+		protected override void OnVisibleChanged(EventArgs e)
+		{
+			base.OnVisibleChanged(e);
+			// Recalculate scrollbar visibility whenever this control is shown
+			// (e.g. when the user switches to the tab that contains this editor).
+			// Guard against early-init calls (textArea not yet set) and post-disposal
+			// calls where vScrollBar/hScrollBar have already been nulled by Dispose().
+			if (Visible && !IsDisposed && textArea != null && vScrollBar != null && hScrollBar != null)
+			{
+				ResizeTextArea();
+				AdjustScrollBars();
+			}
+		}
 		
 		public void ResizeTextArea()
 		{

@@ -1,5 +1,7 @@
 ﻿using CIARE.Utils;
+using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -8,6 +10,10 @@ namespace CIARE.GUI
     [SupportedOSPlatform("windows")]
     public static class FrmColorMod
     {
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(
+          IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+        private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
         private static Color ForeColor;
         private static Color BackGroundColor;
         private static Color ForeColorForm;
@@ -22,6 +28,7 @@ namespace CIARE.GUI
         /// <param name="dark"></param>
         public static void ToogleColorMode(this Form form, bool dark)
         {
+            EnableDarkTitleBar(form.Handle);
             ForeColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
             if (GlobalVariables.isVStheme)
                 BackGroundColor = dark ? Color.FromArgb(30, 30, 30) : SystemColors.Window;
@@ -36,6 +43,17 @@ namespace CIARE.GUI
             form.BackColor = BackGroundColorForm;
             form.ForeColor = ForeColorForm;
         }
+
+        /// <summary>
+        /// Enable dark title bar on windows 10 and 11. (Only for main form, child forms will inherit the title bar color)
+        /// </summary>
+        /// <param name="handle"></param>
+        public static void EnableDarkTitleBar(IntPtr handle)
+        {
+            int value = 1;
+            DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE, ref value, sizeof(int));
+        }
+
 
         /// <summary>
         /// Apply color mode on form (dark/light) 

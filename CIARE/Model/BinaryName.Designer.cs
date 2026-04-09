@@ -34,9 +34,9 @@ namespace CIARE
             ConfirmButton = new System.Windows.Forms.Button();
             cancelButton = new System.Windows.Forms.Button();
             groupBox1 = new System.Windows.Forms.GroupBox();
+            label1 = new System.Windows.Forms.Label();
             typeApp = new System.Windows.Forms.ComboBox();
             typeCompileCkb = new System.Windows.Forms.CheckBox();
-            label1 = new System.Windows.Forms.Label();
             groupBox1.SuspendLayout();
             SuspendLayout();
             // 
@@ -91,6 +91,15 @@ namespace CIARE
             groupBox1.TabIndex = 3;
             groupBox1.TabStop = false;
             // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new System.Drawing.Point(59, 125);
+            label1.Name = "label1";
+            label1.Size = new System.Drawing.Size(35, 15);
+            label1.TabIndex = 4;
+            label1.Text = "Type:";
+            // 
             // typeApp
             // 
             typeApp.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
@@ -114,15 +123,6 @@ namespace CIARE
             typeCompileCkb.UseVisualStyleBackColor = true;
             typeCompileCkb.Visible = false;
             typeCompileCkb.CheckedChanged += typeCompileCkb_CheckedChanged;
-            // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Location = new System.Drawing.Point(59, 125);
-            label1.Name = "label1";
-            label1.Size = new System.Drawing.Size(34, 15);
-            label1.TabIndex = 4;
-            label1.Text = "Type:";
             // 
             // BinaryName
             // 

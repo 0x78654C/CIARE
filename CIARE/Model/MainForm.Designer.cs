@@ -34,71 +34,71 @@ namespace CIARE
         {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            outputRBT = new System.Windows.Forms.RichTextBox();
-            toolTip1 = new System.Windows.Forms.ToolTip(components);
-            runCodePb = new System.Windows.Forms.PictureBox();
-            menuStrip1 = new System.Windows.Forms.MenuStrip();
-            fIleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            newFileStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            saveAsStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            LoadCStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            undoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            redoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
-            cutStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            copyStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            pasteStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            deleteStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
-            finStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            replaceStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            goToLineStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            selectAllStripMenuItem3 = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
-            chatGPTCTRLShiftPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            compileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            compileToexeCtrlShiftBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
-            compileToDLLCtrlSfitBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
-            cmdLinesArgsStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
-            referenceAddToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            splitEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            splitVEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            compileStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            showHideHSCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            liveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            liveShareToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            hotKeyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            groupBox1 = new System.Windows.Forms.GroupBox();
-            splitContainer1 = new System.Windows.Forms.SplitContainer();
-            EditorTabControl = new System.Windows.Forms.TabControl();
-            tabPage1 = new System.Windows.Forms.TabPage();
-            tabPage2 = new System.Windows.Forms.TabPage();
-            label2 = new System.Windows.Forms.Label();
-            label3 = new System.Windows.Forms.Label();
-            linesCountLbl = new System.Windows.Forms.Label();
-            linesPositionLbl = new System.Windows.Forms.Label();
-            imageList1 = new System.Windows.Forms.ImageList(components);
-            markStartFileChk = new System.Windows.Forms.CheckBox();
-            liveStatusPb = new System.Windows.Forms.PictureBox();
-            tabMenu = new System.Windows.Forms.ContextMenuStrip(components);
-            closeTab = new System.Windows.Forms.ToolStripMenuItem();
-            closeAllTabs = new System.Windows.Forms.ToolStripMenuItem();
-            closeAllTabsOne = new System.Windows.Forms.ToolStripMenuItem();
-            progressBar = new System.Windows.Forms.ProgressBar();
+            outputRBT = new RichTextBox();
+            toolTip1 = new ToolTip(components);
+            runCodePb = new PictureBox();
+            menuStrip1 = new MenuStrip();
+            fIleToolStripMenuItem = new ToolStripMenuItem();
+            newFileStripMenuItem = new ToolStripMenuItem();
+            openToolStripMenuItem = new ToolStripMenuItem();
+            saveToolStripMenuItem = new ToolStripMenuItem();
+            saveAsStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
+            LoadCStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator2 = new ToolStripSeparator();
+            exitToolStripMenuItem = new ToolStripMenuItem();
+            editToolStripMenuItem = new ToolStripMenuItem();
+            undoToolStripMenuItem = new ToolStripMenuItem();
+            redoToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator3 = new ToolStripSeparator();
+            cutStripMenuItem = new ToolStripMenuItem();
+            copyStripMenuItem = new ToolStripMenuItem();
+            pasteStripMenuItem = new ToolStripMenuItem();
+            deleteStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator4 = new ToolStripSeparator();
+            finStripMenuItem = new ToolStripMenuItem();
+            replaceStripMenuItem = new ToolStripMenuItem();
+            goToLineStripMenuItem = new ToolStripMenuItem();
+            selectAllStripMenuItem3 = new ToolStripMenuItem();
+            toolStripSeparator6 = new ToolStripSeparator();
+            chatGPTCTRLShiftPToolStripMenuItem = new ToolStripMenuItem();
+            compileToolStripMenuItem = new ToolStripMenuItem();
+            compileToexeCtrlShiftBToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator8 = new ToolStripSeparator();
+            compileToDLLCtrlSfitBToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator5 = new ToolStripSeparator();
+            cmdLinesArgsStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator7 = new ToolStripSeparator();
+            referenceAddToolStripMenuItem = new ToolStripMenuItem();
+            viewToolStripMenuItem = new ToolStripMenuItem();
+            splitEditorToolStripMenuItem = new ToolStripMenuItem();
+            splitVEditorToolStripMenuItem = new ToolStripMenuItem();
+            compileStripSeparator1 = new ToolStripSeparator();
+            showHideHSCToolStripMenuItem = new ToolStripMenuItem();
+            liveToolStripMenuItem = new ToolStripMenuItem();
+            liveShareToolStripMenuItem = new ToolStripMenuItem();
+            settingsToolStripMenuItem = new ToolStripMenuItem();
+            optionsToolStripMenuItem = new ToolStripMenuItem();
+            helpToolStripMenuItem = new ToolStripMenuItem();
+            aboutToolStripMenuItem = new ToolStripMenuItem();
+            hotKeyToolStripMenuItem = new ToolStripMenuItem();
+            groupBox1 = new GroupBox();
+            splitContainer1 = new SplitContainer();
+            EditorTabControl = new CIARE.GUI.DarkTabControl();
+            tabPage1 = new TabPage();
+            tabPage2 = new TabPage();
+            label2 = new Label();
+            label3 = new Label();
+            linesCountLbl = new Label();
+            linesPositionLbl = new Label();
+            imageList1 = new ImageList(components);
+            markStartFileChk = new CheckBox();
+            liveStatusPb = new PictureBox();
+            tabMenu = new ContextMenuStrip(components);
+            closeTab = new ToolStripMenuItem();
+            closeAllTabs = new ToolStripMenuItem();
+            closeAllTabsOne = new ToolStripMenuItem();
+            progressBar = new ProgressBar();
             ((System.ComponentModel.ISupportInitialize)runCodePb).BeginInit();
             menuStrip1.SuspendLayout();
             groupBox1.SuspendLayout();
@@ -107,24 +107,23 @@ namespace CIARE
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             EditorTabControl.SuspendLayout();
-            progressBar.SuspendLayout();    
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).BeginInit();
             tabMenu.SuspendLayout();
             SuspendLayout();
             // 
             // outputRBT
             // 
-            outputRBT.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            outputRBT.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             outputRBT.BackColor = System.Drawing.SystemColors.Window;
-            outputRBT.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            outputRBT.BorderStyle = BorderStyle.None;
             outputRBT.Font = new System.Drawing.Font("Consolas", 11.25F);
             outputRBT.ForeColor = System.Drawing.SystemColors.MenuText;
             outputRBT.Location = new System.Drawing.Point(7, 18);
-            outputRBT.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            outputRBT.Margin = new Padding(4, 3, 4, 3);
             outputRBT.Name = "outputRBT";
             outputRBT.ReadOnly = true;
-            outputRBT.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            outputRBT.Size = new System.Drawing.Size(1388, 157);
+            outputRBT.ScrollBars = RichTextBoxScrollBars.Vertical;
+            outputRBT.Size = new System.Drawing.Size(1388, 156);
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
             outputRBT.MouseWheel += outputRBT_MouseWheel;
@@ -137,7 +136,7 @@ namespace CIARE
             // 
             runCodePb.Image = Properties.Resources.runButton21;
             runCodePb.Location = new System.Drawing.Point(365, 4);
-            runCodePb.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            runCodePb.Margin = new Padding(4, 3, 4, 3);
             runCodePb.Name = "runCodePb";
             runCodePb.Size = new System.Drawing.Size(33, 24);
             runCodePb.TabIndex = 2;
@@ -148,17 +147,17 @@ namespace CIARE
             // menuStrip1
             // 
             menuStrip1.BackColor = System.Drawing.SystemColors.Window;
-            menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { fIleToolStripMenuItem, editToolStripMenuItem, compileToolStripMenuItem, viewToolStripMenuItem, liveToolStripMenuItem, settingsToolStripMenuItem, helpToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { fIleToolStripMenuItem, editToolStripMenuItem, compileToolStripMenuItem, viewToolStripMenuItem, liveToolStripMenuItem, settingsToolStripMenuItem, helpToolStripMenuItem });
             menuStrip1.Location = new System.Drawing.Point(0, 0);
             menuStrip1.Name = "menuStrip1";
-            menuStrip1.Padding = new System.Windows.Forms.Padding(7, 2, 0, 2);
+            menuStrip1.Padding = new Padding(7, 2, 0, 2);
             menuStrip1.Size = new System.Drawing.Size(1410, 24);
             menuStrip1.TabIndex = 4;
             menuStrip1.Text = "menuStrip1";
             // 
             // fIleToolStripMenuItem
             // 
-            fIleToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { newFileStripMenuItem, openToolStripMenuItem, saveToolStripMenuItem, saveAsStripMenuItem, toolStripSeparator1, LoadCStripMenuItem, toolStripSeparator2, exitToolStripMenuItem });
+            fIleToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newFileStripMenuItem, openToolStripMenuItem, saveToolStripMenuItem, saveAsStripMenuItem, toolStripSeparator1, LoadCStripMenuItem, toolStripSeparator2, exitToolStripMenuItem });
             fIleToolStripMenuItem.Name = "fIleToolStripMenuItem";
             fIleToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             fIleToolStripMenuItem.Text = "File";
@@ -218,7 +217,7 @@ namespace CIARE
             // 
             // editToolStripMenuItem
             // 
-            editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { undoToolStripMenuItem, redoToolStripMenuItem, toolStripSeparator3, cutStripMenuItem, copyStripMenuItem, pasteStripMenuItem, deleteStripMenuItem, toolStripSeparator4, finStripMenuItem, replaceStripMenuItem, goToLineStripMenuItem, selectAllStripMenuItem3, toolStripSeparator6, chatGPTCTRLShiftPToolStripMenuItem });
+            editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { undoToolStripMenuItem, redoToolStripMenuItem, toolStripSeparator3, cutStripMenuItem, copyStripMenuItem, pasteStripMenuItem, deleteStripMenuItem, toolStripSeparator4, finStripMenuItem, replaceStripMenuItem, goToLineStripMenuItem, selectAllStripMenuItem3, toolStripSeparator6, chatGPTCTRLShiftPToolStripMenuItem });
             editToolStripMenuItem.Name = "editToolStripMenuItem";
             editToolStripMenuItem.ShowShortcutKeys = false;
             editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
@@ -320,7 +319,7 @@ namespace CIARE
             // 
             // compileToolStripMenuItem
             // 
-            compileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { compileToexeCtrlShiftBToolStripMenuItem, toolStripSeparator8, compileToDLLCtrlSfitBToolStripMenuItem, toolStripSeparator5, cmdLinesArgsStripMenuItem, toolStripSeparator7, referenceAddToolStripMenuItem });
+            compileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { compileToexeCtrlShiftBToolStripMenuItem, toolStripSeparator8, compileToDLLCtrlSfitBToolStripMenuItem, toolStripSeparator5, cmdLinesArgsStripMenuItem, toolStripSeparator7, referenceAddToolStripMenuItem });
             compileToolStripMenuItem.Name = "compileToolStripMenuItem";
             compileToolStripMenuItem.Size = new System.Drawing.Size(64, 20);
             compileToolStripMenuItem.Text = "Compile";
@@ -370,7 +369,7 @@ namespace CIARE
             // 
             // viewToolStripMenuItem
             // 
-            viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { splitEditorToolStripMenuItem, splitVEditorToolStripMenuItem, compileStripSeparator1, showHideHSCToolStripMenuItem });
+            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { splitEditorToolStripMenuItem, splitVEditorToolStripMenuItem, compileStripSeparator1, showHideHSCToolStripMenuItem });
             viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             viewToolStripMenuItem.Text = "View";
@@ -403,7 +402,7 @@ namespace CIARE
             // 
             // liveToolStripMenuItem
             // 
-            liveToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { liveShareToolStripMenuItem });
+            liveToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { liveShareToolStripMenuItem });
             liveToolStripMenuItem.Name = "liveToolStripMenuItem";
             liveToolStripMenuItem.Size = new System.Drawing.Size(40, 20);
             liveToolStripMenuItem.Text = "Live";
@@ -417,7 +416,7 @@ namespace CIARE
             // 
             // settingsToolStripMenuItem
             // 
-            settingsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { optionsToolStripMenuItem });
+            settingsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { optionsToolStripMenuItem });
             settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             settingsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
             settingsToolStripMenuItem.Text = "Settings";
@@ -431,7 +430,7 @@ namespace CIARE
             // 
             // helpToolStripMenuItem
             // 
-            helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { aboutToolStripMenuItem, hotKeyToolStripMenuItem });
+            helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { aboutToolStripMenuItem, hotKeyToolStripMenuItem });
             helpToolStripMenuItem.Name = "helpToolStripMenuItem";
             helpToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             helpToolStripMenuItem.Text = "Help";
@@ -452,13 +451,13 @@ namespace CIARE
             // 
             // groupBox1
             // 
-            groupBox1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            groupBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             groupBox1.Controls.Add(outputRBT);
             groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F);
             groupBox1.Location = new System.Drawing.Point(4, 3);
-            groupBox1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            groupBox1.Margin = new Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
-            groupBox1.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            groupBox1.Padding = new Padding(4, 3, 4, 3);
             groupBox1.Size = new System.Drawing.Size(1402, 181);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
@@ -466,11 +465,11 @@ namespace CIARE
             // 
             // splitContainer1
             // 
-            splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            splitContainer1.Dock = DockStyle.Fill;
             splitContainer1.Location = new System.Drawing.Point(0, 24);
-            splitContainer1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            splitContainer1.Margin = new Padding(4, 3, 4, 3);
             splitContainer1.Name = "splitContainer1";
-            splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            splitContainer1.Orientation = Orientation.Horizontal;
             // 
             // splitContainer1.Panel1
             // 
@@ -486,10 +485,10 @@ namespace CIARE
             // 
             // EditorTabControl
             // 
-            EditorTabControl.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            EditorTabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             EditorTabControl.Controls.Add(tabPage1);
             EditorTabControl.Controls.Add(tabPage2);
-            EditorTabControl.DrawMode = System.Windows.Forms.TabDrawMode.OwnerDrawFixed;
+            EditorTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
             EditorTabControl.ItemSize = new System.Drawing.Size(130, 20);
             EditorTabControl.Location = new System.Drawing.Point(3, 3);
             EditorTabControl.Name = "EditorTabControl";
@@ -509,7 +508,7 @@ namespace CIARE
             tabPage1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, 0);
             tabPage1.Location = new System.Drawing.Point(4, 24);
             tabPage1.Name = "tabPage1";
-            tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            tabPage1.Padding = new Padding(3);
             tabPage1.Size = new System.Drawing.Size(1395, 612);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "   +        ";
@@ -530,7 +529,7 @@ namespace CIARE
             label2.AutoSize = true;
             label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
             label2.Location = new System.Drawing.Point(343, 2);
-            label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            label2.Margin = new Padding(4, 0, 4, 0);
             label2.Name = "label2";
             label2.Size = new System.Drawing.Size(13, 18);
             label2.TabIndex = 10;
@@ -541,7 +540,7 @@ namespace CIARE
             label3.AutoSize = true;
             label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
             label3.Location = new System.Drawing.Point(395, 2);
-            label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            label3.Margin = new Padding(4, 0, 4, 0);
             label3.Name = "label3";
             label3.Size = new System.Drawing.Size(13, 18);
             label3.TabIndex = 11;
@@ -549,10 +548,10 @@ namespace CIARE
             // 
             // linesCountLbl
             // 
-            linesCountLbl.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            linesCountLbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             linesCountLbl.AutoSize = true;
             linesCountLbl.Location = new System.Drawing.Point(1219, 6);
-            linesCountLbl.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            linesCountLbl.Margin = new Padding(4, 0, 4, 0);
             linesCountLbl.Name = "linesCountLbl";
             linesCountLbl.Size = new System.Drawing.Size(64, 15);
             linesCountLbl.TabIndex = 14;
@@ -560,10 +559,10 @@ namespace CIARE
             // 
             // linesPositionLbl
             // 
-            linesPositionLbl.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            linesPositionLbl.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             linesPositionLbl.AutoSize = true;
             linesPositionLbl.Location = new System.Drawing.Point(1036, 6);
-            linesPositionLbl.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            linesPositionLbl.Margin = new Padding(4, 0, 4, 0);
             linesPositionLbl.Name = "linesPositionLbl";
             linesPositionLbl.Size = new System.Drawing.Size(74, 15);
             linesPositionLbl.TabIndex = 15;
@@ -571,8 +570,8 @@ namespace CIARE
             // 
             // imageList1
             // 
-            imageList1.ColorDepth = System.Windows.Forms.ColorDepth.Depth8Bit;
-            imageList1.ImageStream = (System.Windows.Forms.ImageListStreamer)resources.GetObject("imageList1.ImageStream");
+            imageList1.ColorDepth = ColorDepth.Depth8Bit;
+            imageList1.ImageStream = (ImageListStreamer)resources.GetObject("imageList1.ImageStream");
             imageList1.TransparentColor = System.Drawing.Color.Transparent;
             imageList1.Images.SetKeyName(0, "Icons.16x16.Class.png");
             imageList1.Images.SetKeyName(1, "Icons.16x16.Delegate.png");
@@ -640,7 +639,7 @@ namespace CIARE
             // 
             // liveStatusPb
             // 
-            liveStatusPb.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            liveStatusPb.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             liveStatusPb.Location = new System.Drawing.Point(1387, 5);
             liveStatusPb.Name = "liveStatusPb";
             liveStatusPb.Size = new System.Drawing.Size(18, 19);
@@ -650,7 +649,7 @@ namespace CIARE
             // 
             // tabMenu
             // 
-            tabMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { closeTab, closeAllTabs, closeAllTabsOne });
+            tabMenu.Items.AddRange(new ToolStripItem[] { closeTab, closeAllTabs, closeAllTabsOne });
             tabMenu.Name = "tabMenu";
             tabMenu.Size = new System.Drawing.Size(169, 70);
             // 
@@ -675,23 +674,21 @@ namespace CIARE
             closeAllTabsOne.Text = "Close All BUT This";
             closeAllTabsOne.Click += closeAllTabsOne_Click;
             // 
-            // progresBar
+            // progressBar
             // 
-            progressBar.Anchor = System.Windows.Forms.AnchorStyles.None;
+            progressBar.Anchor = AnchorStyles.None;
             progressBar.Location = new System.Drawing.Point(398, 294);
             progressBar.MarqueeAnimationSpeed = 30;
-            progressBar.Name = "progresBar";
+            progressBar.Name = "progressBar";
             progressBar.Size = new System.Drawing.Size(265, 10);
-            progressBar.TabIndex = 1;
-            progressBar.Visible = true;
-            progressBar.BringToFront();
             progressBar.Style = ProgressBarStyle.Marquee;
+            progressBar.TabIndex = 1;
             // 
             // MainForm
             // 
             AllowDrop = true;
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            AutoScaleMode = AutoScaleMode.Font;
             BackColor = System.Drawing.SystemColors.Window;
             ClientSize = new System.Drawing.Size(1410, 862);
             Controls.Add(liveStatusPb);
@@ -707,9 +704,9 @@ namespace CIARE
             ForeColor = System.Drawing.SystemColors.ControlText;
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip1;
-            Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            Margin = new Padding(4, 3, 4, 3);
             Name = "MainForm";
-            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            StartPosition = FormStartPosition.CenterScreen;
             Text = "CIARE";
             Activated += MainForm_Activated;
             FormClosing += MainForm_FormClosing;
@@ -789,7 +786,7 @@ namespace CIARE
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator8;
         public System.Windows.Forms.ToolStripMenuItem referenceAddToolStripMenuItem;
-        public System.Windows.Forms.TabControl EditorTabControl;
+        public CIARE.GUI.DarkTabControl EditorTabControl;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.ContextMenuStrip tabMenu;

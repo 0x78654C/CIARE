@@ -1,205 +1,222 @@
 <p align="center">
-  <img src="https://github.com/0x78654C/CIARE/blob/main/Media/ciare.png" width=150>
+  <img src="https://github.com/0x78654C/CIARE/blob/main/CIARE/logoCiare.png" width=150>
 </p>
 
-# CIARE
-Simple text editor for Windows with C# runtime compiler and code execution using Roslyn.
-Useful to run code on the fly and get instant result.
+<h1 align="center">CIARE</h1>
+<p align="center">
+  A lightweight Windows text editor with C# runtime compilation and code execution powered by Roslyn.<br>
+  Write and run C# code on the fly — no project setup required.
+</p>
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_2.0.4.png?raw=true)
+---
 
-# Features
+![Preview](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_2.0.4.png?raw=true)
 
- - Open/Save current text.
- - Search for text in editor.
- - Load predefined C# code sample template.
- - Display current edited file (Using * on application title near file path ).
- - Compile and run code on ram using Roslyn.
- - Compile code to binary files(.exe or .dll).
- - Publish code to binary files(.exe or .dll).
- - Native AOT publish option.
- - Show runtime(ms) for code compile and exectuion or compile only.
- - Hotkeys for mentioned above features. 
- - Drag & Drop
- - Display output result and errors (ID and message).
- - Highlight code fore various of programing languages.
- - Find and replace text.
- - Show/Hide output window with current state stored for next run.
- - Auto hide/show output window.
- - Split editor window.
- - Set Command Line Parameters.
- - Go to line number.
- - Display total lines for editor data.
- - Display caret position (Line, Column)
- - Folding by curly brackets, region and others.
- - Autosave font size on editor zoom.
- - Code completion (intellisense)
- - Build options(Debug/Release - Any CPU/x64)
- - Enable/disable warnings messages on compile.
- - Mark files for open on next application start or Windows logon.
- - Target desired framework(.NET6, .NET 7 or .NET 8) for use when a application is compiled.
- - Live share: share and work in same time at a project/file data.
- - Generate code/data with AI or work with selected tex.
- - Add reference to custom managed libraries.
- - NuGet Manager
- - Usage of unsafe code.
- - Error window notification in line.
+---
 
-## Requirements:
+## ✨ Features
 
-.NET 10 SDK
+### Editor
+- Open / Save files
+- Search and replace text
+- Go to line number
+- Display total lines and caret position (Line, Column)
+- Syntax highlighting for various programming languages
+- Code folding (curly brackets, regions, and more)
+- Code completion (IntelliSense)
+- Split editor window (vertical & horizontal)
+- Drag & Drop support
+- Autosave font size on editor zoom
+- Load predefined C# code sample templates
+- Display current edited file state (`*` indicator in title bar)
 
- For Roslyn C# code runner use NuGet command in Commands project:
- ```
- Install-Package Microsoft.CodeAnalysis.CSharp -pre
- ```
+### Compilation & Execution
+- Compile and run C# code in memory using Roslyn
+- Compile code to binary files (`.exe` or `.dll`)
+- Publish code to binary files (`.exe` or `.dll`)
+- Native AOT publish option
+- Build options: Debug / Release — Any CPU / x64
+- Target desired framework (.NET 6, .NET 7, .NET 8)
+- Set command line parameters
+- Show runtime (ms) for compile and execution
+- Enable / disable compiler warning messages
+- Usage of unsafe code
+- Inline error window notifications
+- Display output results and errors (ID and message)
 
- For Roslyn C# compiler to binary use NuGet command in Commands project:
- ```
- Install-Package Microsoft.CodeDom.Providers.DotNetCompilerPlatform -Version 4.1.0-preview1
- ```
+### Workspace & Files
+- Show / Hide output window (state persisted across sessions)
+- Auto hide / show output window
+- Mark files to open on next app start or Windows logon
+- Add references to custom managed libraries
+- NuGet Manager — download and use packages instantly
 
- Mono.Cecil library.(Used in current project is an older version. Can be found on 'Lib' directory.)
- ```
- Install-Package Mono.Cecil -Version 0.9.5.4
- ```
+### AI Integration
+- Generate code / data with AI or work with selected text
+- ChatGPT (OpenAI) integration
+- OpenRouter multi-model AI integration
+- Ollama local LLM integration (auto-detects installed models)
 
- log4net library.
- ```
- Install-Package log4net -Version 2.0.14
- ```
+### Collaboration
+- Live Share — collaborate on the same file in real time
 
- As code highlighter I use ICSharpCode.TextEditor.Extended forked from https://github.com/megakraken/ICSharpCode.TextEditor
- For code completion I use the libraries(ICSharpCode.SharpDevelop.Dom,ICSharpCode,Core and NRefactory)
- from https://sourceforge.net/projects/sharpdevelop/files/SharpDevelop%203.x/3.2/ version.
+---
 
-## Live share
+## 📋 Requirements
 
- With Live Share you can work on same project/file in same time with another person. 
+- **[.NET 10 SDK](https://dotnet.microsoft.com/download)**
 
- Project is based on https://dotnet.microsoft.com/en-us/apps/aspnet/signalr library.
+**NuGet packages** (install via Package Manager Console in the Commands project):
 
- Requirements: 
- 
-  A hosted CIARE Live Share API: https://github.com/0x78654C/CIARELiveShareAPI 
-  for managing connection.
+```powershell
+# Roslyn in-memory C# runner
+Install-Package Microsoft.CodeAnalysis.CSharp -pre
 
- Setup:
- 1. Save your API link in Settings tab -> Options -> Live Share
+# Roslyn binary compiler
+Install-Package Microsoft.CodeDom.Providers.DotNetCompilerPlatform -Version 4.1.0-preview1
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_setting.png?raw=true)
+# Mono.Cecil (older version — also available in the Lib directory)
+Install-Package Mono.Cecil -Version 0.9.5.4
 
- 2. To start a Live Share connection go to Live tab -> Live Share Manage and click on 'Start Live share' button.
-    After the live share is started give the Session Id and Password to the person you want to share with.
+# Logging
+Install-Package log4net -Version 2.0.14
+```
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_start.png?raw=true)
+**Third-party libraries:**
+- **Code highlighter:** [ICSharpCode.TextEditor.Extended](https://github.com/megakraken/ICSharpCode.TextEditor)
+- **Code completion:** `ICSharpCode.SharpDevelop.Dom`, `ICSharpCode.Core`, `NRefactory` from [SharpDevelop 3.2](https://sourceforge.net/projects/sharpdevelop/files/SharpDevelop%203.x/3.2/)
 
- When live share is started and connection to API message box will be prompted a red notification bubble will appear in right-up corner that notify you that is broadcasting and current tab is colored red aswel. 
- In the process of live share tabs cannot be closed.
+---
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_notify.png?raw=true)
-![live2](https://github.com/0x78654C/CIARE/assets/13780514/fc1a8915-4439-4b5c-88f4-d957ece90f2e)
+## 🔴 Live Share
 
- 3. To start a remote connection go to Live tab -> Live Share Manage and add your given session id and password 
-    and add them to 'Remote Session Id/Password' text boxes. After click on 'Remote Connect' button.
-    Same here will be notified with a the red dot when broadcast is started.
+Collaborate on the same project or file in real time with another person.
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ls_remote.png?raw=true)
+**Built on:** [ASP.NET SignalR](https://dotnet.microsoft.com/en-us/apps/aspnet/signalr)
 
-INFO: Maximum connection are two / session id.
-After connection is made the remote connected user can see host user data but can edit just after host made the first edit on data.
+**Requires:** A hosted [CIARE Live Share API](https://github.com/0x78654C/CIARELiveShareAPI)
 
-# Live share video sample
+### Setup
+
+**1.** Save your API link in **Settings → Options → Live Share**
+
+![Live Share Settings](https://github.com/0x78654C/CIARE/blob/main/Media/ls_setting.png?raw=true)
+
+**2.** Go to **Live → Live Share Manage** and click **Start Live Share**. Share the generated Session ID and Password with your collaborator.
+
+![Live Share Start](https://github.com/0x78654C/CIARE/blob/main/Media/ls_start.png?raw=true)
+
+When broadcasting, a red notification bubble appears in the top-right corner and the active tab is highlighted red. Tabs cannot be closed during a live share session.
+
+![Live Share Notification](https://github.com/0x78654C/CIARE/blob/main/Media/ls_notify.png?raw=true)
+![Live Share Active](https://github.com/0x78654C/CIARE/assets/13780514/fc1a8915-4439-4b5c-88f4-d957ece90f2e)
+
+**3.** To join a session, go to **Live → Live Share Manage**, enter the Session ID and Password in the **Remote Session Id/Password** fields, then click **Remote Connect**.
+
+![Live Share Remote](https://github.com/0x78654C/CIARE/blob/main/Media/ls_remote.png?raw=true)
+
+> **Note:** Maximum 2 connections per session ID. After connecting, the remote user can view the host's data and edit once the host makes the first change.
+
+### 🎥 Live Share Demo
 
 https://user-images.githubusercontent.com/13780514/201774933-e53d3ba2-95e0-434e-aa9a-16489169afd5.mp4
 
-# ChatGPT/Openrouter AI integration
-  
- ChatGPT is chatbot from https://openai.com that uses AI integration that answers questions with a very precise output.
- OpenRouter (https://openrouter.ai/) is a platform that allows you to use multiple AI models from different providers.
- That been said chatGPT/OpenRouter can be even be used as code generator for your projects.
- * Usage:
- 1. Add your OpenAI/OpenRouter API key in Settings>Options. Model and tokens can be edited as well.
- 2. (OpenAI)Add the amount of maxim tokens to be displayed. More info at https://platform.openai.com/tokenizer
- 2. Got to Edit>Ask AI or press hotkeys CTRL + Shift + P. (You can select text from editor and ask the AI what to do with it)
+---
 
- Answer will be display automatically in your editor.
+## 🤖 AI Integration
 
-# AI code generator video sample
+### ChatGPT / OpenRouter
+
+- [ChatGPT](https://openai.com) — precise AI answers and code generation
+- [OpenRouter](https://openrouter.ai/) — access multiple AI models from different providers
+
+**Usage:**
+1. Add your OpenAI or OpenRouter API key in **Settings → Options** (model and token limit configurable)
+2. Go to **Edit → Ask AI** or press `CTRL + Shift + P`
+3. Optionally select text in the editor to send it as context
+
+The AI response is inserted directly into your editor.
+
+### 🎥 AI Code Generator Demo
 
 https://github.com/user-attachments/assets/65b82bf9-de19-4ca7-8b51-bac53a8ca31c
 
-# Ollama LLM's integration.
+### Ollama (Local LLMs)
 
- CIARE can be used with Ollama AI models. To use it you need to install Ollama and download the model you want to use. CIARE detects the installation and the models automatically.
- After that you can use it in CIARE by using the same format as for ChatGPT.
+CIARE automatically detects your Ollama installation and available models. Use it the same way as ChatGPT.
 
-# NuGet Manager
+---
 
-Download NuGet packages directly from https://www.nuget.org/ and use it in CIARE instantly. It will be downloded latest package autmatic. 
+## 📦 NuGet Manager
 
+Download NuGet packages directly from [nuget.org](https://www.nuget.org/) and use them in CIARE instantly. The latest package version is downloaded automatically.
 
 https://user-images.githubusercontent.com/13780514/223232524-22b1c5a3-795e-4735-b6c0-375e99d9069c.mp4
 
+---
 
-# Sample pictures
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_inteli.png?raw=true)
+## 🖼️ Screenshots
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split2.png?raw=true)
+![IntelliSense](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_inteli.png?raw=true)
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split.png?raw=true)
+![Split View 2](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split2.png?raw=true)
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_menu.png?raw=true)
+![Split View](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_split.png?raw=true)
 
-![alt text](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_recursion.png?raw=true)
+![Menu](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_menu.png?raw=true)
 
-# HotKeys
+![Recursion](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_recursion.png?raw=true)
+
+---
+
+## ⌨️ Hotkeys
+
 ```
------------ File management --------------- 
-CTRL + N         : Empty the current tab file and sets to new page.
-CTRL + O         : Open file.
-CTRL + S         : Save to data to current file if changed.
-CTRL + Shift + S : Save data to a new file name or existing one.
-CTRL + T         : Load C# Main template.
+----------- File Management ---------------
+CTRL + N         : New file (clears current tab)
+CTRL + O         : Open file
+CTRL + S         : Save current file
+CTRL + Shift + S : Save As
+CTRL + T         : Load C# Main template
 
------------- Editor management ------------
-CTRL + Z         : Undo last modifications.
-CTRL + Y         : Redo last modifications.
-CTRL + Delete    : Delete words to right.
-CTRL + Backspace : Delete words to left.
-CTRL + D         : Delete current line.
-CTRL + Shift + D : Delete from cursor to end of line.
-CTRL + X         : Cut selection.
-CTRL + C         : Copy selection.
-CTRL + V         : Paste selection.
-DEL              : Delete Selection.
-CTRL + F         : Find text in current tab.
-CTRL + H         : Replace text in current tab.
-CTRL + G         : Go to line number in current tab.
-CTRL + A         : Select all text in current tab
-CTRL + Shift + P : Get data from chatGPT by your provided text pattern.
+------------ Editor Management ------------
+CTRL + Z         : Undo
+CTRL + Y         : Redo
+CTRL + Delete    : Delete word to the right
+CTRL + Backspace : Delete word to the left
+CTRL + D         : Delete current line
+CTRL + Shift + D : Delete from cursor to end of line
+CTRL + X         : Cut selection
+CTRL + C         : Copy selection
+CTRL + V         : Paste
+DEL              : Delete selection
+CTRL + F         : Find text
+CTRL + H         : Find and replace text
+CTRL + G         : Go to line number
+CTRL + A         : Select all
+CTRL + Shift + P : Ask AI (optionally with selected text)
 
 ---------------- Compile ------------------
-F5               : Run current cod.                
-CTRL + B         : Compile code from current tab to binary. (.dll/.exe)
-CTRL + Shift + B : Publish code from current tab to binary. (.dll/.exe)
-CTRL + L         : Add command line arguments.
-CTRL + R         : Add external reference or download from NuGet.
+F5               : Run current code
+CTRL + B         : Compile to binary (.dll/.exe)
+CTRL + Shift + B : Publish to binary (.dll/.exe)
+CTRL + L         : Set command line arguments
+CTRL + R         : Add reference / download from NuGet
 
 ------------------ View -------------------
-CTRL + W         : Split window vertically.
-CTRL + Shift + W : Split window horizontally.
-CTRL + U         : Switch between splitted window area.
-CTRL + K         : Show/Hide output window.
+CTRL + W         : Split window vertically
+CTRL + Shift + W : Split window horizontally
+CTRL + U         : Switch between split areas
+CTRL + K         : Show / Hide output window
 
-------------- Tabs management -------------
-CTRL + Tab       : Adds new tab.
-CTRL + Left      : Switches tabs to left.
-CTRL + Right     : Switches tabs to right.
+------------- Tabs Management -------------
+CTRL + Tab       : Add new tab
+CTRL + Left      : Switch to left tab
+CTRL + Right     : Switch to right tab
 
------------ Live share management ---------
-CTRL + Q         : Start live share management window.
+----------- Live Share Management ---------
+CTRL + Q         : Open Live Share management window
 
 ------------ NuGet Search Window ----------
-SHIFT + F10      : Download selected NuGet package.
+SHIFT + F10      : Download selected NuGet package
 ```

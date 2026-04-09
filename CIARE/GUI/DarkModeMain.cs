@@ -32,7 +32,9 @@ namespace CIARE.GUI
             Label separator2, Label separator3, MenuStrip menuStrip,
             List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList, bool isVsTheme)
         {
-            form.BackColor = (isVsTheme)? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
+
+            FrmColorMod.EnableDarkTitleBar(form.Handle);
+            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51) : Color.FromArgb(0, 1, 10);
             form.ForeColor = Color.FromArgb(192, 215, 207);
             richTextBox.BackColor = (isVsTheme) ? Color.FromArgb(30, 30, 30) : Color.FromArgb(2, 0, 10);
             if (GlobalVariables.isRed)
@@ -45,7 +47,7 @@ namespace CIARE.GUI
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
             separator2.ForeColor = Color.FromArgb(192, 215, 207);
             separator3.ForeColor = Color.FromArgb(192, 215, 207);
-            menuStrip.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51): Color.FromArgb(0, 1, 10);
+            menuStrip.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51) : Color.FromArgb(0, 1, 10);
             menuStrip.ForeColor = Color.FromArgb(192, 215, 207);
             menuStrip.Renderer = new ColorTableSet();
             foreach (var toolStripMenu in toolStripMenuList)

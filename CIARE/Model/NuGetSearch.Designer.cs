@@ -32,23 +32,23 @@ namespace CIARE.Model
         {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NuGetSearch));
-            SearchBox = new System.Windows.Forms.TextBox();
-            SearchBtn = new System.Windows.Forms.Button();
-            packageList = new System.Windows.Forms.ListView();
-            packageName = new System.Windows.Forms.ColumnHeader();
-            versoion = new System.Windows.Forms.ColumnHeader();
-            description = new System.Windows.Forms.ColumnHeader();
-            ActionNugetMenu = new System.Windows.Forms.ContextMenuStrip(components);
-            addToReference = new System.Windows.Forms.ToolStripMenuItem();
-            copyPackageName = new System.Windows.Forms.ToolStripMenuItem();
-            downloadLbl = new System.Windows.Forms.Label();
-            downloadBar = new System.Windows.Forms.ProgressBar();
+            SearchBox = new TextBox();
+            SearchBtn = new Button();
+            packageList = new ListView();
+            packageName = new ColumnHeader();
+            versoion = new ColumnHeader();
+            description = new ColumnHeader();
+            ActionNugetMenu = new ContextMenuStrip(components);
+            addToReference = new ToolStripMenuItem();
+            copyPackageName = new ToolStripMenuItem();
+            downloadLbl = new Label();
+            downloadBar = new ProgressBar();
             ActionNugetMenu.SuspendLayout();
             SuspendLayout();
             // 
             // SearchBox
             // 
-            SearchBox.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            SearchBox.Anchor = AnchorStyles.Top;
             SearchBox.Location = new System.Drawing.Point(267, 15);
             SearchBox.Name = "SearchBox";
             SearchBox.Size = new System.Drawing.Size(430, 23);
@@ -56,7 +56,7 @@ namespace CIARE.Model
             // 
             // SearchBtn
             // 
-            SearchBtn.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            SearchBtn.Anchor = AnchorStyles.Top;
             SearchBtn.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             SearchBtn.Location = new System.Drawing.Point(714, 15);
             SearchBtn.Name = "SearchBtn";
@@ -68,8 +68,8 @@ namespace CIARE.Model
             // 
             // packageList
             // 
-            packageList.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            packageList.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { packageName, versoion, description });
+            packageList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            packageList.Columns.AddRange(new ColumnHeader[] { packageName, versoion, description });
             packageList.Font = new System.Drawing.Font("Segoe UI", 9.75F);
             packageList.Location = new System.Drawing.Point(12, 56);
             packageList.MultiSelect = false;
@@ -77,7 +77,7 @@ namespace CIARE.Model
             packageList.Size = new System.Drawing.Size(1067, 512);
             packageList.TabIndex = 2;
             packageList.UseCompatibleStateImageBehavior = false;
-            packageList.View = System.Windows.Forms.View.Details;
+            packageList.View = View.Details;
             packageList.DoubleClick += packageList_DoubleClick;
             packageList.MouseClick += packageList_MouseClick;
             // 
@@ -97,7 +97,7 @@ namespace CIARE.Model
             // 
             // ActionNugetMenu
             // 
-            ActionNugetMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { addToReference, copyPackageName });
+            ActionNugetMenu.Items.AddRange(new ToolStripItem[] { addToReference, copyPackageName });
             ActionNugetMenu.Name = "ActionNugetMenu";
             ActionNugetMenu.Size = new System.Drawing.Size(291, 48);
             // 
@@ -117,7 +117,7 @@ namespace CIARE.Model
             // 
             // downloadLbl
             // 
-            downloadLbl.Anchor = System.Windows.Forms.AnchorStyles.None;
+            downloadLbl.Anchor = AnchorStyles.None;
             downloadLbl.AutoSize = true;
             downloadLbl.BackColor = System.Drawing.SystemColors.ButtonHighlight;
             downloadLbl.Location = new System.Drawing.Point(459, 257);
@@ -129,20 +129,20 @@ namespace CIARE.Model
             // 
             // downloadBar
             // 
-            downloadBar.Anchor = System.Windows.Forms.AnchorStyles.None;
+            downloadBar.Anchor = AnchorStyles.None;
             downloadBar.Location = new System.Drawing.Point(398, 294);
             downloadBar.MarqueeAnimationSpeed = 30;
             downloadBar.Name = "downloadBar";
             downloadBar.Size = new System.Drawing.Size(265, 23);
+            downloadBar.Style = ProgressBarStyle.Marquee;
             downloadBar.TabIndex = 4;
             downloadBar.Visible = false;
-            downloadBar.Style = ProgressBarStyle.Marquee;
             // 
             // NuGetSearch
             // 
             AcceptButton = SearchBtn;
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new System.Drawing.Size(1091, 580);
             Controls.Add(downloadLbl);
             Controls.Add(downloadBar);
@@ -151,7 +151,7 @@ namespace CIARE.Model
             Controls.Add(SearchBox);
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             Name = "NuGetSearch";
-            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            StartPosition = FormStartPosition.CenterScreen;
             Text = "NuGet Package Manager";
             Load += NuGetSearch_Load;
             Resize += NuGetSearch_Resize;
