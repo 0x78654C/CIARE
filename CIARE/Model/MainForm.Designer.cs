@@ -75,6 +75,8 @@ namespace CIARE
             splitVEditorToolStripMenuItem = new ToolStripMenuItem();
             compileStripSeparator1 = new ToolStripSeparator();
             showHideHSCToolStripMenuItem = new ToolStripMenuItem();
+            viewSeparator1 = new ToolStripSeparator();
+            fullScreenToolStripMenuItem = new ToolStripMenuItem();
             liveToolStripMenuItem = new ToolStripMenuItem();
             liveShareToolStripMenuItem = new ToolStripMenuItem();
             settingsToolStripMenuItem = new ToolStripMenuItem();
@@ -369,7 +371,7 @@ namespace CIARE
             // 
             // viewToolStripMenuItem
             // 
-            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { splitEditorToolStripMenuItem, splitVEditorToolStripMenuItem, compileStripSeparator1, showHideHSCToolStripMenuItem });
+            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { splitEditorToolStripMenuItem, splitVEditorToolStripMenuItem, compileStripSeparator1, showHideHSCToolStripMenuItem, viewSeparator1, fullScreenToolStripMenuItem });
             viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             viewToolStripMenuItem.Text = "View";
@@ -399,6 +401,18 @@ namespace CIARE
             showHideHSCToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
             showHideHSCToolStripMenuItem.Text = "Show/Hide Output          ( CTRL + K )";
             showHideHSCToolStripMenuItem.Click += showHideSCToolStripMenuItem_Click;
+            // 
+            // viewSeparator1
+            // 
+            viewSeparator1.Name = "viewSeparator1";
+            viewSeparator1.Size = new System.Drawing.Size(263, 6);
+            // 
+            // fullScreenToolStripMenuItem
+            // 
+            fullScreenToolStripMenuItem.Name = "fullScreenToolStripMenuItem";
+            fullScreenToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
+            fullScreenToolStripMenuItem.Text = "Full Screen                    ( F11 )";
+            fullScreenToolStripMenuItem.Click += fullScreenToolStripMenuItem_Click;
             // 
             // liveToolStripMenuItem
             // 
@@ -765,6 +779,8 @@ namespace CIARE
         public System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem splitEditorToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem showHideHSCToolStripMenuItem;
+        public System.Windows.Forms.ToolStripSeparator viewSeparator1;
+        public System.Windows.Forms.ToolStripMenuItem fullScreenToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem goToLineStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
         public System.Windows.Forms.ToolStripMenuItem cmdLinesArgsStripMenuItem;

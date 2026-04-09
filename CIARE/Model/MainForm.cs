@@ -65,6 +65,10 @@ namespace CIARE
         public TextEditorControl selectedEditor;
         TextEditorControl dynamicTextEdtior;
         private int _countTabs = 0;
+        private bool _isFullScreen = false;
+        private FormBorderStyle _savedBorderStyle;
+        private FormWindowState _savedWindowState;
+        private bool _markStartFileChkVisible;
         BackgroundWorker worker;
         private string[] _filesDrag;
 
@@ -367,6 +371,55 @@ namespace CIARE
         }
 
         #region HotKeys Actions
+
+        /// <summary>
+        /// Toggle full screen mode: hides the menu bar and toolbar, leaving only the tab strip visible.
+        /// </summary>
+        private void ToggleFullScreen()
+        {
+            if (!_isFullScreen)
+            {
+                _savedBorderStyle = this.FormBorderStyle;
+                _savedWindowState = this.WindowState;
+                _markStartFileChkVisible = markStartFileChk.Visible;
+
+                this.WindowState = FormWindowState.Normal;
+                this.FormBorderStyle = FormBorderStyle.None;
+                this.WindowState = FormWindowState.Maximized;
+
+                menuStrip1.Visible = false;
+                runCodePb.Visible = false;
+                label2.Visible = false;
+                label3.Visible = false;
+                linesCountLbl.Visible = false;
+                linesPositionLbl.Visible = false;
+                liveStatusPb.Visible = false;
+                markStartFileChk.Visible = false;
+
+                fullScreenToolStripMenuItem.Checked = true;
+                _isFullScreen = true;
+            }
+            else
+            {
+                this.FormBorderStyle = _savedBorderStyle;
+                this.WindowState = _savedWindowState;
+
+                menuStrip1.Visible = true;
+                runCodePb.Visible = true;
+                label2.Visible = true;
+                label3.Visible = true;
+                linesCountLbl.Visible = true;
+                linesPositionLbl.Visible = true;
+                liveStatusPb.Visible = true;
+                markStartFileChk.Visible = _markStartFileChkVisible;
+
+                fullScreenToolStripMenuItem.Checked = false;
+                _isFullScreen = false;
+            }
+        }
+
+        private void fullScreenToolStripMenuItem_Click(object sender, EventArgs e) => ToggleFullScreen();
+
         /// <summary>
         /// Override the key combination listener for file management events.
         /// </summary>
@@ -484,6 +537,9 @@ namespace CIARE
                     RefManager refManager = new RefManager();
                     if (!refManager.Visible)
                         refManager.ShowDialog();
+                    return true;
+                case Keys.F11:
+                    ToggleFullScreen();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
