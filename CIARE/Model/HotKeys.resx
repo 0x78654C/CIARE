@@ -154,6 +154,8 @@ CTRL + W         : Split window vertically.
 CTRL + Shift + W : Split window horizontally.
 CTRL + U         : Switch between splitted window area.
 CTRL + K         : Show/Hide output window.
+F11              : Toogle fullscreen.
+
 
 ------------- Tabs management -------------
 CTRL + Tab       : Adds new tab.
