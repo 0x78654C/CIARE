@@ -70,7 +70,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Publish application
+      - name: Publish application (win-x64)
         if: steps.release_type.outputs.type != 'none'
         shell: bash
         run: |
@@ -78,20 +78,29 @@ jobs:
             -c Release \
             -r win-x64 \
             --self-contained true \
-            -p:PublishSingleFile=true \
-            -p:IncludeNativeLibrariesForSelfExtract=true \
-            -o publish/
+            -o publish/win-x64/
 
-      - name: Package release artifact
+      - name: Publish application (win-x86)
+        if: steps.release_type.outputs.type != 'none'
+        shell: bash
+        run: |
+          dotnet publish CIARE/CIARE.csproj \
+            -c Release \
+            -r win-x86 \
+            --self-contained true \
+            -o publish/win-x86/
+
+      - name: Package release artifacts
         if: steps.release_type.outputs.type != 'none'
         shell: bash
         run: |
           VERSION="${{ steps.version.outputs.new_version }}"
-          cp README.md publish/README.md
-          cd publish
-          7z a "../CIARE_v${VERSION}.zip" .
-          cd ..
-          echo "artifact=CIARE_v${VERSION}.zip" >> "$GITHUB_ENV"
+          cp README.md publish/win-x64/README.md
+          cp README.md publish/win-x86/README.md
+          cd publish/win-x64 && 7z a "../../CIARE_v${VERSION}_win-x64.zip" . && cd ../..
+          cd publish/win-x86 && 7z a "../../CIARE_v${VERSION}_win-x86.zip" . && cd ../..
+          echo "artifact_x64=CIARE_v${VERSION}_win-x64.zip" >> "$GITHUB_ENV"
+          echo "artifact_x86=CIARE_v${VERSION}_win-x86.zip" >> "$GITHUB_ENV"
 
       - name: Commit version bump
         if: steps.release_type.outputs.type != 'none'
@@ -124,5 +133,7 @@ jobs:
 
             ### How to run
             Extract the ZIP archive and run `CIARE.exe`.
-          files: ${{ env.artifact }}
+          files: |
+            ${{ env.artifact_x64 }}
+            ${{ env.artifact_x86 }}
           token: ${{ secrets.GITHUB_TOKEN }}
