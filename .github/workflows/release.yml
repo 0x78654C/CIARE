@@ -1,0 +1,139 @@
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine release type from PR labels
+        id: release_type
+        shell: bash
+        run: |
+          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+          echo "PR labels: $LABELS"
+          if echo "$LABELS" | grep -qi '"bug"'; then
+            echo "type=bug" >> "$GITHUB_OUTPUT"
+          elif echo "$LABELS" | grep -qi '"feature"'; then
+            echo "type=feature" >> "$GITHUB_OUTPUT"
+          else
+            echo "No 'bug' or 'feature' label found on this PR. Skipping release."
+            echo "type=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Read and bump version
+        if: steps.release_type.outputs.type != 'none'
+        id: version
+        shell: bash
+        run: |
+          ASSEMBLY_INFO="CIARE/Properties/AssemblyInfo.cs"
+
+          # Extract current version string, e.g. "2.2.4.0"
+          CURRENT=$(grep -oP '(?<=AssemblyVersion\(")[^"]+' "$ASSEMBLY_INFO")
+          echo "Current version: $CURRENT"
+
+          IFS='.' read -r MAJOR MINOR BUILD PATCH <<< "$CURRENT"
+
+          TYPE="${{ steps.release_type.outputs.type }}"
+          if [ "$TYPE" = "bug" ]; then
+            PATCH=$((PATCH + 1))
+          elif [ "$TYPE" = "feature" ]; then
+            BUILD=$((BUILD + 1))
+            PATCH=0
+          fi
+
+          NEW_VERSION="$MAJOR.$MINOR.$BUILD.$PATCH"
+          echo "New version: $NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+          # Update AssemblyVersion and AssemblyFileVersion
+          sed -i "s/\[assembly: AssemblyVersion(\"[^\"]*\")\]/[assembly: AssemblyVersion(\"$NEW_VERSION\")]/" "$ASSEMBLY_INFO"
+          sed -i "s/\[assembly: AssemblyFileVersion(\"[^\"]*\")\]/[assembly: AssemblyFileVersion(\"$NEW_VERSION\")]/" "$ASSEMBLY_INFO"
+
+      - name: Setup .NET
+        if: steps.release_type.outputs.type != 'none'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish application (win-x64)
+        if: steps.release_type.outputs.type != 'none'
+        shell: bash
+        run: |
+          dotnet publish CIARE/CIARE.csproj \
+            -c Release \
+            -r win-x64 \
+            --self-contained true \
+            -o publish/win-x64/
+
+      - name: Publish application (win-x86)
+        if: steps.release_type.outputs.type != 'none'
+        shell: bash
+        run: |
+          dotnet publish CIARE/CIARE.csproj \
+            -c Release \
+            -r win-x86 \
+            --self-contained true \
+            -o publish/win-x86/
+
+      - name: Package release artifacts
+        if: steps.release_type.outputs.type != 'none'
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.new_version }}"
+          cp README.md publish/win-x64/README.md
+          cp README.md publish/win-x86/README.md
+          cd publish/win-x64 && 7z a "../../CIARE_v${VERSION}_win-x64.zip" . && cd ../..
+          cd publish/win-x86 && 7z a "../../CIARE_v${VERSION}_win-x86.zip" . && cd ../..
+          echo "artifact_x64=CIARE_v${VERSION}_win-x64.zip" >> "$GITHUB_ENV"
+          echo "artifact_x86=CIARE_v${VERSION}_win-x86.zip" >> "$GITHUB_ENV"
+
+      - name: Commit version bump
+        if: steps.release_type.outputs.type != 'none'
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.new_version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CIARE/Properties/AssemblyInfo.cs
+          git commit -m "chore: bump version to $VERSION [skip ci]"
+          # Retry push with rebase to handle concurrent merges
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && break
+            echo "Push attempt $i failed, retrying..."
+            sleep 5
+          done
+
+      - name: Create GitHub release
+        if: steps.release_type.outputs.type != 'none'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: CIARE v${{ steps.version.outputs.new_version }}
+          body: |
+            ## CIARE v${{ steps.version.outputs.new_version }}
+
+            **Release type:** ${{ steps.release_type.outputs.type == 'bug' && 'Bug Fix' || 'Feature' }}
+
+            Merged PR: #${{ github.event.pull_request.number }} — ${{ github.event.pull_request.title }}
+
+            ### How to run
+            Extract the ZIP archive and run `CIARE.exe`.
+          files: |
+            ${{ env.artifact_x64 }}
+            ${{ env.artifact_x86 }}
+          token: ${{ secrets.GITHUB_TOKEN }}
