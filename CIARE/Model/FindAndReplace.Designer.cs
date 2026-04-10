@@ -36,7 +36,7 @@ namespace CIARE
             singleReplaceBtn = new System.Windows.Forms.Button();
             repalceWithTxt = new System.Windows.Forms.TextBox();
             findTxt = new System.Windows.Forms.TextBox();
-            findNReplaceTab = new System.Windows.Forms.TabControl();
+            findNReplaceTab = new CIARE.GUI.DarkTabControl();
             findTab = new System.Windows.Forms.TabPage();
             findGroupBox = new System.Windows.Forms.GroupBox();
             ignCaseSensFindCkb = new System.Windows.Forms.CheckBox();
@@ -131,10 +131,11 @@ namespace CIARE
             findNReplaceTab.SelectedIndex = 0;
             findNReplaceTab.Size = new System.Drawing.Size(427, 203);
             findNReplaceTab.TabIndex = 1;
+            findNReplaceTab.DrawMode = System.Windows.Forms.TabDrawMode.OwnerDrawFixed;
+            findNReplaceTab.DrawItem += findNReplaceTab_DrawItem;
             // 
             // findTab
             // 
-            findTab.BackColor = System.Drawing.Color.White;
             findTab.Controls.Add(findGroupBox);
             findTab.Location = new System.Drawing.Point(4, 24);
             findTab.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
@@ -238,7 +239,7 @@ namespace CIARE
         private System.Windows.Forms.TextBox repalceWithTxt;
         private System.Windows.Forms.TextBox findTxt;
         private System.Windows.Forms.CheckBox ignoreCaseCheckBox;
-        private System.Windows.Forms.TabControl findNReplaceTab;
+        private CIARE.GUI.DarkTabControl findNReplaceTab;
         private System.Windows.Forms.TabPage findTab;
         private System.Windows.Forms.TabPage repalceTab;
         private System.Windows.Forms.GroupBox findGroupBox;

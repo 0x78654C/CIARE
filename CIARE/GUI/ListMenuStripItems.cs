@@ -49,6 +49,7 @@ namespace CIARE.GUI
                 MainForm.Instance.chatGPTCTRLShiftPToolStripMenuItem,
                 MainForm.Instance.referenceAddToolStripMenuItem,
                 MainForm.Instance.hotKeyToolStripMenuItem,
+                MainForm.Instance.fullScreenToolStripMenuItem
             };
             return listToosStripM;
         }
@@ -69,7 +70,8 @@ namespace CIARE.GUI
                 MainForm.Instance.toolStripSeparator6,
                 MainForm.Instance.toolStripSeparator7,
                 MainForm.Instance.toolStripSeparator8,
-                MainForm.Instance.compileStripSeparator1
+                MainForm.Instance.compileStripSeparator1,
+                MainForm.Instance.viewSeparator1
             };
             return listToosStripS;
         }
