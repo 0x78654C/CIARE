@@ -4,6 +4,7 @@ using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Document;
 using Microsoft.CodeAnalysis.Differencing;
 using System;
+using System.Drawing;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -331,6 +332,51 @@ MessageBoxIcon.Warning);
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        /// <summary>
+        /// Draw tab headers with dark/light theme support.
+        /// </summary>
+        private void findNReplaceTab_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            bool dark = GlobalVariables.darkColor;
+            var g = e.Graphics;
+            var tp = findNReplaceTab.TabPages[e.Index];
+            Rectangle rt = e.Bounds;
+
+            // Fill this tab's background.
+            Color tabBgColor = dark
+                ? (GlobalVariables.isVStheme ? Color.FromArgb(45, 45, 48) : Color.FromArgb(10, 10, 20))
+                : SystemColors.Control;
+            using (SolidBrush bgBrush = new SolidBrush(tabBgColor))
+                g.FillRectangle(bgBrush, rt);
+
+            // Fill empty strip area to the right of the last tab (dark mode only).
+            if (dark)
+            {
+                if (GlobalVariables.isVStheme)
+                    TabControllerManage.SetTransparentTabBar(findNReplaceTab, e, 51, 51, 51);
+                else
+                    TabControllerManage.SetTransparentTabBar(findNReplaceTab, e, 0, 1, 10);
+            }
+
+            // Highlight the selected tab.
+            int selectedIndex = findNReplaceTab.SelectedIndex;
+            if (selectedIndex >= 0)
+            {
+                Color highlightColor = dark
+                    ? (GlobalVariables.isVStheme ? Color.FromArgb(63, 63, 70) : Color.FromArgb(20, 20, 35))
+                    : Color.LightGray;
+                Rectangle selRect = findNReplaceTab.GetTabRect(selectedIndex);
+                using (SolidBrush selBrush = new SolidBrush(highlightColor))
+                    g.FillRectangle(selBrush, selRect);
+            }
+
+            // Draw tab text using the full bounds (no close-button space reduction).
+            Color textColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
+            using (StringFormat sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+            using (SolidBrush textBrush = new SolidBrush(textColor))
+                g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, textBrush, (RectangleF)rt, sf);
         }
     }
 }
