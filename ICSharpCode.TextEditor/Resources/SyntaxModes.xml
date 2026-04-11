@@ -30,6 +30,38 @@
   <Mode file       = "CSharp-Mode-DarkVS.xshd"
       name				 = "C#-DarkVS"
       extensions   = ".cs"/>
+
+  <Mode file       = "CSharp-Mode-NordWave.xshd"
+      name         = "C#-NordWave"
+      extensions   = ".cs"/>
+
+  <Mode file       = "CSharp-Mode-Gruvbox.xshd"
+      name         = "C#-Gruvbox"
+      extensions   = ".cs"/>
+
+  <Mode file       = "CSharp-Mode-NoctisHC.xshd"
+      name         = "C#-NoctisHC"
+      extensions   = ".cs"/>
+
+  <Mode file       = "CSharp-Mode-Sweet.xshd"
+      name         = "C#-Sweet"
+      extensions   = ".cs"/>
+
+  <Mode file       = "CSharp-Mode-Noegi.xshd"
+      name         = "C#-Noegi"
+      extensions   = ".cs"/>
+
+  <Mode file       = "CSharp-Mode-Lilac.xshd"
+      name         = "C#-Lilac"
+      extensions   = ".cs"/>
+
+  <Mode file       = "CSharp-Mode-8bit.xshd"
+      name         = "C#-8bit"
+      extensions   = ".cs"/>
+
+  <Mode file       = "CSharp-Mode-Neon.xshd"
+      name         = "C#-Neon"
+      extensions   = ".cs"/>
   
 	<Mode file       = "HTML-Mode.xshd"
 	      name       = "HTML"

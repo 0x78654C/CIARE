@@ -58,6 +58,14 @@
     <EmbeddedResource Include="Resources\CPP-Mode.xshd" />
     <EmbeddedResource Include="Resources\Coco-Mode.xshd" />
     <EmbeddedResource Include="Resources\CSharp-Mode-DarkVS.xshd" />
+    <EmbeddedResource Include="Resources\CSharp-Mode-NordWave.xshd" />
+    <EmbeddedResource Include="Resources\CSharp-Mode-Gruvbox.xshd" />
+    <EmbeddedResource Include="Resources\CSharp-Mode-NoctisHC.xshd" />
+    <EmbeddedResource Include="Resources\CSharp-Mode-Sweet.xshd" />
+    <EmbeddedResource Include="Resources\CSharp-Mode-Noegi.xshd" />
+    <EmbeddedResource Include="Resources\CSharp-Mode-Lilac.xshd" />
+    <EmbeddedResource Include="Resources\CSharp-Mode-8bit.xshd" />
+    <EmbeddedResource Include="Resources\CSharp-Mode-Neon.xshd" />
     <EmbeddedResource Include="Resources\CSharp-Mode.xshd" />
     <EmbeddedResource Include="Resources\HTML-Mode.xshd" />
     <EmbeddedResource Include="Resources\CSharp-Mode-Dark.xshd" />
