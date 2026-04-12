@@ -122,6 +122,7 @@ namespace CIARE
             Instance = this;
             this.Text = $"CIARE {GlobalVariables.versionName}";
             TabControllerManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
+            ThemeManager.LoadExternalThemes();
             Initiliaze();
             Console.SetOut(new ControlWriter(outputRBT));
             InitializeEditor.GenerateLiveSessionId();

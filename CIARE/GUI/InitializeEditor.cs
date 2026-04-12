@@ -13,16 +13,13 @@ namespace CIARE.GUI
     {
         private const string _defaultHighLight = "C#-Dark";
         private const string _vsTheme = "C#-DarkVS";
-        private static readonly string[] _darkThemes = {
-            "C#-Dark", "C#-DarkVS", "C#-NordWave", "C#-Gruvbox", "C#-NoctisHC",
-            "C#-Sweet", "C#-Noegi", "C#-Lilac", "C#-8bit", "C#-Neon"
-        };
+        private static readonly string[] _darkThemes = { "C#-Dark", "C#-DarkVS" };
         private const string _regName = "highlight";
         private const string _windowSize = "windowSize";
         private const string _windowSizeMax = "windowSizeMax";
 
         public static bool IsDarkTheme(string name) =>
-            Array.IndexOf(_darkThemes, name) >= 0;
+            Array.IndexOf(_darkThemes, name) >= 0 || ThemeManager.IsExternalDarkTheme(name);
 
 
         /// <summary>
@@ -46,10 +43,14 @@ namespace CIARE.GUI
         /// <param name="comboBox"></param>
         public static void ReadEditorHighlight(string regKeyName, TextEditorControl textEditor, ComboBox comboBox)
         {
+            foreach (var name in ThemeManager.ExternalThemeNames)
+                if (!comboBox.Items.Contains(name))
+                    comboBox.Items.Add(name);
+
             string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _regName);
             if (regHighlight.Length > 0)
             {
-                if (Array.IndexOf(_darkThemes, regHighlight) >= 0)
+                if (IsDarkTheme(regHighlight))
                     GlobalVariables.darkColor = true;
                 textEditor.SetHighlighting(regHighlight);
                 comboBox.Text = regHighlight;
@@ -125,7 +126,7 @@ namespace CIARE.GUI
             string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _regName);
             if (regHighlight.Length > 0)
             {
-                if (Array.IndexOf(_darkThemes, regHighlight) >= 0)
+                if (IsDarkTheme(regHighlight))
                 {
                     GlobalVariables.darkColor = true;
                     MainForm.Instance.SetHighLighter(SelectedEditor.GetSelectedEditor(), regHighlight);
