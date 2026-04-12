@@ -304,7 +304,7 @@ namespace CIARE.GUI
                 return;
 
             var fileData = File.ReadAllText(filePath); // test 
-            var fileMD5 = MD5Hash.GetMD5Hash(fileData); //test
+            var fileMD5 = FileHash.GetFileHash(fileData); //test
             var line = $"{filePath}|{fileMD5}|{tabIndex}";
             List<string> lines = File.ReadAllLines(fileTabStore).ToList();
 

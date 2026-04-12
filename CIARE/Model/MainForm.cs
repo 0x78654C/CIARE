@@ -167,7 +167,7 @@ namespace CIARE
 
             // Get last opened tab MD5.
             if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
-                GlobalVariables.openedFileMD5 = MD5Hash.GetMD5Hash(SelectedEditor.GetSelectedEditor().Text);
+                GlobalVariables.openedFileMD5 = FileHash.GetFileHash(SelectedEditor.GetSelectedEditor().Text);
 
             if (GlobalVariables.darkColor)
             {
@@ -290,7 +290,7 @@ namespace CIARE
             var path = EditorTabControl.SelectedTab.ToolTipText;
             if (File.Exists(path))
             {
-                var md5Txt = MD5Hash.GetMD5Hash(SelectedEditor.GetSelectedEditor().Text);
+                var md5Txt = FileHash.GetFileHash(SelectedEditor.GetSelectedEditor().Text);
 
                 //Remove * depende of file size in comparison text size.
                 if (GlobalVariables.openedFileMD5 != md5Txt)

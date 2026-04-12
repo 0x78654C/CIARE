@@ -39,7 +39,7 @@ namespace CIARE.Utils.Encryption
         {
 
             var bytes = new byte[length * 8];
-            new RNGCryptoServiceProvider().GetBytes(bytes);
+            RandomNumberGenerator.Fill(bytes);
             var result = new char[length];
             for (int i = 0; i < length; i++)
             {

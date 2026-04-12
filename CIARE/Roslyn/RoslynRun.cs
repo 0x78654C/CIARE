@@ -232,7 +232,7 @@ namespace CIARE.Roslyn
             }
             catch (DivideByZeroException dbze)
             {
-                richTextBox.Text += dbze.StackTrace;
+                richTextBox.Text += $"Error: {dbze.Message}\n";
                 GlobalVariables.binaryName = string.Empty;
             }
             catch (Exception ex)
@@ -302,7 +302,7 @@ namespace CIARE.Roslyn
         /// <param name="e"></param>
         private static void ItemMenu_Click(object sender, EventArgs e)
         {
-            var url = $"https://learn.microsoft.com/en-us/search/?terms={s_errorCode}&category=Documentation";
+            var url = $"https://learn.microsoft.com/en-us/search/?terms={Uri.EscapeDataString(s_errorCode)}&category=Documentation";
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
 

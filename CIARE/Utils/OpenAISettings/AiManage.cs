@@ -81,9 +81,9 @@ namespace CIARE.Utils.OpenAISettings
                     return "";
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                MessageBox.Show($"Error: {ex.Message}. Key period or credit could be expired!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("An error occurred while contacting the AI service. Check your API key and network connection.", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return result;
         }
@@ -103,9 +103,9 @@ namespace CIARE.Utils.OpenAISettings
                     comboBox.Items.Add(model);
                 comboBox.SelectedIndex = 0;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                MessageBox.Show($"Error: {ex.Message}", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Failed to load Ollama models. Ensure Ollama is running and accessible.", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
