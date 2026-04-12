@@ -94,6 +94,9 @@
 				<Key word="true" />
 				<Key word="false" />
 				<Key word="stackalloc" />
+				<Key word="not" />
+				<Key word="and" />
+				<Key word="or" />
 			</KeyWords>
 			<KeyWords name="SelectionStatements" bold="true" italic="false" color="#ff44cc">
 				<Key word="else" />
@@ -133,6 +136,14 @@
 				<Key word="on" />
 				<Key word="equals" />
 				<Key word="var" />
+				<Key word="nameof" />
+				<Key word="when" />
+				<Key word="dynamic" />
+				<Key word="with" />
+				<Key word="unmanaged" />
+				<Key word="notnull" />
+				<Key word="managed" />
+				<Key word="allows" />
 			</KeyWords>
 			<KeyWords name="ExceptionHandlingStatements" bold="true" italic="false" color="#ff44cc">
 				<Key word="try" />
@@ -171,12 +182,16 @@
         <Key word="Int32" />
         <Key word="Int64" />
       	<Key word="string" />
+      	<Key word="nint" />
+      	<Key word="nuint" />
       </KeyWords>
 			<KeyWords name="ReferenceTypes" bold="false" italic="false" color="#00d4ff">
 				<Key word="class" />
 				<Key word="interface" />
 				<Key word="delegate" />
 				<Key word="object" />
+				<Key word="record" />
+				<Key word="extension" />
 			</KeyWords>
 			<KeyWords name="Void" bold="false" italic="false" color="#00d4ff">
 				<Key word="void" />
@@ -204,6 +219,9 @@
 				<Key word="static" />
 				<Key word="virtual" />
 				<Key word="volatile" />
+				<Key word="required" />
+				<Key word="file" />
+				<Key word="scoped" />
 			</KeyWords>
 			<KeyWords name="AccessModifiers" bold="false" italic="false" color="#cc44ff">
 				<Key word="public" />
@@ -223,6 +241,8 @@
 				<Key word="set" />
 				<Key word="add" />
 				<Key word="remove" />
+				<Key word="init" />
+				<Key word="field" />
 			</KeyWords>
 			<KeyWords name="Literals" bold="true" italic="false" color="#ff0044">
 				<Key word="null" />
