@@ -18,6 +18,7 @@ using CIARE.GUI;
 using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using System;
+using System.Text.RegularExpressions;
 using System.IO;
 using System.Windows.Forms;
 using NRefactory = ICSharpCode.NRefactory;
@@ -175,6 +176,10 @@ namespace CIARE
                 FrmColorMod.EnableDarkTitleBar(EditorTabControl.Handle);
             }
 
+            // Run initial type check so errors are underlined from the first load.
+            var startEditor = SelectedEditor.GetSelectedEditor();
+            if (startEditor != null && !string.IsNullOrWhiteSpace(startEditor.Text))
+                RealTimeChecker.ScheduleCheck(startEditor.Text, startEditor, typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
         }
 
         private void SetCodeCompletion(int index)
@@ -230,6 +235,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
+            RealTimeChecker.Cancel(SelectedEditor.GetSelectedEditor(), typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
             RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
         }
 
@@ -319,6 +325,9 @@ namespace CIARE
             SelectedEditor.GetSelectedEditor().Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
             SelectedEditor.GetSelectedEditor().Document.FoldingManager.UpdateFoldings(null, null);
 
+            // Trigger real-time type checking after a short debounce.
+            RealTimeChecker.ScheduleCheck(SelectedEditor.GetSelectedEditor().Text, SelectedEditor.GetSelectedEditor(), typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+
             // Send live share data to api.
             SendData();
         }
@@ -394,6 +403,8 @@ namespace CIARE
                 label3.Visible = false;
                 linesCountLbl.Visible = false;
                 linesPositionLbl.Visible = false;
+                typeCheckLbl.Visible = false;
+                warningsCheckLbl.Visible = false;
                 liveStatusPb.Visible = false;
                 markStartFileChk.Visible = false;
 
@@ -411,6 +422,8 @@ namespace CIARE
                 label3.Visible = true;
                 linesCountLbl.Visible = true;
                 linesPositionLbl.Visible = true;
+                typeCheckLbl.Visible = true;
+                warningsCheckLbl.Visible = true;
                 liveStatusPb.Visible = true;
                 markStartFileChk.Visible = _markStartFileChkVisible;
 
@@ -538,6 +551,9 @@ namespace CIARE
                     RefManager refManager = new RefManager();
                     if (!refManager.Visible)
                         refManager.ShowDialog();
+                    var editorRef = SelectedEditor.GetSelectedEditor();
+                    if (editorRef != null)
+                        RealTimeChecker.ScheduleCheck(editorRef.Text, editorRef, typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
                     return true;
                 case Keys.F11:
                     ToggleFullScreen();
@@ -559,14 +575,87 @@ namespace CIARE
                 GlobalVariables.darkColor = true;
                 ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = true;
                 GlobalVariables.isVStheme = (highlight.EndsWith("VS")) ? true : false;
+                var darkBg = GlobalVariables.isVStheme ? Color.FromArgb(30, 30, 30) : Color.FromArgb(2, 0, 10);
+                var darkFg = Color.FromArgb(192, 215, 207);
                 DarkModeMain.SetDarkModeMain(this, outputRBT, groupBox1, label2, label3,
                     menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator(), GlobalVariables.isVStheme);
+                errorsRTB.BackColor = darkBg;
+                errorsRTB.ForeColor = darkFg;
+                ApplyTabControlDarkMode(outputTabControl, darkBg);
                 return;
             }
             GlobalVariables.darkColor = false;
             ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = false;
             LightModeMain.SetLightModeMain(this, outputRBT, groupBox1,
                 menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
+            errorsRTB.BackColor = SystemColors.Window;
+            errorsRTB.ForeColor = Color.Black;
+            ApplyTabControlDarkMode(outputTabControl, SystemColors.Window);
+        }
+
+        private static void ApplyTabControlDarkMode(TabControl tabControl, Color backColor)
+        {
+            tabControl.BackColor = backColor;
+            foreach (TabPage page in tabControl.TabPages)
+                page.BackColor = backColor;
+            tabControl.Invalidate();
+        }
+
+        private void OutputTabControl_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            bool dark = GlobalVariables.darkColor;
+            var g = e.Graphics;
+            var tp = outputTabControl.TabPages[e.Index];
+            var rt = e.Bounds;
+
+            // Fill tab background in dark mode (same colours as the editor tabs)
+            if (dark)
+            {
+                Color tabBg = GlobalVariables.isVStheme
+                    ? Color.FromArgb(45, 45, 48)
+                    : Color.FromArgb(10, 10, 20);
+                using (var bgBrush = new SolidBrush(tabBg))
+                    g.FillRectangle(bgBrush, rt);
+            }
+
+            // Fill the empty strip area beyond the last tab (same helper as editor tabs)
+            if (GlobalVariables.isVStheme)
+                TabControllerManage.SetTransparentTabBar(outputTabControl, e, 51, 51, 51);
+            else
+                TabControllerManage.SetTransparentTabBar(outputTabControl, e, 0, 1, 10);
+
+            // Draw text centred in the FULL tab rect — no close-button indentation for output tabs
+            Color textColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
+            using (var textBrush = new SolidBrush(textColor))
+            using (var sf = new StringFormat
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center,
+                Trimming = StringTrimming.EllipsisCharacter,
+                FormatFlags = StringFormatFlags.NoWrap,
+            })
+            {
+                g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, textBrush, (RectangleF)rt, sf);
+            }
+        }
+
+        private void errorsRTB_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            int charIndex = errorsRTB.GetCharIndexFromPosition(e.Location);
+            int rtbLine = errorsRTB.GetLineFromCharIndex(charIndex);
+            if (rtbLine < 0 || rtbLine >= errorsRTB.Lines.Length) return;
+
+            var match = Regex.Match(
+                errorsRTB.Lines[rtbLine], @"Line\s+(\d+)");
+            if (!match.Success) return;
+
+            if (!int.TryParse(match.Groups[1].Value, out int targetLine)) return;
+
+            var editor = SelectedEditor.GetSelectedEditor();
+            if (editor == null) return;
+
+            GoToLineNumber.GoToLine(editor, targetLine);
+            editor.Focus();
         }
 
         /// <summary>
@@ -1048,6 +1137,21 @@ namespace CIARE
             // Clear line/col position on new tab switch
             ClearInfoLinescs.ClearLinesInfo();
             LinesManage.GetTotalLinesCount(linesCountLbl);
+        }
+
+        /// <summary>
+        /// Re-run real-time check whenever the active editor tab changes.
+        /// </summary>
+        private void EditorTabControl_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!isLoaded) return;
+            try
+            {
+                var editor = SelectedEditor.GetSelectedEditor();
+                if (editor == null) return;
+                RealTimeChecker.ScheduleCheck(editor.Text, editor, typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+            }
+            catch { }
         }
 
         /// <summary>
