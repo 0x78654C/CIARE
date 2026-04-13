@@ -421,7 +421,7 @@ namespace CIARE
             connectCopilotBtn.Name = "connectCopilotBtn";
             connectCopilotBtn.Size = new System.Drawing.Size(120, 23);
             connectCopilotBtn.TabIndex = 31;
-            connectCopilotBtn.Text = "Sign in to Copilot";
+            connectCopilotBtn.Text = "Sign in to Github";
             connectCopilotBtn.UseVisualStyleBackColor = true;
             connectCopilotBtn.Visible = false;
             connectCopilotBtn.Click += connectCopilotBtn_Click;
