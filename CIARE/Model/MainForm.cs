@@ -590,8 +590,9 @@ namespace CIARE
             {
                 GlobalVariables.darkColor = true;
                 ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = true;
-                GlobalVariables.isVStheme = (highlight.EndsWith("VS")) ? true : false;
-                var darkBg = GlobalVariables.isVStheme ? Color.FromArgb(30, 30, 30) : Color.FromArgb(2, 0, 10);
+                GlobalVariables.isVStheme = highlight.EndsWith("VS");
+                UpdateThemeColors(highlight);
+                var darkBg = GlobalVariables.controlBgColor;
                 var darkFg = Color.FromArgb(192, 215, 207);
                 DarkModeMain.SetDarkModeMain(this, outputRBT, groupBox1, label2, label3,
                     menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator(), GlobalVariables.isVStheme);
@@ -607,6 +608,39 @@ namespace CIARE
             errorsRTB.BackColor = SystemColors.Window;
             errorsRTB.ForeColor = Color.Black;
             ApplyTabControlDarkMode(outputTabControl, SystemColors.Window);
+        }
+
+        /// <summary>
+        /// Sets <see cref="GlobalVariables.formBgColor"/> and <see cref="GlobalVariables.controlBgColor"/>
+        /// to match the currently selected theme, including external .xshd themes.
+        /// </summary>
+        private static void UpdateThemeColors(string highlight)
+        {
+            if (highlight.EndsWith("VS"))
+            {
+                GlobalVariables.formBgColor = Color.FromArgb(51, 51, 51);
+                GlobalVariables.controlBgColor = Color.FromArgb(30, 30, 30);
+            }
+            else if (highlight.StartsWith("C#-Dark"))
+            {
+                GlobalVariables.formBgColor = Color.FromArgb(0, 1, 10);
+                GlobalVariables.controlBgColor = Color.FromArgb(2, 0, 10);
+            }
+            else
+            {
+                // External dark theme — derive background from the .xshd bgcolor.
+                var extBg = CIARE.GUI.ThemeManager.GetExternalThemeBgColor(highlight);
+                if (extBg.HasValue)
+                {
+                    GlobalVariables.formBgColor = extBg.Value;
+                    GlobalVariables.controlBgColor = extBg.Value;
+                }
+                else
+                {
+                    GlobalVariables.formBgColor = Color.FromArgb(0, 1, 10);
+                    GlobalVariables.controlBgColor = Color.FromArgb(2, 0, 10);
+                }
+            }
         }
 
         private static void ApplyTabControlDarkMode(TabControl tabControl, Color backColor)
@@ -627,18 +661,14 @@ namespace CIARE
             // Fill tab background in dark mode (same colours as the editor tabs)
             if (dark)
             {
-                Color tabBg = GlobalVariables.isVStheme
-                    ? Color.FromArgb(45, 45, 48)
-                    : Color.FromArgb(10, 10, 20);
+                Color tabBg = GlobalVariables.TabBgColor;
                 using (var bgBrush = new SolidBrush(tabBg))
                     g.FillRectangle(bgBrush, rt);
             }
 
             // Fill the empty strip area beyond the last tab (same helper as editor tabs)
-            if (GlobalVariables.isVStheme)
-                TabControllerManage.SetTransparentTabBar(outputTabControl, e, 51, 51, 51);
-            else
-                TabControllerManage.SetTransparentTabBar(outputTabControl, e, 0, 1, 10);
+            TabControllerManage.SetTransparentTabBar(outputTabControl, e,
+                GlobalVariables.formBgColor.R, GlobalVariables.formBgColor.G, GlobalVariables.formBgColor.B);
 
             // Draw text centred in the FULL tab rect — no close-button indentation for output tabs
             Color textColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
@@ -1295,10 +1325,8 @@ namespace CIARE
             TabControllerManage.DrawTabControl(EditorTabControl, e);
 
             // Set transparent header bar.
-            if (GlobalVariables.isVStheme)
-                TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 51, 51, 51);
-            else
-                TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 0, 1, 10);
+            TabControllerManage.SetTransparentTabBar(EditorTabControl, e,
+                GlobalVariables.formBgColor.R, GlobalVariables.formBgColor.G, GlobalVariables.formBgColor.B);
 
             // Color tab to red if live shared started on that index.
             if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)

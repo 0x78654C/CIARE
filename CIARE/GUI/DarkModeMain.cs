@@ -34,9 +34,9 @@ namespace CIARE.GUI
         {
 
             FrmColorMod.EnableDarkTitleBar(form.Handle);
-            form.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51) : Color.FromArgb(0, 1, 10);
+            form.BackColor = GlobalVariables.formBgColor;
             form.ForeColor = Color.FromArgb(192, 215, 207);
-            richTextBox.BackColor = (isVsTheme) ? Color.FromArgb(30, 30, 30) : Color.FromArgb(2, 0, 10);
+            richTextBox.BackColor = GlobalVariables.controlBgColor;
             if (GlobalVariables.isRed)
             {
                 richTextBox.ForeColor = Color.Red;
@@ -47,12 +47,12 @@ namespace CIARE.GUI
             groupBox.ForeColor = Color.FromArgb(192, 215, 207);
             separator2.ForeColor = Color.FromArgb(192, 215, 207);
             separator3.ForeColor = Color.FromArgb(192, 215, 207);
-            menuStrip.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51) : Color.FromArgb(0, 1, 10);
+            menuStrip.BackColor = GlobalVariables.formBgColor;
             menuStrip.ForeColor = Color.FromArgb(192, 215, 207);
             menuStrip.Renderer = new ColorTableSet();
             foreach (var toolStripMenu in toolStripMenuList)
             {
-                toolStripMenu.BackColor = (isVsTheme) ? Color.FromArgb(51, 51, 51) : Color.FromArgb(0, 1, 10);
+                toolStripMenu.BackColor = GlobalVariables.formBgColor;
                 toolStripMenu.ForeColor = Color.FromArgb(192, 215, 207);
             }
             foreach (var toolStripSeparator in toolStripSeparatorList)

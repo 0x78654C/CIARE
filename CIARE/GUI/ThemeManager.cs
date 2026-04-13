@@ -17,12 +17,21 @@ namespace CIARE.GUI
         private static readonly HashSet<string> _externalDarkThemes =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        private static readonly Dictionary<string, Color> _externalThemeBgColors =
+            new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
+
         private static readonly List<string> _externalThemeNames = new List<string>();
         private static bool _loaded = false;
 
         public static IReadOnlyList<string> ExternalThemeNames => _externalThemeNames.AsReadOnly();
 
         public static bool IsExternalDarkTheme(string name) => _externalDarkThemes.Contains(name);
+
+        /// <summary>
+        /// Returns the background color read from an external theme's .xshd file, or null if unavailable.
+        /// </summary>
+        public static Color? GetExternalThemeBgColor(string name) =>
+            _externalThemeBgColors.TryGetValue(name, out var c) ? c : (Color?)null;
 
         /// <summary>
         /// Scans the themes folder, registers all .xshd files with the HighlightingManager
@@ -48,8 +57,10 @@ namespace CIARE.GUI
                 {
                     _externalThemeNames.Add(mode.Name);
                     string xshdPath = Path.Combine(ThemesFolder, mode.FileName);
-                    if (IsXshdDarkTheme(xshdPath))
+                    if (IsXshdDarkTheme(xshdPath, out var bgColor))
                         _externalDarkThemes.Add(mode.Name);
+                    if (bgColor.HasValue)
+                        _externalThemeBgColors[mode.Name] = bgColor.Value;
                 }
 
                 _externalThemeNames.Sort(StringComparer.OrdinalIgnoreCase);
@@ -59,11 +70,11 @@ namespace CIARE.GUI
 
         /// <summary>
         /// Reads the .xshd file and checks the Default element's bgcolor attribute to determine if it's a dark theme.
+        /// Also returns the parsed bgcolor via <paramref name="bgColor"/>.
         /// </summary>
-        /// <param name="xshdPath"></param>
-        /// <returns></returns>
-        private static bool IsXshdDarkTheme(string xshdPath)
+        private static bool IsXshdDarkTheme(string xshdPath, out Color? bgColor)
         {
+            bgColor = null;
             try
             {
                 using var reader = new XmlTextReader(File.OpenRead(xshdPath));
@@ -75,6 +86,7 @@ namespace CIARE.GUI
                         if (!string.IsNullOrEmpty(bgcolor))
                         {
                             var color = ColorTranslator.FromHtml(bgcolor);
+                            bgColor = color;
                             return color.GetBrightness() < 0.5f;
                         }
                     }

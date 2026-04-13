@@ -528,7 +528,7 @@ namespace CIARE.GUI
 
                 // In dark mode use a dark highlight for the selected tab instead of LightGray.
                 if (dark && color == Color.LightGray)
-                    color = GlobalVariables.isVStheme ? Color.FromArgb(63, 63, 70) : Color.FromArgb(20, 20, 35);
+                    color = GlobalVariables.TabSelectedColor;
 
                 StringFormat StrFormat = new StringFormat();
                 StrFormat.LineAlignment = StringAlignment.Center;
@@ -592,9 +592,7 @@ namespace CIARE.GUI
                 // Fill tab background in dark mode so the OS default light strip is hidden.
                 if (dark)
                 {
-                    Color tabBackColor = GlobalVariables.isVStheme
-                        ? Color.FromArgb(45, 45, 48)
-                        : Color.FromArgb(10, 10, 20);
+                    Color tabBackColor = GlobalVariables.TabBgColor;
                     using (SolidBrush bgBrush = new SolidBrush(tabBackColor))
                         g.FillRectangle(bgBrush, rt);
                 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
@@ -140,6 +141,39 @@ namespace CIARE.Utils
         public const string nugetApi = "https://api.nuget.org/v3/index.json";
         public static bool isFrameworkFound = false;
         public static bool isVStheme = false;
+
+        // Form and control background colours — updated whenever a theme is applied.
+        // Defaults match the built-in "C#-Dark" palette.
+        public static Color formBgColor = Color.FromArgb(0, 1, 10);
+        public static Color controlBgColor = Color.FromArgb(2, 0, 10);
+
+        /// <summary>Background colour for individual tab items (slightly offset from <see cref="formBgColor"/>).</summary>
+        public static Color TabBgColor
+        {
+            get
+            {
+                if (!darkColor) return SystemColors.Window;
+                int delta = formBgColor.GetBrightness() < 0.12f ? 10 : -6;
+                return Color.FromArgb(
+                    Math.Clamp(formBgColor.R + delta, 0, 255),
+                    Math.Clamp(formBgColor.G + delta, 0, 255),
+                    Math.Clamp(formBgColor.B + delta, 0, 255));
+            }
+        }
+
+        /// <summary>Background colour for the selected/hovered tab (slightly lighter than <see cref="TabBgColor"/>).</summary>
+        public static Color TabSelectedColor
+        {
+            get
+            {
+                if (!darkColor) return Color.LightGray;
+                var tabBg = TabBgColor;
+                return Color.FromArgb(
+                    Math.Min(255, tabBg.R + 15),
+                    Math.Min(255, tabBg.G + 15),
+                    Math.Min(255, tabBg.B + 15));
+            }
+        }
         public static readonly string roslynTemplate = @"/*
  * Simple C# code sample for run with Roslyn runtime code compiler and execution.
  * Top-level statements can be used as well.
