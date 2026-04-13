@@ -160,6 +160,47 @@ namespace CIARE.Utils.OpenAISettings
         }
 
         /// <summary>
+        /// Open Ask AI dialog pre-populated with the error from the Errors tab and the full editor code as context.
+        /// </summary>
+        /// <param name="apiAi"></param>
+        /// <param name="code"></param>
+        /// <param name="errorText"></param>
+        public static async void GetDataAIFromError(string apiAi, string code, string errorText)
+        {
+            GlobalVariables.aiQuestion = "";
+            if (string.IsNullOrEmpty(apiAi))
+            {
+                MessageBox.Show("OpenAI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var askAI = new AskAI();
+            askAI.InitialQuestion = $"Fix this error: {errorText}";
+            askAI.CodeContext = code;
+            askAI.ShowDialog();
+
+            LoadProgressBar();
+            if (string.IsNullOrWhiteSpace(GlobalVariables.aiQuestion))
+            {
+                CancelProgressBar();
+                return;
+            }
+
+            AiManage openAI = new AiManage(apiAi, GlobalVariables.aiQuestion.Trim());
+            StringReader reader = new StringReader(await openAI.AskOpenAI());
+            string line = "";
+            string outPut = string.Empty;
+            while ((line = reader.ReadLine()) != null)
+                outPut += $"{Environment.NewLine}{line}";
+
+            CancelProgressBar();
+            GlobalVariables.aiQuestion = "";
+            GlobalVariables.aiResponse = outPut;
+            AiResponse aiResponse = new AiResponse();
+            aiResponse.Show();
+        }
+
+        /// <summary>
         /// Display error message solution from OpenAI.
         /// </summary>
         /// <param name="textEditorControl"></param>

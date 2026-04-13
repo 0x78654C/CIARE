@@ -102,6 +102,9 @@ namespace CIARE
             closeTab = new ToolStripMenuItem();
             closeAllTabs = new ToolStripMenuItem();
             closeAllTabsOne = new ToolStripMenuItem();
+            errorsContextMenu = new ContextMenuStrip(components);
+            copyErrorMenuItem = new ToolStripMenuItem();
+            askAiErrorMenuItem = new ToolStripMenuItem();
             outputTabControl = new CIARE.GUI.DarkTabControl();
             outputTabPage = new TabPage();
             errorsTabPage = new TabPage();
@@ -120,6 +123,7 @@ namespace CIARE
             EditorTabControl.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).BeginInit();
             tabMenu.SuspendLayout();
+            errorsContextMenu.SuspendLayout();
             SuspendLayout();
             // 
             // outputTabPage
@@ -165,6 +169,8 @@ namespace CIARE
             errorsRTB.ScrollBars = RichTextBoxScrollBars.Vertical;
             errorsRTB.TabIndex = 0;
             errorsRTB.Text = "";
+            errorsRTB.ContextMenuStrip = errorsContextMenu;
+            errorsRTB.MouseDown += errorsRTB_MouseDown;
             errorsRTB.MouseDoubleClick += errorsRTB_MouseDoubleClick;
             // 
             // outputTabControl
@@ -761,6 +767,26 @@ namespace CIARE
             closeAllTabsOne.Text = "Close All BUT This";
             closeAllTabsOne.Click += closeAllTabsOne_Click;
             // 
+            // errorsContextMenu
+            // 
+            errorsContextMenu.Items.AddRange(new ToolStripItem[] { copyErrorMenuItem, askAiErrorMenuItem });
+            errorsContextMenu.Name = "errorsContextMenu";
+            errorsContextMenu.Size = new System.Drawing.Size(128, 48);
+            // 
+            // copyErrorMenuItem
+            // 
+            copyErrorMenuItem.Name = "copyErrorMenuItem";
+            copyErrorMenuItem.Size = new System.Drawing.Size(127, 22);
+            copyErrorMenuItem.Text = "Copy";
+            copyErrorMenuItem.Click += copyErrorMenuItem_Click;
+            // 
+            // askAiErrorMenuItem
+            // 
+            askAiErrorMenuItem.Name = "askAiErrorMenuItem";
+            askAiErrorMenuItem.Size = new System.Drawing.Size(127, 22);
+            askAiErrorMenuItem.Text = "Ask AI";
+            askAiErrorMenuItem.Click += askAiErrorMenuItem_Click;
+            // 
             // progressBar
             // 
             progressBar.Anchor = AnchorStyles.None;
@@ -815,6 +841,7 @@ namespace CIARE
             EditorTabControl.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).EndInit();
             tabMenu.ResumeLayout(false);
+            errorsContextMenu.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -893,6 +920,9 @@ namespace CIARE
         private System.Windows.Forms.ToolStripMenuItem closeTab;
         private System.Windows.Forms.ToolStripMenuItem closeAllTabs;
         private System.Windows.Forms.ToolStripMenuItem closeAllTabsOne;
+        private System.Windows.Forms.ContextMenuStrip errorsContextMenu;
+        private System.Windows.Forms.ToolStripMenuItem copyErrorMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem askAiErrorMenuItem;
         public System.Windows.Forms.ProgressBar progressBar;
     }
 }

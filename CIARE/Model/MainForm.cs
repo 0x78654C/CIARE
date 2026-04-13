@@ -658,6 +658,32 @@ namespace CIARE
             editor.Focus();
         }
 
+        private string _clickedErrorLine = "";
+
+        private void errorsRTB_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right) return;
+            int charIndex = errorsRTB.GetCharIndexFromPosition(e.Location);
+            int rtbLine = errorsRTB.GetLineFromCharIndex(charIndex);
+            _clickedErrorLine = (rtbLine >= 0 && rtbLine < errorsRTB.Lines.Length)
+                ? errorsRTB.Lines[rtbLine].Trim()
+                : "";
+        }
+
+        private void copyErrorMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(_clickedErrorLine))
+                Clipboard.SetText(_clickedErrorLine);
+        }
+
+        private void askAiErrorMenuItem_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(_clickedErrorLine)) return;
+            var editor = SelectedEditor.GetSelectedEditor();
+            if (editor == null) return;
+            AiManage.GetDataAIFromError(GlobalVariables.aiKey.ConvertSecureStringToString(), editor.Text, _clickedErrorLine);
+        }
+
         /// <summary>
         /// Load predefined C# code sample for run with Roslyn!
         /// </summary>
