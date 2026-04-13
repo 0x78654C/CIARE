@@ -317,6 +317,11 @@ namespace CIARE
             };
         }
 
+        /// <summary>
+        /// List available models for the connected AI service. For GitHub Copilot, this uses the official API which requires no additional authentication beyond the stored OAuth token. For other AI types, this may not be supported or may require a separate API key. The results are displayed in a message box. Errors are caught and shown to the user as well.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void listModelsBtn_Click(object sender, EventArgs e)
         {
             listModelsBtn.Enabled = false;
@@ -346,6 +351,11 @@ namespace CIARE
             }
         }
 
+        /// <summary>
+        /// Connect/sign in to GitHub Copilot using the device authorization flow. This requires user interaction to open a browser, navigate to the verification URL, and enter the provided user code. The method handles the entire flow, including polling for the OAuth token and storing it securely once obtained. Errors and timeouts are handled gracefully with user feedback via message boxes.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void connectCopilotBtn_Click(object sender, EventArgs e)
         {
             connectCopilotBtn.Enabled = false;
