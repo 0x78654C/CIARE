@@ -281,7 +281,7 @@ namespace CIARE
             }
             else
             {
-                apiKeyAiTxtBox.Enabled = true;
+                apiKeyAiTxtBox.Enabled = AiTypeCombo.Text != "GitHub Copilot";
                 maxTokensTxtBox.Enabled = true;
                 modelTxt.Enabled = true;
                 modelLocalCombo.Visible = false;
