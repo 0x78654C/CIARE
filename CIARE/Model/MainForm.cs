@@ -236,6 +236,8 @@ namespace CIARE
         private void runCodePb_Click(object sender, EventArgs e)
         {
             RealTimeChecker.Cancel(SelectedEditor.GetSelectedEditor(), typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+            if (outputTabControl.SelectedTab == errorsTabPage)
+                outputTabControl.SelectedTab = outputTabPage;
             RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
         }
 
@@ -508,6 +510,8 @@ namespace CIARE
                     return true;
                 case Keys.F5:
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
+                    if (outputTabControl.SelectedTab == errorsTabPage)
+                        outputTabControl.SelectedTab = outputTabPage;
                     RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
                     return true;
                 case Keys.T | Keys.Control:
