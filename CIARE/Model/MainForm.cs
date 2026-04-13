@@ -114,6 +114,18 @@ namespace CIARE
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
+            HookEditorAskAI(SelectedEditor.GetSelectedEditor());
+        }
+
+        /// <summary>
+        /// Wire the "Ask AI" context-menu action for an editor instance.
+        /// </summary>
+        private static void HookEditorAskAI(TextEditorControl editor)
+        {
+            if (editor == null) return;
+            var menu = editor.ActiveTextAreaControl.ContextMenuStrip as ICSharpCode.TextEditor.ContextMenu;
+            if (menu != null)
+                menu.AskAIAction = () => AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
         }
 
 
@@ -1219,6 +1231,7 @@ namespace CIARE
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             dynamicTextEdtior.Focus();
+            HookEditorAskAI(dynamicTextEdtior);
         }
 
         /// <summary>

@@ -32,6 +32,8 @@
             this.paste = new System.Windows.Forms.ToolStripMenuItem();
             this.delete = new System.Windows.Forms.ToolStripMenuItem();
             this.selectAll = new System.Windows.Forms.ToolStripMenuItem();
+            this.aiSeparator = new System.Windows.Forms.ToolStripSeparator();
+            this.askAI = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.SuspendLayout();
@@ -88,6 +90,19 @@
             this.selectAll.Size = new System.Drawing.Size(144, 22);
             this.selectAll.Text = "&Select All";
             // 
+            // aiSeparator
+            // 
+            this.aiSeparator.Name = "aiSeparator";
+            this.aiSeparator.Size = new System.Drawing.Size(141, 6);
+            this.aiSeparator.Visible = false;
+            // 
+            // askAI
+            // 
+            this.askAI.Name = "askAI";
+            this.askAI.Size = new System.Drawing.Size(144, 22);
+            this.askAI.Text = "Ask AI";
+            this.askAI.Visible = false;
+            // 
             // ContextMenu
             // 
             this.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -98,7 +113,9 @@
             this.paste,
             this.delete,
             toolStripSeparator2,
-            this.selectAll 
+            this.selectAll,
+            this.aiSeparator,
+            this.askAI
             });
             this.Size = new System.Drawing.Size(145, 148);
             this.Opening += new System.ComponentModel.CancelEventHandler(this.OnOpening);
@@ -114,5 +131,7 @@
         private System.Windows.Forms.ToolStripMenuItem paste;
         private System.Windows.Forms.ToolStripMenuItem delete;
         private System.Windows.Forms.ToolStripMenuItem selectAll;
+        private System.Windows.Forms.ToolStripSeparator aiSeparator;
+        private System.Windows.Forms.ToolStripMenuItem askAI;
     }
 }
