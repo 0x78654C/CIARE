@@ -133,7 +133,6 @@ namespace CIARE.Roslyn
 
             return compilation.GetDiagnostics(ct)
                 .Where(d => d.Severity == DiagnosticSeverity.Error || d.Severity == DiagnosticSeverity.Warning)
-                .Take(50)
                 .ToList();
         }
 
