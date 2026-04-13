@@ -109,12 +109,14 @@ namespace CIARE.Utils
         public static float zoomFactor = 1f;
         //-----------
         // --AI vars--
-        public static readonly string openAIKey = "openAIKey";
+        public static string openAIKey { get; set; } = "openAIKey";
         public static readonly string openModel = "Model";
         public static readonly string ollamModel = "OllamaModel";
         public static readonly string openAIMaxTokens = "openAIMaxTokens";
+        public static readonly string copilotTokenKey = "copilotOAuthToken";
         public static string aiMaxTokens = string.Empty;
         public static SecureString aiKey;
+        public static SecureString? copilotOAuthToken;
         public static string model = string.Empty;
         public static string modelOllamaVar = string.Empty;
         public static string aiType = "OpenAI";

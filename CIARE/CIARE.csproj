@@ -84,6 +84,7 @@
     <ProjectReference Include="..\NRefactory\Project\NRefactory.csproj" />
     <ProjectReference Include="..\OllamaInt\OllamaInt.csproj" />
     <ProjectReference Include="..\OpenRouter\OpenRouter.csproj" />
+    <ProjectReference Include="..\CopilotInt\CopilotInt.csproj" />
   </ItemGroup>
   <ItemGroup>
     <FileAssociation Include=".cs">

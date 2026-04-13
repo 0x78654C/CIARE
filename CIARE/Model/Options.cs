@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.Versioning;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Utils;
@@ -53,7 +55,7 @@ namespace CIARE
                 AiTypeCombo.Text = GlobalVariables.aiTypeVar;
                 isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
                 if (isNullAPIKey)
-                    WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, "Enter OpenAI/OpenRouter API key.........");
+                    WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, GetApiKeyWatermark(GlobalVariables.aiTypeVar));
                 else
                     apiKeyAiTxtBox.Text = "******************************************";
                 maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
@@ -66,11 +68,13 @@ namespace CIARE
             AiTypeCombo.Text = GlobalVariables.aiTypeVar;
             isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
             if(isNullAPIKey)
-                WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, "Enter OpenAI/OpenRouter API key.........");
+                WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, GetApiKeyWatermark(GlobalVariables.aiTypeVar));
             else
                 apiKeyAiTxtBox.Text = "******************************************";
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
+            listModelsBtn.Visible = GlobalVariables.aiTypeVar == "GitHub Copilot";
+            connectCopilotBtn.Visible = GlobalVariables.aiTypeVar == "GitHub Copilot";
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
@@ -280,11 +284,130 @@ namespace CIARE
                 modelTxt.Enabled = true;
                 modelLocalCombo.Visible = false;
                 modelLocalLbl.Visible = false;
+                listModelsBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
+                connectCopilotBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
+                WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, GetApiKeyWatermark(AiTypeCombo.Text));
+                if (string.IsNullOrEmpty(modelTxt.Text))
+                    modelTxt.Text = GetDefaultModel(AiTypeCombo.Text);
                 if (string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
                     openAISaveBtn.Enabled = false;
                 else
                     openAISaveBtn.Enabled = true;
                 FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
+            }
+        }
+
+        private static string GetApiKeyWatermark(string aiType)
+        {
+            return aiType switch
+            {
+                "GitHub Copilot" => "Enter GitHub PAT (needs 'copilot' scope)......",
+                "OpenRouter" => "Enter OpenRouter API key...................",
+                _ => "Enter OpenAI API key.......................",
+            };
+        }
+
+        private static string GetDefaultModel(string aiType)
+        {
+            return aiType switch
+            {
+                "GitHub Copilot" => "claude-3.7-sonnet",
+                "OpenRouter" => "openai/gpt-3.5-turbo",
+                _ => "text-davinci-003",
+            };
+        }
+
+        private async void listModelsBtn_Click(object sender, EventArgs e)
+        {
+            listModelsBtn.Enabled = false;
+            listModelsBtn.Text = "Loading...";
+            try
+            {
+                // ListModelsAsync authenticates via the stored Copilot OAuth token (no PAT required).
+                // The PAT is only needed as a fallback for GitHub Models API.
+                var copilotToken = GlobalVariables.copilotOAuthToken?.ConvertSecureStringToString() ?? string.Empty;
+                var pat = GlobalVariables.aiKey.ConvertSecureStringToString();
+                if (string.IsNullOrEmpty(pat))
+                    pat = apiKeyAiTxtBox.Text.Trim();
+                if (pat.StartsWith("***"))
+                    pat = string.Empty;
+                var client = new CopilotInt.CopilotClient(copilotToken, pat);
+                var result = await client.ListModelsAsync();
+                MessageBox.Show(result, "GitHub Copilot — Available Models", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "GitHub Copilot", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                listModelsBtn.Enabled = true;
+                listModelsBtn.Text = "List Models";
+            }
+        }
+
+        private async void connectCopilotBtn_Click(object sender, EventArgs e)
+        {
+            connectCopilotBtn.Enabled = false;
+            connectCopilotBtn.Text = "Connecting...";
+            try
+            {
+                var (userCode, verificationUri, deviceCode, intervalSec, error) =
+                    await CopilotInt.CopilotClient.StartDeviceAuthAsync();
+
+                if (!string.IsNullOrEmpty(error))
+                {
+                    MessageBox.Show($"Could not start sign-in: {error}", "GitHub Copilot", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Copy code to clipboard and open browser before showing the dialog.
+                Clipboard.SetText(userCode);
+                Process.Start(new ProcessStartInfo(verificationUri) { UseShellExecute = true });
+
+                // Start polling in the background (runs while the dialog is shown).
+                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(10));
+                var pollTask = CopilotInt.CopilotClient.PollForTokenAsync(deviceCode, intervalSec, cts.Token);
+
+                MessageBox.Show(
+                    $"A browser tab has opened. If prompted, enter this code:\n\n   {userCode}\n\n" +
+                    "(Code already copied to clipboard.)\n\nClick OK after you have authorized in the browser.",
+                    "GitHub Copilot — Sign In", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // Wait up to 15 more seconds after the dialog is dismissed.
+                if (!pollTask.IsCompleted)
+                    await Task.WhenAny(pollTask, Task.Delay(15_000));
+
+                cts.Cancel();
+
+                if (!pollTask.IsCompleted)
+                {
+                    MessageBox.Show("Authorization timed out. Please try again.", "GitHub Copilot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var (oauthToken, tokenError) = await pollTask;
+                if (string.IsNullOrEmpty(oauthToken))
+                {
+                    MessageBox.Show($"Sign-in failed: {tokenError}", "GitHub Copilot", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Persist the token (DPAPI-encrypted in registry) and cache it in memory.
+                var encrypted = CIARE.Utils.Encryption.DPAPI.Encrypt(oauthToken);
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, GlobalVariables.copilotTokenKey, encrypted);
+                GlobalVariables.copilotOAuthToken = oauthToken.StringToSecureString();
+
+                MessageBox.Show("Successfully signed in to GitHub Copilot!", "GitHub Copilot", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "GitHub Copilot", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                connectCopilotBtn.Enabled = true;
+                connectCopilotBtn.Text = "Sign in to Copilot";
             }
         }
 

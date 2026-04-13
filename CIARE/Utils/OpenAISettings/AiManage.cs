@@ -10,6 +10,7 @@ using OpenAI.Api.Client.Models;
 using System.Runtime.Versioning;
 using OpenRouter;
 using OllamaInt;
+using CopilotInt;
 using System.Drawing;
 using CIARE.Model;
 using CIARE.GUI;
@@ -44,7 +45,9 @@ namespace CIARE.Utils.OpenAISettings
 
                 if (string.IsNullOrEmpty(Qestion))
                     return "";
+
                 var aiType = GlobalVariables.aiTypeVar;
+                int maxTokens = int.TryParse(GlobalVariables.aiMaxTokens, out var t) && t > 0 ? t : 999;
 
                 if (aiType == "OpenAI")
                 {
@@ -52,7 +55,7 @@ namespace CIARE.Utils.OpenAISettings
 
                     var resu = await client.PostCompletion(new CompletionRequest
                     {
-                        Max_Tokens = Int32.Parse(GlobalVariables.aiMaxTokens),
+                        Max_Tokens = maxTokens,
                         Temperature = 0.8m,
                         Model = GlobalVariables.model,
                         Prompt = Qestion
@@ -63,6 +66,13 @@ namespace CIARE.Utils.OpenAISettings
                 {
                     OpenRouterClient openRouterClient = new OpenRouterClient(ApiKey);
                     var response = await openRouterClient.SendPromptAsync(Qestion, GlobalVariables.model);
+                    result = response;
+                }
+                else if (aiType == "GitHub Copilot")
+                {
+                    var copilotToken = GlobalVariables.copilotOAuthToken?.ConvertSecureStringToString() ?? string.Empty;
+                    CopilotClient copilotClient = new CopilotClient(copilotToken, ApiKey);
+                    var response = await copilotClient.SendPromptAsync(Qestion, GlobalVariables.model, maxTokens);
                     result = response;
                 }
                 else if (aiType.StartsWith("Ollama"))
@@ -81,9 +91,9 @@ namespace CIARE.Utils.OpenAISettings
                     return "";
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                MessageBox.Show("An error occurred while contacting the AI service. Check your API key and network connection.", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"AI error ({GlobalVariables.aiTypeVar}): {ex.Message}", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return result;
         }
@@ -120,7 +130,7 @@ namespace CIARE.Utils.OpenAISettings
             GlobalVariables.aiQuestion = "";
             if (string.IsNullOrEmpty(apiAi))
             {
-                MessageBox.Show("OpenAI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("AI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 CancelProgressBar();
                 return;
             }
@@ -170,7 +180,7 @@ namespace CIARE.Utils.OpenAISettings
             GlobalVariables.aiQuestion = "";
             if (string.IsNullOrEmpty(apiAi))
             {
-                MessageBox.Show("OpenAI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("AI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -211,7 +221,7 @@ namespace CIARE.Utils.OpenAISettings
         {
             if (string.IsNullOrEmpty(apiAi))
             {
-                MessageBox.Show("OpenAI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("AI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 

@@ -36,6 +36,12 @@ namespace CIARE.Utils.Options
                     }
                 }
             }
+            string regCopilotToken = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.copilotTokenKey);
+            if (regCopilotToken.Length > 0)
+            {
+                try { GlobalVariables.copilotOAuthToken = DPAPI.Decrypt(regCopilotToken).StringToSecureString(); }
+                catch { /* corrupt entry — silently ignore, user must re-sign in */ }
+            }
             if (regOpenAITokens.Length > 0)
                 GlobalVariables.aiMaxTokens = regOpenAITokens;
             else
@@ -44,7 +50,7 @@ namespace CIARE.Utils.Options
             if (regOpenAIModel.Length > 0)
                 GlobalVariables.model = regOpenAIModel;
             else
-                GlobalVariables.model = "text-davinci-003";
+                GlobalVariables.model = regAiType == "GitHub Copilot" ? "claude-3.7-sonnet" : "text-davinci-003";
 
             if (regAiType.Length > 0)
                 GlobalVariables.aiTypeVar = regAiType;
@@ -109,10 +115,20 @@ namespace CIARE.Utils.Options
 
 
             GlobalVariables.aiKey = trimKey.StringToSecureString();
-            GlobalVariables.aiMaxTokens = trimTokens;
-            GlobalVariables.model = trimModel;
+            GlobalVariables.aiMaxTokens = !string.IsNullOrWhiteSpace(trimTokens) ? trimTokens : "999";
+            GlobalVariables.model = !string.IsNullOrWhiteSpace(trimModel) ? trimModel : GetDefaultModel(trimAyType);
             GlobalVariables.aiTypeVar = trimAyType;
             openAIApiKey.Text = "******************************************";
+        }
+
+        private static string GetDefaultModel(string aiType)
+        {
+            return aiType switch
+            {
+                "GitHub Copilot" => "claude-3.7-sonnet",
+                "OpenRouter" => "openai/gpt-3.5-turbo",
+                _ => "text-davinci-003",
+            };
         }
     }
 }
