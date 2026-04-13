@@ -191,7 +191,7 @@ namespace CopilotInt
                     return (s_sessionToken.token, null);
 
                 if (string.IsNullOrEmpty(_copilotOAuthToken))
-                    return (null, "Not signed in to GitHub Copilot. Use 'Sign in to Copilot' in Options > AI settings.");
+                    return (null, "Not signed in to GitHub Copilot. Use 'Sign in to GitHub' in Options > AI settings.");
 
                 using var req = new HttpRequestMessage(HttpMethod.Get, $"{GitHubApiUrl}/copilot_internal/v2/token");
                 req.Headers.Authorization = new AuthenticationHeaderValue("Token", _copilotOAuthToken);
@@ -237,7 +237,7 @@ namespace CopilotInt
             if (string.IsNullOrEmpty(_copilotOAuthToken))
             {
                 return "Not signed in to GitHub Copilot.\n\n" +
-                       "In Options > AI settings, select 'GitHub Copilot' and click 'Sign in to Copilot'.";
+                       "In Options > AI settings, select 'GitHub Copilot' and click 'Sign in to GitHub'.";
             }
 
             var (sessionToken, tokenError) = await TryGetSessionTokenAsync();

@@ -419,7 +419,7 @@ namespace CIARE
             finally
             {
                 connectCopilotBtn.Enabled = true;
-                connectCopilotBtn.Text = "Sign in to Copilot";
+                connectCopilotBtn.Text = "Sign in to Gihub";
             }
         }
 
