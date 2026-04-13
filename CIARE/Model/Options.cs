@@ -276,6 +276,8 @@ namespace CIARE
                 modelLocalLbl.Visible = true;
                 openAISaveBtn.Enabled = true;
                 FrmColorMod.SetButtonColorDisableCombo(openAISaveBtn, modelLocalCombo, GlobalVariables.darkColor, GlobalVariables.isVStheme);
+                listModelsBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
+                connectCopilotBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
             }
             else
             {

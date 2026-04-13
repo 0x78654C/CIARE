@@ -403,6 +403,7 @@ namespace CIARE
             // listModelsBtn
             // 
             listModelsBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            listModelsBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
             listModelsBtn.Location = new System.Drawing.Point(200, 97);
             listModelsBtn.Name = "listModelsBtn";
             listModelsBtn.Size = new System.Drawing.Size(90, 23);
@@ -415,6 +416,7 @@ namespace CIARE
             // connectCopilotBtn
             // 
             connectCopilotBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            connectCopilotBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
             connectCopilotBtn.Location = new System.Drawing.Point(296, 97);
             connectCopilotBtn.Name = "connectCopilotBtn";
             connectCopilotBtn.Size = new System.Drawing.Size(120, 23);
