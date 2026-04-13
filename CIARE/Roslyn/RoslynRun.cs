@@ -232,7 +232,7 @@ namespace CIARE.Roslyn
             }
             catch (DivideByZeroException dbze)
             {
-                richTextBox.Text += dbze.StackTrace;
+                richTextBox.Text += $"Error: {dbze.Message}\n";
                 GlobalVariables.binaryName = string.Empty;
             }
             catch (Exception ex)
@@ -274,7 +274,7 @@ namespace CIARE.Roslyn
             var errorMesasgeSplited = DataManage.SplitTextByWordsInLine($"\u2196\n{errorId} -> {errorMessage}", 6);
             itemMenu.Text = errorMesasgeSplited;
             contextMenuStrip.Name = "Error Notification";
-            itemMenu.BackColor = Color.FromArgb(30, 30, 31);
+            itemMenu.BackColor = GlobalVariables.controlBgColor;
             itemMenu.ForeColor = Color.IndianRed;
             itemMenu.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.28f, FontStyle.Italic | FontStyle.Bold);
             itemMenu.Click += ItemMenu_Click;
@@ -282,7 +282,7 @@ namespace CIARE.Roslyn
             var separator = new ToolStripSeparator();
             separator.Paint += RenderToolStripSeparator.RenderToolStripSeparator_PaintDarkAI_Error;
             itemMenuAI.Text = "[ Ask AI for help you with this error? ]";
-            itemMenuAI.BackColor = Color.FromArgb(30, 30, 31);
+            itemMenuAI.BackColor = GlobalVariables.controlBgColor;
             itemMenuAI.ForeColor = Color.White;
             itemMenuAI.Font = new Font(new FontFamily(GenericFontFamilies.Monospace), 11.28f, FontStyle.Italic | FontStyle.Bold);
             itemMenuAI.Click += AskAI_Click;
@@ -302,7 +302,7 @@ namespace CIARE.Roslyn
         /// <param name="e"></param>
         private static void ItemMenu_Click(object sender, EventArgs e)
         {
-            var url = $"https://learn.microsoft.com/en-us/search/?terms={s_errorCode}&category=Documentation";
+            var url = $"https://learn.microsoft.com/en-us/search/?terms={Uri.EscapeDataString(s_errorCode)}&category=Documentation";
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
 

@@ -11,6 +11,11 @@ namespace CIARE.Model
     public partial class AskAI : Form
     {
         private string _displayCode = "";
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public string InitialQuestion { get; set; } = "";
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public string CodeContext { get; set; } = "";
+
         public AskAI()
         {
             InitializeComponent();
@@ -26,6 +31,10 @@ namespace CIARE.Model
                 model = GlobalVariables.modelOllamaVar;
             else
                 model = GlobalVariables.model;
+
+            if (!string.IsNullOrEmpty(InitialQuestion))
+                askAiTxt.Text = InitialQuestion;
+
             GetSelectedText(out isSelected);
             Text = (isSelected) ? $"Ask AI for selected text ({aiType} - {model}):" : $"Ask AI ({aiType} - {model}):";
         }
@@ -37,8 +46,15 @@ namespace CIARE.Model
         /// <param name="e"></param>
         private void askBtn_Click(object sender, EventArgs e)
         {
-            var selectedText = GetSelectedText(out _);
-            GlobalVariables.aiQuestion = (string.IsNullOrEmpty(selectedText)) ? $"{askAiTxt.Text}. {_displayCode}" : $"{selectedText}\n {askAiTxt}. {_displayCode}";
+            if (!string.IsNullOrEmpty(CodeContext))
+            {
+                GlobalVariables.aiQuestion = $"Code:\n{CodeContext}\n\n{askAiTxt.Text}{_displayCode}";
+            }
+            else
+            {
+                var selectedText = GetSelectedText(out _);
+                GlobalVariables.aiQuestion = (string.IsNullOrEmpty(selectedText)) ? $"{askAiTxt.Text}. {_displayCode}" : $"{selectedText}\n {askAiTxt}. {_displayCode}";
+            }
             if (string.IsNullOrWhiteSpace(GlobalVariables.aiQuestion))
             {
                 MessageBox.Show("No question provided!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);

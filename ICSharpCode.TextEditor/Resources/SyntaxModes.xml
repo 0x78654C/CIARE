@@ -30,7 +30,7 @@
   <Mode file       = "CSharp-Mode-DarkVS.xshd"
       name				 = "C#-DarkVS"
       extensions   = ".cs"/>
-  
+
 	<Mode file       = "HTML-Mode.xshd"
 	      name       = "HTML"
 	      extensions = ".htm;.html"/>

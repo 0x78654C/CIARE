@@ -12,6 +12,8 @@
 
 ![Preview](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_2.0.4.png?raw=true)
 
+> **Version 3.0.0**
+
 ---
 
 ## ✨ Features
@@ -24,11 +26,13 @@
 - Syntax highlighting for various programming languages
 - Code folding (curly brackets, regions, and more)
 - Code completion (IntelliSense)
+- Real-time type checking — wave-line markers for errors and warnings as you type (800 ms debounce)
 - Split editor window (vertical & horizontal)
 - Drag & Drop support
 - Autosave font size on editor zoom
 - Load predefined C# code sample templates
 - Display current edited file state (`*` indicator in title bar)
+- Ask AI directly from the editor right-click context menu
 
 ### Compilation & Execution
 - Compile and run C# code in memory using Roslyn
@@ -43,6 +47,10 @@
 - Usage of unsafe code
 - Inline error window notifications
 - Display output results and errors (ID and message)
+- Real-time error and warning counter with highlighted errors tab
+- Auto-select the errors tab when compilation errors are found
+- Right-click any error line in the output tab to copy it or ask AI for an explanation
+- C# 14 keyword support
 
 ### Workspace & Files
 - Show / Hide output window (state persisted across sessions)
@@ -51,11 +59,18 @@
 - Add references to custom managed libraries
 - NuGet Manager — download and use packages instantly
 
+### Themes
+- 4 built-in themes: Default, C#-Light, C#-Dark, C#-DarkVS
+- 8 additional themes bundled as external `.xshd` files: **8bit**, **Gruvbox**, **Lilac**, **Neon**, **NoctisHC**, **Noegi**, **NordWave**, **Sweet**
+- Drop any custom `.xshd` file into the `themes\` folder next to the exe to add it instantly — no restart needed
+- UI colors (forms, tabs, controls) adapt automatically to the active theme
+
 ### AI Integration
 - Generate code / data with AI or work with selected text
 - ChatGPT (OpenAI) integration
 - OpenRouter multi-model AI integration
 - Ollama local LLM integration (auto-detects installed models)
+- **GitHub Copilot** integration — authenticates via GitHub OAuth device flow; supports all Copilot models (GPT-4o, Claude Sonnet, Gemini, and more); falls back to the GitHub Models free tier (PAT with `models:read` scope) when no Copilot subscription is active
 
 ### Collaboration
 - Live Share — collaborate on the same file in real time
@@ -125,15 +140,16 @@ https://user-images.githubusercontent.com/13780514/201774933-e53d3ba2-95e0-434e-
 
 ## 🤖 AI Integration
 
-### ChatGPT / OpenRouter
+### ChatGPT / OpenRouter / GitHub Copilot
 
 - [ChatGPT](https://openai.com) — precise AI answers and code generation
 - [OpenRouter](https://openrouter.ai/) — access multiple AI models from different providers
+- **GitHub Copilot** — use your active Copilot subscription; supports GPT-4o, Claude Sonnet, Gemini, and more
 
 **Usage:**
-1. Add your OpenAI or OpenRouter API key in **Settings → Options** (model and token limit configurable)
+1. In **Settings → Options**, select the AI provider and add your API key or authenticate with GitHub Copilot (model and token limit configurable)
 2. Go to **Edit → Ask AI** or press `CTRL + Shift + P`
-3. Optionally select text in the editor to send it as context
+3. Optionally select text in the editor to send it as context — or right-click any line in the editor / any error line in the output tab
 
 The AI response is inserted directly into your editor.
 

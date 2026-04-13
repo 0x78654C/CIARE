@@ -46,8 +46,9 @@ namespace ICSharpCode.TextEditor.Document
 		{
 			string syntaxModeFile = Path.Combine(directory, syntaxMode.FileName);
 			if (!File.Exists(syntaxModeFile)) {
-				throw new HighlightingDefinitionInvalidException("Can't load highlighting definition " + syntaxModeFile + " (file not found)!");
-			}
+				//throw new HighlightingDefinitionInvalidException("Can't load highlighting definition " + syntaxModeFile + " (file not found)!");
+				MessageBox.Show("Can't load highlighting definition " + syntaxModeFile + " (file not found)!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
 			return new XmlTextReader(File.OpenRead(syntaxModeFile));
 		}
 		

@@ -93,6 +93,8 @@ namespace CIARE
             label3 = new Label();
             linesCountLbl = new Label();
             linesPositionLbl = new Label();
+            typeCheckLbl = new Label();
+            warningsCheckLbl = new Label();
             imageList1 = new ImageList(components);
             markStartFileChk = new CheckBox();
             liveStatusPb = new PictureBox();
@@ -100,10 +102,20 @@ namespace CIARE
             closeTab = new ToolStripMenuItem();
             closeAllTabs = new ToolStripMenuItem();
             closeAllTabsOne = new ToolStripMenuItem();
+            errorsContextMenu = new ContextMenuStrip(components);
+            copyErrorMenuItem = new ToolStripMenuItem();
+            askAiErrorMenuItem = new ToolStripMenuItem();
+            outputTabControl = new CIARE.GUI.DarkTabControl();
+            outputTabPage = new TabPage();
+            errorsTabPage = new TabPage();
+            errorsRTB = new RichTextBox();
             progressBar = new ProgressBar();
             ((System.ComponentModel.ISupportInitialize)runCodePb).BeginInit();
             menuStrip1.SuspendLayout();
             groupBox1.SuspendLayout();
+            outputTabControl.SuspendLayout();
+            outputTabPage.SuspendLayout();
+            errorsTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -111,24 +123,68 @@ namespace CIARE
             EditorTabControl.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).BeginInit();
             tabMenu.SuspendLayout();
+            errorsContextMenu.SuspendLayout();
             SuspendLayout();
+            // 
+            // outputTabPage
+            // 
+            outputTabPage.Controls.Add(outputRBT);
+            outputTabPage.Name = "outputTabPage";
+            outputTabPage.Text = "Output";
+            outputTabPage.Size = new System.Drawing.Size(88, 50);
+            outputTabPage.UseVisualStyleBackColor = true;
             // 
             // outputRBT
             // 
-            outputRBT.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             outputRBT.BackColor = System.Drawing.SystemColors.Window;
             outputRBT.BorderStyle = BorderStyle.None;
+            outputRBT.Dock = DockStyle.Fill;
             outputRBT.Font = new System.Drawing.Font("Consolas", 11.25F);
             outputRBT.ForeColor = System.Drawing.SystemColors.MenuText;
-            outputRBT.Location = new System.Drawing.Point(7, 18);
             outputRBT.Margin = new Padding(4, 3, 4, 3);
             outputRBT.Name = "outputRBT";
             outputRBT.ReadOnly = true;
             outputRBT.ScrollBars = RichTextBoxScrollBars.Vertical;
-            outputRBT.Size = new System.Drawing.Size(1388, 156);
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
             outputRBT.MouseWheel += outputRBT_MouseWheel;
+            // 
+            // errorsTabPage
+            // 
+            errorsTabPage.Controls.Add(errorsRTB);
+            errorsTabPage.Name = "errorsTabPage";
+            errorsTabPage.Text = "Errors";
+            errorsRTB.Size = new System.Drawing.Size(88, 50);
+            errorsTabPage.UseVisualStyleBackColor = true;
+            // 
+            // errorsRTB
+            // 
+            errorsRTB.BackColor = System.Drawing.SystemColors.Window;
+            errorsRTB.BorderStyle = BorderStyle.None;
+            errorsRTB.Dock = DockStyle.Fill;
+            errorsRTB.Font = new System.Drawing.Font("Consolas", 10.5F);
+            errorsRTB.ForeColor = System.Drawing.SystemColors.MenuText;
+            errorsRTB.Name = "errorsRTB";
+            errorsRTB.ReadOnly = true;
+            errorsRTB.ScrollBars = RichTextBoxScrollBars.Vertical;
+            errorsRTB.TabIndex = 0;
+            errorsRTB.Text = "";
+            errorsRTB.ContextMenuStrip = errorsContextMenu;
+            errorsRTB.MouseDown += errorsRTB_MouseDown;
+            errorsRTB.MouseDoubleClick += errorsRTB_MouseDoubleClick;
+            // 
+            // outputTabControl
+            // 
+            outputTabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            outputTabControl.Controls.Add(outputTabPage);
+            outputTabControl.Controls.Add(errorsTabPage);
+            outputTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
+            outputTabControl.ItemSize = new System.Drawing.Size(130, 22);
+            outputTabControl.Location = new System.Drawing.Point(4, 14);
+            outputTabControl.Name = "outputTabControl";
+            outputTabControl.Size = new System.Drawing.Size(1394, 163);
+            outputTabControl.TabIndex = 3;
+            outputTabControl.DrawItem += OutputTabControl_DrawItem;
             // 
             // toolTip1
             // 
@@ -466,7 +522,7 @@ namespace CIARE
             // groupBox1
             // 
             groupBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            groupBox1.Controls.Add(outputRBT);
+            groupBox1.Controls.Add(outputTabControl);
             groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F);
             groupBox1.Location = new System.Drawing.Point(4, 3);
             groupBox1.Margin = new Padding(4, 3, 4, 3);
@@ -475,7 +531,6 @@ namespace CIARE
             groupBox1.Size = new System.Drawing.Size(1402, 181);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
-            groupBox1.Text = "Output:";
             // 
             // splitContainer1
             // 
@@ -512,6 +567,7 @@ namespace CIARE
             EditorTabControl.TabIndex = 1;
             EditorTabControl.DrawItem += EditorTabControl_DrawItem;
             EditorTabControl.Selecting += EditorTabControl_Selecting;
+            EditorTabControl.SelectedIndexChanged += EditorTabControl_SelectedIndexChanged;
             EditorTabControl.HandleCreated += EditorTabControl_HandleCreated;
             EditorTabControl.KeyDown += EditorTabControl_KeyDown;
             EditorTabControl.MouseClick += EditorTabControl_MouseClick;
@@ -581,6 +637,29 @@ namespace CIARE
             linesPositionLbl.Size = new System.Drawing.Size(74, 15);
             linesPositionLbl.TabIndex = 15;
             linesPositionLbl.Text = "linesPosition";
+            // 
+            // typeCheckLbl
+            // 
+            typeCheckLbl.AutoSize = true;
+            typeCheckLbl.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
+            typeCheckLbl.Location = new System.Drawing.Point(600, 5);
+            typeCheckLbl.Margin = new Padding(4, 0, 4, 0);
+            typeCheckLbl.Name = "typeCheckLbl";
+            typeCheckLbl.Size = new System.Drawing.Size(0, 15);
+            typeCheckLbl.TabIndex = 18;
+            typeCheckLbl.Text = "";
+            // 
+            // warningsCheckLbl
+            // 
+            warningsCheckLbl.AutoSize = true;
+            warningsCheckLbl.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
+            warningsCheckLbl.ForeColor = System.Drawing.Color.Orange;
+            warningsCheckLbl.Location = new System.Drawing.Point(800, 5);
+            warningsCheckLbl.Margin = new Padding(4, 0, 4, 0);
+            warningsCheckLbl.Name = "warningsCheckLbl";
+            warningsCheckLbl.Size = new System.Drawing.Size(0, 15);
+            warningsCheckLbl.TabIndex = 19;
+            warningsCheckLbl.Text = "";
             // 
             // imageList1
             // 
@@ -688,6 +767,26 @@ namespace CIARE
             closeAllTabsOne.Text = "Close All BUT This";
             closeAllTabsOne.Click += closeAllTabsOne_Click;
             // 
+            // errorsContextMenu
+            // 
+            errorsContextMenu.Items.AddRange(new ToolStripItem[] { copyErrorMenuItem, askAiErrorMenuItem });
+            errorsContextMenu.Name = "errorsContextMenu";
+            errorsContextMenu.Size = new System.Drawing.Size(128, 48);
+            // 
+            // copyErrorMenuItem
+            // 
+            copyErrorMenuItem.Name = "copyErrorMenuItem";
+            copyErrorMenuItem.Size = new System.Drawing.Size(127, 22);
+            copyErrorMenuItem.Text = "Copy";
+            copyErrorMenuItem.Click += copyErrorMenuItem_Click;
+            // 
+            // askAiErrorMenuItem
+            // 
+            askAiErrorMenuItem.Name = "askAiErrorMenuItem";
+            askAiErrorMenuItem.Size = new System.Drawing.Size(127, 22);
+            askAiErrorMenuItem.Text = "Ask AI";
+            askAiErrorMenuItem.Click += askAiErrorMenuItem_Click;
+            // 
             // progressBar
             // 
             progressBar.Anchor = AnchorStyles.None;
@@ -707,6 +806,8 @@ namespace CIARE
             ClientSize = new System.Drawing.Size(1410, 862);
             Controls.Add(liveStatusPb);
             Controls.Add(markStartFileChk);
+            Controls.Add(warningsCheckLbl);
+            Controls.Add(typeCheckLbl);
             Controls.Add(linesPositionLbl);
             Controls.Add(linesCountLbl);
             Controls.Add(label3);
@@ -730,6 +831,9 @@ namespace CIARE
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             groupBox1.ResumeLayout(false);
+            outputTabControl.ResumeLayout(false);
+            outputTabPage.ResumeLayout(false);
+            errorsTabPage.ResumeLayout(false);
             splitContainer1.Panel1.ResumeLayout(false);
             splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
@@ -737,6 +841,7 @@ namespace CIARE
             EditorTabControl.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).EndInit();
             tabMenu.ResumeLayout(false);
+            errorsContextMenu.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -745,6 +850,10 @@ namespace CIARE
         #endregion
         private System.Windows.Forms.PictureBox runCodePb;
         public System.Windows.Forms.RichTextBox outputRBT;
+        public CIARE.GUI.DarkTabControl outputTabControl;
+        public System.Windows.Forms.TabPage outputTabPage;
+        public System.Windows.Forms.TabPage errorsTabPage;
+        public System.Windows.Forms.RichTextBox errorsRTB;
         private System.Windows.Forms.ToolTip toolTip1;
         public System.Windows.Forms.ToolStripMenuItem fIleToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
@@ -787,6 +896,8 @@ namespace CIARE
         public System.Windows.Forms.ToolStripMenuItem splitVEditorToolStripMenuItem;
         public System.Windows.Forms.Label linesCountLbl;
         public System.Windows.Forms.Label linesPositionLbl;
+        public System.Windows.Forms.Label typeCheckLbl;
+        public System.Windows.Forms.Label warningsCheckLbl;
         public System.Windows.Forms.ToolStripSeparator compileStripSeparator1;
         public System.Windows.Forms.ToolStripMenuItem finStripMenuItem;
         public System.Windows.Forms.MenuStrip menuStrip1;
@@ -809,6 +920,9 @@ namespace CIARE
         private System.Windows.Forms.ToolStripMenuItem closeTab;
         private System.Windows.Forms.ToolStripMenuItem closeAllTabs;
         private System.Windows.Forms.ToolStripMenuItem closeAllTabsOne;
+        private System.Windows.Forms.ContextMenuStrip errorsContextMenu;
+        private System.Windows.Forms.ToolStripMenuItem copyErrorMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem askAiErrorMenuItem;
         public System.Windows.Forms.ProgressBar progressBar;
     }
 }

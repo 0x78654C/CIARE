@@ -58,6 +58,8 @@ namespace CIARE
             modelLocalLbl = new System.Windows.Forms.Label();
             aiTypeLbl = new System.Windows.Forms.Label();
             AiTypeCombo = new System.Windows.Forms.ComboBox();
+            listModelsBtn = new System.Windows.Forms.Button();
+            connectCopilotBtn = new System.Windows.Forms.Button();
             modelTxt = new System.Windows.Forms.TextBox();
             label1 = new System.Windows.Forms.Label();
             openAISaveBtn = new System.Windows.Forms.Button();
@@ -87,7 +89,7 @@ namespace CIARE
             highlightCMB.Items.AddRange(new object[] { "Default", "C#-Light", "C#-Dark", "C#-DarkVS" });
             highlightCMB.Location = new System.Drawing.Point(119, 67);
             highlightCMB.Name = "highlightCMB";
-            highlightCMB.Size = new System.Drawing.Size(93, 23);
+            highlightCMB.Size = new System.Drawing.Size(127, 23);
             highlightCMB.TabIndex = 10;
             highlightCMB.Text = "C#-Dark";
             highlightCMB.SelectedIndexChanged += highlightCMB_SelectedIndexChanged;
@@ -339,6 +341,8 @@ namespace CIARE
             openAIGroup.Controls.Add(modelLocalLbl);
             openAIGroup.Controls.Add(aiTypeLbl);
             openAIGroup.Controls.Add(AiTypeCombo);
+            openAIGroup.Controls.Add(listModelsBtn);
+            openAIGroup.Controls.Add(connectCopilotBtn);
             openAIGroup.Controls.Add(modelTxt);
             openAIGroup.Controls.Add(label1);
             openAIGroup.Controls.Add(openAISaveBtn);
@@ -388,13 +392,39 @@ namespace CIARE
             // 
             AiTypeCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             AiTypeCombo.FormattingEnabled = true;
-            AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenRouter" });
+            AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenRouter", "GitHub Copilot" });
             AiTypeCombo.Location = new System.Drawing.Point(73, 98);
             AiTypeCombo.Name = "AiTypeCombo";
             AiTypeCombo.Size = new System.Drawing.Size(121, 23);
             AiTypeCombo.TabIndex = 24;
             AiTypeCombo.Text = "OpenAI";
             AiTypeCombo.SelectedIndexChanged += AiTypeCombo_SelectedIndexChanged;
+            // 
+            // listModelsBtn
+            // 
+            listModelsBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            listModelsBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+            listModelsBtn.Location = new System.Drawing.Point(200, 97);
+            listModelsBtn.Name = "listModelsBtn";
+            listModelsBtn.Size = new System.Drawing.Size(90, 23);
+            listModelsBtn.TabIndex = 30;
+            listModelsBtn.Text = "List Models";
+            listModelsBtn.UseVisualStyleBackColor = true;
+            listModelsBtn.Visible = false;
+            listModelsBtn.Click += listModelsBtn_Click;
+            // 
+            // connectCopilotBtn
+            // 
+            connectCopilotBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            connectCopilotBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+            connectCopilotBtn.Location = new System.Drawing.Point(296, 97);
+            connectCopilotBtn.Name = "connectCopilotBtn";
+            connectCopilotBtn.Size = new System.Drawing.Size(120, 23);
+            connectCopilotBtn.TabIndex = 31;
+            connectCopilotBtn.Text = "Sign in to Github";
+            connectCopilotBtn.UseVisualStyleBackColor = true;
+            connectCopilotBtn.Visible = false;
+            connectCopilotBtn.Click += connectCopilotBtn_Click;
             // 
             // modelTxt
             // 
@@ -525,6 +555,8 @@ namespace CIARE
         private System.Windows.Forms.TextBox apiKeyAiTxtBox;
         private System.Windows.Forms.Label apiKeyAIlbl;
         private System.Windows.Forms.Button openAISaveBtn;
+        private System.Windows.Forms.Button listModelsBtn;
+        private System.Windows.Forms.Button connectCopilotBtn;
         private System.Windows.Forms.TextBox modelTxt;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox unsafeCkb;

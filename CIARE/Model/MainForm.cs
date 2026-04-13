@@ -18,6 +18,7 @@ using CIARE.GUI;
 using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using System;
+using System.Text.RegularExpressions;
 using System.IO;
 using System.Windows.Forms;
 using NRefactory = ICSharpCode.NRefactory;
@@ -113,6 +114,18 @@ namespace CIARE
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
+            HookEditorAskAI(SelectedEditor.GetSelectedEditor());
+        }
+
+        /// <summary>
+        /// Wire the "Ask AI" context-menu action for an editor instance.
+        /// </summary>
+        private static void HookEditorAskAI(TextEditorControl editor)
+        {
+            if (editor == null) return;
+            var menu = editor.ActiveTextAreaControl.ContextMenuStrip as ICSharpCode.TextEditor.ContextMenu;
+            if (menu != null)
+                menu.AskAIAction = () => AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
         }
 
 
@@ -122,6 +135,7 @@ namespace CIARE
             Instance = this;
             this.Text = $"CIARE {GlobalVariables.versionName}";
             TabControllerManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
+            ThemeManager.LoadExternalThemes();
             Initiliaze();
             Console.SetOut(new ControlWriter(outputRBT));
             InitializeEditor.GenerateLiveSessionId();
@@ -166,7 +180,7 @@ namespace CIARE
 
             // Get last opened tab MD5.
             if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
-                GlobalVariables.openedFileMD5 = MD5Hash.GetMD5Hash(SelectedEditor.GetSelectedEditor().Text);
+                GlobalVariables.openedFileMD5 = FileHash.GetFileHash(SelectedEditor.GetSelectedEditor().Text);
 
             if (GlobalVariables.darkColor)
             {
@@ -174,6 +188,10 @@ namespace CIARE
                 FrmColorMod.EnableDarkTitleBar(EditorTabControl.Handle);
             }
 
+            // Run initial type check so errors are underlined from the first load.
+            var startEditor = SelectedEditor.GetSelectedEditor();
+            if (startEditor != null && !string.IsNullOrWhiteSpace(startEditor.Text))
+                RealTimeChecker.ScheduleCheck(startEditor.Text, startEditor, typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
         }
 
         private void SetCodeCompletion(int index)
@@ -229,6 +247,9 @@ namespace CIARE
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
+            RealTimeChecker.Cancel(SelectedEditor.GetSelectedEditor(), typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+            if (outputTabControl.SelectedTab == errorsTabPage)
+                outputTabControl.SelectedTab = outputTabPage;
             RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
         }
 
@@ -289,7 +310,7 @@ namespace CIARE
             var path = EditorTabControl.SelectedTab.ToolTipText;
             if (File.Exists(path))
             {
-                var md5Txt = MD5Hash.GetMD5Hash(SelectedEditor.GetSelectedEditor().Text);
+                var md5Txt = FileHash.GetFileHash(SelectedEditor.GetSelectedEditor().Text);
 
                 //Remove * depende of file size in comparison text size.
                 if (GlobalVariables.openedFileMD5 != md5Txt)
@@ -317,6 +338,9 @@ namespace CIARE
             LinesManage.GetTotalLinesCount(linesCountLbl);
             SelectedEditor.GetSelectedEditor().Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
             SelectedEditor.GetSelectedEditor().Document.FoldingManager.UpdateFoldings(null, null);
+
+            // Trigger real-time type checking after a short debounce.
+            RealTimeChecker.ScheduleCheck(SelectedEditor.GetSelectedEditor().Text, SelectedEditor.GetSelectedEditor(), typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
 
             // Send live share data to api.
             SendData();
@@ -393,6 +417,8 @@ namespace CIARE
                 label3.Visible = false;
                 linesCountLbl.Visible = false;
                 linesPositionLbl.Visible = false;
+                typeCheckLbl.Visible = false;
+                warningsCheckLbl.Visible = false;
                 liveStatusPb.Visible = false;
                 markStartFileChk.Visible = false;
 
@@ -410,6 +436,8 @@ namespace CIARE
                 label3.Visible = true;
                 linesCountLbl.Visible = true;
                 linesPositionLbl.Visible = true;
+                typeCheckLbl.Visible = true;
+                warningsCheckLbl.Visible = true;
                 liveStatusPb.Visible = true;
                 markStartFileChk.Visible = _markStartFileChkVisible;
 
@@ -494,6 +522,8 @@ namespace CIARE
                     return true;
                 case Keys.F5:
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
+                    if (outputTabControl.SelectedTab == errorsTabPage)
+                        outputTabControl.SelectedTab = outputTabPage;
                     RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
                     return true;
                 case Keys.T | Keys.Control:
@@ -537,6 +567,9 @@ namespace CIARE
                     RefManager refManager = new RefManager();
                     if (!refManager.Visible)
                         refManager.ShowDialog();
+                    var editorRef = SelectedEditor.GetSelectedEditor();
+                    if (editorRef != null)
+                        RealTimeChecker.ScheduleCheck(editorRef.Text, editorRef, typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
                     return true;
                 case Keys.F11:
                     ToggleFullScreen();
@@ -553,19 +586,148 @@ namespace CIARE
                 textEditorControl.SetHighlighting(highlight);
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlight);
             }
-            if (highlight.StartsWith("C#-Dark"))
+            if (highlight.StartsWith("C#-Dark") || CIARE.GUI.InitializeEditor.IsDarkTheme(highlight))
             {
                 GlobalVariables.darkColor = true;
                 ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = true;
-                GlobalVariables.isVStheme = (highlight.EndsWith("VS")) ? true : false;
+                GlobalVariables.isVStheme = highlight.EndsWith("VS");
+                UpdateThemeColors(highlight);
+                var darkBg = GlobalVariables.controlBgColor;
+                var darkFg = Color.FromArgb(192, 215, 207);
                 DarkModeMain.SetDarkModeMain(this, outputRBT, groupBox1, label2, label3,
                     menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator(), GlobalVariables.isVStheme);
+                errorsRTB.BackColor = darkBg;
+                errorsRTB.ForeColor = darkFg;
+                ApplyTabControlDarkMode(outputTabControl, darkBg);
                 return;
             }
             GlobalVariables.darkColor = false;
             ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.darkMode = false;
             LightModeMain.SetLightModeMain(this, outputRBT, groupBox1,
                 menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
+            errorsRTB.BackColor = SystemColors.Window;
+            errorsRTB.ForeColor = Color.Black;
+            ApplyTabControlDarkMode(outputTabControl, SystemColors.Window);
+        }
+
+        /// <summary>
+        /// Sets <see cref="GlobalVariables.formBgColor"/> and <see cref="GlobalVariables.controlBgColor"/>
+        /// to match the currently selected theme, including external .xshd themes.
+        /// </summary>
+        private static void UpdateThemeColors(string highlight)
+        {
+            if (highlight.EndsWith("VS"))
+            {
+                GlobalVariables.formBgColor = Color.FromArgb(51, 51, 51);
+                GlobalVariables.controlBgColor = Color.FromArgb(30, 30, 30);
+            }
+            else if (highlight.StartsWith("C#-Dark"))
+            {
+                GlobalVariables.formBgColor = Color.FromArgb(0, 1, 10);
+                GlobalVariables.controlBgColor = Color.FromArgb(2, 0, 10);
+            }
+            else
+            {
+                // External dark theme — derive background from the .xshd bgcolor.
+                var extBg = CIARE.GUI.ThemeManager.GetExternalThemeBgColor(highlight);
+                if (extBg.HasValue)
+                {
+                    GlobalVariables.formBgColor = extBg.Value;
+                    GlobalVariables.controlBgColor = extBg.Value;
+                }
+                else
+                {
+                    GlobalVariables.formBgColor = Color.FromArgb(0, 1, 10);
+                    GlobalVariables.controlBgColor = Color.FromArgb(2, 0, 10);
+                }
+            }
+        }
+
+        private static void ApplyTabControlDarkMode(TabControl tabControl, Color backColor)
+        {
+            tabControl.BackColor = backColor;
+            foreach (TabPage page in tabControl.TabPages)
+                page.BackColor = backColor;
+            tabControl.Invalidate();
+        }
+
+        private void OutputTabControl_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            bool dark = GlobalVariables.darkColor;
+            var g = e.Graphics;
+            var tp = outputTabControl.TabPages[e.Index];
+            var rt = e.Bounds;
+
+            // Fill tab background in dark mode (same colours as the editor tabs)
+            if (dark)
+            {
+                Color tabBg = GlobalVariables.TabBgColor;
+                using (var bgBrush = new SolidBrush(tabBg))
+                    g.FillRectangle(bgBrush, rt);
+            }
+
+            // Fill the empty strip area beyond the last tab (same helper as editor tabs)
+            TabControllerManage.SetTransparentTabBar(outputTabControl, e,
+                GlobalVariables.formBgColor.R, GlobalVariables.formBgColor.G, GlobalVariables.formBgColor.B);
+
+            // Draw text centred in the FULL tab rect — no close-button indentation for output tabs
+            Color textColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
+            using (var textBrush = new SolidBrush(textColor))
+            using (var sf = new StringFormat
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center,
+                Trimming = StringTrimming.EllipsisCharacter,
+                FormatFlags = StringFormatFlags.NoWrap,
+            })
+            {
+                g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, textBrush, (RectangleF)rt, sf);
+            }
+        }
+
+        private void errorsRTB_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            int charIndex = errorsRTB.GetCharIndexFromPosition(e.Location);
+            int rtbLine = errorsRTB.GetLineFromCharIndex(charIndex);
+            if (rtbLine < 0 || rtbLine >= errorsRTB.Lines.Length) return;
+
+            var match = Regex.Match(
+                errorsRTB.Lines[rtbLine], @"Line\s+(\d+)");
+            if (!match.Success) return;
+
+            if (!int.TryParse(match.Groups[1].Value, out int targetLine)) return;
+
+            var editor = SelectedEditor.GetSelectedEditor();
+            if (editor == null) return;
+
+            GoToLineNumber.GoToLine(editor, targetLine);
+            editor.Focus();
+        }
+
+        private string _clickedErrorLine = "";
+
+        private void errorsRTB_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right) return;
+            int charIndex = errorsRTB.GetCharIndexFromPosition(e.Location);
+            int rtbLine = errorsRTB.GetLineFromCharIndex(charIndex);
+            _clickedErrorLine = (rtbLine >= 0 && rtbLine < errorsRTB.Lines.Length)
+                ? errorsRTB.Lines[rtbLine].Trim()
+                : "";
+        }
+
+        private void copyErrorMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(_clickedErrorLine))
+                Clipboard.SetText(_clickedErrorLine);
+        }
+
+        private void askAiErrorMenuItem_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(_clickedErrorLine)) return;
+            var editor = SelectedEditor.GetSelectedEditor();
+            if (editor == null) return;
+            AiManage.GetDataAIFromError(GlobalVariables.aiKey.ConvertSecureStringToString(), editor.Text, _clickedErrorLine);
         }
 
         /// <summary>
@@ -1050,6 +1212,21 @@ namespace CIARE
         }
 
         /// <summary>
+        /// Re-run real-time check whenever the active editor tab changes.
+        /// </summary>
+        private void EditorTabControl_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!isLoaded) return;
+            try
+            {
+                var editor = SelectedEditor.GetSelectedEditor();
+                if (editor == null) return;
+                RealTimeChecker.ScheduleCheck(editor.Text, editor, typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+            }
+            catch { }
+        }
+
+        /// <summary>
         /// Set design for every new editor controler.
         /// </summary>
         /// <param name="dynamicTextEdtior"></param>
@@ -1084,6 +1261,7 @@ namespace CIARE
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             dynamicTextEdtior.Focus();
+            HookEditorAskAI(dynamicTextEdtior);
         }
 
         /// <summary>
@@ -1147,10 +1325,8 @@ namespace CIARE
             TabControllerManage.DrawTabControl(EditorTabControl, e);
 
             // Set transparent header bar.
-            if (GlobalVariables.isVStheme)
-                TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 51, 51, 51);
-            else
-                TabControllerManage.SetTransparentTabBar(EditorTabControl, e, 0, 1, 10);
+            TabControllerManage.SetTransparentTabBar(EditorTabControl, e,
+                GlobalVariables.formBgColor.R, GlobalVariables.formBgColor.G, GlobalVariables.formBgColor.B);
 
             // Color tab to red if live shared started on that index.
             if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)

@@ -4,21 +4,21 @@ using System.Text;
 
 namespace CIARE.Utils.Encryption
 {
-    public class MD5Hash
+    public class FileHash
     {
         /// <summary>
-        /// Get MD5 hash from string.
+        /// Get SHA256 hash from string.
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static string GetMD5Hash(string data)
+        public static string GetFileHash(string data)
         {
             string result = "";
             if (string.IsNullOrEmpty(data)) return "";
-            byte[] bytes = Encoding.ASCII.GetBytes(data);
-            using (var md5 = MD5.Create())
+            byte[] bytes = Encoding.UTF8.GetBytes(data);
+            using (var sha256 = SHA256.Create())
             {
-                var hash = md5.ComputeHash(bytes);
+                var hash = sha256.ComputeHash(bytes);
                 result = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
             }
             return result;

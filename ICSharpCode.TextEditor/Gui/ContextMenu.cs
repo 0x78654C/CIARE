@@ -12,6 +12,12 @@ namespace ICSharpCode.TextEditor
     public partial class ContextMenu : ContextMenuStrip
     {
         TextAreaControl parent;
+
+        /// <summary>
+        /// When set, "Ask AI" is shown in the context menu and this action is invoked on click.
+        /// </summary>
+        public Action AskAIAction { get; set; }
+
         public ContextMenu(TextAreaControl parent)
         {
             this.parent = parent;
@@ -22,6 +28,7 @@ namespace ICSharpCode.TextEditor
             copy.Click += OnClickCopy;
             paste.Click += OnClickPaste;
             selectAll.Click += OnSelectAll;
+            askAI.Click += OnClickAskAI;
         }
 
         void OnClickCut(object sender, EventArgs e)
@@ -54,6 +61,10 @@ namespace ICSharpCode.TextEditor
             parent.TextArea.Focus();
         }
 
+        void OnClickAskAI(object sender, EventArgs e)
+        {
+            AskAIAction?.Invoke();
+        }
 
         void OnOpening(object sender, CancelEventArgs e)
         {
@@ -61,6 +72,9 @@ namespace ICSharpCode.TextEditor
             cut.Enabled = copy.Enabled = delete.Enabled = parent.SelectionManager.HasSomethingSelected;
             paste.Enabled = parent.TextArea.ClipboardHandler.EnablePaste;
             selectAll.Enabled = !string.IsNullOrEmpty(parent.Document.TextContent);
+            bool showAI = AskAIAction != null;
+            askAI.Visible = showAI;
+            aiSeparator.Visible = showAI;
         }
 
     }

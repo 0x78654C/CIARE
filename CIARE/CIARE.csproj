@@ -51,6 +51,32 @@
     <Content Include="logoCiare.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="themes\CSharp-Mode-8bit.xshd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="themes\CSharp-Mode-Gruvbox.xshd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="themes\CSharp-Mode-Lilac.xshd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="themes\CSharp-Mode-Neon.xshd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="themes\CSharp-Mode-NoctisHC.xshd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="themes\CSharp-Mode-Noegi.xshd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="themes\CSharp-Mode-NordWave.xshd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="themes\CSharp-Mode-Sweet.xshd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\CIARE\OpenAI.Api.Client\OpenAI.Api.Client.csproj" />
     <ProjectReference Include="..\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\ICSharpCode.SharpDevelop.Dom\Project\ICSharpCode.SharpDevelop.Dom.csproj" />
@@ -58,6 +84,7 @@
     <ProjectReference Include="..\NRefactory\Project\NRefactory.csproj" />
     <ProjectReference Include="..\OllamaInt\OllamaInt.csproj" />
     <ProjectReference Include="..\OpenRouter\OpenRouter.csproj" />
+    <ProjectReference Include="..\CopilotInt\CopilotInt.csproj" />
   </ItemGroup>
   <ItemGroup>
     <FileAssociation Include=".cs">
