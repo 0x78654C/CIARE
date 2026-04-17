@@ -27,6 +27,14 @@ namespace CIARE.Roslyn
         private static readonly Color ErrorColor = Color.Red;
         private static readonly Color WarningColor = Color.Orange;
 
+        // Cached platform references (never change at runtime).
+        private static ImmutableArray<MetadataReference> _platformRefs;
+        private static readonly object _refLock = new object();
+
+        // Snapshot of custom refs used for the last build, so we only rebuild when they change.
+        private static List<string> _lastCustomRefSnapshot;
+        private static List<MetadataReference> _customRefs = new List<MetadataReference>();
+
         /// <summary>
         /// Schedule a real-time type check after a short debounce delay.
         /// Resets the timer on every call so it only fires once typing pauses.
@@ -54,6 +62,8 @@ namespace CIARE.Roslyn
                 _debounceTimer?.Dispose();
                 _debounceTimer = null;
                 _cts?.Cancel();
+                _cts?.Dispose();
+                _cts = null;
             }
 
             if (editor != null)
@@ -77,7 +87,9 @@ namespace CIARE.Roslyn
             CancellationTokenSource cts;
             lock (_lock)
             {
-                _cts?.Cancel();
+                var old = _cts;
+                old?.Cancel();
+                old?.Dispose();
                 cts = new CancellationTokenSource();
                 _cts = cts;
             }
@@ -138,22 +150,36 @@ namespace CIARE.Roslyn
 
         private static IEnumerable<MetadataReference> BuildReferences()
         {
-            var trusted = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES");
-            var refList = trusted
-                .Split(Path.PathSeparator)
-                .Select(r => MetadataReference.CreateFromFile(r))
-                .Cast<MetadataReference>()
-                .ToList();
-
-            foreach (var libPath in GlobalVariables.customRefList)
+            lock (_refLock)
             {
-                var parts = libPath.Split('|');
-                if (parts.Length < 2) continue;
-                var lib = parts[1];
-                if (!string.IsNullOrEmpty(lib) && File.Exists(lib))
-                    refList.Add(MetadataReference.CreateFromFile(lib));
+                // Load platform references once and keep them forever.
+                if (_platformRefs.IsDefault)
+                {
+                    var trusted = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES");
+                    _platformRefs = trusted
+                        .Split(Path.PathSeparator)
+                        .Select(r => (MetadataReference)MetadataReference.CreateFromFile(r))
+                        .ToImmutableArray();
+                }
+
+                // Rebuild custom references only when the list actually changes.
+                var currentCustom = GlobalVariables.customRefList;
+                if (_lastCustomRefSnapshot == null || !_lastCustomRefSnapshot.SequenceEqual(currentCustom))
+                {
+                    _lastCustomRefSnapshot = currentCustom.ToList();
+                    _customRefs = new List<MetadataReference>();
+                    foreach (var libPath in currentCustom)
+                    {
+                        var parts = libPath.Split('|');
+                        if (parts.Length < 2) continue;
+                        var lib = parts[1];
+                        if (!string.IsNullOrEmpty(lib) && File.Exists(lib))
+                            _customRefs.Add(MetadataReference.CreateFromFile(lib));
+                    }
+                }
+
+                return _platformRefs.AddRange(_customRefs);
             }
-            return refList;
         }
 
         private static void ApplyMarkers(TextEditorControl editor, List<Diagnostic> errors, List<Diagnostic> warnings)
