@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.AI;
+using OllamaSharp;
 using System.Diagnostics;
 namespace OllamaInt
 {
@@ -23,7 +24,7 @@ namespace OllamaInt
         /// <returns></returns>
         public async Task<string> AskOllama()
         {
-            IChatClient chatClient = new OllamaChatClient(new Uri(Uri), Model);
+            IChatClient chatClient = new OllamaApiClient(new Uri(Uri), Model);
             // Get user prompt and add to chat history  
             ChatHistory.Add(new ChatMessage(ChatRole.User, Promt));
 
