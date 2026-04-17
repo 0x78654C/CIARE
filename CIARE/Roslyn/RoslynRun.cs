@@ -29,8 +29,11 @@ namespace CIARE.Roslyn
         private static Stopwatch s_stopWatch;
         private static TimeSpan s_timeSpan;
         private static string[] s_commandLineArguments = null;
-        private static AssemblyLoadContext s_assemblyLoad;
         private static string s_errorCode = "";
+
+        // Cached platform references (never change at runtime).
+        private static ImmutableArray<MetadataReference> _platformRefsCompile;
+        private static readonly object _compileRefLock = new object();
         private static string s_errorMessage = "";
         private static string s_codeAI = "";
         private static string s_line = "";
@@ -42,6 +45,7 @@ namespace CIARE.Roslyn
         /// <param name="richTextBox"></param>
         public static void CompileAndRun(string code, RichTextBox richTextBox, bool allowUnsafe)
         {
+            AssemblyLoadContext runContext = null;
             try
             {
 
@@ -87,7 +91,8 @@ namespace CIARE.Roslyn
                     {
                         richTextBox.Clear();
                         ms.Seek(0, SeekOrigin.Begin);
-                        assembly = Assembly.Load(ms.ToArray());
+                        runContext = new AssemblyLoadContext(null, isCollectible: true);
+                        assembly = runContext.LoadFromStream(ms);
                     }
                     ms.Close();
                 }
@@ -126,6 +131,10 @@ namespace CIARE.Roslyn
                     }
                     richTextBox.Text += st.ToString();
                 }
+            }
+            finally
+            {
+                runContext?.Unload();
             }
         }
 
@@ -370,9 +379,19 @@ namespace CIARE.Roslyn
         /// <returns></returns>
         private static IEnumerable<MetadataReference> References(bool isCompiled)
         {
-            var refList = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).Select(refs => MetadataReference.CreateFromFile(refs)).Cast<MetadataReference>().ToList();
+            lock (_compileRefLock)
+            {
+                if (_platformRefsCompile.IsDefault)
+                {
+                    _platformRefsCompile = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES"))
+                        .Split(Path.PathSeparator)
+                        .Select(r => (MetadataReference)MetadataReference.CreateFromFile(r))
+                        .ToImmutableArray();
+                }
+            }
+
+            var refList = _platformRefsCompile.ToList();
             var customRefList = GlobalVariables.customRefList;
-            s_assemblyLoad = AssemblyLoadContext.Default;
             foreach (var libPath in customRefList)
             {
                 var lib = libPath.Split('|')[1];
@@ -381,10 +400,11 @@ namespace CIARE.Roslyn
                     var existAsm = LibLoaded.CheckLoadedAssembly(lib);
                     if (existAsm) continue;
                 }
-                var stream = File.OpenRead(lib);
-                s_assemblyLoad.LoadFromStream(stream);
-                var r = MetadataReference.CreateFromFile(lib);
-                refList.Add(r);
+                using (var stream = File.OpenRead(lib))
+                {
+                    AssemblyLoadContext.Default.LoadFromStream(stream);
+                }
+                refList.Add(MetadataReference.CreateFromFile(lib));
             }
             return refList;
         }
