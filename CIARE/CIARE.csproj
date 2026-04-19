@@ -97,6 +97,7 @@
   <ItemGroup>
     <PackageReference Include="Humanizer.Core" Version="3.0.1" />
     <PackageReference Include="ICSharpCode.NRefactory" Version="5.5.1" />
+    <PackageReference Include="log4net" Version="3.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.10" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.0" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="5.0.0" />
@@ -112,9 +113,8 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="5.0.0" />
     <PackageReference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform" Version="4.1.0" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.Extensions.AI.Ollama" Version="9.4.0-preview.1.25207.5" />
     <PackageReference Include="Mono.Cecil" Version="0.11.5" />
-    <PackageReference Include="NuGet.Protocol" Version="7.0.0" />
+    <PackageReference Include="NuGet.Protocol" Version="7.3.1" />
     <PackageReference Include="System.Buffers" Version="4.6.1" />
     <PackageReference Include="System.Collections.Immutable" Version="10.0.0" />
     <PackageReference Include="System.Composition" Version="10.0.0" />

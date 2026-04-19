@@ -532,11 +532,15 @@ namespace CIARE
                 case Keys.B | Keys.Control:
                     GlobalVariables.binaryPublish = false;
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
+                    if (outputTabControl.SelectedTab == errorsTabPage)
+                        outputTabControl.SelectedTab = outputTabPage;
                     RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
                     GlobalVariables.binaryPublish = true;
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
+                    if (outputTabControl.SelectedTab == errorsTabPage)
+                        outputTabControl.SelectedTab = outputTabPage;
                     RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
                     return true;
                 case Keys.W | Keys.Control:
@@ -772,6 +776,8 @@ namespace CIARE
         private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GlobalVariables.binaryPublish = false;
+            if (outputTabControl.SelectedTab == errorsTabPage)
+                outputTabControl.SelectedTab = outputTabPage;
             RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
         }
 
@@ -783,6 +789,8 @@ namespace CIARE
         private void compileToDLLCtrlSfitBToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GlobalVariables.binaryPublish = true;
+            if (outputTabControl.SelectedTab == errorsTabPage)
+                outputTabControl.SelectedTab = outputTabPage;
             RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
         }
 
