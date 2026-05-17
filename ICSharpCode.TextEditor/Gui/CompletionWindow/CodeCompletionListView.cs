@@ -7,6 +7,7 @@
 
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
 namespace ICSharpCode.TextEditor.Gui.CompletionWindow
@@ -20,7 +21,11 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
         int firstItem = 0;
         int selectedItem = -1;
         ImageList imageList;
+        Font completionFont;
         public static bool darkMode = false;
+        const int HorizontalPadding = 8;
+        const int TextGap = 8;
+        const int RowInset = 3;
 
         public ImageList ImageList
         {
@@ -66,7 +71,8 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
         {
             get
             {
-                return Math.Max(imageList.ImageSize.Height, (int)(Font.Height * 1.25));
+                int imageHeight = imageList != null ? imageList.ImageSize.Height : Font.Height;
+                return Math.Max(imageHeight + 8, Font.Height + 8);
             }
         }
 
@@ -83,10 +89,13 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
             Array.Sort(completionData, DefaultCompletionData.Compare);
             this.completionData = completionData;
 
-            //			this.KeyDown += new System.Windows.Forms.KeyEventHandler(OnKey);
-            //			SetStyle(ControlStyles.Selectable, false);
-            //			SetStyle(ControlStyles.UserPaint, true);
-            //			SetStyle(ControlStyles.DoubleBuffer, false);
+            SetStyle(ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.OptimizedDoubleBuffer |
+                     ControlStyles.ResizeRedraw |
+                     ControlStyles.UserPaint, true);
+            SetStyle(ControlStyles.Selectable, false);
+            completionFont = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            Font = completionFont;
         }
 
         public void Close()
@@ -96,6 +105,16 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
                 Array.Clear(completionData, 0, completionData.Length);
             }
             base.Dispose();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && completionFont != null)
+            {
+                completionFont.Dispose();
+                completionFont = null;
+            }
+            base.Dispose(disposing);
         }
 
         public void SelectIndex(int index)
@@ -259,58 +278,107 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 
         protected override void OnPaint(PaintEventArgs pe)
         {
-            float yPos = 1;
-            float itemHeight = ItemHeight;
-            // Maintain aspect ratio
-            int imageWidth = (int)(itemHeight * imageList.ImageSize.Width / imageList.ImageSize.Height);
-            int curItem = firstItem;
-            Color foreColor = Color.FromArgb(192, 215, 207);
-            Color backColor = Color.FromArgb(51, 51, 51);
-            Graphics g = pe.Graphics;
-            while (curItem < completionData.Length && yPos < Height)
+            int yPos = 1;
+            int itemHeight = ItemHeight;
+            int imageWidth = 0;
+            if (imageList != null && imageList.ImageSize.Height > 0)
             {
-                RectangleF drawingBackground = new RectangleF(1, yPos, Width - 2, itemHeight);
-                if (drawingBackground.IntersectsWith(pe.ClipRectangle))
+                imageWidth = Math.Min(imageList.ImageSize.Width, itemHeight - 8);
+            }
+            int curItem = firstItem;
+            Color backColor = darkMode ? Color.FromArgb(31, 33, 38) : Color.FromArgb(250, 251, 253);
+            Color rowHoverColor = darkMode ? Color.FromArgb(42, 45, 52) : Color.FromArgb(244, 247, 252);
+            Color foreColor = darkMode ? Color.FromArgb(225, 230, 236) : Color.FromArgb(37, 43, 54);
+            Color selectedStartColor = darkMode ? Color.FromArgb(54, 96, 168) : Color.FromArgb(218, 235, 255);
+            Color selectedEndColor = darkMode ? Color.FromArgb(43, 75, 135) : Color.FromArgb(199, 224, 255);
+            Color selectedForeColor = darkMode ? Color.White : Color.FromArgb(20, 46, 86);
+            Color accentColor = darkMode ? Color.FromArgb(112, 172, 255) : Color.FromArgb(24, 105, 210);
+            Color borderColor = darkMode ? Color.FromArgb(78, 86, 102) : Color.FromArgb(188, 198, 214);
+            Graphics g = pe.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.Clear(backColor);
+
+            using (SolidBrush rowHoverBrush = new SolidBrush(rowHoverColor))
+            using (Pen borderPen = new Pen(borderColor))
+            using (Pen accentPen = new Pen(accentColor, 2))
+            {
+                while (curItem < completionData.Length && yPos < Height)
                 {
-                    // draw Background
-                    if (curItem == selectedItem)
+                    Rectangle drawingBackground = new Rectangle(1, yPos, Width - 2, itemHeight);
+                    if (drawingBackground.IntersectsWith(pe.ClipRectangle))
                     {
-                        g.FillRectangle(SystemBrushes.Highlight, drawingBackground);
-                    }
-                    else
-                    {
-                        if (darkMode)
-                            g.FillRectangle(new SolidBrush(backColor), drawingBackground);
-                        else
-                            g.FillRectangle(SystemBrushes.Window, drawingBackground);
+                        Rectangle rowBounds = new Rectangle(HorizontalPadding / 2,
+                                                            yPos + RowInset,
+                                                            Math.Max(1, Width - HorizontalPadding),
+                                                            Math.Max(1, itemHeight - RowInset * 2));
+                        if (curItem == selectedItem)
+                        {
+                            using (GraphicsPath selectedPath = CreateRoundRectangle(rowBounds, 5))
+                            using (LinearGradientBrush selectedBrush = new LinearGradientBrush(rowBounds,
+                                                                                               selectedStartColor,
+                                                                                               selectedEndColor,
+                                                                                               LinearGradientMode.Vertical))
+                            {
+                                g.FillPath(selectedBrush, selectedPath);
+                            }
+                            g.DrawLine(accentPen, rowBounds.Left + 3, rowBounds.Top + 4, rowBounds.Left + 3, rowBounds.Bottom - 4);
+                        }
+                        else if (curItem % 2 == 1)
+                        {
+                            g.FillRectangle(rowHoverBrush, drawingBackground);
+                        }
+
+                        int xPos = HorizontalPadding;
+                        if (imageList != null && completionData[curItem].ImageIndex >= 0 && completionData[curItem].ImageIndex < imageList.Images.Count)
+                        {
+                            Image image = imageList.Images[completionData[curItem].ImageIndex];
+                            int imageHeight = Math.Min(image.Height, itemHeight - 8);
+                            int imageY = yPos + (itemHeight - imageHeight) / 2;
+                            g.DrawImage(image, new Rectangle(xPos, imageY, imageWidth, imageHeight));
+                            xPos += imageWidth + TextGap;
+                        }
+
+                        Rectangle textBounds = new Rectangle(xPos,
+                                                             yPos,
+                                                             Math.Max(1, Width - xPos - HorizontalPadding),
+                                                             itemHeight);
+                        TextRenderer.DrawText(g,
+                                              completionData[curItem].Text,
+                                              Font,
+                                              textBounds,
+                                              curItem == selectedItem ? selectedForeColor : foreColor,
+                                              TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.VerticalCenter);
                     }
 
-                    // draw Icon
-                    int xPos = 0;
-                    if (imageList != null && completionData[curItem].ImageIndex < imageList.Images.Count)
-                    {
-                        g.DrawImage(imageList.Images[completionData[curItem].ImageIndex], new RectangleF(1, yPos, imageWidth, itemHeight));
-                        xPos = imageWidth;
-                    }
-
-                    // draw text
-                    if (curItem == selectedItem)
-                    {
-                        g.DrawString(completionData[curItem].Text, Font, SystemBrushes.HighlightText, xPos, yPos);
-                    }
-                    else
-                    {
-                        if (darkMode)
-                            g.DrawString(completionData[curItem].Text, Font, new SolidBrush(foreColor), xPos, yPos);
-                        else
-                            g.DrawString(completionData[curItem].Text, Font, SystemBrushes.WindowText, xPos, yPos);
-                    }
+                    yPos += itemHeight;
+                    ++curItem;
                 }
 
-                yPos += itemHeight;
-                ++curItem;
+                g.DrawRectangle(borderPen, new Rectangle(0, 0, Width - 1, Height - 1));
             }
-            g.DrawRectangle(SystemPens.Control, new Rectangle(0, 0, Width - 1, Height - 1));
+        }
+
+        static GraphicsPath CreateRoundRectangle(Rectangle rectangle, int radius)
+        {
+            int diameter = radius * 2;
+            GraphicsPath path = new GraphicsPath();
+            if (diameter <= 0)
+            {
+                path.AddRectangle(rectangle);
+                path.CloseFigure();
+                return path;
+            }
+
+            Rectangle arc = new Rectangle(rectangle.Location, new Size(diameter, diameter));
+            path.AddArc(arc, 180, 90);
+            arc.X = rectangle.Right - diameter;
+            path.AddArc(arc, 270, 90);
+            arc.Y = rectangle.Bottom - diameter;
+            path.AddArc(arc, 0, 90);
+            arc.X = rectangle.Left;
+            path.AddArc(arc, 90, 90);
+            path.CloseFigure();
+            return path;
         }
 
         protected override void OnMouseDown(System.Windows.Forms.MouseEventArgs e)

@@ -327,7 +327,7 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 		Size GetListViewSize()
 		{
 			int height = codeCompletionListView.ItemHeight * Math.Min(MaxListLength, completionData.Length);
-			int width = codeCompletionListView.ItemHeight * 10;
+			int width = Math.Max(260, codeCompletionListView.ItemHeight * 12);
 			if (!fixedListViewWidth) {
 				width = GetListViewWidth(width, height);
 			}
@@ -348,7 +348,7 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 			float width = defaultWidth;
 			using (Graphics graphics = codeCompletionListView.CreateGraphics()) {
 				for (int i = 0; i < completionData.Length; ++i) {
-					float itemWidth = graphics.MeasureString(completionData[i].Text.ToString(), codeCompletionListView.Font).Width;
+					float itemWidth = graphics.MeasureString(completionData[i].Text.ToString(), codeCompletionListView.Font).Width + codeCompletionListView.ItemHeight + 32;
 					if(itemWidth > width) {
 						width = itemWidth;
 					}
