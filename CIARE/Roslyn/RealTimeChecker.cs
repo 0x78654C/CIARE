@@ -137,7 +137,7 @@ namespace CIARE.Roslyn
                 syntaxTrees: new[] { syntaxTree },
                 references: BuildReferences(),
                 options: new CSharpCompilationOptions(
-                    OutputKind.WindowsApplication,
+                    OutputKind.DynamicallyLinkedLibrary,
                     reportSuppressedDiagnostics: true,
                     allowUnsafe: GlobalVariables.OUnsafeCode,
                     optimizationLevel: OptimizationLevel.Debug,
