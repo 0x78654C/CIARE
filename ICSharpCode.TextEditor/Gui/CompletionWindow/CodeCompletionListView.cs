@@ -22,7 +22,7 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
         int selectedItem = -1;
         ImageList imageList;
         Font completionFont;
-        public static bool darkMode = false;
+        public static CompletionThemeColors ActiveTheme = CompletionThemeColors.Light;
         const int HorizontalPadding = 8;
         const int TextGap = 8;
         const int RowInset = 3;
@@ -286,14 +286,15 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
                 imageWidth = Math.Min(imageList.ImageSize.Width, itemHeight - 8);
             }
             int curItem = firstItem;
-            Color backColor = darkMode ? Color.FromArgb(31, 33, 38) : Color.FromArgb(250, 251, 253);
-            Color rowHoverColor = darkMode ? Color.FromArgb(42, 45, 52) : Color.FromArgb(244, 247, 252);
-            Color foreColor = darkMode ? Color.FromArgb(225, 230, 236) : Color.FromArgb(37, 43, 54);
-            Color selectedStartColor = darkMode ? Color.FromArgb(54, 96, 168) : Color.FromArgb(218, 235, 255);
-            Color selectedEndColor = darkMode ? Color.FromArgb(43, 75, 135) : Color.FromArgb(199, 224, 255);
-            Color selectedForeColor = darkMode ? Color.White : Color.FromArgb(20, 46, 86);
-            Color accentColor = darkMode ? Color.FromArgb(112, 172, 255) : Color.FromArgb(24, 105, 210);
-            Color borderColor = darkMode ? Color.FromArgb(78, 86, 102) : Color.FromArgb(188, 198, 214);
+            var t = ActiveTheme;
+            Color backColor          = t.BackColor;
+            Color rowHoverColor      = t.RowAlternateColor;
+            Color foreColor          = t.ForeColor;
+            Color selectedStartColor = t.SelectionStartColor;
+            Color selectedEndColor   = t.SelectionEndColor;
+            Color selectedForeColor  = t.SelectionForeColor;
+            Color accentColor        = t.AccentColor;
+            Color borderColor        = t.BorderColor;
             Graphics g = pe.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.Clear(backColor);
