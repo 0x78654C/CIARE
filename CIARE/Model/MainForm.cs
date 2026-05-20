@@ -590,13 +590,14 @@ namespace CIARE
                 textEditorControl.SetHighlighting(highlight);
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlight);
             }
+            var theme = CIARE.GUI.ThemeManager.GetCompletionThemeColors(highlight);
+            ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.ActiveTheme = theme;
+            ICSharpCode.TextEditor.Gui.CompletionWindow.DeclarationViewWindow.ThemeBackColor = theme.BackColor;
+            ICSharpCode.TextEditor.Gui.CompletionWindow.DeclarationViewWindow.ThemeForeColor = theme.ForeColor;
+
             if (highlight.StartsWith("C#-Dark") || CIARE.GUI.InitializeEditor.IsDarkTheme(highlight))
             {
                 GlobalVariables.darkColor = true;
-                var theme = CIARE.GUI.ThemeManager.GetCompletionThemeColors(highlight);
-                ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.ActiveTheme = theme;
-                ICSharpCode.TextEditor.Gui.CompletionWindow.DeclarationViewWindow.ThemeBackColor = theme.BackColor;
-                ICSharpCode.TextEditor.Gui.CompletionWindow.DeclarationViewWindow.ThemeForeColor = theme.ForeColor;
                 GlobalVariables.isVStheme = highlight.EndsWith("VS");
                 UpdateThemeColors(highlight);
                 var darkBg = GlobalVariables.controlBgColor;
@@ -609,10 +610,6 @@ namespace CIARE
                 return;
             }
             GlobalVariables.darkColor = false;
-            ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.ActiveTheme =
-                ICSharpCode.TextEditor.Gui.CompletionWindow.CompletionThemeColors.Light;
-            ICSharpCode.TextEditor.Gui.CompletionWindow.DeclarationViewWindow.ThemeBackColor = Color.Empty;
-            ICSharpCode.TextEditor.Gui.CompletionWindow.DeclarationViewWindow.ThemeForeColor = Color.Empty;
             LightModeMain.SetLightModeMain(this, outputRBT, groupBox1,
                 menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
             errorsRTB.BackColor = SystemColors.Window;

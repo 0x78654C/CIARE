@@ -43,6 +43,8 @@ namespace CIARE.GUI
         /// <param name="comboBox"></param>
         public static void ReadEditorHighlight(string regKeyName, TextEditorControl textEditor, ComboBox comboBox)
         {
+            ThemeManager.LoadExternalThemes(forceRefresh: true);
+
             foreach (var name in ThemeManager.ExternalThemeNames)
                 if (!comboBox.Items.Contains(name))
                     comboBox.Items.Add(name);
