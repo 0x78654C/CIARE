@@ -71,8 +71,10 @@ namespace CIARE.Utils.OpenAISettings
                 }
                 else if (aiType == "OpenAI Codex")
                 {
-                    CodexClient codexClient = new CodexClient(ApiKey);
-                    var response = await codexClient.SendPromptAsync(Qestion, GlobalVariables.model, maxTokens);
+                    CodexClient codexClient = CodexCliAuth.AuthFileExists()
+                        ? await CodexClient.CreateFromCodexCliAsync()
+                        : new CodexClient(ApiKey);
+                    var response = await codexClient.SendPromptAsync(Qestion, GlobalVariables.model, maxTokens, GlobalVariables.codexReasoningLevelVar);
                     result = response;
                 }
                 else if (aiType == "GitHub Copilot")
@@ -107,7 +109,9 @@ namespace CIARE.Utils.OpenAISettings
 
         private static bool RequiresApiKey(string aiType)
         {
-            return aiType != "GitHub Copilot" && !aiType.StartsWith("Ollama");
+            return aiType != "GitHub Copilot" &&
+                   aiType != "OpenAI Codex" &&
+                   !aiType.StartsWith("Ollama");
         }
 
         /// <summary>
@@ -278,6 +282,9 @@ namespace CIARE.Utils.OpenAISettings
                 var copilotToken = GlobalVariables.copilotOAuthToken?.ConvertSecureStringToString() ?? string.Empty;
                 return string.IsNullOrEmpty(apiAi) && string.IsNullOrEmpty(copilotToken);
             }
+
+            if (aiType == "OpenAI Codex")
+                return string.IsNullOrEmpty(apiAi) && !CodexCliAuth.AuthFileExists();
 
             return string.IsNullOrEmpty(apiAi);
         }

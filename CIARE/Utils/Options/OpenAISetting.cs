@@ -18,6 +18,7 @@ namespace CIARE.Utils.Options
             string regOpenAITokens = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.openAIMaxTokens);
             string regOpenAIModel = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.openModel);
             string regOllamaAIModel = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.ollamModel);
+            string regCodexReasoningLevel = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.codexReasoningLevel);
             string regAiType = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.aiType);
             if (regOpenAIKey.Length > 0)
             {
@@ -46,6 +47,10 @@ namespace CIARE.Utils.Options
                 GlobalVariables.aiMaxTokens = regOpenAITokens;
             else
                 GlobalVariables.aiMaxTokens = "999";
+
+            GlobalVariables.codexReasoningLevelVar = !string.IsNullOrWhiteSpace(regCodexReasoningLevel)
+                ? regCodexReasoningLevel
+                : "medium";
 
             if (regOpenAIModel.Length > 0)
                 GlobalVariables.model = regOpenAIModel;
@@ -113,6 +118,8 @@ namespace CIARE.Utils.Options
             else
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyTokens, "999"); // default 999
 
+            if (trimAyType == "OpenAI Codex")
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, GlobalVariables.codexReasoningLevel, GlobalVariables.codexReasoningLevelVar);
 
             GlobalVariables.aiKey = trimKey.StringToSecureString();
             GlobalVariables.aiMaxTokens = !string.IsNullOrWhiteSpace(trimTokens) ? trimTokens : "999";
