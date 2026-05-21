@@ -392,7 +392,7 @@ namespace CIARE
             // 
             AiTypeCombo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             AiTypeCombo.FormattingEnabled = true;
-            AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenRouter", "GitHub Copilot" });
+            AiTypeCombo.Items.AddRange(new object[] { "OpenAI", "OpenAI Codex", "OpenRouter", "GitHub Copilot" });
             AiTypeCombo.Location = new System.Drawing.Point(73, 98);
             AiTypeCombo.Name = "AiTypeCombo";
             AiTypeCombo.Size = new System.Drawing.Size(121, 23);
@@ -421,7 +421,7 @@ namespace CIARE
             connectCopilotBtn.Name = "connectCopilotBtn";
             connectCopilotBtn.Size = new System.Drawing.Size(120, 23);
             connectCopilotBtn.TabIndex = 31;
-            connectCopilotBtn.Text = "Sign in to Github";
+            connectCopilotBtn.Text = "Sign in to GitHub";
             connectCopilotBtn.UseVisualStyleBackColor = true;
             connectCopilotBtn.Visible = false;
             connectCopilotBtn.Click += connectCopilotBtn_Click;

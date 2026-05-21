@@ -50,7 +50,7 @@ namespace CIARE.Utils.Options
             if (regOpenAIModel.Length > 0)
                 GlobalVariables.model = regOpenAIModel;
             else
-                GlobalVariables.model = regAiType == "GitHub Copilot" ? "claude-3.7-sonnet" : "text-davinci-003";
+                GlobalVariables.model = GetDefaultModel(regAiType);
 
             if (regAiType.Length > 0)
                 GlobalVariables.aiTypeVar = regAiType;
@@ -95,16 +95,16 @@ namespace CIARE.Utils.Options
             }
 
             if (string.IsNullOrWhiteSpace(trimAyType))
-                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regAiType, "OpenAI");
-            else
-                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regAiType, trimAyType);
+                trimAyType = "OpenAI";
+
+            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regAiType, trimAyType);
 
 
 
             if (!string.IsNullOrWhiteSpace(trimModel))
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regModel, trimModel);
             else
-                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regModel, "text-davinci-003");
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regModel, GetDefaultModel(trimAyType));
 
             var encrytedKey = DPAPI.Encrypt(trimKey);
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyAPI, encrytedKey);
@@ -126,6 +126,7 @@ namespace CIARE.Utils.Options
             return aiType switch
             {
                 "GitHub Copilot" => "claude-3.7-sonnet",
+                "OpenAI Codex" => "gpt-5.3-codex",
                 "OpenRouter" => "openai/gpt-3.5-turbo",
                 _ => "text-davinci-003",
             };

@@ -11,6 +11,7 @@ using CIARE.Utils.OpenAISettings;
 using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using OllamaInt;
+using CodexInt;
 
 namespace CIARE
 {
@@ -53,7 +54,7 @@ namespace CIARE
             if (GlobalVariables.aiTypeVar.StartsWith("Ollama"))
             {
                 AiTypeCombo.Text = GlobalVariables.aiTypeVar;
-                isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
+                isNullAPIKey = string.IsNullOrEmpty(GetStoredApiKey());
                 if (isNullAPIKey)
                     WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, GetApiKeyWatermark(GlobalVariables.aiTypeVar));
                 else
@@ -66,15 +67,14 @@ namespace CIARE
             else
                 FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
             AiTypeCombo.Text = GlobalVariables.aiTypeVar;
-            isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
+            isNullAPIKey = string.IsNullOrEmpty(GetStoredApiKey());
             if(isNullAPIKey)
                 WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, GetApiKeyWatermark(GlobalVariables.aiTypeVar));
             else
                 apiKeyAiTxtBox.Text = "******************************************";
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
-            listModelsBtn.Visible = GlobalVariables.aiTypeVar == "GitHub Copilot";
-            connectCopilotBtn.Visible = GlobalVariables.aiTypeVar == "GitHub Copilot";
+            UpdateAIActionButtons();
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
@@ -213,7 +213,9 @@ namespace CIARE
         /// <param name="e"></param>
         private void apiKeyAiTxtBox_TextChanged(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
+            if (AiTypeCombo.Text == "GitHub Copilot" || AiTypeCombo.Text.StartsWith("Ollama"))
+                openAISaveBtn.Enabled = true;
+            else if (!string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
                 openAISaveBtn.Enabled = true;
             else
                 openAISaveBtn.Enabled = false;
@@ -276,8 +278,7 @@ namespace CIARE
                 modelLocalLbl.Visible = true;
                 openAISaveBtn.Enabled = true;
                 FrmColorMod.SetButtonColorDisableCombo(openAISaveBtn, modelLocalCombo, GlobalVariables.darkColor, GlobalVariables.isVStheme);
-                listModelsBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
-                connectCopilotBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
+                UpdateAIActionButtons();
             }
             else
             {
@@ -286,12 +287,13 @@ namespace CIARE
                 modelTxt.Enabled = true;
                 modelLocalCombo.Visible = false;
                 modelLocalLbl.Visible = false;
-                listModelsBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
-                connectCopilotBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
+                UpdateAIActionButtons();
                 WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, GetApiKeyWatermark(AiTypeCombo.Text));
-                if (string.IsNullOrEmpty(modelTxt.Text))
+                if (string.IsNullOrEmpty(modelTxt.Text) || IsKnownDefaultModel(modelTxt.Text))
                     modelTxt.Text = GetDefaultModel(AiTypeCombo.Text);
-                if (string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
+                if (AiTypeCombo.Text == "GitHub Copilot")
+                    openAISaveBtn.Enabled = true;
+                else if (string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
                     openAISaveBtn.Enabled = false;
                 else
                     openAISaveBtn.Enabled = true;
@@ -304,6 +306,7 @@ namespace CIARE
             return aiType switch
             {
                 "GitHub Copilot" => "Enter GitHub PAT (needs 'copilot' scope)......",
+                "OpenAI Codex" => "Enter OpenAI API key for Codex............",
                 "OpenRouter" => "Enter OpenRouter API key...................",
                 _ => "Enter OpenAI API key.......................",
             };
@@ -314,9 +317,47 @@ namespace CIARE
             return aiType switch
             {
                 "GitHub Copilot" => "claude-3.7-sonnet",
+                "OpenAI Codex" => "gpt-5.3-codex",
                 "OpenRouter" => "openai/gpt-3.5-turbo",
                 _ => "text-davinci-003",
             };
+        }
+
+        private static bool IsKnownDefaultModel(string model)
+        {
+            return model == "text-davinci-003" ||
+                   model == "openai/gpt-3.5-turbo" ||
+                   model == "claude-3.7-sonnet" ||
+                   model == "gpt-5.3-codex";
+        }
+
+        private static bool HasProviderActions(string aiType)
+        {
+            return aiType == "GitHub Copilot" || aiType == "OpenAI Codex";
+        }
+
+        private void UpdateAIActionButtons()
+        {
+            var hasActions = HasProviderActions(AiTypeCombo.Text);
+            listModelsBtn.Visible = hasActions;
+            connectCopilotBtn.Visible = hasActions;
+            connectCopilotBtn.Text = AiTypeCombo.Text == "OpenAI Codex" ? "Connect Codex" : "Sign in to GitHub";
+        }
+
+        private string GetApiKeyFromForm()
+        {
+            var typedKey = apiKeyAiTxtBox.Text.Trim();
+            if (typedKey.StartsWith("***"))
+                return GetStoredApiKey();
+
+            return typedKey;
+        }
+
+        private static string GetStoredApiKey()
+        {
+            return GlobalVariables.aiKey == null
+                ? string.Empty
+                : GlobalVariables.aiKey.ConvertSecureStringToString();
         }
 
         /// <summary>
@@ -330,26 +371,36 @@ namespace CIARE
             listModelsBtn.Text = "Loading...";
             try
             {
+                if (AiTypeCombo.Text == "OpenAI Codex")
+                {
+                    var codexClient = new CodexClient(GetApiKeyFromForm());
+                    var codexModels = await codexClient.ListModelsAsync();
+                    MessageBox.Show(codexModels, "OpenAI Codex - Available Models", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
                 // ListModelsAsync authenticates via the stored Copilot OAuth token (no PAT required).
                 // The PAT is only needed as a fallback for GitHub Models API.
                 var copilotToken = GlobalVariables.copilotOAuthToken?.ConvertSecureStringToString() ?? string.Empty;
-                var pat = GlobalVariables.aiKey.ConvertSecureStringToString();
+                var pat = GetStoredApiKey();
                 if (string.IsNullOrEmpty(pat))
                     pat = apiKeyAiTxtBox.Text.Trim();
                 if (pat.StartsWith("***"))
                     pat = string.Empty;
-                var client = new CopilotInt.CopilotClient(copilotToken, pat);
-                var result = await client.ListModelsAsync();
-                MessageBox.Show(result, "GitHub Copilot — Available Models", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var copilotClient = new CopilotInt.CopilotClient(copilotToken, pat);
+                var copilotModels = await copilotClient.ListModelsAsync();
+                MessageBox.Show(copilotModels, "GitHub Copilot — Available Models", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}", "GitHub Copilot", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var title = AiTypeCombo.Text == "OpenAI Codex" ? "OpenAI Codex" : "GitHub Copilot";
+                MessageBox.Show($"Error: {ex.Message}", title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 listModelsBtn.Enabled = true;
                 listModelsBtn.Text = "List Models";
+                UpdateAIActionButtons();
             }
         }
 
@@ -364,6 +415,12 @@ namespace CIARE
             connectCopilotBtn.Text = "Connecting...";
             try
             {
+                if (AiTypeCombo.Text == "OpenAI Codex")
+                {
+                    await ConnectCodexAsync();
+                    return;
+                }
+
                 var (userCode, verificationUri, deviceCode, intervalSec, error) =
                     await CopilotInt.CopilotClient.StartDeviceAuthAsync();
 
@@ -414,13 +471,35 @@ namespace CIARE
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}", "GitHub Copilot", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var title = AiTypeCombo.Text == "OpenAI Codex" ? "OpenAI Codex" : "GitHub Copilot";
+                MessageBox.Show($"Error: {ex.Message}", title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 connectCopilotBtn.Enabled = true;
-                connectCopilotBtn.Text = "Sign in to Gihub";
+                UpdateAIActionButtons();
             }
+        }
+
+        private async Task ConnectCodexAsync()
+        {
+            var apiKey = GetApiKeyFromForm();
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                MessageBox.Show("Enter an OpenAI API key before connecting Codex.", "OpenAI Codex", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var client = new CodexClient(apiKey);
+            var (ok, message) = await client.SignInAsync();
+            if (!ok)
+            {
+                MessageBox.Show(message, "OpenAI Codex", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            OpenAISetting.SetOpenAIData(apiKeyAiTxtBox, maxTokensTxtBox, modelTxt, AiTypeCombo, modelLocalCombo, GlobalVariables.openAIKey, GlobalVariables.openAIMaxTokens, GlobalVariables.openModel, GlobalVariables.ollamModel, GlobalVariables.aiType);
+            MessageBox.Show(message, "OpenAI Codex", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         /// <summary>
