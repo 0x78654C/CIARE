@@ -27,7 +27,12 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 	{
 		string description = String.Empty;
 		bool fixedWidth;
-		
+
+		/// <summary>Background colour for the declaration tooltip; Empty means use the system Info colour.</summary>
+		public static Color ThemeBackColor = Color.Empty;
+		/// <summary>Foreground colour for the declaration tooltip; Empty means use the system InfoText colour.</summary>
+		public static Color ThemeForeColor = Color.Empty;
+
 		public string Description {
 			get {
 				return description;
@@ -109,6 +114,8 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 		protected override void OnPaint(PaintEventArgs pe)
 		{
 			if (description != null && description.Length > 0) {
+				// Apply theme foreground colour for the duration of this paint call.
+				TipText.GlobalForeColor = ThemeForeColor;
 				if (fixedWidth) {
 					TipPainterTools.DrawFixedWidthHelpTipFromCombinedDescription(this, pe.Graphics, Font, null, description);
 				} else {
@@ -119,7 +126,9 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 		
 		protected override void OnPaintBackground(PaintEventArgs pe)
 		{
-			pe.Graphics.FillRectangle(SystemBrushes.Info, pe.ClipRectangle);
+			Color bg = ThemeBackColor.IsEmpty ? SystemColors.Info : ThemeBackColor;
+			using (var brush = new SolidBrush(bg))
+				pe.Graphics.FillRectangle(brush, pe.ClipRectangle);
 		}
 
         private void InitializeComponent()

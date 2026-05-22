@@ -12,13 +12,34 @@ using NRefactoryResolver = ICSharpCode.SharpDevelop.Dom.NRefactoryResolver.NRefa
 namespace CIARE.GUI
 {
     [SupportedOSPlatform("windows")]
-    class CodeCompletionProvider : ICompletionDataProvider
+	class CodeCompletionProvider : ICompletionDataProvider
 	{
 		MainForm mainForm;
+		readonly string preSelection;
+		static readonly string[] DirectTypingKeywords = {
+			"abstract", "as", "async", "await", "base", "bool", "break", "byte",
+			"case", "catch", "char", "checked", "class", "const", "continue",
+			"decimal", "default", "delegate", "do", "double", "else", "enum",
+			"event", "explicit", "extern", "false", "finally", "fixed", "float",
+			"for", "foreach", "get", "goto", "if", "implicit", "in", "init",
+			"int", "interface", "internal", "is", "lock", "long", "namespace",
+			"new", "null", "object", "operator", "out", "override", "params",
+			"partial", "private", "protected", "public", "readonly", "record",
+			"ref", "return", "sbyte", "sealed", "set", "short", "sizeof",
+			"stackalloc", "static", "string", "struct", "switch", "this",
+			"throw", "true", "try", "typeof", "uint", "ulong", "unchecked",
+			"unsafe", "ushort", "using", "var", "virtual", "void", "volatile",
+			"while", "where", "yield"
+		};
 
-		public CodeCompletionProvider(MainForm mainForm)
+		public CodeCompletionProvider(MainForm mainForm) : this(mainForm, null)
+		{
+		}
+
+		public CodeCompletionProvider(MainForm mainForm, string preSelection)
 		{
 			this.mainForm = mainForm;
+			this.preSelection = preSelection;
 		}
 
 		public ImageList ImageList
@@ -33,7 +54,7 @@ namespace CIARE.GUI
 		{
 			get
 			{
-				return null;
+				return preSelection;
 			}
 		}
 
@@ -69,24 +90,36 @@ namespace CIARE.GUI
 
 		public ICompletionData[] GenerateCompletionData(string fileName, TextArea textArea, char charTyped)
 		{
-			// We can return code-completion items like this:
-
-			//return new ICompletionData[] {
-			//	new DefaultCompletionData("Text", "Description", 1)
-			//};
-
 			NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
-			Dom.ResolveResult rr = resolver.Resolve(FindExpression(textArea),
-													MainForm.parseInformation,
-													textArea.MotherTextEditorControl.Text);
 			List<ICompletionData> resultList = new List<ICompletionData>();
-			if (rr != null)
+
+			if (charTyped == '.')
 			{
-				ArrayList completionData = rr.GetCompletionData(MainForm.myProjectContent);
+				Dom.ResolveResult rr = resolver.Resolve(FindExpression(textArea),
+														MainForm.parseInformation,
+														textArea.MotherTextEditorControl.Text);
+				if (rr != null)
+				{
+					ArrayList completionData = rr.GetCompletionData(MainForm.myProjectContent);
+					if (completionData != null)
+					{
+						AddCompletionData(resultList, completionData);
+					}
+				}
+			}
+			else
+			{
+				Dom.ExpressionResult expression = FindExpression(textArea);
+				ArrayList completionData = resolver.CtrlSpace(textArea.Caret.Line + 1,
+															  textArea.Caret.Column + 1,
+															  MainForm.parseInformation,
+															  textArea.MotherTextEditorControl.Text,
+															  expression.Context);
 				if (completionData != null)
 				{
 					AddCompletionData(resultList, completionData);
 				}
+				AddDirectTypingKeywords(resultList);
 			}
 			return resultList.ToArray();
 		}
@@ -126,8 +159,15 @@ namespace CIARE.GUI
 			{
 				if (obj is string)
 				{
-					// namespace names are returned as string
-					resultList.Add(new DefaultCompletionData((string)obj, "namespace " + obj, 5));
+					string text = (string)obj;
+					if (ContainsCompletionText(resultList, text))
+					{
+						continue;
+					}
+
+					// namespace names and keyword-code-completion entries are both returned as string
+					string description = IsCSharpKeyword(text) ? "keyword " + text : "namespace " + text;
+					resultList.Add(new DefaultCompletionData(text, description, 5));
 				}
 				else if (obj is Dom.IClass)
 				{
@@ -162,6 +202,52 @@ namespace CIARE.GUI
 					throw new NotSupportedException();
 				}
 			}
+		}
+
+		void AddDirectTypingKeywords(List<ICompletionData> resultList)
+		{
+			if (MainForm.IsVisualBasic)
+			{
+				return;
+			}
+
+			string prefix = preSelection ?? string.Empty;
+			foreach (string keyword in DirectTypingKeywords)
+			{
+				if (prefix.Length > 0 && !keyword.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+				{
+					continue;
+				}
+				if (ContainsCompletionText(resultList, keyword))
+				{
+					continue;
+				}
+				resultList.Add(new DefaultCompletionData(keyword, "keyword " + keyword, 10));
+			}
+		}
+
+		static bool ContainsCompletionText(List<ICompletionData> resultList, string text)
+		{
+			foreach (ICompletionData data in resultList)
+			{
+				if (string.Equals(data.Text, text, StringComparison.Ordinal))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		static bool IsCSharpKeyword(string text)
+		{
+			foreach (string keyword in DirectTypingKeywords)
+			{
+				if (string.Equals(keyword, text, StringComparison.Ordinal))
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }

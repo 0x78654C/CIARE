@@ -114,12 +114,14 @@ namespace CIARE.Utils
         public static readonly string openModel = "Model";
         public static readonly string ollamModel = "OllamaModel";
         public static readonly string openAIMaxTokens = "openAIMaxTokens";
+        public static readonly string codexReasoningLevel = "CodexReasoningLevel";
         public static readonly string copilotTokenKey = "copilotOAuthToken";
         public static string aiMaxTokens = string.Empty;
         public static SecureString aiKey;
         public static SecureString? copilotOAuthToken;
         public static string model = string.Empty;
         public static string modelOllamaVar = string.Empty;
+        public static string codexReasoningLevelVar = "medium";
         public static string aiType = "OpenAI";
         public static string aiTypeVar = "";
         public static string aiQuestion = "";

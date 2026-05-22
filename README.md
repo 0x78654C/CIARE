@@ -71,6 +71,7 @@
 - OpenRouter multi-model AI integration
 - Ollama local LLM integration (auto-detects installed models)
 - **GitHub Copilot** integration — authenticates via GitHub OAuth device flow; supports all Copilot models (GPT-4o, Claude Sonnet, Gemini, and more); falls back to the GitHub Models free tier (PAT with `models:read` scope) when no Copilot subscription is active
+- **OpenAI Codex** integration — authenticates via Codex CLI (`codex login`); supports Codex models (e.g. `gpt-5.3-codex`) with configurable reasoning levels (low / medium / high / xhigh)
 
 ### Collaboration
 - Live Share — collaborate on the same file in real time
@@ -140,14 +141,17 @@ https://user-images.githubusercontent.com/13780514/201774933-e53d3ba2-95e0-434e-
 
 ## 🤖 AI Integration
 
-### ChatGPT / OpenRouter / GitHub Copilot
+### ChatGPT / OpenRouter / GitHub Copilot / OpenAI Codex
 
 - [ChatGPT](https://openai.com) — precise AI answers and code generation
 - [OpenRouter](https://openrouter.ai/) — access multiple AI models from different providers
 - **GitHub Copilot** — use your active Copilot subscription; supports GPT-4o, Claude Sonnet, Gemini, and more
+- **OpenAI Codex** — integrates the [OpenAI Codex CLI](https://github.com/openai/codex) directly into the editor, similar to GitHub Copilot. Authenticates via `codex login` (ChatGPT account) or a direct OpenAI API key. Supports Codex models (e.g. `gpt-5.3-codex`) with configurable reasoning levels.
 
 **Usage:**
-1. In **Settings → Options**, select the AI provider and add your API key or authenticate with GitHub Copilot (model and token limit configurable)
+1. In **Settings → Options**, select the AI provider and add your API key or authenticate:
+   - **GitHub Copilot** — click **Sign in to GitHub** to authenticate via OAuth device flow
+   - **OpenAI Codex** — click **Connect Codex** to launch `codex login` in a terminal (ChatGPT account). Then click **Select Model** to choose a model and reasoning level (low / medium / high / xhigh).
 2. Go to **Edit → Ask AI** or press `CTRL + Shift + P`
 3. Optionally select text in the editor to send it as context — or right-click any line in the editor / any error line in the output tab
 

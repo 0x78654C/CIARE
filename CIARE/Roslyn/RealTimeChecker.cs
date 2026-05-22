@@ -11,6 +11,7 @@ using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Document;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 using CIARE.Utils;
 
@@ -131,13 +132,16 @@ namespace CIARE.Roslyn
         {
             var parseOptions = BuildParseOptions(GlobalVariables.Framework);
             var syntaxTree = CSharpSyntaxTree.ParseText(code, parseOptions, cancellationToken: ct);
+            var outputKind = HasTopLevelStatements(syntaxTree, ct)
+                ? OutputKind.ConsoleApplication
+                : OutputKind.DynamicallyLinkedLibrary;
 
             var compilation = CSharpCompilation.Create(
                 Path.GetRandomFileName(),
                 syntaxTrees: new[] { syntaxTree },
                 references: BuildReferences(),
                 options: new CSharpCompilationOptions(
-                    OutputKind.WindowsApplication,
+                    outputKind,
                     reportSuppressedDiagnostics: true,
                     allowUnsafe: GlobalVariables.OUnsafeCode,
                     optimizationLevel: OptimizationLevel.Debug,
@@ -146,6 +150,14 @@ namespace CIARE.Roslyn
             return compilation.GetDiagnostics(ct)
                 .Where(d => d.Severity == DiagnosticSeverity.Error || d.Severity == DiagnosticSeverity.Warning)
                 .ToList();
+        }
+
+        private static bool HasTopLevelStatements(SyntaxTree syntaxTree, CancellationToken ct)
+        {
+            return syntaxTree.GetRoot(ct)
+                .DescendantNodes()
+                .OfType<GlobalStatementSyntax>()
+                .Any();
         }
 
         private static IEnumerable<MetadataReference> BuildReferences()

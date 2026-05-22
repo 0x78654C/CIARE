@@ -100,6 +100,8 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 			
 			if (completionDataProvider.PreSelection != null) {
 				CaretOffsetChanged(this, EventArgs.Empty);
+			} else if (completionDataProvider.DefaultIndex < 0) {
+				codeCompletionListView.SelectIndex(0);
 			}
 			
 			vScrollBar.ValueChanged += VScrollBarValueChanged;
@@ -199,10 +201,19 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 					// just process normally
 					return base.ProcessKeyEvent(ch);
 				case CompletionDataProviderKeyResult.InsertionKey:
+					if (IsCommitKey(ch)) {
+						InsertSelectedItem('\0');
+						return true;
+					}
 					return InsertSelectedItem(ch);
 				default:
 					throw new InvalidOperationException("Invalid return value of dataProvider.ProcessKey");
 			}
+		}
+
+		static bool IsCommitKey(char ch)
+		{
+			return ch == '\r' || ch == '\n' || ch == '\t';
 		}
 		
 		void DocumentAboutToBeChanged(object sender, DocumentEventArgs e)
@@ -267,10 +278,10 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 					codeCompletionListView.SelectPrevItem();
 					return true;
 				case Keys.Tab:
-					InsertSelectedItem('\t');
+					InsertSelectedItem('\0');
 					return true;
 				case Keys.Return:
-					InsertSelectedItem('\n');
+					InsertSelectedItem('\0');
 					return true;
 			}
 			return base.ProcessTextAreaKey(keyData);
@@ -327,7 +338,7 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 		Size GetListViewSize()
 		{
 			int height = codeCompletionListView.ItemHeight * Math.Min(MaxListLength, completionData.Length);
-			int width = codeCompletionListView.ItemHeight * 10;
+			int width = Math.Max(260, codeCompletionListView.ItemHeight * 12);
 			if (!fixedListViewWidth) {
 				width = GetListViewWidth(width, height);
 			}
@@ -348,7 +359,7 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 			float width = defaultWidth;
 			using (Graphics graphics = codeCompletionListView.CreateGraphics()) {
 				for (int i = 0; i < completionData.Length; ++i) {
-					float itemWidth = graphics.MeasureString(completionData[i].Text.ToString(), codeCompletionListView.Font).Width;
+					float itemWidth = graphics.MeasureString(completionData[i].Text.ToString(), codeCompletionListView.Font).Width + codeCompletionListView.ItemHeight + 32;
 					if(itemWidth > width) {
 						width = itemWidth;
 					}

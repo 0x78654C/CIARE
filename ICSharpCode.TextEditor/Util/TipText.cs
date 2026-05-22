@@ -85,7 +85,13 @@ namespace ICSharpCode.TextEditor.Util
 		protected Font            tipFont;
 		protected StringFormat    tipFormat;
 		protected string          tipText;
-		
+
+		/// <summary>
+		/// When non-empty this colour overrides <see cref="System.Drawing.SystemColors.InfoText"/>
+		/// for all TipText instances, allowing themes to colour the declaration view window.
+		/// </summary>
+		public static Color GlobalForeColor = Color.Empty;
+
 		public TipText(Graphics graphics, Font font, string text):
 			base(graphics)
 		{
@@ -93,7 +99,7 @@ namespace ICSharpCode.TextEditor.Util
 			if (text != null && text.Length > short.MaxValue)
 				throw new ArgumentException("TipText: text too long (max. is " + short.MaxValue + " characters)", "text");
 			
-			Color               = SystemColors.InfoText;
+			Color               = GlobalForeColor.IsEmpty ? SystemColors.InfoText : GlobalForeColor;
 			HorizontalAlignment = StringAlignment.Near;
 			VerticalAlignment   = StringAlignment.Near;
 		}

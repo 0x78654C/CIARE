@@ -11,6 +11,7 @@ using System.Runtime.Versioning;
 using OpenRouter;
 using OllamaInt;
 using CopilotInt;
+using CodexInt;
 using System.Drawing;
 using CIARE.Model;
 using CIARE.GUI;
@@ -40,13 +41,13 @@ namespace CIARE.Utils.OpenAISettings
             var result = string.Empty;
             try
             {
-                if (string.IsNullOrEmpty(ApiKey))
-                    return "";
-
                 if (string.IsNullOrEmpty(Qestion))
                     return "";
 
                 var aiType = GlobalVariables.aiTypeVar;
+                if (RequiresApiKey(aiType) && string.IsNullOrEmpty(ApiKey))
+                    return "";
+
                 int maxTokens = int.TryParse(GlobalVariables.aiMaxTokens, out var t) && t > 0 ? t : 999;
 
                 if (aiType == "OpenAI")
@@ -66,6 +67,14 @@ namespace CIARE.Utils.OpenAISettings
                 {
                     OpenRouterClient openRouterClient = new OpenRouterClient(ApiKey);
                     var response = await openRouterClient.SendPromptAsync(Qestion, GlobalVariables.model);
+                    result = response;
+                }
+                else if (aiType == "OpenAI Codex")
+                {
+                    CodexClient codexClient = CodexCliAuth.AuthFileExists()
+                        ? await CodexClient.CreateFromCodexCliAsync()
+                        : new CodexClient(ApiKey);
+                    var response = await codexClient.SendPromptAsync(Qestion, GlobalVariables.model, maxTokens, GlobalVariables.codexReasoningLevelVar);
                     result = response;
                 }
                 else if (aiType == "GitHub Copilot")
@@ -98,6 +107,13 @@ namespace CIARE.Utils.OpenAISettings
             return result;
         }
 
+        private static bool RequiresApiKey(string aiType)
+        {
+            return aiType != "GitHub Copilot" &&
+                   aiType != "OpenAI Codex" &&
+                   !aiType.StartsWith("Ollama");
+        }
+
         /// <summary>
         /// Load models from local Ollama.
         /// </summary>
@@ -128,9 +144,9 @@ namespace CIARE.Utils.OpenAISettings
         public static async void GetDataAI(TextEditorControl textEditorControl, string apiAi)
         {
             GlobalVariables.aiQuestion = "";
-            if (string.IsNullOrEmpty(apiAi))
+            if (IsCredentialMissing(apiAi))
             {
-                MessageBox.Show("AI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("AI credentials were not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 CancelProgressBar();
                 return;
             }
@@ -178,9 +194,9 @@ namespace CIARE.Utils.OpenAISettings
         public static async void GetDataAIFromError(string apiAi, string code, string errorText)
         {
             GlobalVariables.aiQuestion = "";
-            if (string.IsNullOrEmpty(apiAi))
+            if (IsCredentialMissing(apiAi))
             {
-                MessageBox.Show("AI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("AI credentials were not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -219,9 +235,9 @@ namespace CIARE.Utils.OpenAISettings
         /// <param name="errorMessage"></param>
         public static async void GetDataAIERR(TextEditorControl textEditorControl, string apiAi, string code, string errorMessage, string lineNumber, RichTextBox richTextBox)
         {
-            if (string.IsNullOrEmpty(apiAi))
+            if (IsCredentialMissing(apiAi))
             {
-                MessageBox.Show("AI API key was not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("AI credentials were not found!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -253,6 +269,24 @@ namespace CIARE.Utils.OpenAISettings
             int centerY = (MainForm.Instance.Height - MainForm.Instance.progressBar.Height) / 2;
             MainForm.Instance.progressBar.Location = new Point(centerX, centerY);
             MainForm.Instance.progressBar.BringToFront();
+        }
+
+        private static bool IsCredentialMissing(string apiAi)
+        {
+            var aiType = GlobalVariables.aiTypeVar;
+            if (aiType.StartsWith("Ollama"))
+                return false;
+
+            if (aiType == "GitHub Copilot")
+            {
+                var copilotToken = GlobalVariables.copilotOAuthToken?.ConvertSecureStringToString() ?? string.Empty;
+                return string.IsNullOrEmpty(apiAi) && string.IsNullOrEmpty(copilotToken);
+            }
+
+            if (aiType == "OpenAI Codex")
+                return string.IsNullOrEmpty(apiAi) && !CodexCliAuth.AuthFileExists();
+
+            return string.IsNullOrEmpty(apiAi);
         }
     }
 }

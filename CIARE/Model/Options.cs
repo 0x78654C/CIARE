@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -11,6 +13,7 @@ using CIARE.Utils.OpenAISettings;
 using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using OllamaInt;
+using CodexInt;
 
 namespace CIARE
 {
@@ -53,7 +56,7 @@ namespace CIARE
             if (GlobalVariables.aiTypeVar.StartsWith("Ollama"))
             {
                 AiTypeCombo.Text = GlobalVariables.aiTypeVar;
-                isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
+                isNullAPIKey = string.IsNullOrEmpty(GetStoredApiKey());
                 if (isNullAPIKey)
                     WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, GetApiKeyWatermark(GlobalVariables.aiTypeVar));
                 else
@@ -66,15 +69,14 @@ namespace CIARE
             else
                 FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
             AiTypeCombo.Text = GlobalVariables.aiTypeVar;
-            isNullAPIKey = string.IsNullOrEmpty(GlobalVariables.aiKey.ConvertSecureStringToString());
+            isNullAPIKey = string.IsNullOrEmpty(GetStoredApiKey());
             if(isNullAPIKey)
                 WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, GetApiKeyWatermark(GlobalVariables.aiTypeVar));
             else
                 apiKeyAiTxtBox.Text = "******************************************";
             maxTokensTxtBox.Text = GlobalVariables.aiMaxTokens;
             modelTxt.Text = GlobalVariables.model;
-            listModelsBtn.Visible = GlobalVariables.aiTypeVar == "GitHub Copilot";
-            connectCopilotBtn.Visible = GlobalVariables.aiTypeVar == "GitHub Copilot";
+            UpdateAIActionButtons();
             TargetFramework.GetFramework(frameWorkCMB, GlobalVariables.registryPath);
             BuildConfig.SetConfigControl(configurationBox);
             BuildConfig.SetPlatformControl(platformBox);
@@ -213,7 +215,11 @@ namespace CIARE
         /// <param name="e"></param>
         private void apiKeyAiTxtBox_TextChanged(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
+            if (AiTypeCombo.Text == "GitHub Copilot" ||
+                AiTypeCombo.Text == "OpenAI Codex" ||
+                AiTypeCombo.Text.StartsWith("Ollama"))
+                openAISaveBtn.Enabled = true;
+            else if (!string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
                 openAISaveBtn.Enabled = true;
             else
                 openAISaveBtn.Enabled = false;
@@ -276,8 +282,7 @@ namespace CIARE
                 modelLocalLbl.Visible = true;
                 openAISaveBtn.Enabled = true;
                 FrmColorMod.SetButtonColorDisableCombo(openAISaveBtn, modelLocalCombo, GlobalVariables.darkColor, GlobalVariables.isVStheme);
-                listModelsBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
-                connectCopilotBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
+                UpdateAIActionButtons();
             }
             else
             {
@@ -286,12 +291,13 @@ namespace CIARE
                 modelTxt.Enabled = true;
                 modelLocalCombo.Visible = false;
                 modelLocalLbl.Visible = false;
-                listModelsBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
-                connectCopilotBtn.Visible = AiTypeCombo.Text == "GitHub Copilot";
+                UpdateAIActionButtons();
                 WaterMark.TextBoxWaterMark(apiKeyAiTxtBox, GetApiKeyWatermark(AiTypeCombo.Text));
-                if (string.IsNullOrEmpty(modelTxt.Text))
+                if (string.IsNullOrEmpty(modelTxt.Text) || IsKnownDefaultModel(modelTxt.Text))
                     modelTxt.Text = GetDefaultModel(AiTypeCombo.Text);
-                if (string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
+                if (AiTypeCombo.Text == "GitHub Copilot" || AiTypeCombo.Text == "OpenAI Codex")
+                    openAISaveBtn.Enabled = true;
+                else if (string.IsNullOrEmpty(apiKeyAiTxtBox.Text))
                     openAISaveBtn.Enabled = false;
                 else
                     openAISaveBtn.Enabled = true;
@@ -304,6 +310,7 @@ namespace CIARE
             return aiType switch
             {
                 "GitHub Copilot" => "Enter GitHub PAT (needs 'copilot' scope)......",
+                "OpenAI Codex" => "Uses Codex CLI login; API key optional.....",
                 "OpenRouter" => "Enter OpenRouter API key...................",
                 _ => "Enter OpenAI API key.......................",
             };
@@ -314,9 +321,53 @@ namespace CIARE
             return aiType switch
             {
                 "GitHub Copilot" => "claude-3.7-sonnet",
+                "OpenAI Codex" => "gpt-5.3-codex",
                 "OpenRouter" => "openai/gpt-3.5-turbo",
                 _ => "text-davinci-003",
             };
+        }
+
+        private static bool IsKnownDefaultModel(string model)
+        {
+            return model == "text-davinci-003" ||
+                   model == "openai/gpt-3.5-turbo" ||
+                   model == "claude-3.7-sonnet" ||
+                   model == "gpt-5.3-codex";
+        }
+
+        private static bool HasProviderActions(string aiType)
+        {
+            return aiType == "GitHub Copilot" || aiType == "OpenAI Codex";
+        }
+
+        private void UpdateAIActionButtons()
+        {
+            var hasActions = HasProviderActions(AiTypeCombo.Text);
+            listModelsBtn.Visible = hasActions;
+            connectCopilotBtn.Visible = hasActions;
+            connectCopilotBtn.Text = AiTypeCombo.Text == "OpenAI Codex" ? "Connect Codex" : "Sign in to GitHub";
+        }
+
+        private string GetApiKeyFromForm()
+        {
+            var typedKey = apiKeyAiTxtBox.Text.Trim();
+            if (typedKey.StartsWith("***"))
+                return GetStoredApiKey();
+
+            return typedKey;
+        }
+
+        private static string GetStoredApiKey()
+        {
+            return GlobalVariables.aiKey == null
+                ? string.Empty
+                : GlobalVariables.aiKey.ConvertSecureStringToString();
+        }
+
+        private string GetExplicitCodexApiKeyFromForm()
+        {
+            var typedKey = apiKeyAiTxtBox.Text.Trim();
+            return typedKey.StartsWith("***") ? string.Empty : typedKey;
         }
 
         /// <summary>
@@ -330,26 +381,362 @@ namespace CIARE
             listModelsBtn.Text = "Loading...";
             try
             {
+                if (AiTypeCombo.Text == "OpenAI Codex")
+                {
+                    var codexClient = await CreateCodexClientFromFormAsync();
+                    var selection = ShowModelSelectionDialog(
+                        "OpenAI Codex - Select Model",
+                        await codexClient.GetModelsAsync());
+                    if (!string.IsNullOrWhiteSpace(selection.ModelId))
+                    {
+                        modelTxt.Text = selection.ModelId;
+                        GlobalVariables.model = selection.ModelId;
+                        GlobalVariables.codexReasoningLevelVar = selection.ReasoningLevel;
+                        RegistryManagement.RegKey_WriteSubkey(
+                            GlobalVariables.registryPath,
+                            GlobalVariables.codexReasoningLevel,
+                            selection.ReasoningLevel);
+                        openAISaveBtn.Enabled = true;
+                        FrmColorMod.SetButtonColorDisable(openAISaveBtn, apiKeyAiTxtBox, GlobalVariables.darkColor, GlobalVariables.isVStheme);
+                    }
+                    return;
+                }
+
                 // ListModelsAsync authenticates via the stored Copilot OAuth token (no PAT required).
                 // The PAT is only needed as a fallback for GitHub Models API.
                 var copilotToken = GlobalVariables.copilotOAuthToken?.ConvertSecureStringToString() ?? string.Empty;
-                var pat = GlobalVariables.aiKey.ConvertSecureStringToString();
+                var pat = GetStoredApiKey();
                 if (string.IsNullOrEmpty(pat))
                     pat = apiKeyAiTxtBox.Text.Trim();
                 if (pat.StartsWith("***"))
                     pat = string.Empty;
-                var client = new CopilotInt.CopilotClient(copilotToken, pat);
-                var result = await client.ListModelsAsync();
-                MessageBox.Show(result, "GitHub Copilot — Available Models", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var copilotClient = new CopilotInt.CopilotClient(copilotToken, pat);
+                var copilotModels = await copilotClient.ListModelsAsync();
+                MessageBox.Show(copilotModels, "GitHub Copilot — Available Models", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}", "GitHub Copilot", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var title = AiTypeCombo.Text == "OpenAI Codex" ? "OpenAI Codex" : "GitHub Copilot";
+                MessageBox.Show($"Error: {ex.Message}", title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 listModelsBtn.Enabled = true;
                 listModelsBtn.Text = "List Models";
+                UpdateAIActionButtons();
+            }
+        }
+
+        private ModelSelection ShowModelSelectionDialog(string title, IEnumerable<CodexModelInfo> models)
+        {
+            var items = models
+                .Select(model => new ModelListItem(model))
+                .Where(item => !string.IsNullOrWhiteSpace(item.Id))
+                .ToList();
+
+            if (items.Count == 0)
+            {
+                MessageBox.Show("No models returned.", title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return ModelSelection.Empty;
+            }
+
+            using var form = new Form
+            {
+                Text = title,
+                StartPosition = FormStartPosition.CenterParent,
+                ClientSize = new Size(620, 470),
+                MinimumSize = new Size(520, 360),
+                MinimizeBox = false,
+                MaximizeBox = false,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                ShowInTaskbar = false,
+                Font = Font
+            };
+
+            var filterTxt = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                Margin = new Padding(8, 8, 8, 4)
+            };
+
+            var listBox = new ListBox
+            {
+                Dock = DockStyle.Fill,
+                IntegralHeight = false,
+                HorizontalScrollbar = true,
+                Margin = new Padding(8, 0, 8, 8)
+            };
+
+            var reasoningLbl = new Label
+            {
+                AutoSize = true,
+                Text = "Reasoning Level:",
+                Margin = new Padding(8, 7, 8, 0)
+            };
+
+            var reasoningCombo = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Width = 260,
+                Margin = new Padding(0, 4, 8, 0)
+            };
+
+            var reasoningPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                Padding = new Padding(0, 2, 0, 0)
+            };
+            reasoningPanel.Controls.Add(reasoningLbl);
+            reasoningPanel.Controls.Add(reasoningCombo);
+
+            var okButton = new Button
+            {
+                Text = "OK",
+                DialogResult = DialogResult.OK,
+                Width = 92,
+                Height = 28
+            };
+
+            var cancelButton = new Button
+            {
+                Text = "Cancel",
+                DialogResult = DialogResult.Cancel,
+                Width = 92,
+                Height = 28
+            };
+
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+            layout.Controls.Add(filterTxt, 0, 0);
+            layout.Controls.Add(listBox, 0, 1);
+            layout.Controls.Add(reasoningPanel, 0, 2);
+
+            var buttons = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Bottom,
+                FlowDirection = FlowDirection.RightToLeft,
+                Height = 44,
+                Padding = new Padding(8)
+            };
+            buttons.Controls.Add(okButton);
+            buttons.Controls.Add(cancelButton);
+
+            form.Controls.Add(layout);
+            form.Controls.Add(buttons);
+            form.AcceptButton = okButton;
+            form.CancelButton = cancelButton;
+
+            void LoadItems()
+            {
+                var selectedId = (listBox.SelectedItem as ModelListItem)?.Id;
+                if (string.IsNullOrWhiteSpace(selectedId))
+                    selectedId = modelTxt.Text.Trim();
+
+                var filter = filterTxt.Text.Trim();
+                listBox.BeginUpdate();
+                listBox.Items.Clear();
+                foreach (var item in items)
+                {
+                    if (item.Matches(filter))
+                        listBox.Items.Add(item);
+                }
+
+                SelectModelItem(listBox, selectedId);
+                if (listBox.SelectedIndex < 0 && listBox.Items.Count > 0)
+                    listBox.SelectedIndex = 0;
+                okButton.Enabled = listBox.SelectedItem != null;
+                LoadReasoningLevels(reasoningCombo, listBox.SelectedItem as ModelListItem, GlobalVariables.codexReasoningLevelVar);
+                listBox.EndUpdate();
+            }
+
+            filterTxt.TextChanged += (_, _) => LoadItems();
+            listBox.SelectedIndexChanged += (_, _) =>
+            {
+                okButton.Enabled = listBox.SelectedItem != null;
+                LoadReasoningLevels(reasoningCombo, listBox.SelectedItem as ModelListItem, GlobalVariables.codexReasoningLevelVar);
+            };
+            listBox.DoubleClick += (_, _) =>
+            {
+                if (listBox.SelectedItem == null)
+                    return;
+
+                form.DialogResult = DialogResult.OK;
+                form.Close();
+            };
+
+            FrmColorMod.ToogleColorMode(form, GlobalVariables.darkColor);
+            WaterMark.TextBoxWaterMark(filterTxt, "Filter models...");
+            LoadItems();
+
+            return form.ShowDialog(this) == DialogResult.OK && listBox.SelectedItem is ModelListItem selected
+                ? new ModelSelection(selected.Id, GetSelectedReasoningLevel(reasoningCombo))
+                : ModelSelection.Empty;
+        }
+
+        private static void LoadReasoningLevels(ComboBox comboBox, ModelListItem item, string preferredReasoningLevel)
+        {
+            var current = (comboBox.SelectedItem as ReasoningLevelItem)?.Effort;
+            var preferred = string.IsNullOrWhiteSpace(current)
+                ? preferredReasoningLevel
+                : current;
+            var levels = item == null ? GetFallbackReasoningLevels() : item.GetReasoningLevelItems();
+            if (levels.Count == 0)
+                levels = GetFallbackReasoningLevels();
+
+            comboBox.BeginUpdate();
+            comboBox.Items.Clear();
+            foreach (var level in levels)
+                comboBox.Items.Add(level);
+
+            SelectReasoningLevel(comboBox, preferred);
+            if (comboBox.SelectedIndex < 0 && item != null)
+                SelectReasoningLevel(comboBox, item.DefaultReasoningLevel);
+            if (comboBox.SelectedIndex < 0)
+                SelectReasoningLevel(comboBox, "medium");
+            if (comboBox.SelectedIndex < 0 && comboBox.Items.Count > 0)
+                comboBox.SelectedIndex = 0;
+            comboBox.EndUpdate();
+        }
+
+        private static void SelectReasoningLevel(ComboBox comboBox, string reasoningLevel)
+        {
+            if (string.IsNullOrWhiteSpace(reasoningLevel))
+                return;
+
+            for (var i = 0; i < comboBox.Items.Count; i++)
+            {
+                if (comboBox.Items[i] is ReasoningLevelItem item &&
+                    string.Equals(item.Effort, reasoningLevel, StringComparison.OrdinalIgnoreCase))
+                {
+                    comboBox.SelectedIndex = i;
+                    return;
+                }
+            }
+        }
+
+        private static string GetSelectedReasoningLevel(ComboBox comboBox)
+        {
+            return comboBox.SelectedItem is ReasoningLevelItem item &&
+                   !string.IsNullOrWhiteSpace(item.Effort)
+                ? item.Effort
+                : "medium";
+        }
+
+        private static List<ReasoningLevelItem> GetFallbackReasoningLevels()
+        {
+            return new List<ReasoningLevelItem>
+            {
+                new("low", "Fast responses with lighter reasoning"),
+                new("medium", "Balanced reasoning"),
+                new("high", "Greater reasoning depth"),
+                new("xhigh", "Extra high reasoning depth")
+            };
+        }
+
+        private static void SelectModelItem(ListBox listBox, string modelId)
+        {
+            if (string.IsNullOrWhiteSpace(modelId))
+                return;
+
+            for (var i = 0; i < listBox.Items.Count; i++)
+            {
+                if (listBox.Items[i] is ModelListItem item &&
+                    string.Equals(item.Id, modelId, StringComparison.OrdinalIgnoreCase))
+                {
+                    listBox.SelectedIndex = i;
+                    return;
+                }
+            }
+        }
+
+        private sealed class ModelListItem
+        {
+            public string Id { get; }
+            public string DefaultReasoningLevel { get; }
+            private string DisplayName { get; }
+            private string OwnedBy { get; }
+            private List<CodexReasoningLevel> ReasoningLevels { get; }
+
+            public ModelListItem(CodexModelInfo model)
+            {
+                Id = model.ModelId?.Trim() ?? string.Empty;
+                DefaultReasoningLevel = model.default_reasoning_level?.Trim() ?? string.Empty;
+                DisplayName = model.DisplayName?.Trim() ?? string.Empty;
+                OwnedBy = model.owned_by?.Trim() ?? string.Empty;
+                ReasoningLevels = model.supported_reasoning_levels ?? new List<CodexReasoningLevel>();
+            }
+
+            public bool Matches(string filter)
+            {
+                return string.IsNullOrWhiteSpace(filter) ||
+                       Id.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                       DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                       OwnedBy.Contains(filter, StringComparison.OrdinalIgnoreCase);
+            }
+
+            public override string ToString()
+            {
+                var details = new List<string>();
+                if (!string.IsNullOrWhiteSpace(DisplayName) &&
+                    !string.Equals(DisplayName, Id, StringComparison.OrdinalIgnoreCase))
+                    details.Add(DisplayName);
+                if (!string.IsNullOrWhiteSpace(OwnedBy))
+                    details.Add(OwnedBy);
+
+                return details.Count == 0
+                    ? Id
+                    : $"{Id} ({string.Join(", ", details)})";
+            }
+
+            public List<ReasoningLevelItem> GetReasoningLevelItems()
+            {
+                return ReasoningLevels
+                    .Where(level => !string.IsNullOrWhiteSpace(level.effort))
+                    .Select(level => new ReasoningLevelItem(level.effort.Trim(), level.description?.Trim() ?? string.Empty))
+                    .ToList();
+            }
+        }
+
+        private sealed class ReasoningLevelItem
+        {
+            public string Effort { get; }
+            private string Description { get; }
+
+            public ReasoningLevelItem(string effort, string description)
+            {
+                Effort = effort;
+                Description = description;
+            }
+
+            public override string ToString()
+            {
+                return string.IsNullOrWhiteSpace(Description)
+                    ? Effort
+                    : $"{Effort} - {Description}";
+            }
+        }
+
+        private sealed class ModelSelection
+        {
+            public static ModelSelection Empty { get; } = new(string.Empty, "medium");
+
+            public string ModelId { get; }
+            public string ReasoningLevel { get; }
+
+            public ModelSelection(string modelId, string reasoningLevel)
+            {
+                ModelId = modelId;
+                ReasoningLevel = string.IsNullOrWhiteSpace(reasoningLevel)
+                    ? "medium"
+                    : reasoningLevel;
             }
         }
 
@@ -364,6 +751,12 @@ namespace CIARE
             connectCopilotBtn.Text = "Connecting...";
             try
             {
+                if (AiTypeCombo.Text == "OpenAI Codex")
+                {
+                    await ConnectCodexAsync();
+                    return;
+                }
+
                 var (userCode, verificationUri, deviceCode, intervalSec, error) =
                     await CopilotInt.CopilotClient.StartDeviceAuthAsync();
 
@@ -414,12 +807,92 @@ namespace CIARE
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}", "GitHub Copilot", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var title = AiTypeCombo.Text == "OpenAI Codex" ? "OpenAI Codex" : "GitHub Copilot";
+                MessageBox.Show($"Error: {ex.Message}", title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 connectCopilotBtn.Enabled = true;
-                connectCopilotBtn.Text = "Sign in to Gihub";
+                UpdateAIActionButtons();
+            }
+        }
+
+        private async Task ConnectCodexAsync()
+        {
+            var apiKey = GetExplicitCodexApiKeyFromForm();
+            CodexClient client;
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                var credentials = await CodexCliAuth.TryLoadAsync();
+                if (credentials == null)
+                {
+                    if (StartCodexLogin())
+                    {
+                        MessageBox.Show(
+                            "A Codex CLI login window was opened.\n\nFinish signing in with ChatGPT, then click OK here.",
+                            "OpenAI Codex", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        credentials = await CodexCliAuth.TryLoadAsync();
+                    }
+                }
+
+                if (credentials == null)
+                {
+                    MessageBox.Show(
+                        "Codex CLI sign-in was not found. Run `codex login` from a terminal, or enter an OpenAI API key.",
+                        "OpenAI Codex", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                client = new CodexClient(credentials);
+            }
+            else
+            {
+                client = new CodexClient(apiKey);
+            }
+
+            var (ok, message) = await client.SignInAsync();
+            if (!ok)
+            {
+                MessageBox.Show(message, "OpenAI Codex", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            OpenAISetting.SetOpenAIData(apiKeyAiTxtBox, maxTokensTxtBox, modelTxt, AiTypeCombo, modelLocalCombo, GlobalVariables.openAIKey, GlobalVariables.openAIMaxTokens, GlobalVariables.openModel, GlobalVariables.ollamModel, GlobalVariables.aiType);
+            MessageBox.Show(message, "OpenAI Codex", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private async Task<CodexClient> CreateCodexClientFromFormAsync()
+        {
+            var apiKey = GetExplicitCodexApiKeyFromForm();
+            if (!string.IsNullOrWhiteSpace(apiKey))
+                return new CodexClient(apiKey);
+
+            var credentials = await CodexCliAuth.TryLoadAsync();
+            if (credentials == null)
+                throw new InvalidOperationException("Codex CLI sign-in was not found. Run `codex login`, or enter an OpenAI API key.");
+
+            return new CodexClient(credentials);
+        }
+
+        private static bool StartCodexLogin()
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/c start \"Codex Login\" cmd /k codex login",
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Could not start Codex CLI login: {ex.Message}\n\nRun `codex login` from a terminal, then try Connect Codex again.",
+                    "OpenAI Codex", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
 
