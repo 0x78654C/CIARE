@@ -119,6 +119,7 @@ namespace CIARE.GUI
 				{
 					AddCompletionData(resultList, completionData);
 				}
+				AddCompletionData(resultList, mainForm.GetWorkspaceMethodCompletionData(preSelection));
 				AddDirectTypingKeywords(resultList);
 			}
 			return resultList.ToArray();

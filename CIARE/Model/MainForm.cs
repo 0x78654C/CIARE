@@ -40,6 +40,7 @@ using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
 using CIARE.Utils.Encryption;
+using System.Collections;
 
 
 namespace CIARE
@@ -88,6 +89,8 @@ namespace CIARE
         private ImageList _fileExplorerImageList;
         private string _fileExplorerRootPath = string.Empty;
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
+        private const int WorkspaceCompletionMethodLimit = 300;
+        private readonly object _completionDataLock = new object();
         private readonly Dictionary<string, Dom.ICompilationUnit> _workspaceCompilationUnits
             = new Dictionary<string, Dom.ICompilationUnit>(StringComparer.OrdinalIgnoreCase);
 
@@ -602,8 +605,15 @@ namespace CIARE
             if (editor == null)
                 return;
 
+            string filePath = GetActiveEditorFilePath();
+            if (!IsCSharpFilePath(filePath))
+            {
+                RealTimeChecker.Cancel(editor, typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+                return;
+            }
+
             RealTimeChecker.ScheduleCheck(editor.Text, editor, typeCheckLbl, errorsRTB, errorsTabPage,
-                warningsCheckLbl, GetActiveWorkspaceFolder(), GetActiveEditorFilePath());
+                warningsCheckLbl, GetActiveWorkspaceFolder(), filePath);
         }
 
         private string GetActiveEditorFilePath()
@@ -629,6 +639,12 @@ namespace CIARE
                 return _fileExplorerRootPath;
 
             return string.Empty;
+        }
+
+        private static bool IsCSharpFilePath(string filePath)
+        {
+            return !string.IsNullOrWhiteSpace(filePath) &&
+                string.Equals(Path.GetExtension(filePath), ".cs", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsPathInsideFolder(string filePath, string folderPath)
@@ -1553,7 +1569,8 @@ namespace CIARE
         private HashSet<string> _alreadyLoaded = new HashSet<string>();
         void ParserThread()
         {
-            myProjectContent.AddReferencedContent(pcRegistry.Mscorlib);
+            lock (_completionDataLock)
+                myProjectContent.AddReferencedContent(pcRegistry.Mscorlib);
             ParseStep();
 
             Dom.IProjectContent[] total = pcRegistry.LoadAll();
@@ -1565,9 +1582,12 @@ namespace CIARE
 
                 _alreadyLoaded.Add(item.ToString());
 
-                myProjectContent.AddReferencedContent(item);
+                lock (_completionDataLock)
+                {
+                    myProjectContent.AddReferencedContent(item);
 
-                if (myProjectContent is Dom.ReflectionProjectContent myObj) myObj.InitializeReferences();
+                    if (myProjectContent is Dom.ReflectionProjectContent myObj) myObj.InitializeReferences();
+                }
             }
 
             while (!IsDisposed)
@@ -1605,9 +1625,12 @@ namespace CIARE
                 p.Parse();
                 newCompilationUnit = ConvertCompilationUnit(p.CompilationUnit);
             }
-            myProjectContent.UpdateCompilationUnit(lastCompilationUnit, newCompilationUnit, DummyFileName);
-            lastCompilationUnit = newCompilationUnit;
-            parseInformation.SetCompilationUnit(newCompilationUnit);
+            lock (_completionDataLock)
+            {
+                myProjectContent.UpdateCompilationUnit(lastCompilationUnit, newCompilationUnit, DummyFileName);
+                lastCompilationUnit = newCompilationUnit;
+                parseInformation.SetCompilationUnit(newCompilationUnit);
+            }
             ParseWorkspaceFilesForCompletion(workspaceFolder, currentFilePath);
         }
 
@@ -1615,9 +1638,12 @@ namespace CIARE
         {
             if (string.IsNullOrEmpty(workspaceFolder) || !Directory.Exists(workspaceFolder))
             {
-                foreach (var pair in _workspaceCompilationUnits)
-                    myProjectContent.RemoveCompilationUnit(pair.Value);
-                _workspaceCompilationUnits.Clear();
+                lock (_completionDataLock)
+                {
+                    foreach (var pair in _workspaceCompilationUnits)
+                        myProjectContent.RemoveCompilationUnit(pair.Value);
+                    _workspaceCompilationUnits.Clear();
+                }
                 return;
             }
 
@@ -1642,18 +1668,85 @@ namespace CIARE
                         p.Parse();
                         newCU = ConvertCompilationUnit(p.CompilationUnit);
                     }
-                    _workspaceCompilationUnits.TryGetValue(filePath, out var oldCU);
-                    myProjectContent.UpdateCompilationUnit(oldCU, newCU, filePath);
-                    _workspaceCompilationUnits[filePath] = newCU;
+                    lock (_completionDataLock)
+                    {
+                        _workspaceCompilationUnits.TryGetValue(filePath, out var oldCU);
+                        myProjectContent.UpdateCompilationUnit(oldCU, newCU, filePath);
+                        _workspaceCompilationUnits[filePath] = newCU;
+                    }
                 }
                 catch { }
             }
 
-            var toRemove = _workspaceCompilationUnits.Keys.Where(p => !visitedPaths.Contains(p)).ToList();
-            foreach (var path in toRemove)
+            lock (_completionDataLock)
             {
-                myProjectContent.RemoveCompilationUnit(_workspaceCompilationUnits[path]);
-                _workspaceCompilationUnits.Remove(path);
+                var toRemove = _workspaceCompilationUnits.Keys.Where(p => !visitedPaths.Contains(p)).ToList();
+                foreach (var path in toRemove)
+                {
+                    myProjectContent.RemoveCompilationUnit(_workspaceCompilationUnits[path]);
+                    _workspaceCompilationUnits.Remove(path);
+                }
+            }
+        }
+
+        internal ArrayList GetWorkspaceMethodCompletionData(string prefix)
+        {
+            var result = new ArrayList();
+            if (string.IsNullOrWhiteSpace(prefix))
+                return result;
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            lock (_completionDataLock)
+            {
+                AddCompilationUnitMethods(result, seen, parseInformation.MostRecentCompilationUnit, prefix);
+                foreach (var unit in _workspaceCompilationUnits.Values)
+                {
+                    AddCompilationUnitMethods(result, seen, unit, prefix);
+                    if (result.Count >= WorkspaceCompletionMethodLimit)
+                        break;
+                }
+            }
+
+            return result;
+        }
+
+        private static void AddCompilationUnitMethods(ArrayList result, HashSet<string> seen, Dom.ICompilationUnit unit, string prefix)
+        {
+            if (unit == null || unit.Classes == null)
+                return;
+
+            foreach (var @class in unit.Classes)
+            {
+                AddClassMethods(result, seen, @class, prefix);
+                if (result.Count >= WorkspaceCompletionMethodLimit)
+                    return;
+            }
+        }
+
+        private static void AddClassMethods(ArrayList result, HashSet<string> seen, Dom.IClass @class, string prefix)
+        {
+            if (@class == null)
+                return;
+
+            foreach (var method in @class.Methods)
+            {
+                if (method == null || method.IsConstructor)
+                    continue;
+                if (!method.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                string key = method.FullyQualifiedName + "#" + method.Parameters.Count + "#" + method.Region.BeginLine + "#" + method.Region.BeginColumn;
+                if (seen.Add(key))
+                    result.Add(method);
+                if (result.Count >= WorkspaceCompletionMethodLimit)
+                    return;
+            }
+
+            foreach (var innerClass in @class.InnerClasses)
+            {
+                AddClassMethods(result, seen, innerClass, prefix);
+                if (result.Count >= WorkspaceCompletionMethodLimit)
+                    return;
             }
         }
 
