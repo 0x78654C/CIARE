@@ -95,17 +95,19 @@ namespace CIARE.GUI
 
 			if (charTyped == '.')
 			{
-				Dom.ResolveResult rr = resolver.Resolve(FindExpression(textArea),
+				Dom.ExpressionResult expression = FindExpression(textArea);
+				Dom.ResolveResult rr = resolver.Resolve(expression,
 														MainForm.parseInformation,
 														textArea.MotherTextEditorControl.Text);
+				ArrayList completionData = null;
 				if (rr != null)
 				{
-					ArrayList completionData = rr.GetCompletionData(MainForm.myProjectContent);
-					if (completionData != null)
-					{
-						AddCompletionData(resultList, completionData);
-					}
+					completionData = rr.GetCompletionData(MainForm.myProjectContent);
 				}
+
+				completionData = MergeCompletionData(completionData, mainForm.GetWorkspaceMemberCompletionData(expression.Expression));
+				if (completionData != null)
+					AddCompletionData(resultList, completionData);
 			}
 			else
 			{
@@ -197,12 +199,61 @@ namespace CIARE.GUI
 						resultList.Add(data);
 					}
 				}
+				else if (obj is ICompletionData)
+				{
+					ICompletionData data = (ICompletionData)obj;
+					if (!ContainsCompletionText(resultList, data.Text))
+						resultList.Add(data);
+				}
 				else
 				{
 					// Current ICSharpCode.SharpDevelop.Dom should never return anything else
 					throw new NotSupportedException();
 				}
 			}
+		}
+
+		static ArrayList MergeCompletionData(ArrayList primary, ArrayList fallback)
+		{
+			if (fallback == null || fallback.Count == 0)
+				return primary;
+			if (primary == null || primary.Count == 0)
+				return fallback;
+
+			ArrayList merged = new ArrayList(primary);
+			foreach (object item in fallback)
+			{
+				if (!ContainsCompletionObject(merged, item))
+					merged.Add(item);
+			}
+			return merged;
+		}
+
+		static bool ContainsCompletionObject(ArrayList completionData, object candidate)
+		{
+			string candidateText = GetCompletionObjectText(candidate);
+			if (candidateText == null)
+				return completionData.Contains(candidate);
+
+			foreach (object item in completionData)
+			{
+				if (string.Equals(GetCompletionObjectText(item), candidateText, StringComparison.Ordinal))
+					return true;
+			}
+			return false;
+		}
+
+		static string GetCompletionObjectText(object item)
+		{
+			if (item is string)
+				return (string)item;
+			if (item is ICompletionData)
+				return ((ICompletionData)item).Text;
+			if (item is Dom.IClass)
+				return ((Dom.IClass)item).Name;
+			if (item is Dom.IMember)
+				return ((Dom.IMember)item).Name;
+			return null;
 		}
 
 		void AddDirectTypingKeywords(List<ICompletionData> resultList)

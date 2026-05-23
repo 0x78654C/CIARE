@@ -41,6 +41,10 @@ using System.Drawing;
 using System.ComponentModel;
 using CIARE.Utils.Encryption;
 using System.Collections;
+using ICSharpCode.TextEditor.Gui.CompletionWindow;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 
 namespace CIARE
@@ -95,6 +99,8 @@ namespace CIARE
         private readonly object _completionDataLock = new object();
         private readonly Dictionary<string, Dom.ICompilationUnit> _workspaceCompilationUnits
             = new Dictionary<string, Dom.ICompilationUnit>(StringComparer.OrdinalIgnoreCase);
+        private readonly List<WorkspaceCompletionClass> _workspaceCompletionClasses
+            = new List<WorkspaceCompletionClass>();
 
 
         // Used for tab's auto-resize
@@ -1764,6 +1770,8 @@ namespace CIARE
                         : null);
                 currentFilePath = GetActiveEditorFilePath();
             }));
+            var workspaceCompletionClasses = new List<WorkspaceCompletionClass>();
+            AddRoslynCompletionClasses(workspaceCompletionClasses, code, currentFilePath);
             string parsedCode = IsVisualBasic ? code : ConvertFileScopedNamespace(code);
             TextReader textReader = new StringReader(parsedCode);
             Dom.ICompilationUnit newCompilationUnit;
@@ -1786,10 +1794,15 @@ namespace CIARE
                 lastCompilationUnit = newCompilationUnit;
                 parseInformation.SetCompilationUnit(newCompilationUnit);
             }
-            ParseWorkspaceFilesForCompletion(workspaceFolder, currentFilePath);
+            ParseWorkspaceFilesForCompletion(workspaceFolder, currentFilePath, workspaceCompletionClasses);
+            lock (_completionDataLock)
+            {
+                _workspaceCompletionClasses.Clear();
+                _workspaceCompletionClasses.AddRange(workspaceCompletionClasses);
+            }
         }
 
-        private void ParseWorkspaceFilesForCompletion(string workspaceFolder, string currentFilePath)
+        private void ParseWorkspaceFilesForCompletion(string workspaceFolder, string currentFilePath, List<WorkspaceCompletionClass> workspaceCompletionClasses)
         {
             if (string.IsNullOrEmpty(workspaceFolder) || !Directory.Exists(workspaceFolder))
             {
@@ -1814,7 +1827,9 @@ namespace CIARE
                 visitedPaths.Add(filePath);
                 try
                 {
-                    string fileCode = ConvertFileScopedNamespace(File.ReadAllText(filePath));
+                    string originalFileCode = File.ReadAllText(filePath);
+                    AddRoslynCompletionClasses(workspaceCompletionClasses, originalFileCode, filePath);
+                    string fileCode = ConvertFileScopedNamespace(originalFileCode);
                     Dom.ICompilationUnit newCU;
                     using (var reader = new StringReader(fileCode))
                     using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(NRefactory.SupportedLanguage.CSharp, reader))
@@ -1865,6 +1880,112 @@ namespace CIARE
             }
 
             return result;
+        }
+
+        internal ArrayList GetWorkspaceMemberCompletionData(string expression)
+        {
+            var result = new ArrayList();
+            string normalizedExpression = NormalizeCompletionExpression(expression);
+            if (string.IsNullOrEmpty(normalizedExpression))
+                return result;
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            lock (_completionDataLock)
+            {
+                foreach (var completionClass in _workspaceCompletionClasses)
+                {
+                    if (!MatchesWorkspaceClass(completionClass, normalizedExpression))
+                        continue;
+
+                    AddWorkspaceClassCompletionItems(result, seen, completionClass);
+                    if (result.Count >= WorkspaceCompletionMethodLimit)
+                        return result;
+                }
+
+                if (result.Count == 0)
+                    AddWorkspaceNamespaceCompletionItems(result, seen, normalizedExpression, _workspaceCompletionClasses);
+            }
+
+            return result;
+        }
+
+        private static void AddWorkspaceClassCompletionItems(ArrayList result, HashSet<string> seen, WorkspaceCompletionClass completionClass)
+        {
+            foreach (var nestedType in completionClass.NestedTypes)
+            {
+                AddWorkspaceCompletionItem(result, seen, nestedType);
+                if (result.Count >= WorkspaceCompletionMethodLimit)
+                    return;
+            }
+
+            foreach (var member in completionClass.StaticMembers)
+            {
+                AddWorkspaceCompletionItem(result, seen, member);
+                if (result.Count >= WorkspaceCompletionMethodLimit)
+                    return;
+            }
+        }
+
+        private static void AddWorkspaceNamespaceCompletionItems(
+            ArrayList result,
+            HashSet<string> seen,
+            string namespaceName,
+            List<WorkspaceCompletionClass> completionClasses)
+        {
+            string namespacePrefix = namespaceName.Length == 0 ? string.Empty : namespaceName + ".";
+
+            foreach (var completionClass in completionClasses)
+            {
+                if (completionClass.IsNested)
+                    continue;
+
+                if (string.Equals(completionClass.NamespaceName, namespaceName, StringComparison.Ordinal))
+                {
+                    AddWorkspaceCompletionItem(result, seen, completionClass.ToCompletionItem());
+                }
+                else if (completionClass.NamespaceName.StartsWith(namespacePrefix, StringComparison.Ordinal))
+                {
+                    string remainder = completionClass.NamespaceName.Substring(namespacePrefix.Length);
+                    int separatorIndex = remainder.IndexOf('.');
+                    string childNamespace = separatorIndex >= 0 ? remainder.Substring(0, separatorIndex) : remainder;
+                    if (childNamespace.Length > 0)
+                        AddWorkspaceCompletionItem(result, seen, new WorkspaceCompletionItem(childNamespace, "namespace " + childNamespace, 5));
+                }
+
+                if (result.Count >= WorkspaceCompletionMethodLimit)
+                    return;
+            }
+        }
+
+        private static void AddWorkspaceCompletionItem(ArrayList result, HashSet<string> seen, WorkspaceCompletionItem item)
+        {
+            if (item == null || string.IsNullOrEmpty(item.Name))
+                return;
+
+            if (seen.Add(item.Name))
+                result.Add(new DefaultCompletionData(item.Name, item.Description, item.ImageIndex));
+        }
+
+        private static bool MatchesWorkspaceClass(WorkspaceCompletionClass completionClass, string expression)
+        {
+            return string.Equals(completionClass.FullName, expression, StringComparison.Ordinal) ||
+                   string.Equals(completionClass.Name, expression, StringComparison.Ordinal);
+        }
+
+        private static string NormalizeCompletionExpression(string expression)
+        {
+            if (string.IsNullOrWhiteSpace(expression))
+                return string.Empty;
+
+            expression = expression.Trim();
+            while (expression.EndsWith(".", StringComparison.Ordinal))
+                expression = expression.Substring(0, expression.Length - 1);
+
+            const string globalPrefix = "global::";
+            if (expression.StartsWith(globalPrefix, StringComparison.Ordinal))
+                expression = expression.Substring(globalPrefix.Length);
+
+            return expression;
         }
 
         /// <summary>
@@ -1998,6 +2119,282 @@ namespace CIARE
             string before = code.Substring(0, match.Index);
             string after = code.Substring(match.Index + match.Length);
             return before + "namespace " + nsName + "\n{" + after + "\n}";
+        }
+
+        private static void AddRoslynCompletionClasses(List<WorkspaceCompletionClass> result, string code, string filePath)
+        {
+            if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
+                return;
+
+            try
+            {
+                var tree = CSharpSyntaxTree.ParseText(code);
+                var root = tree.GetCompilationUnitRoot();
+                foreach (var member in root.Members)
+                    AddRoslynCompletionMember(result, member, string.Empty, string.Empty, null, filePath);
+            }
+            catch
+            {
+                // The NRefactory parser still handles the primary completion path.
+            }
+        }
+
+        private static void AddRoslynCompletionMember(
+            List<WorkspaceCompletionClass> result,
+            MemberDeclarationSyntax member,
+            string namespaceName,
+            string containingTypeName,
+            WorkspaceCompletionClass parentClass,
+            string filePath)
+        {
+            if (member is NamespaceDeclarationSyntax namespaceDeclaration)
+            {
+                string childNamespace = CombineName(namespaceName, namespaceDeclaration.Name.ToString());
+                foreach (var childMember in namespaceDeclaration.Members)
+                    AddRoslynCompletionMember(result, childMember, childNamespace, containingTypeName, parentClass, filePath);
+                return;
+            }
+
+            if (member is FileScopedNamespaceDeclarationSyntax fileScopedNamespace)
+            {
+                string childNamespace = CombineName(namespaceName, fileScopedNamespace.Name.ToString());
+                foreach (var childMember in fileScopedNamespace.Members)
+                    AddRoslynCompletionMember(result, childMember, childNamespace, containingTypeName, parentClass, filePath);
+                return;
+            }
+
+            if (member is BaseTypeDeclarationSyntax typeDeclaration)
+            {
+                bool isNested = parentClass != null;
+                if (!IsWorkspaceVisibleType(typeDeclaration.Modifiers, isNested))
+                    return;
+
+                string typeName = typeDeclaration.Identifier.ValueText;
+                if (string.IsNullOrEmpty(typeName))
+                    return;
+
+                string typePrefix = string.IsNullOrEmpty(containingTypeName) ? namespaceName : containingTypeName;
+                var completionClass = new WorkspaceCompletionClass(
+                    typeName,
+                    CombineName(typePrefix, typeName),
+                    namespaceName,
+                    GetTypeKeyword(typeDeclaration),
+                    GetTypeImageIndex(typeDeclaration),
+                    isNested,
+                    filePath);
+
+                result.Add(completionClass);
+                if (parentClass != null)
+                    parentClass.NestedTypes.Add(completionClass.ToCompletionItem());
+
+                if (typeDeclaration is TypeDeclarationSyntax typeWithMembers)
+                {
+                    foreach (var childMember in typeWithMembers.Members)
+                    {
+                        if (childMember is BaseTypeDeclarationSyntax || childMember is NamespaceDeclarationSyntax || childMember is FileScopedNamespaceDeclarationSyntax)
+                            AddRoslynCompletionMember(result, childMember, namespaceName, completionClass.FullName, completionClass, filePath);
+                        else
+                            AddRoslynStaticMember(completionClass, childMember);
+                    }
+                }
+                else if (typeDeclaration is EnumDeclarationSyntax enumDeclaration)
+                {
+                    foreach (var enumMember in enumDeclaration.Members)
+                    {
+                        string enumMemberName = enumMember.Identifier.ValueText;
+                        if (enumMemberName.Length > 0)
+                            completionClass.StaticMembers.Add(new WorkspaceCompletionItem(enumMemberName, completionClass.FullName + "." + enumMemberName, 3));
+                    }
+                }
+            }
+        }
+
+        private static void AddRoslynStaticMember(WorkspaceCompletionClass completionClass, MemberDeclarationSyntax member)
+        {
+            if (member is FieldDeclarationSyntax fieldDeclaration)
+            {
+                if (!IsWorkspaceVisibleMember(fieldDeclaration.Modifiers) || !IsStaticOrConst(fieldDeclaration.Modifiers))
+                    return;
+
+                foreach (var variable in fieldDeclaration.Declaration.Variables)
+                {
+                    string name = variable.Identifier.ValueText;
+                    if (name.Length == 0)
+                        continue;
+
+                    string description = JoinDeclarationParts(GetModifierText(fieldDeclaration.Modifiers), fieldDeclaration.Declaration.Type.ToString(), name);
+                    completionClass.StaticMembers.Add(new WorkspaceCompletionItem(name, description, 3));
+                }
+                return;
+            }
+
+            if (member is PropertyDeclarationSyntax propertyDeclaration)
+            {
+                if (!IsWorkspaceVisibleMember(propertyDeclaration.Modifiers) || !HasModifier(propertyDeclaration.Modifiers, SyntaxKind.StaticKeyword))
+                    return;
+
+                string name = propertyDeclaration.Identifier.ValueText;
+                if (name.Length == 0)
+                    return;
+
+                string description = JoinDeclarationParts(GetModifierText(propertyDeclaration.Modifiers), propertyDeclaration.Type.ToString(), name);
+                completionClass.StaticMembers.Add(new WorkspaceCompletionItem(name, description, 2));
+                return;
+            }
+
+            if (member is MethodDeclarationSyntax methodDeclaration)
+            {
+                if (!IsWorkspaceVisibleMember(methodDeclaration.Modifiers) || !HasModifier(methodDeclaration.Modifiers, SyntaxKind.StaticKeyword))
+                    return;
+
+                string name = methodDeclaration.Identifier.ValueText;
+                if (name.Length == 0)
+                    return;
+
+                string parameters = string.Join(", ", methodDeclaration.ParameterList.Parameters.Select(parameter => parameter.ToString()));
+                string signature = name + "(" + parameters + ")";
+                string description = JoinDeclarationParts(GetModifierText(methodDeclaration.Modifiers), methodDeclaration.ReturnType.ToString(), signature);
+                completionClass.StaticMembers.Add(new WorkspaceCompletionItem(name, description, 1));
+                return;
+            }
+
+            if (member is EventFieldDeclarationSyntax eventFieldDeclaration)
+            {
+                if (!IsWorkspaceVisibleMember(eventFieldDeclaration.Modifiers) || !HasModifier(eventFieldDeclaration.Modifiers, SyntaxKind.StaticKeyword))
+                    return;
+
+                foreach (var variable in eventFieldDeclaration.Declaration.Variables)
+                {
+                    string name = variable.Identifier.ValueText;
+                    if (name.Length == 0)
+                        continue;
+
+                    string description = JoinDeclarationParts(GetModifierText(eventFieldDeclaration.Modifiers), "event", eventFieldDeclaration.Declaration.Type.ToString(), name);
+                    completionClass.StaticMembers.Add(new WorkspaceCompletionItem(name, description, 6));
+                }
+                return;
+            }
+
+            if (member is EventDeclarationSyntax eventDeclaration)
+            {
+                if (!IsWorkspaceVisibleMember(eventDeclaration.Modifiers) || !HasModifier(eventDeclaration.Modifiers, SyntaxKind.StaticKeyword))
+                    return;
+
+                string name = eventDeclaration.Identifier.ValueText;
+                if (name.Length == 0)
+                    return;
+
+                string description = JoinDeclarationParts(GetModifierText(eventDeclaration.Modifiers), "event", eventDeclaration.Type.ToString(), name);
+                completionClass.StaticMembers.Add(new WorkspaceCompletionItem(name, description, 6));
+            }
+        }
+
+        private static bool IsWorkspaceVisibleType(SyntaxTokenList modifiers, bool isNested)
+        {
+            if (HasModifier(modifiers, SyntaxKind.PrivateKeyword) || HasModifier(modifiers, SyntaxKind.ProtectedKeyword))
+                return false;
+
+            return !isNested || HasModifier(modifiers, SyntaxKind.PublicKeyword) || HasModifier(modifiers, SyntaxKind.InternalKeyword);
+        }
+
+        private static bool IsWorkspaceVisibleMember(SyntaxTokenList modifiers)
+        {
+            return HasModifier(modifiers, SyntaxKind.PublicKeyword) || HasModifier(modifiers, SyntaxKind.InternalKeyword);
+        }
+
+        private static bool IsStaticOrConst(SyntaxTokenList modifiers)
+        {
+            return HasModifier(modifiers, SyntaxKind.StaticKeyword) || HasModifier(modifiers, SyntaxKind.ConstKeyword);
+        }
+
+        private static bool HasModifier(SyntaxTokenList modifiers, SyntaxKind kind)
+        {
+            foreach (var modifier in modifiers)
+            {
+                if (modifier.IsKind(kind))
+                    return true;
+            }
+            return false;
+        }
+
+        private static string CombineName(string prefix, string name)
+        {
+            if (string.IsNullOrEmpty(prefix))
+                return name ?? string.Empty;
+            if (string.IsNullOrEmpty(name))
+                return prefix;
+            return prefix + "." + name;
+        }
+
+        private static string GetModifierText(SyntaxTokenList modifiers)
+        {
+            return string.Join(" ", modifiers.Select(modifier => modifier.ValueText));
+        }
+
+        private static string JoinDeclarationParts(params string[] parts)
+        {
+            return string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+        }
+
+        private static string GetTypeKeyword(BaseTypeDeclarationSyntax typeDeclaration)
+        {
+            if (typeDeclaration is InterfaceDeclarationSyntax)
+                return "interface";
+            if (typeDeclaration is StructDeclarationSyntax)
+                return "struct";
+            if (typeDeclaration is EnumDeclarationSyntax)
+                return "enum";
+            if (typeDeclaration is RecordDeclarationSyntax)
+                return "record";
+            return "class";
+        }
+
+        private static int GetTypeImageIndex(BaseTypeDeclarationSyntax typeDeclaration)
+        {
+            return typeDeclaration is EnumDeclarationSyntax ? 4 : 0;
+        }
+
+        private sealed class WorkspaceCompletionClass
+        {
+            public WorkspaceCompletionClass(string name, string fullName, string namespaceName, string kindKeyword, int imageIndex, bool isNested, string filePath)
+            {
+                Name = name;
+                FullName = fullName;
+                NamespaceName = namespaceName ?? string.Empty;
+                KindKeyword = kindKeyword;
+                ImageIndex = imageIndex;
+                IsNested = isNested;
+                FilePath = filePath;
+            }
+
+            public string Name { get; }
+            public string FullName { get; }
+            public string NamespaceName { get; }
+            public string KindKeyword { get; }
+            public int ImageIndex { get; }
+            public bool IsNested { get; }
+            public string FilePath { get; }
+            public List<WorkspaceCompletionItem> StaticMembers { get; } = new List<WorkspaceCompletionItem>();
+            public List<WorkspaceCompletionItem> NestedTypes { get; } = new List<WorkspaceCompletionItem>();
+
+            public WorkspaceCompletionItem ToCompletionItem()
+            {
+                return new WorkspaceCompletionItem(Name, KindKeyword + " " + FullName, ImageIndex);
+            }
+        }
+
+        private sealed class WorkspaceCompletionItem
+        {
+            public WorkspaceCompletionItem(string name, string description, int imageIndex)
+            {
+                Name = name;
+                Description = description;
+                ImageIndex = imageIndex;
+            }
+
+            public string Name { get; }
+            public string Description { get; }
+            public int ImageIndex { get; }
         }
 
         /// <summary>
