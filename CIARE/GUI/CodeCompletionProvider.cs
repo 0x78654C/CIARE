@@ -193,30 +193,32 @@ namespace CIARE.GUI
 				else if (obj is Dom.IClass)
 				{
 					Dom.IClass c = (Dom.IClass)obj;
-					resultList.Add(new CodeCompletionData(c));
-				}
-				else if (obj is Dom.IMember)
-				{
-					Dom.IMember m = (Dom.IMember)obj;
-					if (m is Dom.IMethod && ((m as Dom.IMethod).IsConstructor))
-					{
-						// Skip constructors
-						continue;
+						if (!ContainsCompletionText(resultList, c.Name))
+							resultList.Add(new CodeCompletionData(c));
 					}
-					// Group results by name and add "(x Overloads)" to the
-					// description if there are multiple results with the same name.
+					else if (obj is Dom.IMember)
+					{
+						Dom.IMember m = (Dom.IMember)obj;
+						if (m is Dom.IMethod && ((m as Dom.IMethod).IsConstructor))
+						{
+							// Skip constructors
+							continue;
+						}
+						// Group results by name and add "(x Overloads)" to the
+						// description if there are multiple results with the same name.
+						// Also guard against duplicates introduced by a previous AddCompletionData call.
 
-					CodeCompletionData data;
-					if (nameDictionary.TryGetValue(m.Name, out data))
-					{
-						data.AddOverload();
+						CodeCompletionData data;
+						if (nameDictionary.TryGetValue(m.Name, out data))
+						{
+							data.AddOverload();
+						}
+						else if (!ContainsCompletionText(resultList, m.Name))
+						{
+							nameDictionary[m.Name] = data = new CodeCompletionData(m);
+							resultList.Add(data);
+						}
 					}
-					else
-					{
-						nameDictionary[m.Name] = data = new CodeCompletionData(m);
-						resultList.Add(data);
-					}
-				}
 				else if (obj is ICompletionData)
 				{
 					ICompletionData data = (ICompletionData)obj;
