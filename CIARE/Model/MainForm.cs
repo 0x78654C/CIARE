@@ -95,6 +95,9 @@ namespace CIARE
         private ImageList _fileExplorerImageList;
         private string _fileExplorerRootPath = string.Empty;
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
+        private FileSystemWatcher _fileExplorerWatcher;
+        private System.Windows.Forms.Timer _fileExplorerRefreshTimer;
+        private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const int WorkspaceCompletionMethodLimit = 300;
         private readonly object _completionDataLock = new object();
         private readonly Dictionary<string, Dom.ICompilationUnit> _workspaceCompilationUnits
@@ -592,7 +595,156 @@ namespace CIARE
             _fileExplorerTitleLabel.Text = "Explorer";
             toolTip1.SetToolTip(_fileExplorerTitleLabel, folderPath);
 
+            StartFileExplorerWatcher(folderPath);
             ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+        }
+
+        private void StartFileExplorerWatcher(string folderPath)
+        {
+            StopFileExplorerWatcher();
+
+            if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+                return;
+
+            _fileExplorerWatcher = new FileSystemWatcher(folderPath)
+            {
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName,
+                IncludeSubdirectories = true,
+                EnableRaisingEvents = true
+            };
+            _fileExplorerWatcher.Created += OnFileExplorerWatcherEvent;
+            _fileExplorerWatcher.Deleted += OnFileExplorerWatcherEvent;
+            _fileExplorerWatcher.Renamed += OnFileExplorerWatcherRenamed;
+
+            _fileExplorerRefreshTimer = new System.Windows.Forms.Timer { Interval = 300 };
+            _fileExplorerRefreshTimer.Tick += OnFileExplorerRefreshTimer;
+        }
+
+        private void StopFileExplorerWatcher()
+        {
+            if (_fileExplorerWatcher != null)
+            {
+                _fileExplorerWatcher.EnableRaisingEvents = false;
+                _fileExplorerWatcher.Dispose();
+                _fileExplorerWatcher = null;
+            }
+            if (_fileExplorerRefreshTimer != null)
+            {
+                _fileExplorerRefreshTimer.Stop();
+                _fileExplorerRefreshTimer.Dispose();
+                _fileExplorerRefreshTimer = null;
+            }
+            _pendingRefreshPaths.Clear();
+        }
+
+        private void OnFileExplorerWatcherEvent(object sender, FileSystemEventArgs e)
+        {
+            string parentDir = Path.GetDirectoryName(e.FullPath);
+            if (!string.IsNullOrEmpty(parentDir))
+                ScheduleExplorerRefresh(parentDir);
+        }
+
+        private void OnFileExplorerWatcherRenamed(object sender, RenamedEventArgs e)
+        {
+            string parentDir = Path.GetDirectoryName(e.FullPath);
+            if (!string.IsNullOrEmpty(parentDir))
+                ScheduleExplorerRefresh(parentDir);
+        }
+
+        private void ScheduleExplorerRefresh(string dirPath)
+        {
+            if (IsDisposed || !IsHandleCreated)
+                return;
+            BeginInvoke((Action)(() =>
+            {
+                _pendingRefreshPaths.Add(dirPath);
+                _fileExplorerRefreshTimer?.Stop();
+                _fileExplorerRefreshTimer?.Start();
+            }));
+        }
+
+        private void OnFileExplorerRefreshTimer(object sender, EventArgs e)
+        {
+            _fileExplorerRefreshTimer?.Stop();
+            var toRefresh = new HashSet<string>(_pendingRefreshPaths, StringComparer.OrdinalIgnoreCase);
+            _pendingRefreshPaths.Clear();
+            RefreshExplorerNodes(toRefresh);
+        }
+
+        private void RefreshExplorerNodes(HashSet<string> paths)
+        {
+            if (_fileExplorerTree == null || _fileExplorerTree.IsDisposed || _fileExplorerTree.Nodes.Count == 0)
+                return;
+
+            _fileExplorerTree.BeginUpdate();
+            foreach (string path in paths)
+                RefreshExplorerNodeForPath(path);
+            _fileExplorerTree.EndUpdate();
+        }
+
+        private void RefreshExplorerNodeForPath(string dirPath)
+        {
+            var node = FindTreeNodeByPath(_fileExplorerTree.Nodes[0], dirPath);
+            if (node == null)
+                return;
+
+            if (!node.IsExpanded)
+            {
+                node.Nodes.Clear();
+                node.Nodes.Add(new TreeNode("Loading...") { Tag = FileExplorerLoadingTag });
+                return;
+            }
+
+            var expandedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            CollectExpandedPaths(node, expandedPaths);
+            PopulateDirectoryNode(node);
+            RestoreExpandedPaths(node, expandedPaths);
+        }
+
+        private static TreeNode FindTreeNodeByPath(TreeNode root, string path)
+        {
+            if (string.Equals(root.Tag as string, path, StringComparison.OrdinalIgnoreCase))
+                return root;
+
+            foreach (TreeNode child in root.Nodes)
+            {
+                string tag = child.Tag as string;
+                if (tag == null) continue;
+                if (string.Equals(tag, path, StringComparison.OrdinalIgnoreCase))
+                    return child;
+                if (path.StartsWith(tag + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                {
+                    var found = FindTreeNodeByPath(child, path);
+                    if (found != null) return found;
+                }
+            }
+            return null;
+        }
+
+        private static void CollectExpandedPaths(TreeNode node, HashSet<string> paths)
+        {
+            foreach (TreeNode child in node.Nodes)
+            {
+                if (child.IsExpanded)
+                {
+                    paths.Add(child.Tag as string ?? string.Empty);
+                    CollectExpandedPaths(child, paths);
+                }
+            }
+        }
+
+        private void RestoreExpandedPaths(TreeNode node, HashSet<string> expandedPaths)
+        {
+            foreach (TreeNode child in node.Nodes)
+            {
+                string tag = child.Tag as string;
+                if (tag != null && expandedPaths.Contains(tag))
+                {
+                    PopulateDirectoryNode(child);
+                    child.Expand();
+                    RestoreExpandedPaths(child, expandedPaths);
+                }
+            }
         }
 
         private TreeNode CreateDirectoryNode(DirectoryInfo directory)
@@ -1574,6 +1726,7 @@ namespace CIARE
             // Stop Live share if connected.
             Task.Run(() => _apiConnectionEvents.CloseConnection(hubConnection));
 
+            StopFileExplorerWatcher();
         }
 
         /// <summary>
