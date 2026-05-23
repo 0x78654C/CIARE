@@ -369,6 +369,14 @@ namespace CIARE
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerVisibleKey, show.ToString());
         }
 
+        private void ToggleFileExplorer()
+        {
+            if (_editorExplorerSplitContainer == null)
+                return;
+
+            ToggleFileExplorer(_editorExplorerSplitContainer.Panel2Collapsed);
+        }
+
         private void SetFileExplorerWidth(int width)
         {
             if (_editorExplorerSplitContainer == null)
@@ -1272,6 +1280,9 @@ namespace CIARE
                 case Keys.K | Keys.Control:
                     OutputWindowManage.SetOutputWindowState(outputRBT, splitContainer1);
                     return true;
+                case Keys.E | Keys.Control:
+                    ToggleFileExplorer();
+                    return true;
                 case Keys.G | Keys.Control:
                     GoToLine goToLine = new GoToLine();
                     goToLine.ShowDialog();
@@ -1638,6 +1649,11 @@ namespace CIARE
         private void showHideSCToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^k");
+        }
+
+        private void showHideExplorerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ToggleFileExplorer();
         }
 
         private void goToLineStripMenuItem_Click(object sender, EventArgs e)

@@ -75,6 +75,7 @@ namespace CIARE
             splitVEditorToolStripMenuItem = new ToolStripMenuItem();
             compileStripSeparator1 = new ToolStripSeparator();
             showHideHSCToolStripMenuItem = new ToolStripMenuItem();
+            showHideExplorerToolStripMenuItem = new ToolStripMenuItem();
             viewSeparator1 = new ToolStripSeparator();
             fullScreenToolStripMenuItem = new ToolStripMenuItem();
             liveToolStripMenuItem = new ToolStripMenuItem();
@@ -427,7 +428,7 @@ namespace CIARE
             // 
             // viewToolStripMenuItem
             // 
-            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { splitEditorToolStripMenuItem, splitVEditorToolStripMenuItem, compileStripSeparator1, showHideHSCToolStripMenuItem, viewSeparator1, fullScreenToolStripMenuItem });
+            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { splitEditorToolStripMenuItem, splitVEditorToolStripMenuItem, compileStripSeparator1, showHideHSCToolStripMenuItem, showHideExplorerToolStripMenuItem, viewSeparator1, fullScreenToolStripMenuItem });
             viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             viewToolStripMenuItem.Text = "View";
@@ -457,6 +458,13 @@ namespace CIARE
             showHideHSCToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
             showHideHSCToolStripMenuItem.Text = "Show/Hide Output          ( CTRL + K )";
             showHideHSCToolStripMenuItem.Click += showHideSCToolStripMenuItem_Click;
+            // 
+            // showHideExplorerToolStripMenuItem
+            // 
+            showHideExplorerToolStripMenuItem.Name = "showHideExplorerToolStripMenuItem";
+            showHideExplorerToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
+            showHideExplorerToolStripMenuItem.Text = "Show/Hide Explorer        ( CTRL + E )";
+            showHideExplorerToolStripMenuItem.Click += showHideExplorerToolStripMenuItem_Click;
             // 
             // viewSeparator1
             // 
@@ -888,6 +896,7 @@ namespace CIARE
         public System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem splitEditorToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem showHideHSCToolStripMenuItem;
+        public System.Windows.Forms.ToolStripMenuItem showHideExplorerToolStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator viewSeparator1;
         public System.Windows.Forms.ToolStripMenuItem fullScreenToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem goToLineStripMenuItem;
