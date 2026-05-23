@@ -74,6 +74,8 @@ namespace CIARE
         BackgroundWorker worker;
         private string[] _filesDrag;
         private const int FileExplorerDefaultWidth = 280;
+        private const int FileExplorerMinWidth = 220;
+        private const int EditorPaneMinWidth = 180;
         private const string FileExplorerLoadingTag = "__loading__";
         private const string FileExplorerPathKey = "fileExplorerPath";
         private const string FileExplorerVisibleKey = "fileExplorerVisible";
@@ -172,6 +174,10 @@ namespace CIARE
                 FixedPanel = FixedPanel.Panel2,
                 SplitterWidth = 5
             };
+            _editorExplorerSplitContainer.Panel1.Padding = Padding.Empty;
+            _editorExplorerSplitContainer.Panel2.Padding = Padding.Empty;
+            _editorExplorerSplitContainer.Panel1.Resize += (sender, args) => RefreshEditorLayoutBounds();
+            _editorExplorerSplitContainer.SplitterMoved += (sender, args) => RefreshEditorLayoutBounds();
 
             _fileExplorerPanel = new Panel
             {
@@ -240,9 +246,7 @@ namespace CIARE
             _fileExplorerPanel.Controls.Add(_fileExplorerTree);
             _fileExplorerPanel.Controls.Add(_fileExplorerHeader);
 
-            EditorTabControl.Dock = DockStyle.Fill;
-            EditorTabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            EditorTabControl.Location = Point.Empty;
+            ConfigureEditorTabControlLayout();
 
             _editorExplorerSplitContainer.Panel1.Controls.Add(EditorTabControl);
             _editorExplorerSplitContainer.Panel2.Controls.Add(_fileExplorerPanel);
@@ -265,12 +269,12 @@ namespace CIARE
             splitContainer1.Panel1.Controls.Add(_editorWorkspacePanel);
             splitContainer1.Panel1.ResumeLayout();
             EditorTabControl.ResumeLayout();
-            _editorExplorerSplitContainer.Panel2MinSize = 220;
-
             BeginInvoke((Action)(() =>
             {
+                ApplyEditorExplorerMinimumWidths();
                 SetFileExplorerWidth(FileExplorerDefaultWidth);
                 PositionFileExplorerShowButton();
+                RefreshEditorLayoutBounds();
             }));
 
             ApplyFileExplorerTheme();
@@ -346,34 +350,93 @@ namespace CIARE
             if (show)
             {
                 _editorExplorerSplitContainer.Panel2Collapsed = false;
+                ApplyEditorExplorerMinimumWidths();
                 SetFileExplorerWidth(_fileExplorerWidth);
                 _fileExplorerShowButton.Visible = false;
             }
             else
             {
                 if (saveWidth)
-                    _fileExplorerWidth = Math.Max(_editorExplorerSplitContainer.Panel2.Width, 220);
+                    _fileExplorerWidth = Math.Max(_editorExplorerSplitContainer.Panel2.Width, FileExplorerMinWidth);
                 _editorExplorerSplitContainer.Panel2Collapsed = true;
                 _fileExplorerShowButton.Visible = true;
                 PositionFileExplorerShowButton();
                 SelectedEditor.GetSelectedEditor()?.Focus();
             }
 
+            RefreshEditorLayoutBounds();
             EditorTabControl.Invalidate();
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerVisibleKey, show.ToString());
         }
 
         private void SetFileExplorerWidth(int width)
         {
-            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.Width <= width + 120)
+            if (_editorExplorerSplitContainer == null)
                 return;
 
-            int maxDist = _editorExplorerSplitContainer.Width
-                          - _editorExplorerSplitContainer.Panel2MinSize
-                          - _editorExplorerSplitContainer.SplitterWidth;
+            ApplyEditorExplorerMinimumWidths();
+
+            int splitWidth = GetEditorExplorerSplitWidth();
+            int availableWidth = splitWidth - _editorExplorerSplitContainer.SplitterWidth;
+            if (availableWidth <= 0)
+            {
+                RefreshEditorLayoutBounds();
+                return;
+            }
+
             int minDist = _editorExplorerSplitContainer.Panel1MinSize;
-            int dist = Math.Max(minDist, Math.Min(maxDist, _editorExplorerSplitContainer.Width - width));
-            _editorExplorerSplitContainer.SplitterDistance = dist;
+            int maxDist = Math.Max(minDist, availableWidth - _editorExplorerSplitContainer.Panel2MinSize);
+            int explorerWidth = Math.Max(_editorExplorerSplitContainer.Panel2MinSize,
+                Math.Min(width, Math.Max(0, availableWidth - minDist)));
+            int dist = Math.Max(minDist, Math.Min(maxDist, availableWidth - explorerWidth));
+
+            if (!_editorExplorerSplitContainer.Panel2Collapsed)
+                _editorExplorerSplitContainer.SplitterDistance = dist;
+
+            RefreshEditorLayoutBounds();
+        }
+
+        private int GetEditorExplorerSplitWidth()
+        {
+            if (_editorExplorerSplitContainer == null)
+                return 0;
+
+            return _editorExplorerSplitContainer.ClientSize.Width > 0
+                ? _editorExplorerSplitContainer.ClientSize.Width
+                : _editorExplorerSplitContainer.Width;
+        }
+
+        private void ApplyEditorExplorerMinimumWidths()
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+                return;
+
+            int splitWidth = GetEditorExplorerSplitWidth();
+            int availableWidth = splitWidth - _editorExplorerSplitContainer.SplitterWidth;
+            if (availableWidth <= 0)
+                return;
+
+            int panel1Min = EditorPaneMinWidth;
+            int panel2Min = FileExplorerMinWidth;
+            if (panel1Min + panel2Min > availableWidth)
+            {
+                panel1Min = Math.Min(EditorPaneMinWidth, Math.Max(0, availableWidth / 2));
+                panel2Min = Math.Min(FileExplorerMinWidth, Math.Max(0, availableWidth - panel1Min));
+            }
+
+            int minDist = panel1Min;
+            int maxDist = Math.Max(minDist, availableWidth - panel2Min);
+            int currentDist = Math.Max(0, _editorExplorerSplitContainer.SplitterDistance);
+            int safeDist = Math.Max(minDist, Math.Min(maxDist, currentDist));
+
+            _editorExplorerSplitContainer.Panel1MinSize = 0;
+            _editorExplorerSplitContainer.Panel2MinSize = 0;
+
+            if (!_editorExplorerSplitContainer.Panel2Collapsed)
+                _editorExplorerSplitContainer.SplitterDistance = safeDist;
+
+            _editorExplorerSplitContainer.Panel1MinSize = panel1Min;
+            _editorExplorerSplitContainer.Panel2MinSize = panel2Min;
         }
 
         private void PositionFileExplorerShowButton()
@@ -386,6 +449,78 @@ namespace CIARE
                     - SystemInformation.VerticalScrollBarWidth - 4),
                 6);
             _fileExplorerShowButton.BringToFront();
+        }
+
+        private void ConfigureEditorTabControlLayout()
+        {
+            if (EditorTabControl == null)
+                return;
+
+            EditorTabControl.SuspendLayout();
+            EditorTabControl.Anchor = AnchorStyles.None;
+            EditorTabControl.Dock = DockStyle.Fill;
+            EditorTabControl.Location = Point.Empty;
+            EditorTabControl.Margin = Padding.Empty;
+
+            foreach (TabPage tabPage in EditorTabControl.TabPages)
+                ConfigureEditorTabPageLayout(tabPage);
+
+            EditorTabControl.ResumeLayout(true);
+        }
+
+        private void ConfigureEditorTabPageLayout(TabPage tabPage)
+        {
+            if (tabPage == null)
+                return;
+
+            tabPage.AutoScroll = false;
+            tabPage.Margin = Padding.Empty;
+            tabPage.Padding = Padding.Empty;
+
+            foreach (Control control in tabPage.Controls)
+            {
+                if (control is TextEditorControl editor)
+                    ConfigureEditorControlLayout(editor);
+            }
+        }
+
+        private void ConfigureEditorControlLayout(TextEditorControl editor)
+        {
+            if (editor == null)
+                return;
+
+            editor.SuspendLayout();
+            editor.Anchor = AnchorStyles.None;
+            editor.Dock = DockStyle.Fill;
+            editor.Location = Point.Empty;
+            editor.Margin = Padding.Empty;
+            ConfigureEditorScrollBars(editor);
+            editor.ResumeLayout(true);
+        }
+
+        private void ConfigureEditorScrollBars(TextEditorControl editor)
+        {
+            var textAreaControl = editor?.ActiveTextAreaControl;
+            if (textAreaControl == null)
+                return;
+
+            textAreaControl.AutoHideScrollbars = false;
+            textAreaControl.VScrollBar.Visible = true;
+            textAreaControl.HScrollBar.Visible = true;
+            textAreaControl.ResizeTextArea();
+            textAreaControl.AdjustScrollBars();
+        }
+
+        private void RefreshEditorLayoutBounds()
+        {
+            if (EditorTabControl == null || EditorTabControl.IsDisposed)
+                return;
+
+            ConfigureEditorTabControlLayout();
+            EditorTabControl.PerformLayout();
+
+            foreach (TabPage tabPage in EditorTabControl.TabPages)
+                tabPage.PerformLayout();
         }
 
         private void fileExplorerOpenFolderButton_Click(object sender, EventArgs e)
@@ -769,6 +904,7 @@ namespace CIARE
 
             // Run initial type check so errors are underlined from the first load.
             RestoreFileExplorerState();
+            RefreshEditorLayoutBounds();
             var startEditor = SelectedEditor.GetSelectedEditor();
             if (startEditor != null && !string.IsNullOrWhiteSpace(startEditor.Text))
                 ScheduleCurrentTypeCheck(startEditor);
@@ -1852,6 +1988,7 @@ namespace CIARE
             {
                 InitializeEditor.SetMaximizedWindowState(GlobalVariables.registryPath, true);
             }
+            RefreshEditorLayoutBounds();
         }
 
 
@@ -1875,6 +2012,8 @@ namespace CIARE
         /// <param name="e"></param>
         private void textEditorControl1_Resize(object sender, EventArgs e)
         {
+            if (sender is TextEditorControl editor)
+                ConfigureEditorScrollBars(editor);
             SplitEditorWindow.SetSplitWindowSize(SelectedEditor.GetSelectedEditor(), GlobalVariables.splitWindowPosition);
         }
 
@@ -1996,8 +2135,10 @@ namespace CIARE
                 _countTabs = tabCount;
                 dynamicTextEdtior = new TextEditorControl();
                 TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
+                ConfigureEditorTabPageLayout(tabPage);
                 SetDesignEditor(ref dynamicTextEdtior);
                 tabPage.Controls.Add(dynamicTextEdtior);
+                RefreshEditorLayoutBounds();
                 Initiliaze(EditorTabControl.SelectedIndex);
             }
 
@@ -2033,14 +2174,14 @@ namespace CIARE
             var tabCount = this.EditorTabControl.TabCount;
             var tabIndex = this.EditorTabControl.SelectedIndex;
             dynamicTextEdtior.Name = $"textEditorControl{tabCount}";
-            dynamicTextEdtior.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dynamicTextEdtior.Anchor = AnchorStyles.None;
             dynamicTextEdtior.Dock = DockStyle.Fill;
             dynamicTextEdtior.BackColor = SystemColors.Window;
             dynamicTextEdtior.BorderStyle = BorderStyle.FixedSingle;
             dynamicTextEdtior.Font = new Font("Consolas", 10F);
             dynamicTextEdtior.Highlighting = null;
             dynamicTextEdtior.Location = new Point(0, 0);
-            dynamicTextEdtior.Margin = new Padding(4, 3, 4, 3);
+            dynamicTextEdtior.Margin = Padding.Empty;
             dynamicTextEdtior.TabIndex = tabIndex;
             dynamicTextEdtior.VRulerRow = 0;
             dynamicTextEdtior.TextChanged += textEditorControl1_TextChanged;
@@ -2058,6 +2199,7 @@ namespace CIARE
             dynamicTextEdtior.ActiveTextAreaControl.HorizontalScroll.Enabled = true;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
+            ConfigureEditorControlLayout(dynamicTextEdtior);
             dynamicTextEdtior.Focus();
             HookEditorAskAI(dynamicTextEdtior);
         }
