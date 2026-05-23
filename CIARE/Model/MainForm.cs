@@ -74,6 +74,8 @@ namespace CIARE
         private string[] _filesDrag;
         private const int FileExplorerDefaultWidth = 280;
         private const string FileExplorerLoadingTag = "__loading__";
+        private const string FileExplorerPathKey = "fileExplorerPath";
+        private const string FileExplorerVisibleKey = "fileExplorerVisible";
         private Panel _editorWorkspacePanel;
         private SplitContainer _editorExplorerSplitContainer;
         private Panel _fileExplorerPanel;
@@ -86,6 +88,8 @@ namespace CIARE
         private ImageList _fileExplorerImageList;
         private string _fileExplorerRootPath = string.Empty;
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
+        private readonly Dictionary<string, Dom.ICompilationUnit> _workspaceCompilationUnits
+            = new Dictionary<string, Dom.ICompilationUnit>(StringComparer.OrdinalIgnoreCase);
 
 
         // Used for tab's auto-resize
@@ -331,7 +335,7 @@ namespace CIARE
             return bitmap;
         }
 
-        private void ToggleFileExplorer(bool show)
+        private void ToggleFileExplorer(bool show, bool saveWidth = true)
         {
             if (_editorExplorerSplitContainer == null)
                 return;
@@ -344,7 +348,8 @@ namespace CIARE
             }
             else
             {
-                _fileExplorerWidth = Math.Max(_editorExplorerSplitContainer.Panel2.Width, 220);
+                if (saveWidth)
+                    _fileExplorerWidth = Math.Max(_editorExplorerSplitContainer.Panel2.Width, 220);
                 _editorExplorerSplitContainer.Panel2Collapsed = true;
                 _fileExplorerShowButton.Visible = true;
                 PositionFileExplorerShowButton();
@@ -352,6 +357,7 @@ namespace CIARE
             }
 
             EditorTabControl.Invalidate();
+            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerVisibleKey, show.ToString());
         }
 
         private void SetFileExplorerWidth(int width)
@@ -373,7 +379,8 @@ namespace CIARE
                 return;
 
             _fileExplorerShowButton.Location = new Point(
-                Math.Max(0, _editorWorkspacePanel.ClientSize.Width - _fileExplorerShowButton.Width - 6),
+                Math.Max(0, _editorWorkspacePanel.ClientSize.Width - _fileExplorerShowButton.Width
+                    - SystemInformation.VerticalScrollBarWidth - 4),
                 6);
             _fileExplorerShowButton.BringToFront();
         }
@@ -399,12 +406,30 @@ namespace CIARE
             }
         }
 
+        private void RestoreFileExplorerState()
+        {
+            InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerPathKey, string.Empty);
+            InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerVisibleKey, "True");
+
+            string savedPath = RegistryManagement.RegKey_Read(
+                $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", FileExplorerPathKey);
+            string savedVisible = RegistryManagement.RegKey_Read(
+                $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", FileExplorerVisibleKey);
+
+            if (!string.IsNullOrEmpty(savedPath) && Directory.Exists(savedPath))
+                LoadFileExplorerFolder(savedPath);
+
+            if (savedVisible == "False")
+                ToggleFileExplorer(false, saveWidth: false);
+        }
+
         private void LoadFileExplorerFolder(string folderPath)
         {
             if (!Directory.Exists(folderPath) || _fileExplorerTree == null)
                 return;
 
             _fileExplorerRootPath = folderPath;
+            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerPathKey, folderPath);
             _fileExplorerTree.BeginUpdate();
             _fileExplorerTree.Nodes.Clear();
             var root = CreateDirectoryNode(new DirectoryInfo(folderPath));
@@ -727,6 +752,7 @@ namespace CIARE
             }
 
             // Run initial type check so errors are underlined from the first load.
+            RestoreFileExplorerState();
             var startEditor = SelectedEditor.GetSelectedEditor();
             if (startEditor != null && !string.IsNullOrWhiteSpace(startEditor.Text))
                 ScheduleCurrentTypeCheck(startEditor);
@@ -1554,9 +1580,17 @@ namespace CIARE
         void ParseStep()
         {
             string code = null;
+            string workspaceFolder = null;
+            string currentFilePath = null;
             Invoke(new MethodInvoker(delegate
             {
                 code = SelectedEditor.GetSelectedEditor().Text;
+                workspaceFolder = !string.IsNullOrEmpty(_fileExplorerRootPath)
+                    ? _fileExplorerRootPath
+                    : (!string.IsNullOrEmpty(GetActiveEditorFilePath())
+                        ? FindWorkspaceRoot(Path.GetDirectoryName(GetActiveEditorFilePath()))
+                        : null);
+                currentFilePath = GetActiveEditorFilePath();
             }));
             TextReader textReader = new StringReader(code);
             Dom.ICompilationUnit newCompilationUnit;
@@ -1574,6 +1608,126 @@ namespace CIARE
             myProjectContent.UpdateCompilationUnit(lastCompilationUnit, newCompilationUnit, DummyFileName);
             lastCompilationUnit = newCompilationUnit;
             parseInformation.SetCompilationUnit(newCompilationUnit);
+            ParseWorkspaceFilesForCompletion(workspaceFolder, currentFilePath);
+        }
+
+        private void ParseWorkspaceFilesForCompletion(string workspaceFolder, string currentFilePath)
+        {
+            if (string.IsNullOrEmpty(workspaceFolder) || !Directory.Exists(workspaceFolder))
+            {
+                foreach (var pair in _workspaceCompilationUnits)
+                    myProjectContent.RemoveCompilationUnit(pair.Value);
+                _workspaceCompilationUnits.Clear();
+                return;
+            }
+
+            string normalizedCurrent = NormalizeCompletionPath(currentFilePath);
+            var visitedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var filePath in GetWorkspaceCsFiles(workspaceFolder))
+            {
+                if (!string.IsNullOrEmpty(normalizedCurrent) &&
+                    string.Equals(NormalizeCompletionPath(filePath), normalizedCurrent, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                visitedPaths.Add(filePath);
+                try
+                {
+                    string fileCode = File.ReadAllText(filePath);
+                    Dom.ICompilationUnit newCU;
+                    using (var reader = new StringReader(fileCode))
+                    using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(NRefactory.SupportedLanguage.CSharp, reader))
+                    {
+                        p.ParseMethodBodies = false;
+                        p.Parse();
+                        newCU = ConvertCompilationUnit(p.CompilationUnit);
+                    }
+                    _workspaceCompilationUnits.TryGetValue(filePath, out var oldCU);
+                    myProjectContent.UpdateCompilationUnit(oldCU, newCU, filePath);
+                    _workspaceCompilationUnits[filePath] = newCU;
+                }
+                catch { }
+            }
+
+            var toRemove = _workspaceCompilationUnits.Keys.Where(p => !visitedPaths.Contains(p)).ToList();
+            foreach (var path in toRemove)
+            {
+                myProjectContent.RemoveCompilationUnit(_workspaceCompilationUnits[path]);
+                _workspaceCompilationUnits.Remove(path);
+            }
+        }
+
+        private static string NormalizeCompletionPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return string.Empty;
+            try { return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar); }
+            catch { return path; }
+        }
+
+        /// <summary>
+        /// Walks up the directory tree from <paramref name="startDir"/> looking for a project
+        /// root marker (.sln, .csproj, .git, .vs). Falls back to the parent directory of
+        /// <paramref name="startDir"/> when no marker is found (so sibling folders are still included).
+        /// </summary>
+        private static string FindWorkspaceRoot(string startDir)
+        {
+            if (string.IsNullOrEmpty(startDir)) return startDir;
+            string dir = startDir;
+            for (int i = 0; i < 8; i++)
+            {
+                if (!Directory.Exists(dir)) break;
+                try
+                {
+                    if (Directory.GetFiles(dir, "*.sln", SearchOption.TopDirectoryOnly).Length > 0 ||
+                        Directory.GetFiles(dir, "*.csproj", SearchOption.TopDirectoryOnly).Length > 0 ||
+                        Directory.Exists(Path.Combine(dir, ".git")) ||
+                        Directory.Exists(Path.Combine(dir, ".vs")))
+                        return dir;
+                }
+                catch { }
+                string parent = Path.GetDirectoryName(dir);
+                if (string.IsNullOrEmpty(parent) || parent == dir) break;
+                dir = parent;
+            }
+            // No project marker found — go one level up so sibling directories are included.
+            string oneLevelUp = Path.GetDirectoryName(startDir);
+            return string.IsNullOrEmpty(oneLevelUp) ? startDir : oneLevelUp;
+        }
+
+        private static IEnumerable<string> GetWorkspaceCsFiles(string folder)
+        {
+            var pending = new Stack<string>();
+            pending.Push(folder);
+            while (pending.Count > 0)
+            {
+                var current = pending.Pop();
+                IEnumerable<string> dirs;
+                try { dirs = Directory.EnumerateDirectories(current); }
+                catch { dirs = Array.Empty<string>(); }
+                foreach (var d in dirs)
+                {
+                    string name = Path.GetFileName(d);
+                    if (string.Equals(name, ".git", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, ".vs", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "bin", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "obj", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "node_modules", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "packages", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    try
+                    {
+                        var attrs = File.GetAttributes(d);
+                        if ((attrs & FileAttributes.Hidden) == 0 && (attrs & FileAttributes.System) == 0)
+                            pending.Push(d);
+                    }
+                    catch { pending.Push(d); }
+                }
+                IEnumerable<string> files;
+                try { files = Directory.EnumerateFiles(current, "*.cs"); }
+                catch { files = Array.Empty<string>(); }
+                foreach (var f in files)
+                    yield return f;
+            }
         }
 
         Dom.ICompilationUnit ConvertCompilationUnit(NRefactory.Ast.CompilationUnit cu)
@@ -1805,7 +1959,7 @@ namespace CIARE
             dynamicTextEdtior.ActiveTextAreaControl.HScrollBar.Visible = true;
             dynamicTextEdtior.ActiveTextAreaControl.VScrollBar.Visible = true;
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.KeyPress += CurlyBraket.TextArea_KeyPress;
-            dynamicTextEdtior.ActiveTextAreaControl.AutoHideScrollbars = true;
+            dynamicTextEdtior.ActiveTextAreaControl.AutoHideScrollbars = false;
             dynamicTextEdtior.ActiveTextAreaControl.TextEditorProperties.AutoInsertCurlyBracket = true;
             dynamicTextEdtior.ActiveTextAreaControl.VerticalScroll.Enabled = true;
             dynamicTextEdtior.ActiveTextAreaControl.HorizontalScroll.Enabled = true;
