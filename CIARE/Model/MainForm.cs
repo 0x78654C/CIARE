@@ -72,6 +72,20 @@ namespace CIARE
         private bool _markStartFileChkVisible;
         BackgroundWorker worker;
         private string[] _filesDrag;
+        private const int FileExplorerDefaultWidth = 280;
+        private const string FileExplorerLoadingTag = "__loading__";
+        private Panel _editorWorkspacePanel;
+        private SplitContainer _editorExplorerSplitContainer;
+        private Panel _fileExplorerPanel;
+        private TableLayoutPanel _fileExplorerHeader;
+        private Label _fileExplorerTitleLabel;
+        private Button _fileExplorerOpenFolderButton;
+        private Button _fileExplorerHideButton;
+        private Button _fileExplorerShowButton;
+        private TreeView _fileExplorerTree;
+        private ImageList _fileExplorerImageList;
+        private string _fileExplorerRootPath = string.Empty;
+        private int _fileExplorerWidth = FileExplorerDefaultWidth;
 
 
         // Used for tab's auto-resize
@@ -128,6 +142,529 @@ namespace CIARE
                 menu.AskAIAction = () => AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
         }
 
+        private void InitializeFileExplorerPane()
+        {
+            if (_editorExplorerSplitContainer != null)
+                return;
+
+            splitContainer1.Panel1.SuspendLayout();
+            EditorTabControl.SuspendLayout();
+
+            splitContainer1.Panel1.Controls.Remove(EditorTabControl);
+
+            _editorWorkspacePanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(0)
+            };
+
+            _editorExplorerSplitContainer = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                Orientation = Orientation.Vertical,
+                FixedPanel = FixedPanel.Panel2,
+                SplitterWidth = 5
+            };
+
+            _fileExplorerPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(0)
+            };
+
+            _fileExplorerHeader = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 34,
+                ColumnCount = 3,
+                RowCount = 1,
+                Padding = new Padding(4, 4, 4, 3)
+            };
+            _fileExplorerHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            _fileExplorerHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 96F));
+            _fileExplorerHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 34F));
+            _fileExplorerHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+            _fileExplorerTitleLabel = new Label
+            {
+                AutoEllipsis = true,
+                Dock = DockStyle.Fill,
+                Text = "Explorer",
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            _fileExplorerOpenFolderButton = new Button
+            {
+                Dock = DockStyle.Fill,
+                Text = "Open Folder",
+                FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(2, 0, 2, 0),
+                UseVisualStyleBackColor = false
+            };
+            toolTip1.SetToolTip(_fileExplorerOpenFolderButton, "Open folder");
+            _fileExplorerOpenFolderButton.Click += fileExplorerOpenFolderButton_Click;
+
+            _fileExplorerHideButton = new Button
+            {
+                Dock = DockStyle.Fill,
+                Text = ">>",
+                FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(2, 0, 0, 0),
+                UseVisualStyleBackColor = false
+            };
+            toolTip1.SetToolTip(_fileExplorerHideButton, "Hide file explorer");
+            _fileExplorerHideButton.Click += (sender, args) => ToggleFileExplorer(false);
+
+            _fileExplorerTree = new TreeView
+            {
+                BorderStyle = BorderStyle.None,
+                Dock = DockStyle.Fill,
+                HideSelection = false,
+                ShowNodeToolTips = true,
+                ImageList = CreateFileExplorerImageList()
+            };
+            _fileExplorerTree.BeforeExpand += fileExplorerTree_BeforeExpand;
+            _fileExplorerTree.NodeMouseDoubleClick += fileExplorerTree_NodeMouseDoubleClick;
+            _fileExplorerTree.KeyDown += fileExplorerTree_KeyDown;
+
+            _fileExplorerHeader.Controls.Add(_fileExplorerTitleLabel, 0, 0);
+            _fileExplorerHeader.Controls.Add(_fileExplorerOpenFolderButton, 1, 0);
+            _fileExplorerHeader.Controls.Add(_fileExplorerHideButton, 2, 0);
+            _fileExplorerPanel.Controls.Add(_fileExplorerTree);
+            _fileExplorerPanel.Controls.Add(_fileExplorerHeader);
+
+            EditorTabControl.Dock = DockStyle.Fill;
+            EditorTabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            EditorTabControl.Location = Point.Empty;
+
+            _editorExplorerSplitContainer.Panel1.Controls.Add(EditorTabControl);
+            _editorExplorerSplitContainer.Panel2.Controls.Add(_fileExplorerPanel);
+            _editorWorkspacePanel.Controls.Add(_editorExplorerSplitContainer);
+
+            _fileExplorerShowButton = new Button
+            {
+                Text = "<<",
+                Size = new Size(34, 24),
+                Visible = false,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                FlatStyle = FlatStyle.Flat,
+                UseVisualStyleBackColor = false
+            };
+            toolTip1.SetToolTip(_fileExplorerShowButton, "Show file explorer");
+            _fileExplorerShowButton.Click += (sender, args) => ToggleFileExplorer(true);
+            _editorWorkspacePanel.Controls.Add(_fileExplorerShowButton);
+            _editorWorkspacePanel.Resize += (sender, args) => PositionFileExplorerShowButton();
+
+            splitContainer1.Panel1.Controls.Add(_editorWorkspacePanel);
+            splitContainer1.Panel1.ResumeLayout();
+            EditorTabControl.ResumeLayout();
+            _editorExplorerSplitContainer.Panel2MinSize = 220;
+
+            BeginInvoke((Action)(() =>
+            {
+                SetFileExplorerWidth(FileExplorerDefaultWidth);
+                PositionFileExplorerShowButton();
+            }));
+
+            ApplyFileExplorerTheme();
+        }
+
+        private ImageList CreateFileExplorerImageList()
+        {
+            _fileExplorerImageList = new ImageList
+            {
+                ColorDepth = ColorDepth.Depth32Bit,
+                ImageSize = new Size(16, 16),
+                TransparentColor = Color.Transparent
+            };
+
+            _fileExplorerImageList.Images.Add("folder", DrawFolderIcon(false));
+            _fileExplorerImageList.Images.Add("folder-open", DrawFolderIcon(true));
+            _fileExplorerImageList.Images.Add("file", DrawFileIcon(Color.FromArgb(128, 128, 128), false));
+            _fileExplorerImageList.Images.Add("cs", DrawFileIcon(Color.FromArgb(72, 133, 237), true));
+            _fileExplorerImageList.Images.Add("text", DrawFileIcon(Color.FromArgb(96, 166, 106), false));
+            return _fileExplorerImageList;
+        }
+
+        private static Bitmap DrawFolderIcon(bool open)
+        {
+            var bitmap = new Bitmap(16, 16);
+            using (var g = Graphics.FromImage(bitmap))
+            using (var outline = new Pen(Color.FromArgb(160, 116, 42)))
+            using (var tab = new SolidBrush(Color.FromArgb(224, 165, 65)))
+            using (var body = new SolidBrush(open ? Color.FromArgb(245, 189, 86) : Color.FromArgb(238, 198, 86)))
+            {
+                g.Clear(Color.Transparent);
+                g.FillRectangle(tab, 1, 3, 6, 3);
+                g.FillRectangle(body, 1, 5, 14, 9);
+                g.DrawRectangle(outline, 1, 5, 13, 8);
+            }
+            return bitmap;
+        }
+
+        private static Bitmap DrawFileIcon(Color accent, bool csharp)
+        {
+            var bitmap = new Bitmap(16, 16);
+            using (var g = Graphics.FromImage(bitmap))
+            using (var paper = new SolidBrush(Color.FromArgb(245, 245, 245)))
+            using (var fold = new SolidBrush(Color.FromArgb(215, 215, 215)))
+            using (var accentBrush = new SolidBrush(accent))
+            using (var outline = new Pen(Color.FromArgb(150, 150, 150)))
+            using (var textPen = new Pen(Color.FromArgb(160, 160, 160)))
+            {
+                g.Clear(Color.Transparent);
+                g.FillRectangle(paper, 3, 1, 10, 14);
+                g.FillPolygon(fold, new[] { new Point(10, 1), new Point(13, 4), new Point(10, 4) });
+                g.DrawRectangle(outline, 3, 1, 9, 13);
+                g.FillRectangle(accentBrush, 4, 11, 8, 3);
+                if (csharp)
+                {
+                    using (var font = new Font("Segoe UI", 5.5F, FontStyle.Bold, GraphicsUnit.Point))
+                        g.DrawString("C#", font, Brushes.White, new PointF(3.2F, 7.5F));
+                }
+                else
+                {
+                    g.DrawLine(textPen, 5, 5, 10, 5);
+                    g.DrawLine(textPen, 5, 7, 11, 7);
+                }
+            }
+            return bitmap;
+        }
+
+        private void ToggleFileExplorer(bool show)
+        {
+            if (_editorExplorerSplitContainer == null)
+                return;
+
+            if (show)
+            {
+                _editorExplorerSplitContainer.Panel2Collapsed = false;
+                SetFileExplorerWidth(_fileExplorerWidth);
+                _fileExplorerShowButton.Visible = false;
+            }
+            else
+            {
+                _fileExplorerWidth = Math.Max(_editorExplorerSplitContainer.Panel2.Width, 220);
+                _editorExplorerSplitContainer.Panel2Collapsed = true;
+                _fileExplorerShowButton.Visible = true;
+                PositionFileExplorerShowButton();
+                SelectedEditor.GetSelectedEditor()?.Focus();
+            }
+
+            EditorTabControl.Invalidate();
+        }
+
+        private void SetFileExplorerWidth(int width)
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.Width <= width + 120)
+                return;
+
+            int maxDist = _editorExplorerSplitContainer.Width
+                          - _editorExplorerSplitContainer.Panel2MinSize
+                          - _editorExplorerSplitContainer.SplitterWidth;
+            int minDist = _editorExplorerSplitContainer.Panel1MinSize;
+            int dist = Math.Max(minDist, Math.Min(maxDist, _editorExplorerSplitContainer.Width - width));
+            _editorExplorerSplitContainer.SplitterDistance = dist;
+        }
+
+        private void PositionFileExplorerShowButton()
+        {
+            if (_editorWorkspacePanel == null || _fileExplorerShowButton == null)
+                return;
+
+            _fileExplorerShowButton.Location = new Point(
+                Math.Max(0, _editorWorkspacePanel.ClientSize.Width - _fileExplorerShowButton.Width - 6),
+                6);
+            _fileExplorerShowButton.BringToFront();
+        }
+
+        private void fileExplorerOpenFolderButton_Click(object sender, EventArgs e)
+        {
+            using (var dialog = new FolderBrowserDialog())
+            {
+                dialog.Description = "Open folder in file explorer";
+                dialog.ShowNewFolderButton = false;
+
+                if (Directory.Exists(_fileExplorerRootPath))
+                    dialog.SelectedPath = _fileExplorerRootPath;
+                else
+                {
+                    var filePath = GetActiveEditorFilePath();
+                    if (File.Exists(filePath))
+                        dialog.SelectedPath = Path.GetDirectoryName(filePath);
+                }
+
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                    LoadFileExplorerFolder(dialog.SelectedPath);
+            }
+        }
+
+        private void LoadFileExplorerFolder(string folderPath)
+        {
+            if (!Directory.Exists(folderPath) || _fileExplorerTree == null)
+                return;
+
+            _fileExplorerRootPath = folderPath;
+            _fileExplorerTree.BeginUpdate();
+            _fileExplorerTree.Nodes.Clear();
+            var root = CreateDirectoryNode(new DirectoryInfo(folderPath));
+            _fileExplorerTree.Nodes.Add(root);
+            PopulateDirectoryNode(root);
+            root.Expand();
+            _fileExplorerTree.EndUpdate();
+            _fileExplorerTitleLabel.Text = "Explorer";
+            toolTip1.SetToolTip(_fileExplorerTitleLabel, folderPath);
+
+            ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+        }
+
+        private TreeNode CreateDirectoryNode(DirectoryInfo directory)
+        {
+            string text = string.IsNullOrEmpty(directory.Name) ? directory.FullName : directory.Name;
+            var node = new TreeNode(text)
+            {
+                Tag = directory.FullName,
+                ImageKey = "folder",
+                SelectedImageKey = "folder-open",
+                ToolTipText = directory.FullName
+            };
+            node.Nodes.Add(new TreeNode("Loading...") { Tag = FileExplorerLoadingTag });
+            return node;
+        }
+
+        private TreeNode CreateFileNode(FileInfo file)
+        {
+            string imageKey = GetFileExplorerImageKey(file.FullName);
+            return new TreeNode(file.Name)
+            {
+                Tag = file.FullName,
+                ImageKey = imageKey,
+                SelectedImageKey = imageKey,
+                ToolTipText = file.FullName
+            };
+        }
+
+        private static string GetFileExplorerImageKey(string filePath)
+        {
+            string extension = Path.GetExtension(filePath).ToLowerInvariant();
+            switch (extension)
+            {
+                case ".cs":
+                    return "cs";
+                case ".txt":
+                case ".md":
+                case ".json":
+                case ".xml":
+                case ".config":
+                case ".xshd":
+                    return "text";
+                default:
+                    return "file";
+            }
+        }
+
+        private void fileExplorerTree_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        {
+            if (e.Node.Nodes.Count == 1 && Equals(e.Node.Nodes[0].Tag, FileExplorerLoadingTag))
+                PopulateDirectoryNode(e.Node);
+        }
+
+        private void PopulateDirectoryNode(TreeNode node)
+        {
+            string folderPath = node.Tag as string;
+            if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+                return;
+
+            node.Nodes.Clear();
+
+            try
+            {
+                foreach (var directory in Directory.GetDirectories(folderPath)
+                    .Select(path => new DirectoryInfo(path))
+                    .OrderBy(directory => directory.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (ShouldHideExplorerItem(directory.Attributes))
+                        continue;
+                    node.Nodes.Add(CreateDirectoryNode(directory));
+                }
+
+                foreach (var file in Directory.GetFiles(folderPath)
+                    .Select(path => new FileInfo(path))
+                    .OrderBy(file => file.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    if (ShouldHideExplorerItem(file.Attributes))
+                        continue;
+                    node.Nodes.Add(CreateFileNode(file));
+                }
+            }
+            catch
+            {
+                node.Nodes.Add(new TreeNode("Unable to read folder") { ImageKey = "file", SelectedImageKey = "file" });
+            }
+        }
+
+        private static bool ShouldHideExplorerItem(FileAttributes attributes)
+        {
+            return (attributes & FileAttributes.Hidden) == FileAttributes.Hidden ||
+                   (attributes & FileAttributes.System) == FileAttributes.System;
+        }
+
+        private void fileExplorerTree_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            OpenFileExplorerNode(e.Node);
+        }
+
+        private void fileExplorerTree_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter || _fileExplorerTree.SelectedNode == null)
+                return;
+
+            OpenFileExplorerNode(_fileExplorerTree.SelectedNode);
+            e.Handled = true;
+        }
+
+        private void OpenFileExplorerNode(TreeNode node)
+        {
+            string path = node?.Tag as string;
+            if (string.IsNullOrEmpty(path))
+                return;
+
+            if (Directory.Exists(path))
+            {
+                if (node.IsExpanded)
+                    node.Collapse();
+                else
+                    node.Expand();
+                return;
+            }
+
+            if (!File.Exists(path))
+                return;
+
+            OpenFileFromExplorer(path);
+        }
+
+        private void OpenFileFromExplorer(string filePath)
+        {
+            try
+            {
+                if (TabControllerManage.IsFileOpenedInTab(EditorTabControl, filePath))
+                {
+                    ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+                    return;
+                }
+
+                var editor = SelectedEditor.GetSelectedEditor();
+                bool useCurrentBlankTab = editor != null &&
+                    EditorTabControl.SelectedIndex > 0 &&
+                    string.IsNullOrWhiteSpace(editor.Text) &&
+                    string.IsNullOrWhiteSpace(EditorTabControl.SelectedTab.ToolTipText);
+
+                if (!useCurrentBlankTab)
+                    TabControllerManage.AddNewTab(EditorTabControl);
+
+                FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), filePath);
+                ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Open file", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ScheduleCurrentTypeCheck(TextEditorControl editor)
+        {
+            if (editor == null)
+                return;
+
+            RealTimeChecker.ScheduleCheck(editor.Text, editor, typeCheckLbl, errorsRTB, errorsTabPage,
+                warningsCheckLbl, GetActiveWorkspaceFolder(), GetActiveEditorFilePath());
+        }
+
+        private string GetActiveEditorFilePath()
+        {
+            try
+            {
+                string path = EditorTabControl.SelectedTab?.ToolTipText?.Trim();
+                return File.Exists(path) ? path : string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private string GetActiveWorkspaceFolder()
+        {
+            if (!Directory.Exists(_fileExplorerRootPath))
+                return string.Empty;
+
+            string filePath = GetActiveEditorFilePath();
+            if (string.IsNullOrEmpty(filePath) || IsPathInsideFolder(filePath, _fileExplorerRootPath))
+                return _fileExplorerRootPath;
+
+            return string.Empty;
+        }
+
+        private static bool IsPathInsideFolder(string filePath, string folderPath)
+        {
+            try
+            {
+                string fullFolder = Path.GetFullPath(folderPath)
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                string fullPath = Path.GetFullPath(filePath);
+                return fullPath.StartsWith(fullFolder, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void ApplyFileExplorerTheme(string highlight = null)
+        {
+            if (_fileExplorerPanel == null)
+                return;
+
+            var theme = ThemeManager.GetCompletionThemeColors(highlight);
+            bool dark = GlobalVariables.darkColor;
+            Color backColor = dark ? theme.BackColor : SystemColors.Window;
+            Color headerColor = dark ? theme.RowAlternateColor : SystemColors.Control;
+            Color foreColor = dark ? theme.ForeColor : Color.Black;
+            Color borderColor = dark ? theme.BorderColor : SystemColors.ControlDark;
+            Color buttonBackColor = dark ? theme.RowAlternateColor : SystemColors.Control;
+
+            _editorWorkspacePanel.BackColor = backColor;
+            _editorExplorerSplitContainer.BackColor = borderColor;
+            _fileExplorerPanel.BackColor = backColor;
+            _fileExplorerHeader.BackColor = headerColor;
+            _fileExplorerTitleLabel.BackColor = headerColor;
+            _fileExplorerTitleLabel.ForeColor = foreColor;
+            _fileExplorerTree.BackColor = backColor;
+            _fileExplorerTree.ForeColor = foreColor;
+            _fileExplorerTree.LineColor = borderColor;
+
+            ApplyFileExplorerButtonTheme(_fileExplorerOpenFolderButton, buttonBackColor, foreColor, borderColor);
+            ApplyFileExplorerButtonTheme(_fileExplorerHideButton, buttonBackColor, foreColor, borderColor);
+            ApplyFileExplorerButtonTheme(_fileExplorerShowButton, buttonBackColor, foreColor, borderColor);
+        }
+
+        private static void ApplyFileExplorerButtonTheme(Button button, Color backColor, Color foreColor, Color borderColor)
+        {
+            if (button == null)
+                return;
+
+            button.BackColor = backColor;
+            button.ForeColor = foreColor;
+            button.FlatAppearance.BorderColor = borderColor;
+            button.FlatAppearance.MouseOverBackColor = GlobalVariables.darkColor
+                ? GlobalVariables.TabSelectedColor
+                : SystemColors.ControlLight;
+            button.FlatAppearance.MouseDownBackColor = GlobalVariables.darkColor
+                ? GlobalVariables.TabBgColor
+                : SystemColors.ControlDark;
+        }
+
 
         private void MainForm_Load(object sender, EventArgs e)
         {
@@ -136,6 +673,7 @@ namespace CIARE
             this.Text = $"CIARE {GlobalVariables.versionName}";
             TabControllerManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
             ThemeManager.LoadExternalThemes();
+            InitializeFileExplorerPane();
             Initiliaze();
             Console.SetOut(new ControlWriter(outputRBT));
             InitializeEditor.GenerateLiveSessionId();
@@ -191,7 +729,7 @@ namespace CIARE
             // Run initial type check so errors are underlined from the first load.
             var startEditor = SelectedEditor.GetSelectedEditor();
             if (startEditor != null && !string.IsNullOrWhiteSpace(startEditor.Text))
-                RealTimeChecker.ScheduleCheck(startEditor.Text, startEditor, typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+                ScheduleCurrentTypeCheck(startEditor);
         }
 
         private void SetCodeCompletion(int index)
@@ -340,7 +878,7 @@ namespace CIARE
             SelectedEditor.GetSelectedEditor().Document.FoldingManager.UpdateFoldings(null, null);
 
             // Trigger real-time type checking after a short debounce.
-            RealTimeChecker.ScheduleCheck(SelectedEditor.GetSelectedEditor().Text, SelectedEditor.GetSelectedEditor(), typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+            ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
 
             // Send live share data to api.
             SendData();
@@ -573,7 +1111,7 @@ namespace CIARE
                         refManager.ShowDialog();
                     var editorRef = SelectedEditor.GetSelectedEditor();
                     if (editorRef != null)
-                        RealTimeChecker.ScheduleCheck(editorRef.Text, editorRef, typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+                        ScheduleCurrentTypeCheck(editorRef);
                     return true;
                 case Keys.F11:
                     ToggleFullScreen();
@@ -607,6 +1145,7 @@ namespace CIARE
                 errorsRTB.BackColor = darkBg;
                 errorsRTB.ForeColor = darkFg;
                 ApplyTabControlDarkMode(outputTabControl, darkBg);
+                ApplyFileExplorerTheme(highlight);
                 return;
             }
             GlobalVariables.darkColor = false;
@@ -615,6 +1154,7 @@ namespace CIARE
             errorsRTB.BackColor = SystemColors.Window;
             errorsRTB.ForeColor = Color.Black;
             ApplyTabControlDarkMode(outputTabControl, SystemColors.Window);
+            ApplyFileExplorerTheme(highlight);
         }
 
         /// <summary>
@@ -1232,7 +1772,7 @@ namespace CIARE
             {
                 var editor = SelectedEditor.GetSelectedEditor();
                 if (editor == null) return;
-                RealTimeChecker.ScheduleCheck(editor.Text, editor, typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+                ScheduleCurrentTypeCheck(editor);
             }
             catch { }
         }

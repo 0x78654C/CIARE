@@ -41,13 +41,15 @@ namespace CIARE.Roslyn
         /// Resets the timer on every call so it only fires once typing pauses.
         /// </summary>
         public static void ScheduleCheck(string code, TextEditorControl editor, Label statusLabel,
-            RichTextBox errorsRTB = null, TabPage errorsTabPage = null, Label warningsLabel = null)
+            RichTextBox errorsRTB = null, TabPage errorsTabPage = null, Label warningsLabel = null,
+            string workspaceFolder = null, string currentFilePath = null)
         {
             lock (_lock)
             {
                 _debounceTimer?.Dispose();
                 _debounceTimer = new System.Threading.Timer(
-                    _ => RunCheck(code, editor, statusLabel, errorsRTB, errorsTabPage, warningsLabel),
+                    _ => RunCheck(code, editor, statusLabel, errorsRTB, errorsTabPage, warningsLabel,
+                        workspaceFolder, currentFilePath),
                     null, DebounceMs, Timeout.Infinite);
             }
         }
@@ -83,7 +85,8 @@ namespace CIARE.Roslyn
         }
 
         private static void RunCheck(string code, TextEditorControl editor, Label statusLabel,
-            RichTextBox errorsRTB, TabPage errorsTabPage, Label warningsLabel)
+            RichTextBox errorsRTB, TabPage errorsTabPage, Label warningsLabel,
+            string workspaceFolder, string currentFilePath)
         {
             CancellationTokenSource cts;
             lock (_lock)
@@ -108,7 +111,7 @@ namespace CIARE.Roslyn
                         return;
                     }
 
-                    var diagnostics = GetDiagnostics(code, cts.Token);
+                    var diagnostics = GetDiagnostics(code, cts.Token, workspaceFolder, currentFilePath);
                     if (cts.IsCancellationRequested) return;
 
                     var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
@@ -128,17 +131,22 @@ namespace CIARE.Roslyn
             }, cts.Token);
         }
 
-        private static List<Diagnostic> GetDiagnostics(string code, CancellationToken ct)
+        private static List<Diagnostic> GetDiagnostics(string code, CancellationToken ct,
+            string workspaceFolder = null, string currentFilePath = null)
         {
             var parseOptions = BuildParseOptions(GlobalVariables.Framework);
-            var syntaxTree = CSharpSyntaxTree.ParseText(code, parseOptions, cancellationToken: ct);
-            var outputKind = HasTopLevelStatements(syntaxTree, ct)
+            string activeFilePath = string.IsNullOrWhiteSpace(currentFilePath) ? "edited.cs" : currentFilePath;
+            var syntaxTree = CSharpSyntaxTree.ParseText(code, parseOptions, path: activeFilePath, cancellationToken: ct);
+            var syntaxTrees = new List<SyntaxTree> { syntaxTree };
+            syntaxTrees.AddRange(BuildWorkspaceSyntaxTrees(workspaceFolder, currentFilePath, parseOptions, ct));
+
+            var outputKind = syntaxTrees.Any(tree => HasTopLevelStatements(tree, ct))
                 ? OutputKind.ConsoleApplication
                 : OutputKind.DynamicallyLinkedLibrary;
 
             var compilation = CSharpCompilation.Create(
                 Path.GetRandomFileName(),
-                syntaxTrees: new[] { syntaxTree },
+                syntaxTrees: syntaxTrees,
                 references: BuildReferences(),
                 options: new CSharpCompilationOptions(
                     outputKind,
@@ -149,7 +157,125 @@ namespace CIARE.Roslyn
 
             return compilation.GetDiagnostics(ct)
                 .Where(d => d.Severity == DiagnosticSeverity.Error || d.Severity == DiagnosticSeverity.Warning)
+                .Where(d => ShouldReportDiagnostic(d, syntaxTree))
                 .ToList();
+        }
+
+        private static List<SyntaxTree> BuildWorkspaceSyntaxTrees(string workspaceFolder, string currentFilePath,
+            CSharpParseOptions parseOptions, CancellationToken ct)
+        {
+            var trees = new List<SyntaxTree>();
+            if (string.IsNullOrWhiteSpace(workspaceFolder) || !Directory.Exists(workspaceFolder))
+                return trees;
+
+            string normalizedCurrentFile = NormalizePath(currentFilePath);
+            foreach (var filePath in EnumerateWorkspaceCsFiles(workspaceFolder, ct))
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!string.IsNullOrEmpty(normalizedCurrentFile) &&
+                    string.Equals(NormalizePath(filePath), normalizedCurrentFile, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var code = File.ReadAllText(filePath);
+                    trees.Add(CSharpSyntaxTree.ParseText(code, parseOptions, path: filePath, cancellationToken: ct));
+                }
+                catch
+                {
+                    // Ignore unreadable workspace files; the active editor should still be checked.
+                }
+            }
+
+            return trees;
+        }
+
+        private static IEnumerable<string> EnumerateWorkspaceCsFiles(string workspaceFolder, CancellationToken ct)
+        {
+            var pending = new Stack<string>();
+            pending.Push(workspaceFolder);
+
+            while (pending.Count > 0)
+            {
+                ct.ThrowIfCancellationRequested();
+                var folder = pending.Pop();
+
+                List<string> directories;
+                try
+                {
+                    directories = Directory.EnumerateDirectories(folder).ToList();
+                }
+                catch
+                {
+                    directories = new List<string>();
+                }
+
+                foreach (var directory in directories)
+                {
+                    if (!ShouldSkipWorkspaceDirectory(directory))
+                        pending.Push(directory);
+                }
+
+                List<string> files;
+                try
+                {
+                    files = Directory.EnumerateFiles(folder, "*.cs").ToList();
+                }
+                catch
+                {
+                    files = new List<string>();
+                }
+
+                foreach (var file in files.OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+                    yield return file;
+            }
+        }
+
+        private static bool ShouldSkipWorkspaceDirectory(string directory)
+        {
+            string name = Path.GetFileName(directory);
+            if (string.Equals(name, ".git", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(name, ".vs", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(name, "bin", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(name, "obj", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(name, "node_modules", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(name, "packages", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            try
+            {
+                var attributes = File.GetAttributes(directory);
+                return (attributes & FileAttributes.Hidden) == FileAttributes.Hidden ||
+                       (attributes & FileAttributes.System) == FileAttributes.System;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string NormalizePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return string.Empty;
+
+            try
+            {
+                return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            catch
+            {
+                return path;
+            }
+        }
+
+        private static bool ShouldReportDiagnostic(Diagnostic diagnostic, SyntaxTree activeSyntaxTree)
+        {
+            return !diagnostic.Location.IsInSource || diagnostic.Location.SourceTree == activeSyntaxTree;
         }
 
         private static bool HasTopLevelStatements(SyntaxTree syntaxTree, CancellationToken ct)
