@@ -44,12 +44,13 @@ namespace CIARE.GUI
 			CodeCompletionKeyHandler h = new CodeCompletionKeyHandler(mainForm, editor);
 
 			editor.ActiveTextAreaControl.TextArea.KeyEventHandler += h.TextAreaKeyEventHandler;
+				editor.ActiveTextAreaControl.TextArea.MouseDown += h.TextAreaMouseDown;
 
-			// When the editor is disposed, close the code completion window
-			editor.Disposed += h.CloseCodeCompletionWindow;
+				// When the editor is disposed, close the code completion window
+				editor.Disposed += h.CloseCodeCompletionWindow;
 
-			return h;
-		}
+				return h;
+			}
 
 		/// <summary>
 		/// Return true to handle the keypress, return false to let the text area handle the keypress
@@ -579,6 +580,36 @@ namespace CIARE.GUI
 			}
 
 			return true;
+		}
+
+		void TextAreaMouseDown(object sender, MouseEventArgs e)
+		{
+			if (e.Button != MouseButtons.Left || (Control.ModifierKeys & Keys.Control) == 0)
+				return;
+
+			TextArea textArea = editor.ActiveTextAreaControl.TextArea;
+			if (!textArea.TextView.DrawingPosition.Contains(e.Location))
+				return;
+
+			TextLocation clickPos = textArea.TextView.GetLogicalPosition(
+				e.X - textArea.TextView.DrawingPosition.X,
+				e.Y - textArea.TextView.DrawingPosition.Y);
+			int offset = textArea.Document.PositionToOffset(clickPos);
+
+			int wordStart = ICSharpCode.TextEditor.Document.TextUtilities.FindWordStart(textArea.Document, offset);
+			int wordEnd   = ICSharpCode.TextEditor.Document.TextUtilities.FindWordEnd(textArea.Document, offset);
+			if (wordEnd <= wordStart) return;
+
+			string word = textArea.Document.GetText(wordStart, wordEnd - wordStart);
+			if (string.IsNullOrEmpty(word) || (!char.IsLetter(word[0]) && word[0] != '_'))
+				return;
+
+			editor.BeginInvoke(new MethodInvoker(delegate
+			{
+				var (filePath, line) = mainForm.FindDefinition(word);
+				if (filePath != null)
+					mainForm.NavigateToDefinition(filePath, line);
+			}));
 		}
 
 		void CloseCodeCompletionWindow(object sender, EventArgs e)

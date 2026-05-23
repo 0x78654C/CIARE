@@ -1764,7 +1764,8 @@ namespace CIARE
                         : null);
                 currentFilePath = GetActiveEditorFilePath();
             }));
-            TextReader textReader = new StringReader(code);
+            string parsedCode = IsVisualBasic ? code : ConvertFileScopedNamespace(code);
+            TextReader textReader = new StringReader(parsedCode);
             Dom.ICompilationUnit newCompilationUnit;
             NRefactory.SupportedLanguage supportedLanguage;
             if (IsVisualBasic)
@@ -1777,6 +1778,8 @@ namespace CIARE
                 p.Parse();
                 newCompilationUnit = ConvertCompilationUnit(p.CompilationUnit);
             }
+            if (newCompilationUnit is Dom.DefaultCompilationUnit dcuCurrent && !string.IsNullOrEmpty(currentFilePath))
+                dcuCurrent.FileName = currentFilePath;
             lock (_completionDataLock)
             {
                 myProjectContent.UpdateCompilationUnit(lastCompilationUnit, newCompilationUnit, DummyFileName);
@@ -1811,7 +1814,7 @@ namespace CIARE
                 visitedPaths.Add(filePath);
                 try
                 {
-                    string fileCode = File.ReadAllText(filePath);
+                    string fileCode = ConvertFileScopedNamespace(File.ReadAllText(filePath));
                     Dom.ICompilationUnit newCU;
                     using (var reader = new StringReader(fileCode))
                     using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(NRefactory.SupportedLanguage.CSharp, reader))
@@ -1820,6 +1823,8 @@ namespace CIARE
                         p.Parse();
                         newCU = ConvertCompilationUnit(p.CompilationUnit);
                     }
+                    if (newCU is Dom.DefaultCompilationUnit dcuW)
+                        dcuW.FileName = filePath;
                     lock (_completionDataLock)
                     {
                         _workspaceCompilationUnits.TryGetValue(filePath, out var oldCU);
@@ -1860,6 +1865,73 @@ namespace CIARE
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Finds the first declaration of <paramref name="name"/> across all parsed compilation units.
+        /// Returns (filePath, lineNumber) or (null, 0) if not found.
+        /// </summary>
+        internal (string FilePath, int Line) FindDefinition(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return (null, 0);
+
+            lock (_completionDataLock)
+            {
+                var hit = FindDefinitionInUnit(parseInformation.MostRecentCompilationUnit, name);
+                if (hit.FilePath != null) return hit;
+                foreach (var unit in _workspaceCompilationUnits.Values)
+                {
+                    hit = FindDefinitionInUnit(unit, name);
+                    if (hit.FilePath != null) return hit;
+                }
+            }
+            return (null, 0);
+        }
+
+        private static (string FilePath, int Line) FindDefinitionInUnit(Dom.ICompilationUnit unit, string name)
+        {
+            if (unit?.Classes == null) return (null, 0);
+            foreach (var @class in unit.Classes)
+            {
+                var hit = FindDefinitionInClass(@class, name);
+                if (hit.FilePath != null) return hit;
+            }
+            return (null, 0);
+        }
+
+        private static (string FilePath, int Line) FindDefinitionInClass(Dom.IClass @class, string name)
+        {
+            if (@class == null) return (null, 0);
+            if (string.Equals(@class.Name, name, StringComparison.Ordinal)
+                && @class.CompilationUnit?.FileName != null && @class.Region.BeginLine > 0)
+                return (@class.CompilationUnit.FileName, @class.Region.BeginLine);
+
+            foreach (var m in @class.Methods)
+            {
+                if (m != null && !m.IsConstructor
+                    && string.Equals(m.Name, name, StringComparison.Ordinal)
+                    && m.DeclaringType?.CompilationUnit?.FileName != null && m.Region.BeginLine > 0)
+                    return (m.DeclaringType.CompilationUnit.FileName, m.Region.BeginLine);
+            }
+            foreach (var p in @class.Properties)
+            {
+                if (p != null && string.Equals(p.Name, name, StringComparison.Ordinal)
+                    && p.DeclaringType?.CompilationUnit?.FileName != null && p.Region.BeginLine > 0)
+                    return (p.DeclaringType.CompilationUnit.FileName, p.Region.BeginLine);
+            }
+            foreach (var f in @class.Fields)
+            {
+                if (f != null && string.Equals(f.Name, name, StringComparison.Ordinal)
+                    && f.DeclaringType?.CompilationUnit?.FileName != null && f.Region.BeginLine > 0)
+                    return (f.DeclaringType.CompilationUnit.FileName, f.Region.BeginLine);
+            }
+            foreach (var inner in @class.InnerClasses)
+            {
+                var hit = FindDefinitionInClass(inner, name);
+                if (hit.FilePath != null) return hit;
+            }
+            return (null, 0);
         }
 
         private static void AddCompilationUnitMethods(ArrayList result, HashSet<string> seen, Dom.ICompilationUnit unit, string prefix)
@@ -1907,6 +1979,42 @@ namespace CIARE
             if (string.IsNullOrWhiteSpace(path)) return string.Empty;
             try { return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar); }
             catch { return path; }
+        }
+
+        private static readonly Regex FileScopedNamespaceRegex = new Regex(
+            @"^[ \t]*namespace[ \t]+([\w.]+)[ \t]*;",
+            RegexOptions.Multiline | RegexOptions.Compiled);
+
+        /// <summary>
+        /// Converts file-scoped namespace declarations (namespace Foo.Bar;) to
+        /// block-scoped (namespace Foo.Bar { ... }) so NRefactory can parse them.
+        /// </summary>
+        private static string ConvertFileScopedNamespace(string code)
+        {
+            var match = FileScopedNamespaceRegex.Match(code);
+            if (!match.Success)
+                return code;
+            string nsName = match.Groups[1].Value;
+            string before = code.Substring(0, match.Index);
+            string after = code.Substring(match.Index + match.Length);
+            return before + "namespace " + nsName + "\n{" + after + "\n}";
+        }
+
+        /// <summary>
+        /// Navigates the editor to the given file and line number. Opens the file in a new
+        /// tab when it is not the currently active file.
+        /// </summary>
+        internal void NavigateToDefinition(string filePath, int lineNumber)
+        {
+            if (string.IsNullOrEmpty(filePath) || lineNumber <= 0 || !File.Exists(filePath))
+                return;
+            string normalizedPath = NormalizeCompletionPath(filePath);
+            string currentFilePath = NormalizeCompletionPath(GetActiveEditorFilePath());
+            if (!string.Equals(normalizedPath, currentFilePath, StringComparison.OrdinalIgnoreCase))
+                OpenFileFromExplorer(filePath);
+            var editor = SelectedEditor.GetSelectedEditor();
+            if (editor != null)
+                GoToLineNumber.GoToLine(editor, lineNumber);
         }
 
         /// <summary>
