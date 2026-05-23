@@ -104,6 +104,8 @@ namespace CIARE
             = new Dictionary<string, Dom.ICompilationUnit>(StringComparer.OrdinalIgnoreCase);
         private readonly List<WorkspaceCompletionClass> _workspaceCompletionClasses
             = new List<WorkspaceCompletionClass>();
+        private readonly List<WorkspaceCompletionItem> _topLevelLocalFunctions
+            = new List<WorkspaceCompletionItem>();
 
 
         // Used for tab's auto-resize
@@ -1925,7 +1927,9 @@ namespace CIARE
             }));
             var workspaceCompletionClasses = new List<WorkspaceCompletionClass>();
             AddRoslynCompletionClasses(workspaceCompletionClasses, code, currentFilePath);
-            string parsedCode = IsVisualBasic ? code : ConvertFileScopedNamespace(code);
+            var topLevelFunctions = new List<WorkspaceCompletionItem>();
+            CollectTopLevelLocalFunctions(topLevelFunctions, code);
+            string parsedCode = IsVisualBasic ? code : WrapTopLevelStatementsForNRefactory(ConvertFileScopedNamespace(code), out _, out _);
             TextReader textReader = new StringReader(parsedCode);
             Dom.ICompilationUnit newCompilationUnit;
             NRefactory.SupportedLanguage supportedLanguage;
@@ -1952,6 +1956,8 @@ namespace CIARE
             {
                 _workspaceCompletionClasses.Clear();
                 _workspaceCompletionClasses.AddRange(workspaceCompletionClasses);
+                _topLevelLocalFunctions.Clear();
+                _topLevelLocalFunctions.AddRange(topLevelFunctions);
             }
         }
 
@@ -2029,6 +2035,12 @@ namespace CIARE
                     AddCompilationUnitMethods(result, seen, unit, prefix);
                     if (result.Count >= WorkspaceCompletionMethodLimit)
                         break;
+                }
+
+                foreach (var func in _topLevelLocalFunctions)
+                {
+                    if (func.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && seen.Add(func.Name))
+                        result.Add(new DefaultCompletionData(func.Name, func.Description, func.ImageIndex));
                 }
             }
 
@@ -2274,6 +2286,60 @@ namespace CIARE
             return before + "namespace " + nsName + "\n{" + after + "\n}";
         }
 
+        /// <summary>
+        /// When code uses top-level statements (C# 9+), wraps the body in a synthetic
+        /// class and method so the NRefactory resolver can find a method scope and
+        /// provide proper code-completion. Using-directives remain at the top so the
+        /// resolver still sees them in their original positions.
+        /// </summary>
+        /// <param name="code">Source code to inspect and possibly wrap.</param>
+        /// <param name="lineOffset">
+        /// Number of wrapper lines inserted between the using-directives and the body.
+        /// 0 when no wrapping was needed.
+        /// </param>
+        /// <param name="bodyStartLine">
+        /// First 1-based line in the <paramref name="code"/> that belongs to the body
+        /// (i.e. the first line that will be shifted by <paramref name="lineOffset"/>).
+        /// </param>
+        /// <returns>Wrapped code, or the original code unchanged when no wrapping is needed.</returns>
+        internal static string WrapTopLevelStatementsForNRefactory(string code, out int lineOffset, out int bodyStartLine)
+        {
+            lineOffset = 0;
+            bodyStartLine = 1;
+
+            if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
+                return code;
+
+            try
+            {
+                var tree = CSharpSyntaxTree.ParseText(code);
+                var root = tree.GetCompilationUnitRoot();
+                if (!root.Members.OfType<GlobalStatementSyntax>().Any())
+                    return code;
+
+                // Keep using-directives outside the wrapper so they stay at the same lines.
+                int splitPos = 0;
+                if (root.Usings.Count > 0)
+                    splitPos = root.Usings.Last().FullSpan.End;
+
+                // Compute the 1-based line number of the first body line in the original code.
+                int linesBeforeSplit = 0;
+                for (int i = 0; i < splitPos && i < code.Length; i++)
+                    if (code[i] == '\n') linesBeforeSplit++;
+                bodyStartLine = linesBeforeSplit + 1;
+
+                string head = code.Substring(0, splitPos);
+                string body = code.Substring(splitPos);
+
+                lineOffset = 2; // "class __TopLevel__ {\n" + "void __Main__() {\n"
+                return head + "class __TopLevel__ {\nvoid __Main__() {" + body + "\n}\n}";
+            }
+            catch
+            {
+                return code;
+            }
+        }
+
         private static void AddRoslynCompletionClasses(List<WorkspaceCompletionClass> result, string code, string filePath)
         {
             if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
@@ -2290,6 +2356,31 @@ namespace CIARE
             {
                 // The NRefactory parser still handles the primary completion path.
             }
+        }
+
+        private static void CollectTopLevelLocalFunctions(List<WorkspaceCompletionItem> result, string code)
+        {
+            if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
+                return;
+
+            try
+            {
+                var tree = CSharpSyntaxTree.ParseText(code);
+                var root = tree.GetCompilationUnitRoot();
+                foreach (var globalStmt in root.Members.OfType<GlobalStatementSyntax>())
+                {
+                    if (globalStmt.Statement is not LocalFunctionStatementSyntax localFunc)
+                        continue;
+                    string name = localFunc.Identifier.ValueText;
+                    if (string.IsNullOrEmpty(name))
+                        continue;
+                    string parameters = string.Join(", ", localFunc.ParameterList.Parameters.Select(p => p.ToString()));
+                    string returnType = localFunc.ReturnType.ToString();
+                    string description = returnType + " " + name + "(" + parameters + ")";
+                    result.Add(new WorkspaceCompletionItem(name, description, 1));
+                }
+            }
+            catch { }
         }
 
         private static void AddRoslynCompletionMember(

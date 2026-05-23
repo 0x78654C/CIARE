@@ -93,39 +93,57 @@ namespace CIARE.GUI
 			NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
 			List<ICompletionData> resultList = new List<ICompletionData>();
 
-			if (charTyped == '.')
-			{
-				Dom.ExpressionResult expression = FindExpression(textArea);
-				Dom.ResolveResult rr = resolver.Resolve(expression,
-														MainForm.parseInformation,
-														textArea.MotherTextEditorControl.Text);
-				ArrayList completionData = null;
-				if (rr != null)
-				{
-					completionData = rr.GetCompletionData(MainForm.myProjectContent);
-				}
+				// For top-level statement files the code has no class/method context, so the
+				// NRefactory resolver cannot find a scope.  Wrap the code before passing it to
+				// the resolver and adjust the caret line accordingly.
+				string rawCode = textArea.MotherTextEditorControl.Text;
+				string resolverCode = MainForm.WrapTopLevelStatementsForNRefactory(rawCode, out int wrapLineOffset, out int bodyStartLine);
+				int caretLine = textArea.Caret.Line + 1;
+				int caretCol  = textArea.Caret.Column + 1;
+				if (wrapLineOffset > 0 && caretLine >= bodyStartLine)
+					caretLine += wrapLineOffset;
 
-				completionData = MergeCompletionData(completionData, mainForm.GetWorkspaceMemberCompletionData(expression.Expression));
-				if (completionData != null)
-					AddCompletionData(resultList, completionData);
-			}
-			else
-			{
-				Dom.ExpressionResult expression = FindExpression(textArea);
-				ArrayList completionData = resolver.CtrlSpace(textArea.Caret.Line + 1,
-															  textArea.Caret.Column + 1,
-															  MainForm.parseInformation,
-															  textArea.MotherTextEditorControl.Text,
-															  expression.Context);
-				if (completionData != null)
+				if (charTyped == '.')
 				{
-					AddCompletionData(resultList, completionData);
+					Dom.ExpressionResult expression = FindExpression(textArea);
+					if (wrapLineOffset > 0 && !expression.Region.IsEmpty && expression.Region.BeginLine >= bodyStartLine)
+					{
+						int adjustedBegin = expression.Region.BeginLine + wrapLineOffset;
+						expression.Region = expression.Region.EndLine == -1
+							? new Dom.DomRegion(adjustedBegin, expression.Region.BeginColumn)
+							: new Dom.DomRegion(adjustedBegin, expression.Region.BeginColumn,
+								expression.Region.EndLine + wrapLineOffset, expression.Region.EndColumn);
+					}
+					Dom.ResolveResult rr = resolver.Resolve(expression,
+															MainForm.parseInformation,
+															resolverCode);
+					ArrayList completionData = null;
+					if (rr != null)
+					{
+						completionData = rr.GetCompletionData(MainForm.myProjectContent);
+					}
+
+					completionData = MergeCompletionData(completionData, mainForm.GetWorkspaceMemberCompletionData(expression.Expression));
+					if (completionData != null)
+						AddCompletionData(resultList, completionData);
 				}
-				AddCompletionData(resultList, mainForm.GetWorkspaceMethodCompletionData(preSelection));
-				AddDirectTypingKeywords(resultList);
+				else
+				{
+					Dom.ExpressionResult expression = FindExpression(textArea);
+					ArrayList completionData = resolver.CtrlSpace(caretLine,
+																  caretCol,
+																  MainForm.parseInformation,
+																  resolverCode,
+																  expression.Context);
+					if (completionData != null)
+					{
+						AddCompletionData(resultList, completionData);
+					}
+					AddCompletionData(resultList, mainForm.GetWorkspaceMethodCompletionData(preSelection));
+					AddDirectTypingKeywords(resultList);
+				}
+				return resultList.ToArray();
 			}
-			return resultList.ToArray();
-		}
 
 		/// <summary>
 		/// Find the expression the cursor is at.

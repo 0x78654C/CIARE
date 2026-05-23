@@ -324,11 +324,6 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
                             }
                             g.DrawLine(accentPen, rowBounds.Left + 3, rowBounds.Top + 4, rowBounds.Left + 3, rowBounds.Bottom - 4);
                         }
-                        else if (curItem % 2 == 1)
-                        {
-                            g.FillRectangle(rowHoverBrush, drawingBackground);
-                        }
-
                         int xPos = HorizontalPadding;
                         if (imageList != null && completionData[curItem].ImageIndex >= 0 && completionData[curItem].ImageIndex < imageList.Images.Count)
                         {
