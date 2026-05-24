@@ -1928,7 +1928,7 @@ namespace CIARE
             var workspaceCompletionClasses = new List<WorkspaceCompletionClass>();
             AddRoslynCompletionClasses(workspaceCompletionClasses, code, currentFilePath);
             var topLevelFunctions = new List<WorkspaceCompletionItem>();
-            CollectTopLevelLocalFunctions(topLevelFunctions, code);
+            CollectTopLevelLocalFunctions(topLevelFunctions, code, currentFilePath);
             string parsedCode = IsVisualBasic ? code : WrapTopLevelStatementsForNRefactory(ConvertFileScopedNamespace(code), out _, out _);
             TextReader textReader = new StringReader(parsedCode);
             Dom.ICompilationUnit newCompilationUnit;
@@ -2157,6 +2157,16 @@ namespace CIARE
         /// Finds the first declaration of <paramref name="name"/> across all parsed compilation units.
         /// Returns (filePath, lineNumber) or (null, 0) if not found.
         /// </summary>
+        internal (string FilePath, int Line) FindDefinition(string name, int offset)
+        {
+            var hit = FindDefinitionInActiveFile(name, offset, out string qualifier);
+            if (hit.FilePath != null)
+                return hit;
+
+            hit = FindDefinitionInWorkspaceMembers(name, qualifier);
+            return hit.FilePath != null ? hit : FindDefinition(name);
+        }
+
         internal (string FilePath, int Line) FindDefinition(string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -2164,6 +2174,14 @@ namespace CIARE
 
             lock (_completionDataLock)
             {
+                // Top-level local functions and variables in the active file take priority.
+                foreach (var item in _topLevelLocalFunctions)
+                {
+                    if (string.Equals(item.Name, name, StringComparison.Ordinal)
+                        && item.FilePath != null && item.Line > 0)
+                        return (item.FilePath, item.Line);
+                }
+
                 var hit = FindDefinitionInUnit(parseInformation.MostRecentCompilationUnit, name);
                 if (hit.FilePath != null) return hit;
                 foreach (var unit in _workspaceCompilationUnits.Values)
@@ -2173,6 +2191,177 @@ namespace CIARE
                 }
             }
             return (null, 0);
+        }
+
+        private (string FilePath, int Line) FindDefinitionInActiveFile(string name, int offset, out string qualifier)
+        {
+            qualifier = string.Empty;
+            if (IsVisualBasic || string.IsNullOrEmpty(name))
+                return (null, 0);
+
+            var editor = SelectedEditor.GetSelectedEditor();
+            string code = editor?.Text;
+            if (string.IsNullOrWhiteSpace(code) || offset < 0 || offset >= code.Length)
+                return (null, 0);
+
+            try
+            {
+                string filePath = GetActiveEditorFilePath();
+                var tree = CSharpSyntaxTree.ParseText(code, path: filePath ?? string.Empty);
+                var root = tree.GetCompilationUnitRoot();
+                var token = root.FindToken(offset);
+                if (!token.IsKind(SyntaxKind.IdentifierToken) || !string.Equals(token.ValueText, name, StringComparison.Ordinal))
+                    return (null, 0);
+
+                qualifier = GetMemberAccessQualifier(token);
+
+                var compilation = CSharpCompilation.Create("__CiareGoToDefinition", new[] { tree });
+                var semanticModel = compilation.GetSemanticModel(tree, true);
+
+                ISymbol symbol = GetDeclaredSymbolForIdentifier(semanticModel, token);
+                var hit = GetDefinitionLocation(symbol, filePath);
+                if (hit.FilePath != null)
+                    return hit;
+
+                SyntaxNode node = token.Parent;
+                if (node is IdentifierNameSyntax || node is GenericNameSyntax)
+                {
+                    var symbolInfo = semanticModel.GetSymbolInfo(node);
+                    symbol = symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
+                    hit = GetDefinitionLocation(symbol, filePath);
+                    if (hit.FilePath != null)
+                        return hit;
+                }
+            }
+            catch
+            {
+                // Fall back to the existing workspace-wide DOM lookup below.
+            }
+
+            return (null, 0);
+        }
+
+        private static string GetMemberAccessQualifier(SyntaxToken token)
+        {
+            if (token.Parent is SimpleNameSyntax simpleName &&
+                simpleName.Parent is MemberAccessExpressionSyntax memberAccess &&
+                memberAccess.Name == simpleName)
+                return NormalizeCompletionExpression(memberAccess.Expression.ToString());
+
+            return string.Empty;
+        }
+
+        private (string FilePath, int Line) FindDefinitionInWorkspaceMembers(string name, string qualifier)
+        {
+            if (string.IsNullOrEmpty(name))
+                return (null, 0);
+
+            lock (_completionDataLock)
+            {
+                return FindDefinitionInWorkspaceMembersCore(name, qualifier);
+            }
+        }
+
+        private (string FilePath, int Line) FindDefinitionInWorkspaceMembersCore(string name, string qualifier)
+        {
+            string normalizedQualifier = NormalizeCompletionExpression(qualifier);
+            if (!string.IsNullOrEmpty(normalizedQualifier))
+            {
+                foreach (var completionClass in _workspaceCompletionClasses)
+                {
+                    if (!MatchesWorkspaceClass(completionClass, normalizedQualifier))
+                        continue;
+
+                    var hit = FindDefinitionInWorkspaceItems(completionClass.StaticMembers, name);
+                    if (hit.FilePath != null)
+                        return hit;
+                }
+            }
+
+            foreach (var completionClass in _workspaceCompletionClasses)
+            {
+                var hit = FindDefinitionInWorkspaceItems(completionClass.StaticMembers, name);
+                if (hit.FilePath != null)
+                    return hit;
+            }
+
+            return (null, 0);
+        }
+
+        private static (string FilePath, int Line) FindDefinitionInWorkspaceItems(IEnumerable<WorkspaceCompletionItem> items, string name)
+        {
+            foreach (var item in items)
+            {
+                if (item != null &&
+                    string.Equals(item.Name, name, StringComparison.Ordinal) &&
+                    item.FilePath != null && item.Line > 0)
+                    return (item.FilePath, item.Line);
+            }
+
+            return (null, 0);
+        }
+
+        private static ISymbol GetDeclaredSymbolForIdentifier(SemanticModel semanticModel, SyntaxToken token)
+        {
+            SyntaxNode node = token.Parent;
+            while (node != null)
+            {
+                switch (node)
+                {
+                    case VariableDeclaratorSyntax variable when variable.Identifier == token:
+                    case SingleVariableDesignationSyntax designation when designation.Identifier == token:
+                    case ParameterSyntax parameter when parameter.Identifier == token:
+                    case LocalFunctionStatementSyntax localFunction when localFunction.Identifier == token:
+                    case BaseTypeDeclarationSyntax typeDeclaration when typeDeclaration.Identifier == token:
+                    case MethodDeclarationSyntax method when method.Identifier == token:
+                    case PropertyDeclarationSyntax property when property.Identifier == token:
+                    case EventDeclarationSyntax eventDeclaration when eventDeclaration.Identifier == token:
+                    case EnumMemberDeclarationSyntax enumMember when enumMember.Identifier == token:
+                    case ForEachStatementSyntax forEach when forEach.Identifier == token:
+                    case CatchDeclarationSyntax catchDeclaration when catchDeclaration.Identifier == token:
+                        return semanticModel.GetDeclaredSymbol(node);
+                }
+
+                node = node.Parent;
+            }
+
+            return null;
+        }
+
+        private static (string FilePath, int Line) GetDefinitionLocation(ISymbol symbol, string fallbackFilePath)
+        {
+            if (symbol == null)
+                return (null, 0);
+
+            ISymbol definition = symbol.OriginalDefinition ?? symbol;
+            foreach (var location in definition.Locations)
+            {
+                var hit = GetDefinitionLocation(location, fallbackFilePath);
+                if (hit.FilePath != null)
+                    return hit;
+            }
+
+            foreach (var syntaxRef in definition.DeclaringSyntaxReferences)
+            {
+                var hit = GetDefinitionLocation(syntaxRef.GetSyntax().GetLocation(), fallbackFilePath);
+                if (hit.FilePath != null)
+                    return hit;
+            }
+
+            return (null, 0);
+        }
+
+        private static (string FilePath, int Line) GetDefinitionLocation(Location location, string fallbackFilePath)
+        {
+            if (location == null || !location.IsInSource)
+                return (null, 0);
+
+            var lineSpan = location.GetLineSpan();
+            string filePath = string.IsNullOrEmpty(lineSpan.Path) ? fallbackFilePath : lineSpan.Path;
+            if (string.IsNullOrEmpty(filePath))
+                return (null, 0);
+
+            return (filePath, lineSpan.StartLinePosition.Line + 1);
         }
 
         private static (string FilePath, int Line) FindDefinitionInUnit(Dom.ICompilationUnit unit, string name)
@@ -2358,7 +2547,7 @@ namespace CIARE
             }
         }
 
-        private static void CollectTopLevelLocalFunctions(List<WorkspaceCompletionItem> result, string code)
+        private static void CollectTopLevelLocalFunctions(List<WorkspaceCompletionItem> result, string code, string filePath)
         {
             if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
                 return;
@@ -2369,15 +2558,29 @@ namespace CIARE
                 var root = tree.GetCompilationUnitRoot();
                 foreach (var globalStmt in root.Members.OfType<GlobalStatementSyntax>())
                 {
-                    if (globalStmt.Statement is not LocalFunctionStatementSyntax localFunc)
-                        continue;
-                    string name = localFunc.Identifier.ValueText;
-                    if (string.IsNullOrEmpty(name))
-                        continue;
-                    string parameters = string.Join(", ", localFunc.ParameterList.Parameters.Select(p => p.ToString()));
-                    string returnType = localFunc.ReturnType.ToString();
-                    string description = returnType + " " + name + "(" + parameters + ")";
-                    result.Add(new WorkspaceCompletionItem(name, description, 1));
+                    if (globalStmt.Statement is LocalFunctionStatementSyntax localFunc)
+                    {
+                        string name = localFunc.Identifier.ValueText;
+                        if (string.IsNullOrEmpty(name))
+                            continue;
+                        string parameters = string.Join(", ", localFunc.ParameterList.Parameters.Select(p => p.ToString()));
+                        string returnType = localFunc.ReturnType.ToString();
+                        string description = returnType + " " + name + "(" + parameters + ")";
+                        int line = localFunc.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                        result.Add(new WorkspaceCompletionItem(name, description, 1, filePath, line));
+                    }
+                    else if (globalStmt.Statement is LocalDeclarationStatementSyntax localDecl)
+                    {
+                        int line = localDecl.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                        string typeStr = localDecl.Declaration.Type.ToString();
+                        foreach (var declarator in localDecl.Declaration.Variables)
+                        {
+                            string name = declarator.Identifier.ValueText;
+                            if (string.IsNullOrEmpty(name))
+                                continue;
+                            result.Add(new WorkspaceCompletionItem(name, typeStr + " " + name, 0, filePath, line));
+                        }
+                    }
                 }
             }
             catch { }
@@ -2447,7 +2650,12 @@ namespace CIARE
                     {
                         string enumMemberName = enumMember.Identifier.ValueText;
                         if (enumMemberName.Length > 0)
-                            completionClass.StaticMembers.Add(new WorkspaceCompletionItem(enumMemberName, completionClass.FullName + "." + enumMemberName, 3));
+                            completionClass.StaticMembers.Add(new WorkspaceCompletionItem(
+                                enumMemberName,
+                                completionClass.FullName + "." + enumMemberName,
+                                3,
+                                completionClass.FilePath,
+                                GetSyntaxLine(enumMember)));
                     }
                 }
             }
@@ -2467,7 +2675,12 @@ namespace CIARE
                         continue;
 
                     string description = JoinDeclarationParts(GetModifierText(fieldDeclaration.Modifiers), fieldDeclaration.Declaration.Type.ToString(), name);
-                    completionClass.StaticMembers.Add(new WorkspaceCompletionItem(name, description, 3));
+                    completionClass.StaticMembers.Add(new WorkspaceCompletionItem(
+                        name,
+                        description,
+                        3,
+                        completionClass.FilePath,
+                        GetSyntaxLine(variable)));
                 }
                 return;
             }
@@ -2482,7 +2695,12 @@ namespace CIARE
                     return;
 
                 string description = JoinDeclarationParts(GetModifierText(propertyDeclaration.Modifiers), propertyDeclaration.Type.ToString(), name);
-                completionClass.StaticMembers.Add(new WorkspaceCompletionItem(name, description, 2));
+                completionClass.StaticMembers.Add(new WorkspaceCompletionItem(
+                    name,
+                    description,
+                    2,
+                    completionClass.FilePath,
+                    GetSyntaxLine(propertyDeclaration)));
                 return;
             }
 
@@ -2498,7 +2716,12 @@ namespace CIARE
                 string parameters = string.Join(", ", methodDeclaration.ParameterList.Parameters.Select(parameter => parameter.ToString()));
                 string signature = name + "(" + parameters + ")";
                 string description = JoinDeclarationParts(GetModifierText(methodDeclaration.Modifiers), methodDeclaration.ReturnType.ToString(), signature);
-                completionClass.StaticMembers.Add(new WorkspaceCompletionItem(name, description, 1));
+                completionClass.StaticMembers.Add(new WorkspaceCompletionItem(
+                    name,
+                    description,
+                    1,
+                    completionClass.FilePath,
+                    GetSyntaxLine(methodDeclaration)));
                 return;
             }
 
@@ -2514,7 +2737,12 @@ namespace CIARE
                         continue;
 
                     string description = JoinDeclarationParts(GetModifierText(eventFieldDeclaration.Modifiers), "event", eventFieldDeclaration.Declaration.Type.ToString(), name);
-                    completionClass.StaticMembers.Add(new WorkspaceCompletionItem(name, description, 6));
+                    completionClass.StaticMembers.Add(new WorkspaceCompletionItem(
+                        name,
+                        description,
+                        6,
+                        completionClass.FilePath,
+                        GetSyntaxLine(variable)));
                 }
                 return;
             }
@@ -2529,8 +2757,18 @@ namespace CIARE
                     return;
 
                 string description = JoinDeclarationParts(GetModifierText(eventDeclaration.Modifiers), "event", eventDeclaration.Type.ToString(), name);
-                completionClass.StaticMembers.Add(new WorkspaceCompletionItem(name, description, 6));
+                completionClass.StaticMembers.Add(new WorkspaceCompletionItem(
+                    name,
+                    description,
+                    6,
+                    completionClass.FilePath,
+                    GetSyntaxLine(eventDeclaration)));
             }
+        }
+
+        private static int GetSyntaxLine(SyntaxNode node)
+        {
+            return node?.GetLocation().GetLineSpan().StartLinePosition.Line + 1 ?? 0;
         }
 
         private static bool IsWorkspaceVisibleType(SyntaxTokenList modifiers, bool isNested)
@@ -2629,16 +2867,20 @@ namespace CIARE
 
         private sealed class WorkspaceCompletionItem
         {
-            public WorkspaceCompletionItem(string name, string description, int imageIndex)
+            public WorkspaceCompletionItem(string name, string description, int imageIndex, string filePath = null, int line = 0)
             {
                 Name = name;
                 Description = description;
                 ImageIndex = imageIndex;
+                FilePath = filePath;
+                Line = line;
             }
 
             public string Name { get; }
             public string Description { get; }
             public int ImageIndex { get; }
+            public string FilePath { get; }
+            public int Line { get; }
         }
 
         /// <summary>
@@ -2655,7 +2897,7 @@ namespace CIARE
                 OpenFileFromExplorer(filePath);
             var editor = SelectedEditor.GetSelectedEditor();
             if (editor != null)
-                GoToLineNumber.GoToLine(editor, lineNumber);
+                editor.ActiveTextAreaControl.JumpTo(lineNumber - 1);
         }
 
         /// <summary>

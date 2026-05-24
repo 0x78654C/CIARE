@@ -606,7 +606,7 @@ namespace CIARE.GUI
 
 			editor.BeginInvoke(new MethodInvoker(delegate
 			{
-				var (filePath, line) = mainForm.FindDefinition(word);
+				var (filePath, line) = mainForm.FindDefinition(word, wordStart);
 				if (filePath != null)
 					mainForm.NavigateToDefinition(filePath, line);
 			}));
