@@ -85,6 +85,8 @@ namespace CIARE
         private const string FileExplorerLoadingTag = "__loading__";
         private const string FileExplorerPathKey = "fileExplorerPath";
         private const string FileExplorerVisibleKey = "fileExplorerVisible";
+        private static readonly string FileExplorerExpandedPathsFilePath =
+            Path.Combine(GlobalVariables.userProfileDirectory, "fileExplorerExpandedPaths.cDat");
         private Panel _editorWorkspacePanel;
         private SplitContainer _editorExplorerSplitContainer;
         private Panel _fileExplorerPanel;
@@ -99,6 +101,7 @@ namespace CIARE
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
         private FileSystemWatcher _fileExplorerWatcher;
         private System.Windows.Forms.Timer _fileExplorerRefreshTimer;
+        private bool _suppressFileExplorerExpandedStateSave;
         private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const int WorkspaceCompletionMethodLimit = 300;
         private readonly object _completionDataLock = new object();
@@ -258,6 +261,8 @@ namespace CIARE
                 ImageList = CreateFileExplorerImageList()
             };
             _fileExplorerTree.BeforeExpand += fileExplorerTree_BeforeExpand;
+            _fileExplorerTree.AfterExpand += fileExplorerTree_AfterExpand;
+            _fileExplorerTree.AfterCollapse += fileExplorerTree_AfterCollapse;
             _fileExplorerTree.NodeMouseDoubleClick += fileExplorerTree_NodeMouseDoubleClick;
             _fileExplorerTree.KeyDown += fileExplorerTree_KeyDown;
 
@@ -597,17 +602,28 @@ namespace CIARE
 
             _fileExplorerRootPath = folderPath;
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerPathKey, folderPath);
+            var expandedPaths = ReadFileExplorerExpandedPaths(folderPath);
             _fileExplorerTree.BeginUpdate();
-            _fileExplorerTree.Nodes.Clear();
-            var root = CreateDirectoryNode(new DirectoryInfo(folderPath));
-            _fileExplorerTree.Nodes.Add(root);
-            PopulateDirectoryNode(root);
-            root.Expand();
-            _fileExplorerTree.EndUpdate();
+            _suppressFileExplorerExpandedStateSave = true;
+            try
+            {
+                _fileExplorerTree.Nodes.Clear();
+                var root = CreateDirectoryNode(new DirectoryInfo(folderPath));
+                _fileExplorerTree.Nodes.Add(root);
+                PopulateDirectoryNode(root);
+                root.Expand();
+                RestoreExpandedPaths(root, expandedPaths);
+            }
+            finally
+            {
+                _suppressFileExplorerExpandedStateSave = false;
+                _fileExplorerTree.EndUpdate();
+            }
             _fileExplorerTitleLabel.Text = "Explorer";
             toolTip1.SetToolTip(_fileExplorerTitleLabel, folderPath);
 
             StartFileExplorerWatcher(folderPath);
+            SaveFileExplorerExpandedState();
             ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
         }
 
@@ -739,7 +755,9 @@ namespace CIARE
             {
                 if (child.IsExpanded)
                 {
-                    paths.Add(child.Tag as string ?? string.Empty);
+                    string path = NormalizeCompletionPath(child.Tag as string);
+                    if (!string.IsNullOrEmpty(path))
+                        paths.Add(path);
                     CollectExpandedPaths(child, paths);
                 }
             }
@@ -749,7 +767,7 @@ namespace CIARE
         {
             foreach (TreeNode child in node.Nodes)
             {
-                string tag = child.Tag as string;
+                string tag = NormalizeCompletionPath(child.Tag as string);
                 if (tag != null && expandedPaths.Contains(tag))
                 {
                     PopulateDirectoryNode(child);
@@ -808,6 +826,69 @@ namespace CIARE
         {
             if (e.Node.Nodes.Count == 1 && Equals(e.Node.Nodes[0].Tag, FileExplorerLoadingTag))
                 PopulateDirectoryNode(e.Node);
+        }
+
+        private void fileExplorerTree_AfterExpand(object sender, TreeViewEventArgs e)
+        {
+            SaveFileExplorerExpandedState();
+        }
+
+        private void fileExplorerTree_AfterCollapse(object sender, TreeViewEventArgs e)
+        {
+            SaveFileExplorerExpandedState();
+        }
+
+        private void SaveFileExplorerExpandedState()
+        {
+            if (_suppressFileExplorerExpandedStateSave ||
+                _fileExplorerTree == null ||
+                _fileExplorerTree.IsDisposed ||
+                _fileExplorerTree.Nodes.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var expandedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                CollectExpandedPaths(_fileExplorerTree.Nodes[0], expandedPaths);
+
+                Directory.CreateDirectory(GlobalVariables.userProfileDirectory);
+                File.WriteAllLines(FileExplorerExpandedPathsFilePath,
+                    expandedPaths.OrderBy(path => path, StringComparer.OrdinalIgnoreCase));
+            }
+            catch
+            {
+                // Explorer state persistence is best-effort.
+            }
+        }
+
+        private HashSet<string> ReadFileExplorerExpandedPaths(string rootPath)
+        {
+            var expandedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrEmpty(rootPath) || !File.Exists(FileExplorerExpandedPathsFilePath))
+                return expandedPaths;
+
+            try
+            {
+                foreach (string line in File.ReadAllLines(FileExplorerExpandedPathsFilePath))
+                {
+                    string path = NormalizeCompletionPath(line);
+                    if (string.IsNullOrEmpty(path) ||
+                        !Directory.Exists(path) ||
+                        !IsSameOrChildDirectory(path, rootPath))
+                    {
+                        continue;
+                    }
+
+                    expandedPaths.Add(path);
+                }
+            }
+            catch
+            {
+            }
+
+            return expandedPaths;
         }
 
         private void PopulateDirectoryNode(TreeNode node)
@@ -1938,6 +2019,7 @@ namespace CIARE
             // Stop Live share if connected.
             Task.Run(() => _apiConnectionEvents.CloseConnection(hubConnection));
 
+            SaveFileExplorerExpandedState();
             StopFileExplorerWatcher();
         }
 
