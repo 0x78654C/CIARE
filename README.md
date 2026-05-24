@@ -12,7 +12,7 @@
 
 ![Preview](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_2.0.4.png?raw=true)
 
-> **Version 3.0.0**
+> **Version 3.1.0**
 
 ---
 
@@ -33,6 +33,9 @@
 - Load predefined C# code sample templates
 - Display current edited file state (`*` indicator in title bar)
 - Ask AI directly from the editor right-click context menu
+- `Ctrl+Left Click` — Go to Definition: hold `Ctrl` and left-click any identifier to jump to its definition (functions, variables, classes)
+- Find Usages — right-click any identifier and select *Find Usages* to locate all references across the workspace; uses Roslyn semantic analysis with a syntax-based fallback; results list file, line, and column
+- Double-click any Find Usages result to navigate directly to that location in the code
 
 ### Compilation & Execution
 - Compile and run C# code in memory using Roslyn
@@ -41,6 +44,7 @@
 - Native AOT publish option
 - Build options: Debug / Release — Any CPU / x64
 - Target desired framework (.NET 6, .NET 7, .NET 8)
+- Smart Build Target Detection — auto-detects the nearest `.sln` or `.csproj` relative to the active file; no manual project configuration needed
 - Set command line parameters
 - Show runtime (ms) for compile and execution
 - Enable / disable compiler warning messages
@@ -50,9 +54,12 @@
 - Real-time error and warning counter with highlighted errors tab
 - Auto-select the errors tab when compilation errors are found
 - Right-click any error line in the output tab to copy it or ask AI for an explanation
+- Errors & Warnings tab uses a sortable `ListView` — click any column header to sort; the *Line* column sorts numerically
 - C# 14 keyword support
 
 ### Workspace & Files
+- **File Explorer** — built-in tree-view panel docked alongside the editor; open any folder to browse and open files directly
+- File Explorer state (open folder path and panel visibility) is saved to the Windows Registry and restored automatically on next launch
 - Show / Hide output window (state persisted across sessions)
 - Auto hide / show output window
 - Mark files to open on next app start or Windows logon
@@ -215,6 +222,9 @@ CTRL + H         : Find and replace text
 CTRL + G         : Go to line number
 CTRL + A         : Select all
 CTRL + Shift + P : Ask AI (optionally with selected text)
+CTRL + E         : Show / Hide file explorer
+CTRL + Left Click: Go to definition
+Shift + F12      : Find usages
 
 ---------------- Compile ------------------
 F5               : Run current code

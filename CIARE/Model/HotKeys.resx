@@ -141,6 +141,9 @@ CTRL + H         : Replace text in current tab.
 CTRL + G         : Go to line number in current tab.
 CTRL + A         : Select all text in current tab
 CTRL + Shift + P : Get data from chatGPT by your provided text pattern.
+CTRL + E         : Show / Hide file explorer
+CTRL + Left Click: Go to definition
+Shift + F12      : Find usages
 
 ---------------- Compile ------------------
 F5               : Run current cod.                
