@@ -32,6 +32,8 @@
             this.paste = new System.Windows.Forms.ToolStripMenuItem();
             this.delete = new System.Windows.Forms.ToolStripMenuItem();
             this.selectAll = new System.Windows.Forms.ToolStripMenuItem();
+            this.findUsagesSeparator = new System.Windows.Forms.ToolStripSeparator();
+            this.findUsages = new System.Windows.Forms.ToolStripMenuItem();
             this.aiSeparator = new System.Windows.Forms.ToolStripSeparator();
             this.askAI = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
@@ -41,17 +43,17 @@
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new System.Drawing.Size(141, 6);
+            toolStripSeparator1.Size = new System.Drawing.Size(181, 6);
             // 
             // toolStripSeparator2
             // 
             toolStripSeparator2.Name = "toolStripSeparator2";
-            toolStripSeparator2.Size = new System.Drawing.Size(141, 6);
+            toolStripSeparator2.Size = new System.Drawing.Size(181, 6);
             // 
             // undo
             // 
             this.undo.Name = "undo";
-            this.undo.Size = new System.Drawing.Size(144, 22);
+            this.undo.Size = new System.Drawing.Size(184, 22);
             this.undo.Text = "&Undo";
             // 
             // cut
@@ -59,7 +61,7 @@
             this.cut.Image = global::ICSharpCode.TextEditor.Properties.Resources.cutToolStripMenuItem;
             this.cut.Name = "cut";
             this.cut.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.X)));
-            this.cut.Size = new System.Drawing.Size(144, 22);
+            this.cut.Size = new System.Drawing.Size(184, 22);
             this.cut.Text = "&Cut";
             // 
             // copy
@@ -67,7 +69,7 @@
             this.copy.Image = global::ICSharpCode.TextEditor.Properties.Resources.copyToolStripMenuItem;
             this.copy.Name = "copy";
             this.copy.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C)));
-            this.copy.Size = new System.Drawing.Size(144, 22);
+            this.copy.Size = new System.Drawing.Size(184, 22);
             this.copy.Text = "&Copy";
             // 
             // paste
@@ -75,31 +77,45 @@
             this.paste.Image = global::ICSharpCode.TextEditor.Properties.Resources.pasteToolStripMenuItem;
             this.paste.Name = "paste";
             this.paste.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.V)));
-            this.paste.Size = new System.Drawing.Size(144, 22);
+            this.paste.Size = new System.Drawing.Size(184, 22);
             this.paste.Text = "&Paste";
             // 
             // delete
             // 
             this.delete.Name = "delete";
-            this.delete.Size = new System.Drawing.Size(144, 22);
+            this.delete.Size = new System.Drawing.Size(184, 22);
             this.delete.Text = "&Delete";
             // 
             // selectAll
             // 
             this.selectAll.Name = "selectAll";
-            this.selectAll.Size = new System.Drawing.Size(144, 22);
+            this.selectAll.Size = new System.Drawing.Size(184, 22);
             this.selectAll.Text = "&Select All";
+            // 
+            // findUsagesSeparator
+            // 
+            this.findUsagesSeparator.Name = "findUsagesSeparator";
+            this.findUsagesSeparator.Size = new System.Drawing.Size(181, 6);
+            this.findUsagesSeparator.Visible = false;
+            // 
+            // findUsages
+            // 
+            this.findUsages.Name = "findUsages";
+            this.findUsages.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Shift | System.Windows.Forms.Keys.F12)));
+            this.findUsages.Size = new System.Drawing.Size(184, 22);
+            this.findUsages.Text = "Find Usages";
+            this.findUsages.Visible = false;
             // 
             // aiSeparator
             // 
             this.aiSeparator.Name = "aiSeparator";
-            this.aiSeparator.Size = new System.Drawing.Size(141, 6);
+            this.aiSeparator.Size = new System.Drawing.Size(181, 6);
             this.aiSeparator.Visible = false;
             // 
             // askAI
             // 
             this.askAI.Name = "askAI";
-            this.askAI.Size = new System.Drawing.Size(144, 22);
+            this.askAI.Size = new System.Drawing.Size(184, 22);
             this.askAI.Text = "Ask AI";
             this.askAI.Visible = false;
             // 
@@ -114,10 +130,12 @@
             this.delete,
             toolStripSeparator2,
             this.selectAll,
+            this.findUsagesSeparator,
+            this.findUsages,
             this.aiSeparator,
             this.askAI
             });
-            this.Size = new System.Drawing.Size(145, 148);
+            this.Size = new System.Drawing.Size(185, 192);
             this.Opening += new System.ComponentModel.CancelEventHandler(this.OnOpening);
             this.ResumeLayout(false);
 
@@ -131,6 +149,8 @@
         private System.Windows.Forms.ToolStripMenuItem paste;
         private System.Windows.Forms.ToolStripMenuItem delete;
         private System.Windows.Forms.ToolStripMenuItem selectAll;
+        private System.Windows.Forms.ToolStripSeparator findUsagesSeparator;
+        private System.Windows.Forms.ToolStripMenuItem findUsages;
         private System.Windows.Forms.ToolStripSeparator aiSeparator;
         private System.Windows.Forms.ToolStripMenuItem askAI;
     }

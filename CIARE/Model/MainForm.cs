@@ -159,7 +159,10 @@ namespace CIARE
             if (editor == null) return;
             var menu = editor.ActiveTextAreaControl.ContextMenuStrip as ICSharpCode.TextEditor.ContextMenu;
             if (menu != null)
+            {
                 menu.AskAIAction = () => AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
+                menu.FindUsagesAction = () => Instance?.FindUsagesAtCaret();
+            }
         }
 
         private void InitializeFileExplorerPane()
@@ -1403,6 +1406,9 @@ namespace CIARE
                     GlobalVariables.findTabOpen = true;
                     FindAndReplace find = new FindAndReplace();
                     find.ShowDialog();
+                    return true;
+                case Keys.F12 | Keys.Shift:
+                    FindUsagesAtCaret();
                     return true;
                 case Keys.F5:
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
@@ -2883,6 +2889,431 @@ namespace CIARE
             public int Line { get; }
         }
 
+        private const string CurrentFileUsageDisplayName = "<current file>";
+
+        private sealed class UsageDocument
+        {
+            private readonly string[] _lines;
+
+            public UsageDocument(string filePath, string text, SyntaxTree syntaxTree, CompilationUnitSyntax root, bool isActive)
+            {
+                FilePath = filePath ?? string.Empty;
+                Text = text ?? string.Empty;
+                SyntaxTree = syntaxTree;
+                Root = root;
+                IsActive = isActive;
+                _lines = Regex.Split(Text, "\r\n|\r|\n");
+            }
+
+            public string FilePath { get; }
+            public string Text { get; }
+            public SyntaxTree SyntaxTree { get; }
+            public CompilationUnitSyntax Root { get; }
+            public bool IsActive { get; }
+            public string DisplayPath => string.IsNullOrEmpty(FilePath) ? CurrentFileUsageDisplayName : FilePath;
+
+            public string GetLineText(int lineNumber)
+            {
+                int index = lineNumber - 1;
+                return index >= 0 && index < _lines.Length ? _lines[index] : string.Empty;
+            }
+        }
+
+        private sealed class UsageLocation
+        {
+            public UsageLocation(string filePath, int line, int column, string text)
+            {
+                FilePath = filePath;
+                Line = line;
+                Column = column;
+                Text = text;
+            }
+
+            public string FilePath { get; }
+            public int Line { get; }
+            public int Column { get; }
+            public string Text { get; }
+        }
+
+        private void FindUsagesAtCaret()
+        {
+            if (IsVisualBasic)
+            {
+                ShowFindUsagesMessage("Find Usages is available for C# files.");
+                return;
+            }
+
+            if (!TryGetIdentifierAtCaret(out string identifier, out int identifierOffset))
+            {
+                ShowFindUsagesMessage("Put the caret on an identifier to find usages.");
+                return;
+            }
+
+            var previousCursor = Cursor.Current;
+            Cursor.Current = Cursors.WaitCursor;
+            try
+            {
+                var documents = BuildUsageDocuments();
+                if (documents.Count == 0)
+                {
+                    ShowFindUsagesMessage("No C# files found to search.");
+                    return;
+                }
+
+                var usages = FindSemanticUsages(identifier, identifierOffset, documents) ??
+                    FindSyntaxUsages(identifier, documents);
+
+                ShowFindUsagesResults(identifier, usages);
+            }
+            catch (Exception ex)
+            {
+                ShowFindUsagesMessage("Find Usages failed: " + ex.Message);
+            }
+            finally
+            {
+                Cursor.Current = previousCursor;
+            }
+        }
+
+        private bool TryGetIdentifierAtCaret(out string identifier, out int offset)
+        {
+            identifier = string.Empty;
+            offset = -1;
+
+            var editor = SelectedEditor.GetSelectedEditor();
+            var textArea = editor?.ActiveTextAreaControl?.TextArea;
+            var document = textArea?.Document;
+            if (document == null || document.TextLength == 0)
+                return false;
+
+            if (textArea.SelectionManager.HasSomethingSelected &&
+                textArea.SelectionManager.SelectionCollection.Count == 1)
+            {
+                string selectedText = textArea.SelectionManager.SelectedText?.Trim();
+                if (IsValidIdentifierText(selectedText))
+                {
+                    identifier = NormalizeIdentifierText(selectedText);
+                    offset = textArea.SelectionManager.SelectionCollection[0].Offset;
+                    return true;
+                }
+            }
+
+            int caretOffset = Math.Max(0, Math.Min(textArea.Caret.Offset, document.TextLength));
+            int lookupOffset = caretOffset == document.TextLength && caretOffset > 0 ? caretOffset - 1 : caretOffset;
+            int wordStart = ICSharpCode.TextEditor.Document.TextUtilities.FindWordStart(document, lookupOffset);
+            int wordEnd = ICSharpCode.TextEditor.Document.TextUtilities.FindWordEnd(document, lookupOffset);
+
+            if (wordEnd <= wordStart && caretOffset > 0)
+            {
+                lookupOffset = caretOffset - 1;
+                wordStart = ICSharpCode.TextEditor.Document.TextUtilities.FindWordStart(document, lookupOffset);
+                wordEnd = ICSharpCode.TextEditor.Document.TextUtilities.FindWordEnd(document, lookupOffset);
+            }
+
+            if (wordEnd <= wordStart)
+                return false;
+
+            string word = document.GetText(wordStart, wordEnd - wordStart);
+            if (!IsValidIdentifierText(word))
+                return false;
+
+            identifier = NormalizeIdentifierText(word);
+            offset = wordStart;
+            return true;
+        }
+
+        private List<UsageDocument> BuildUsageDocuments()
+        {
+            var documents = new List<UsageDocument>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var parseOptions = CSharpParseOptions.Default;
+            string activeFilePath = GetActiveEditorFilePath();
+            var editor = SelectedEditor.GetSelectedEditor();
+
+            if (editor != null)
+                AddUsageDocument(documents, seen, activeFilePath, editor.Text ?? string.Empty, true, parseOptions);
+
+            string workspaceFolder = GetUsageWorkspaceFolder(activeFilePath);
+            if (!Directory.Exists(workspaceFolder))
+                return documents;
+
+            foreach (var filePath in GetWorkspaceCsFiles(workspaceFolder))
+            {
+                try
+                {
+                    AddUsageDocument(documents, seen, filePath, File.ReadAllText(filePath), false, parseOptions);
+                }
+                catch
+                {
+                    // Ignore unreadable files; the rest of the workspace can still be searched.
+                }
+            }
+
+            return documents;
+        }
+
+        private static void AddUsageDocument(List<UsageDocument> documents, HashSet<string> seen,
+            string filePath, string text, bool isActive, CSharpParseOptions parseOptions)
+        {
+            string normalizedPath = NormalizeCompletionPath(filePath);
+            if (!string.IsNullOrEmpty(normalizedPath) && !seen.Add(normalizedPath))
+                return;
+
+            string syntaxPath = string.IsNullOrEmpty(filePath) ? CurrentFileUsageDisplayName : filePath;
+            var syntaxTree = CSharpSyntaxTree.ParseText(text ?? string.Empty, parseOptions, path: syntaxPath);
+            var root = syntaxTree.GetCompilationUnitRoot();
+            documents.Add(new UsageDocument(filePath, text, syntaxTree, root, isActive));
+        }
+
+        private string GetUsageWorkspaceFolder(string activeFilePath)
+        {
+            string workspaceFolder = GetActiveWorkspaceFolder();
+            if (Directory.Exists(workspaceFolder))
+                return workspaceFolder;
+
+            if (!string.IsNullOrEmpty(activeFilePath))
+            {
+                string activeFolder = Path.GetDirectoryName(activeFilePath);
+                workspaceFolder = FindWorkspaceRoot(activeFolder);
+                if (Directory.Exists(workspaceFolder))
+                    return workspaceFolder;
+            }
+
+            return string.Empty;
+        }
+
+        private List<UsageLocation> FindSemanticUsages(string identifier, int identifierOffset, List<UsageDocument> documents)
+        {
+            try
+            {
+                var activeDocument = documents.FirstOrDefault(document => document.IsActive);
+                if (activeDocument == null)
+                    return null;
+
+                var compilation = CSharpCompilation.Create(
+                    "__CiareFindUsages",
+                    syntaxTrees: documents.Select(document => document.SyntaxTree),
+                    references: BuildUsageReferences(),
+                    options: new CSharpCompilationOptions(
+                        OutputKind.DynamicallyLinkedLibrary,
+                        allowUnsafe: GlobalVariables.OUnsafeCode));
+
+                var activeModel = compilation.GetSemanticModel(activeDocument.SyntaxTree, true);
+                ISymbol targetSymbol = GetIdentifierSymbolAtOffset(activeModel, activeDocument.Root, identifierOffset, identifier);
+                if (targetSymbol == null)
+                    return null;
+
+                targetSymbol = NormalizeUsageSymbol(targetSymbol);
+                var usages = new List<UsageLocation>();
+                foreach (var document in documents)
+                {
+                    var semanticModel = compilation.GetSemanticModel(document.SyntaxTree, true);
+                    foreach (var token in GetIdentifierTokens(document.Root, identifier))
+                    {
+                        if (IsDeclarationIdentifier(token))
+                            continue;
+
+                        ISymbol symbol = GetReferenceSymbolForIdentifier(semanticModel, token);
+                        if (SymbolsMatch(targetSymbol, symbol))
+                            usages.Add(CreateUsageLocation(document, token));
+                    }
+                }
+
+                return SortUsageLocations(usages);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static List<UsageLocation> FindSyntaxUsages(string identifier, List<UsageDocument> documents)
+        {
+            var usages = new List<UsageLocation>();
+            foreach (var document in documents)
+            {
+                foreach (var token in GetIdentifierTokens(document.Root, identifier))
+                {
+                    if (!IsDeclarationIdentifier(token))
+                        usages.Add(CreateUsageLocation(document, token));
+                }
+            }
+
+            return SortUsageLocations(usages);
+        }
+
+        private static IEnumerable<SyntaxToken> GetIdentifierTokens(CompilationUnitSyntax root, string identifier)
+        {
+            return root.DescendantTokens()
+                .Where(token => token.IsKind(SyntaxKind.IdentifierToken) &&
+                    string.Equals(token.ValueText, identifier, StringComparison.Ordinal));
+        }
+
+        private static ISymbol GetIdentifierSymbolAtOffset(SemanticModel semanticModel,
+            CompilationUnitSyntax root, int offset, string identifier)
+        {
+            if (semanticModel == null || root == null || offset < 0)
+                return null;
+
+            int safeOffset = Math.Max(0, Math.Min(offset, Math.Max(0, root.FullSpan.End - 1)));
+            SyntaxToken token = root.FindToken(safeOffset);
+            if (!token.IsKind(SyntaxKind.IdentifierToken) ||
+                !string.Equals(token.ValueText, identifier, StringComparison.Ordinal))
+                return null;
+
+            return GetDeclaredSymbolForIdentifier(semanticModel, token) ??
+                GetReferenceSymbolForIdentifier(semanticModel, token);
+        }
+
+        private static ISymbol GetReferenceSymbolForIdentifier(SemanticModel semanticModel, SyntaxToken token)
+        {
+            if (semanticModel == null || !(token.Parent is SimpleNameSyntax simpleName))
+                return null;
+
+            var symbolInfo = semanticModel.GetSymbolInfo(simpleName);
+            return symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
+        }
+
+        private static bool SymbolsMatch(ISymbol targetSymbol, ISymbol candidateSymbol)
+        {
+            if (targetSymbol == null || candidateSymbol == null)
+                return false;
+
+            return SymbolEqualityComparer.Default.Equals(
+                NormalizeUsageSymbol(targetSymbol),
+                NormalizeUsageSymbol(candidateSymbol));
+        }
+
+        private static ISymbol NormalizeUsageSymbol(ISymbol symbol)
+        {
+            if (symbol is IMethodSymbol method && method.ReducedFrom != null)
+                symbol = method.ReducedFrom;
+
+            return symbol?.OriginalDefinition ?? symbol;
+        }
+
+        private static bool IsDeclarationIdentifier(SyntaxToken token)
+        {
+            SyntaxNode node = token.Parent;
+            while (node != null)
+            {
+                switch (node)
+                {
+                    case VariableDeclaratorSyntax variable when variable.Identifier == token:
+                    case SingleVariableDesignationSyntax designation when designation.Identifier == token:
+                    case ParameterSyntax parameter when parameter.Identifier == token:
+                    case TypeParameterSyntax typeParameter when typeParameter.Identifier == token:
+                    case LocalFunctionStatementSyntax localFunction when localFunction.Identifier == token:
+                    case BaseTypeDeclarationSyntax typeDeclaration when typeDeclaration.Identifier == token:
+                    case DelegateDeclarationSyntax delegateDeclaration when delegateDeclaration.Identifier == token:
+                    case MethodDeclarationSyntax method when method.Identifier == token:
+                    case ConstructorDeclarationSyntax constructor when constructor.Identifier == token:
+                    case DestructorDeclarationSyntax destructor when destructor.Identifier == token:
+                    case PropertyDeclarationSyntax property when property.Identifier == token:
+                    case EventDeclarationSyntax eventDeclaration when eventDeclaration.Identifier == token:
+                    case EnumMemberDeclarationSyntax enumMember when enumMember.Identifier == token:
+                    case ForEachStatementSyntax forEach when forEach.Identifier == token:
+                    case CatchDeclarationSyntax catchDeclaration when catchDeclaration.Identifier == token:
+                        return true;
+                }
+
+                node = node.Parent;
+            }
+
+            return false;
+        }
+
+        private static UsageLocation CreateUsageLocation(UsageDocument document, SyntaxToken token)
+        {
+            var lineSpan = token.GetLocation().GetLineSpan();
+            int line = lineSpan.StartLinePosition.Line + 1;
+            int column = lineSpan.StartLinePosition.Character + 1;
+            return new UsageLocation(document.DisplayPath, line, column, document.GetLineText(line).Trim());
+        }
+
+        private static List<UsageLocation> SortUsageLocations(List<UsageLocation> usages)
+        {
+            return usages
+                .OrderBy(usage => usage.FilePath, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(usage => usage.Line)
+                .ThenBy(usage => usage.Column)
+                .ToList();
+        }
+
+        private static IEnumerable<MetadataReference> BuildUsageReferences()
+        {
+            var references = new List<MetadataReference>();
+            string trusted = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
+            if (!string.IsNullOrEmpty(trusted))
+            {
+                foreach (var referencePath in trusted.Split(Path.PathSeparator))
+                {
+                    if (!string.IsNullOrEmpty(referencePath) && File.Exists(referencePath))
+                        references.Add(MetadataReference.CreateFromFile(referencePath));
+                }
+            }
+
+            foreach (var customReference in GlobalVariables.customRefList ?? new List<string>())
+            {
+                try
+                {
+                    var parts = customReference.Split('|');
+                    string referencePath = parts.Length >= 2 ? parts[1] : customReference;
+                    if (!string.IsNullOrEmpty(referencePath) && File.Exists(referencePath))
+                        references.Add(MetadataReference.CreateFromFile(referencePath));
+                }
+                catch { }
+            }
+
+            return references;
+        }
+
+        private void ShowFindUsagesResults(string identifier, List<UsageLocation> usages)
+        {
+            PrepareOutputForFindUsages();
+            outputRBT.AppendText($"Usages of '{identifier}' ({usages.Count}){Environment.NewLine}");
+            if (usages.Count == 0)
+            {
+                outputRBT.AppendText("No usages found." + Environment.NewLine);
+            }
+            else
+            {
+                foreach (var usage in usages)
+                    outputRBT.AppendText($"{usage.FilePath}({usage.Line},{usage.Column}): {usage.Text}{Environment.NewLine}");
+            }
+
+            outputRBT.SelectionStart = 0;
+            outputRBT.ScrollToCaret();
+        }
+
+        private void ShowFindUsagesMessage(string message)
+        {
+            PrepareOutputForFindUsages();
+            outputRBT.AppendText(message + Environment.NewLine);
+        }
+
+        private void PrepareOutputForFindUsages()
+        {
+            if (outputTabControl.SelectedTab != outputTabPage)
+                outputTabControl.SelectedTab = outputTabPage;
+
+            outputRBT.Clear();
+            outputRBT.ForeColor = GlobalVariables.darkColor ? Color.FromArgb(192, 215, 207) : SystemColors.MenuText;
+            OutputWindowManage.ShowOutputOnCompileRun(true, splitContainer1, outputRBT);
+        }
+
+        private static string NormalizeIdentifierText(string identifier)
+        {
+            identifier = identifier?.Trim() ?? string.Empty;
+            return identifier.StartsWith("@", StringComparison.Ordinal) ? identifier.Substring(1) : identifier;
+        }
+
+        private static bool IsValidIdentifierText(string identifier)
+        {
+            identifier = NormalizeIdentifierText(identifier);
+            return identifier.Length > 0 && SyntaxFacts.IsValidIdentifier(identifier);
+        }
+
         /// <summary>
         /// Navigates the editor to the given file and line number. Opens the file in a new
         /// tab when it is not the currently active file.
@@ -2898,6 +3329,33 @@ namespace CIARE
             var editor = SelectedEditor.GetSelectedEditor();
             if (editor != null)
                 editor.ActiveTextAreaControl.JumpTo(lineNumber - 1);
+        }
+
+        private void NavigateToUsageLocation(string filePath, int lineNumber, int columnNumber)
+        {
+            if (lineNumber <= 0)
+                return;
+
+            if (!string.Equals(filePath, CurrentFileUsageDisplayName, StringComparison.Ordinal))
+            {
+                if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+                    return;
+
+                string normalizedPath = NormalizeCompletionPath(filePath);
+                string currentFilePath = NormalizeCompletionPath(GetActiveEditorFilePath());
+                if (!string.Equals(normalizedPath, currentFilePath, StringComparison.OrdinalIgnoreCase))
+                    OpenFileFromExplorer(filePath);
+            }
+
+            var editor = SelectedEditor.GetSelectedEditor();
+            if (editor == null || editor.Document.TotalNumberOfLines == 0)
+                return;
+
+            int lineIndex = Math.Max(0, Math.Min(lineNumber - 1, editor.Document.TotalNumberOfLines - 1));
+            var lineSegment = editor.Document.GetLineSegment(lineIndex);
+            int columnIndex = Math.Max(0, Math.Min(columnNumber - 1, lineSegment.Length));
+            editor.ActiveTextAreaControl.JumpTo(lineIndex, columnIndex);
+            editor.Focus();
         }
 
         /// <summary>
@@ -3069,6 +3527,24 @@ namespace CIARE
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void outputRBT_MouseWheel(object sender, MouseEventArgs e) => GlobalVariables.zoomFactor = outputRBT.ZoomFactor;
+
+        private void outputRBT_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            int charIndex = outputRBT.GetCharIndexFromPosition(e.Location);
+            int rtbLine = outputRBT.GetLineFromCharIndex(charIndex);
+            if (rtbLine < 0 || rtbLine >= outputRBT.Lines.Length)
+                return;
+
+            var match = Regex.Match(outputRBT.Lines[rtbLine], @"^(?<file>.+)\((?<line>\d+),(?<column>\d+)\):");
+            if (!match.Success)
+                return;
+
+            if (!int.TryParse(match.Groups["line"].Value, out int targetLine) ||
+                !int.TryParse(match.Groups["column"].Value, out int targetColumn))
+                return;
+
+            NavigateToUsageLocation(match.Groups["file"].Value, targetLine, targetColumn);
+        }
 
         /// <summary>
         /// Create/close new tab with new editor.

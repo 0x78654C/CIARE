@@ -148,6 +148,7 @@ namespace CIARE
             outputRBT.ScrollBars = RichTextBoxScrollBars.Vertical;
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
+            outputRBT.MouseDoubleClick += outputRBT_MouseDoubleClick;
             outputRBT.MouseWheel += outputRBT_MouseWheel;
             // 
             // errorsTabPage
