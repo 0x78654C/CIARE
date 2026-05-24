@@ -41,6 +41,7 @@ using System.Drawing;
 using System.ComponentModel;
 using CIARE.Utils.Encryption;
 using System.Collections;
+using System.Collections.Concurrent;
 using ICSharpCode.TextEditor.Gui.CompletionWindow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -3090,6 +3091,19 @@ namespace CIARE
 
         private const string CurrentFileUsageDisplayName = "<current file>";
 
+        private struct OpenTabInfo
+        {
+            public readonly string FilePath;
+            public readonly string Text;
+            public readonly bool IsActive;
+            public OpenTabInfo(string filePath, string text, bool isActive)
+            {
+                FilePath = filePath;
+                Text = text;
+                IsActive = isActive;
+            }
+        }
+
         private sealed class UsageDocument
         {
             private readonly string[] _lines;
@@ -3134,7 +3148,7 @@ namespace CIARE
             public string Text { get; }
         }
 
-        private void FindUsagesAtCaret()
+        private async void FindUsagesAtCaret()
         {
             if (IsVisualBasic)
             {
@@ -3152,19 +3166,27 @@ namespace CIARE
             Cursor.Current = Cursors.WaitCursor;
             try
             {
-                var documents = BuildUsageDocuments(identifier);
-                if (documents.Count == 0)
+                // Capture all UI-thread state before going async.
+                var openTabs = CollectOpenTabInfo(identifier);
+                var workspaceFolders = GetUsageWorkspaceFolders(GetActiveEditorFilePath()).ToList();
+                List<string> compilationUnitKeys;
+                lock (_completionDataLock)
+                    compilationUnitKeys = _workspaceCompilationUnits.Keys.ToList();
+
+                List<UsageLocation> usages = await Task.Run(() =>
                 {
+                    var documents = BuildUsageDocuments(identifier, openTabs, workspaceFolders, compilationUnitKeys);
+                    if (documents.Count == 0)
+                        return null;
+
+                    var semanticUsages = FindSemanticUsages(identifier, identifierOffset, documents, out bool targetResolved);
+                    return targetResolved ? semanticUsages : FindSyntaxUsages(identifier, documents);
+                });
+
+                if (usages == null)
                     ShowFindUsagesMessage("No C# files found to search.");
-                    return;
-                }
-
-                var semanticUsages = FindSemanticUsages(identifier, identifierOffset, documents, out bool targetResolved);
-                var usages = targetResolved
-                    ? semanticUsages
-                    : FindSyntaxUsages(identifier, documents);
-
-                ShowFindUsagesResults(identifier, usages);
+                else
+                    ShowFindUsagesResults(identifier, usages);
             }
             catch (Exception ex)
             {
@@ -3223,57 +3245,10 @@ namespace CIARE
             return true;
         }
 
-        private List<UsageDocument> BuildUsageDocuments(string identifier)
+        private List<OpenTabInfo> CollectOpenTabInfo(string identifier)
         {
-            var documents = new List<UsageDocument>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var parseOptions = CSharpParseOptions.Default;
-            string activeFilePath = GetActiveEditorFilePath();
-
-            AddOpenUsageDocuments(documents, seen, parseOptions, identifier);
-
-            foreach (var workspaceFolder in GetUsageWorkspaceFolders(activeFilePath))
-            {
-                if (!Directory.Exists(workspaceFolder))
-                    continue;
-
-                foreach (var filePath in GetWorkspaceCsFiles(workspaceFolder))
-                {
-                    try
-                    {
-                        if (!FileContainsIdentifier(filePath, identifier))
-                            continue;
-
-                        AddUsageDocument(documents, seen, filePath, File.ReadAllText(filePath), false, parseOptions);
-                    }
-                    catch
-                    {
-                        // Ignore unreadable files; the rest of the workspace can still be searched.
-                    }
-                }
-            }
-
-            lock (_completionDataLock)
-            {
-                foreach (var filePath in _workspaceCompilationUnits.Keys)
-                {
-                    try
-                    {
-                        if (!FileContainsIdentifier(filePath, identifier))
-                            continue;
-
-                        AddUsageDocument(documents, seen, filePath, File.ReadAllText(filePath), false, parseOptions);
-                    }
-                    catch { }
-                }
-            }
-
-            return documents;
-        }
-
-        private void AddOpenUsageDocuments(List<UsageDocument> documents, HashSet<string> seen,
-            CSharpParseOptions parseOptions, string identifier)
-        {
+            var tabs = new List<OpenTabInfo>();
+            bool hasActive = false;
             for (int i = 0; i < EditorTabControl.TabPages.Count; i++)
             {
                 var tabPage = EditorTabControl.TabPages[i];
@@ -3286,7 +3261,10 @@ namespace CIARE
                 if (string.IsNullOrEmpty(filePath))
                 {
                     if (isActive)
-                        AddUsageDocument(documents, seen, string.Empty, editor.Text ?? string.Empty, true, parseOptions);
+                    {
+                        tabs.Add(new OpenTabInfo(string.Empty, editor.Text ?? string.Empty, true));
+                        hasActive = true;
+                    }
                     continue;
                 }
 
@@ -3296,15 +3274,78 @@ namespace CIARE
                 if (!isActive && !TextContainsIdentifier(editor.Text, identifier))
                     continue;
 
-                AddUsageDocument(documents, seen, filePath, editor.Text ?? string.Empty, isActive, parseOptions);
+                tabs.Add(new OpenTabInfo(filePath, editor.Text ?? string.Empty, isActive));
+                if (isActive)
+                    hasActive = true;
             }
 
-            if (!documents.Any(document => document.IsActive))
+            if (!hasActive)
             {
                 var editor = SelectedEditor.GetSelectedEditor();
                 if (editor != null)
-                    AddUsageDocument(documents, seen, GetActiveEditorFilePath(), editor.Text ?? string.Empty, true, parseOptions);
+                    tabs.Add(new OpenTabInfo(GetActiveEditorFilePath(), editor.Text ?? string.Empty, true));
             }
+
+            return tabs;
+        }
+
+        private static List<UsageDocument> BuildUsageDocuments(
+            string identifier,
+            List<OpenTabInfo> openTabs,
+            List<string> workspaceFolders,
+            List<string> compilationUnitFilePaths)
+        {
+            var documents = new List<UsageDocument>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var parseOptions = CSharpParseOptions.Default;
+
+            // Parse open-tab documents first (already in memory).
+            foreach (var tab in openTabs)
+                AddUsageDocument(documents, seen, tab.FilePath, tab.Text, tab.IsActive, parseOptions);
+
+            // Gather all candidate file paths from workspace folders and compilation units.
+            var allPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var folder in workspaceFolders)
+            {
+                if (!Directory.Exists(folder))
+                    continue;
+                foreach (var f in GetWorkspaceCsFiles(folder))
+                    allPaths.Add(f);
+            }
+            foreach (var f in compilationUnitFilePaths)
+                allPaths.Add(f);
+
+            // Snapshot already-seen paths so the parallel scan can filter without locking.
+            var seenSnapshot = new HashSet<string>(seen, StringComparer.OrdinalIgnoreCase);
+            var pathsToScan = allPaths
+                .Where(f => !seenSnapshot.Contains(NormalizeCompletionPath(f)))
+                .ToList();
+
+            // Scan and parse files in parallel (disk I/O + Roslyn parse are the bottleneck).
+            var newDocs = new ConcurrentDictionary<string, UsageDocument>(StringComparer.OrdinalIgnoreCase);
+            Parallel.ForEach(pathsToScan, filePath =>
+            {
+                try
+                {
+                    if (!FileContainsIdentifier(filePath, identifier))
+                        return;
+                    string text = File.ReadAllText(filePath);
+                    var syntaxTree = CSharpSyntaxTree.ParseText(text, parseOptions, path: filePath);
+                    var root = syntaxTree.GetCompilationUnitRoot();
+                    string normalizedPath = NormalizeCompletionPath(filePath);
+                    if (!string.IsNullOrEmpty(normalizedPath))
+                        newDocs.TryAdd(normalizedPath, new UsageDocument(filePath, text, syntaxTree, root, false));
+                }
+                catch { }
+            });
+
+            foreach (var kvp in newDocs)
+            {
+                if (seen.Add(kvp.Key))
+                    documents.Add(kvp.Value);
+            }
+
+            return documents;
         }
 
         private static void AddUsageDocument(List<UsageDocument> documents, HashSet<string> seen,
@@ -3473,9 +3514,10 @@ namespace CIARE
 
                 targetResolved = true;
                 targetSymbol = NormalizeUsageSymbol(targetSymbol);
-                var usages = new List<UsageLocation>();
-                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var document in documents)
+
+                // Search each document's tokens in parallel (Roslyn compilation/model is thread-safe for reads).
+                var rawUsages = new ConcurrentBag<UsageLocation>();
+                Parallel.ForEach(documents, document =>
                 {
                     var semanticModel = compilation.GetSemanticModel(document.SyntaxTree, true);
                     foreach (var token in GetIdentifierTokens(document.Root, identifier))
@@ -3486,14 +3528,20 @@ namespace CIARE
                         ISymbol symbol = GetReferenceSymbolForIdentifier(semanticModel, token);
                         if (SymbolsMatch(targetSymbol, symbol))
                         {
-                            AddUsageLocation(usages, seen, CreateUsageLocation(document, token));
+                            rawUsages.Add(CreateUsageLocation(document, token));
                             continue;
                         }
 
                         if (symbol == null && IsPotentialUnresolvedUsage(token, targetSymbol))
-                            AddUsageLocation(usages, seen, CreateUsageLocation(document, token));
+                            rawUsages.Add(CreateUsageLocation(document, token));
                     }
-                }
+                });
+
+                // Deduplicate and sort on a single thread.
+                var usages = new List<UsageLocation>();
+                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var usage in rawUsages)
+                    AddUsageLocation(usages, seen, usage);
 
                 return SortUsageLocations(usages);
             }
@@ -3506,17 +3554,17 @@ namespace CIARE
 
         private static List<UsageLocation> FindSyntaxUsages(string identifier, List<UsageDocument> documents)
         {
-            var usages = new List<UsageLocation>();
-            foreach (var document in documents)
+            var rawUsages = new ConcurrentBag<UsageLocation>();
+            Parallel.ForEach(documents, document =>
             {
                 foreach (var token in GetIdentifierTokens(document.Root, identifier))
                 {
                     if (!IsDeclarationIdentifier(token))
-                        usages.Add(CreateUsageLocation(document, token));
+                        rawUsages.Add(CreateUsageLocation(document, token));
                 }
-            }
+            });
 
-            return SortUsageLocations(usages);
+            return SortUsageLocations(rawUsages.ToList());
         }
 
         private static IEnumerable<SyntaxToken> GetIdentifierTokens(CompilationUnitSyntax root, string identifier)
