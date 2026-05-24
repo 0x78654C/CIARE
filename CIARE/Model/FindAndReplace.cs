@@ -339,44 +339,57 @@ MessageBoxIcon.Warning);
         /// </summary>
         private void findNReplaceTab_DrawItem(object sender, DrawItemEventArgs e)
         {
+            if (e.Index < 0)
+                return;
+
             bool dark = GlobalVariables.darkColor;
             var g = e.Graphics;
             var tp = findNReplaceTab.TabPages[e.Index];
             Rectangle rt = e.Bounds;
 
+            Color stripColor = dark ? GlobalVariables.formBgColor : SystemColors.Control;
+            Color tabBgColor = dark ? GlobalVariables.TabBgColor : SystemColors.Control;
+            Color selectedColor = dark ? GlobalVariables.TabSelectedColor : Color.LightGray;
+            Color textColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
+            Color borderColor = dark ? GlobalVariables.controlBgColor : SystemColors.ControlDark;
+
             // Fill this tab's background.
-            Color tabBgColor = dark
-                ? (GlobalVariables.isVStheme ? Color.FromArgb(45, 45, 48) : Color.FromArgb(10, 10, 20))
-                : SystemColors.Control;
             using (SolidBrush bgBrush = new SolidBrush(tabBgColor))
                 g.FillRectangle(bgBrush, rt);
 
-            // Fill empty strip area to the right of the last tab (dark mode only).
-            if (dark)
-            {
-                if (GlobalVariables.isVStheme)
-                    TabControllerManage.SetTransparentTabBar(findNReplaceTab, e, 51, 51, 51);
-                else
-                    TabControllerManage.SetTransparentTabBar(findNReplaceTab, e, 0, 1, 10);
-            }
+            // Fill empty strip area to the right of the last tab.
+            FillFindTabStripRemainder(g, stripColor);
 
             // Highlight the selected tab.
-            int selectedIndex = findNReplaceTab.SelectedIndex;
-            if (selectedIndex >= 0)
+            if (e.Index == findNReplaceTab.SelectedIndex)
             {
-                Color highlightColor = dark
-                    ? (GlobalVariables.isVStheme ? Color.FromArgb(63, 63, 70) : Color.FromArgb(20, 20, 35))
-                    : Color.LightGray;
-                Rectangle selRect = findNReplaceTab.GetTabRect(selectedIndex);
-                using (SolidBrush selBrush = new SolidBrush(highlightColor))
-                    g.FillRectangle(selBrush, selRect);
+                using (SolidBrush selBrush = new SolidBrush(selectedColor))
+                    g.FillRectangle(selBrush, rt);
             }
 
             // Draw tab text using the full bounds (no close-button space reduction).
-            Color textColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
             using (StringFormat sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
             using (SolidBrush textBrush = new SolidBrush(textColor))
                 g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, textBrush, (RectangleF)rt, sf);
+
+            using (Pen borderPen = new Pen(borderColor))
+                g.DrawRectangle(borderPen, rt.X, rt.Y, rt.Width - 1, rt.Height - 1);
+        }
+
+        private void FillFindTabStripRemainder(Graphics g, Color color)
+        {
+            if (findNReplaceTab.TabPages.Count == 0)
+                return;
+
+            Rectangle lastTabRect = findNReplaceTab.GetTabRect(findNReplaceTab.TabPages.Count - 1);
+            Rectangle remainder = new Rectangle(
+                lastTabRect.Right,
+                0,
+                Math.Max(0, findNReplaceTab.Width - lastTabRect.Right),
+                lastTabRect.Height + 1);
+
+            using (SolidBrush brush = new SolidBrush(color))
+                g.FillRectangle(brush, remainder);
         }
     }
 }

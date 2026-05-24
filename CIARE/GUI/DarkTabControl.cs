@@ -20,10 +20,7 @@ namespace CIARE.GUI
             {
                 using (Graphics g = Graphics.FromHdc(m.WParam))
                 {
-                    Color bgColor = GlobalVariables.isVStheme
-                        ? Color.FromArgb(51, 51, 51)
-                        : Color.FromArgb(0, 1, 10);
-                    using (SolidBrush brush = new SolidBrush(bgColor))
+                    using (SolidBrush brush = new SolidBrush(GlobalVariables.formBgColor))
                         g.FillRectangle(brush, ClientRectangle);
                 }
                 m.Result = (IntPtr)1;
@@ -43,15 +40,11 @@ namespace CIARE.GUI
             if (TabCount == 0) return;
             using (Graphics g = Graphics.FromHwnd(Handle))
             {
-                Color borderColor = GlobalVariables.isVStheme
-                    ? Color.FromArgb(63, 63, 70)
-                    : Color.FromArgb(20, 20, 35);
-
                 int tabStripBottom = GetTabRect(0).Bottom;
 
                 // Cover the system-drawn border around the tab page content area.
                 Rectangle pageRect = new Rectangle(0, tabStripBottom, Width - 1, Height - tabStripBottom - 1);
-                using (Pen pen = new Pen(borderColor))
+                using (Pen pen = new Pen(GlobalVariables.TabSelectedColor))
                     g.DrawRectangle(pen, pageRect);
             }
         }
