@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
+using System.Reflection;
 using CIARE.Utils;
 
 namespace CIARE.Roslyn
@@ -294,8 +295,12 @@ namespace CIARE.Roslyn
                 if (_platformRefs.IsDefault)
                 {
                     var trusted = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES");
+                    // Exclude the entry assembly so that workspace source files don't produce
+                    // duplicate type definitions (which would cause false CS0121 ambiguity errors).
+                    var entryLocation = Assembly.GetEntryAssembly()?.Location ?? string.Empty;
                     _platformRefs = trusted
                         .Split(Path.PathSeparator)
+                        .Where(r => !string.Equals(r, entryLocation, StringComparison.OrdinalIgnoreCase))
                         .Select(r => (MetadataReference)MetadataReference.CreateFromFile(r))
                         .ToImmutableArray();
                 }
