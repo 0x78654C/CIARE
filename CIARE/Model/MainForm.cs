@@ -1044,18 +1044,12 @@ namespace CIARE
             string filePath = GetActiveEditorFilePath();
 
             if (Directory.Exists(_fileExplorerRootPath) &&
-                (string.IsNullOrEmpty(filePath) || IsPathInsideFolder(filePath, _fileExplorerRootPath)))
+                File.Exists(filePath) &&
+                IsPathInsideFolder(filePath, _fileExplorerRootPath))
             {
                 string openFolderTarget = FindBuildTargetFile(_fileExplorerRootPath, filePath);
                 if (!string.IsNullOrEmpty(openFolderTarget))
                     return openFolderTarget;
-            }
-
-            if (IsCSharpFilePath(filePath))
-            {
-                string activeFileTarget = FindBuildTargetFromActiveFile(filePath);
-                if (!string.IsNullOrEmpty(activeFileTarget))
-                    return activeFileTarget;
             }
 
             return string.Empty;
