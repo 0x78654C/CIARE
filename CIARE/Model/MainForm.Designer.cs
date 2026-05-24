@@ -109,7 +109,7 @@ namespace CIARE
             outputTabControl = new CIARE.GUI.DarkTabControl();
             outputTabPage = new TabPage();
             errorsTabPage = new TabPage();
-            errorsRTB = new RichTextBox();
+            errorsLV = new ListView();
             progressBar = new ProgressBar();
             ((System.ComponentModel.ISupportInitialize)runCodePb).BeginInit();
             menuStrip1.SuspendLayout();
@@ -152,27 +152,36 @@ namespace CIARE
             // 
             // errorsTabPage
             // 
-            errorsTabPage.Controls.Add(errorsRTB);
+            errorsTabPage.Controls.Add(errorsLV);
             errorsTabPage.Name = "errorsTabPage";
             errorsTabPage.Text = "Errors";
-            errorsRTB.Size = new System.Drawing.Size(88, 50);
+            errorsLV.Size = new System.Drawing.Size(88, 50);
             errorsTabPage.UseVisualStyleBackColor = true;
             // 
-            // errorsRTB
+            // errorsLV
             // 
-            errorsRTB.BackColor = System.Drawing.SystemColors.Window;
-            errorsRTB.BorderStyle = BorderStyle.None;
-            errorsRTB.Dock = DockStyle.Fill;
-            errorsRTB.Font = new System.Drawing.Font("Consolas", 10.5F);
-            errorsRTB.ForeColor = System.Drawing.SystemColors.MenuText;
-            errorsRTB.Name = "errorsRTB";
-            errorsRTB.ReadOnly = true;
-            errorsRTB.ScrollBars = RichTextBoxScrollBars.Vertical;
-            errorsRTB.TabIndex = 0;
-            errorsRTB.Text = "";
-            errorsRTB.ContextMenuStrip = errorsContextMenu;
-            errorsRTB.MouseDown += errorsRTB_MouseDown;
-            errorsRTB.MouseDoubleClick += errorsRTB_MouseDoubleClick;
+            errorsLV.BackColor = System.Drawing.SystemColors.Window;
+            errorsLV.BorderStyle = BorderStyle.None;
+            errorsLV.Dock = DockStyle.Fill;
+            errorsLV.Font = new System.Drawing.Font("Consolas", 10.5F);
+            errorsLV.ForeColor = System.Drawing.SystemColors.MenuText;
+            errorsLV.FullRowSelect = true;
+            errorsLV.GridLines = false;
+            errorsLV.HeaderStyle = ColumnHeaderStyle.Clickable;
+            errorsLV.HideSelection = false;
+            errorsLV.MultiSelect = false;
+            errorsLV.Name = "errorsLV";
+            errorsLV.TabIndex = 0;
+            errorsLV.View = View.Details;
+            errorsLV.Columns.Add(string.Empty, 28, HorizontalAlignment.Center);
+            errorsLV.Columns.Add("Line", 60, HorizontalAlignment.Right);
+            errorsLV.Columns.Add("Code", 75, HorizontalAlignment.Left);
+            errorsLV.Columns.Add("Message", -2, HorizontalAlignment.Left);
+            errorsLV.ListViewItemSorter = new CIARE.GUI.ListViewColumnSorter();
+            errorsLV.ContextMenuStrip = errorsContextMenu;
+            errorsLV.MouseDown += errorsLV_MouseDown;
+            errorsLV.ItemActivate += errorsLV_ItemActivate;
+            errorsLV.ColumnClick += errorsLV_ColumnClick;
             // 
             // outputTabControl
             // 
@@ -861,7 +870,7 @@ namespace CIARE
         public CIARE.GUI.DarkTabControl outputTabControl;
         public System.Windows.Forms.TabPage outputTabPage;
         public System.Windows.Forms.TabPage errorsTabPage;
-        public System.Windows.Forms.RichTextBox errorsRTB;
+        public System.Windows.Forms.ListView errorsLV;
         private System.Windows.Forms.ToolTip toolTip1;
         public System.Windows.Forms.ToolStripMenuItem fIleToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;

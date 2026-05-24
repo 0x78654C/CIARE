@@ -920,11 +920,11 @@ namespace CIARE
             string filePath = GetActiveEditorFilePath();
             if (!IsCSharpFilePath(filePath))
             {
-                RealTimeChecker.Cancel(editor, typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+                RealTimeChecker.Cancel(editor, typeCheckLbl, errorsLV, errorsTabPage, warningsCheckLbl);
                 return;
             }
 
-            RealTimeChecker.ScheduleCheck(editor.Text, editor, typeCheckLbl, errorsRTB, errorsTabPage,
+            RealTimeChecker.ScheduleCheck(editor.Text, editor, typeCheckLbl, errorsLV, errorsTabPage,
                 warningsCheckLbl, GetActiveWorkspaceFolder(), filePath);
         }
 
@@ -1324,7 +1324,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
-            RealTimeChecker.Cancel(SelectedEditor.GetSelectedEditor(), typeCheckLbl, errorsRTB, errorsTabPage, warningsCheckLbl);
+            RealTimeChecker.Cancel(SelectedEditor.GetSelectedEditor(), typeCheckLbl, errorsLV, errorsTabPage, warningsCheckLbl);
             if (outputTabControl.SelectedTab == errorsTabPage)
                 outputTabControl.SelectedTab = outputTabPage;
             RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
@@ -1687,8 +1687,8 @@ namespace CIARE
                 var darkFg = Color.FromArgb(192, 215, 207);
                 DarkModeMain.SetDarkModeMain(this, outputRBT, groupBox1, label2, label3,
                     menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator(), GlobalVariables.isVStheme);
-                errorsRTB.BackColor = darkBg;
-                errorsRTB.ForeColor = darkFg;
+                errorsLV.BackColor = darkBg;
+                errorsLV.ForeColor = darkFg;
                 ApplyTabControlDarkMode(outputTabControl, darkBg);
                 ApplyFileExplorerTheme(highlight);
                 return;
@@ -1696,8 +1696,8 @@ namespace CIARE
             GlobalVariables.darkColor = false;
             LightModeMain.SetLightModeMain(this, outputRBT, groupBox1,
                 menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
-            errorsRTB.BackColor = SystemColors.Window;
-            errorsRTB.ForeColor = Color.Black;
+            errorsLV.BackColor = SystemColors.Window;
+            errorsLV.ForeColor = Color.Black;
             ApplyTabControlDarkMode(outputTabControl, SystemColors.Window);
             ApplyFileExplorerTheme(highlight);
         }
@@ -1777,17 +1777,11 @@ namespace CIARE
             }
         }
 
-        private void errorsRTB_MouseDoubleClick(object sender, MouseEventArgs e)
+        private void errorsLV_ItemActivate(object sender, EventArgs e)
         {
-            int charIndex = errorsRTB.GetCharIndexFromPosition(e.Location);
-            int rtbLine = errorsRTB.GetLineFromCharIndex(charIndex);
-            if (rtbLine < 0 || rtbLine >= errorsRTB.Lines.Length) return;
-
-            var match = Regex.Match(
-                errorsRTB.Lines[rtbLine], @"Line\s+(\d+)");
-            if (!match.Success) return;
-
-            if (!int.TryParse(match.Groups[1].Value, out int targetLine)) return;
+            if (errorsLV.SelectedItems.Count == 0) return;
+            var item = errorsLV.SelectedItems[0];
+            if (!int.TryParse(item.SubItems[1].Text, out int targetLine)) return;
 
             var editor = SelectedEditor.GetSelectedEditor();
             if (editor == null) return;
@@ -1798,14 +1792,27 @@ namespace CIARE
 
         private string _clickedErrorLine = "";
 
-        private void errorsRTB_MouseDown(object sender, MouseEventArgs e)
+        private void errorsLV_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Right) return;
-            int charIndex = errorsRTB.GetCharIndexFromPosition(e.Location);
-            int rtbLine = errorsRTB.GetLineFromCharIndex(charIndex);
-            _clickedErrorLine = (rtbLine >= 0 && rtbLine < errorsRTB.Lines.Length)
-                ? errorsRTB.Lines[rtbLine].Trim()
-                : "";
+            var hit = errorsLV.HitTest(e.Location);
+            if (hit.Item == null)
+            {
+                _clickedErrorLine = "";
+                return;
+            }
+            var item = hit.Item;
+            _clickedErrorLine = $"{item.SubItems[2].Text}: {item.SubItems[3].Text}";
+        }
+
+        private void errorsLV_ColumnClick(object sender, ColumnClickEventArgs e)
+        {
+            if (errorsLV.ListViewItemSorter is CIARE.GUI.ListViewColumnSorter sorter)
+            {
+                sorter.SortColumn = e.Column;
+                errorsLV.Sorting = SortOrder.None;
+                errorsLV.Sort();
+            }
         }
 
         private void copyErrorMenuItem_Click(object sender, EventArgs e)

@@ -42,14 +42,14 @@ namespace CIARE.Roslyn
         /// Resets the timer on every call so it only fires once typing pauses.
         /// </summary>
         public static void ScheduleCheck(string code, TextEditorControl editor, Label statusLabel,
-            RichTextBox errorsRTB = null, TabPage errorsTabPage = null, Label warningsLabel = null,
+            ListView errorsLV = null, TabPage errorsTabPage = null, Label warningsLabel = null,
             string workspaceFolder = null, string currentFilePath = null)
         {
             lock (_lock)
             {
                 _debounceTimer?.Dispose();
                 _debounceTimer = new System.Threading.Timer(
-                    _ => RunCheck(code, editor, statusLabel, errorsRTB, errorsTabPage, warningsLabel,
+                    _ => RunCheck(code, editor, statusLabel, errorsLV, errorsTabPage, warningsLabel,
                         workspaceFolder, currentFilePath),
                     null, DebounceMs, Timeout.Infinite);
             }
@@ -59,7 +59,7 @@ namespace CIARE.Roslyn
         /// Cancel any pending or running check and clear all markers.
         /// </summary>
         public static void Cancel(TextEditorControl editor = null, Label statusLabel = null,
-            RichTextBox errorsRTB = null, TabPage errorsTabPage = null, Label warningsLabel = null)
+            ListView errorsLV = null, TabPage errorsTabPage = null, Label warningsLabel = null)
         {
             lock (_lock)
             {
@@ -80,13 +80,13 @@ namespace CIARE.Roslyn
                         statusLabel.Text = string.Empty;
                     if (warningsLabel != null)
                         warningsLabel.Text = string.Empty;
-                    ClearErrorsPanel(errorsRTB, errorsTabPage);
+                    ClearErrorsPanel(errorsLV, errorsTabPage);
                 }));
             }
         }
 
         private static void RunCheck(string code, TextEditorControl editor, Label statusLabel,
-            RichTextBox errorsRTB, TabPage errorsTabPage, Label warningsLabel,
+            ListView errorsLV, TabPage errorsTabPage, Label warningsLabel,
             string workspaceFolder, string currentFilePath)
         {
             CancellationTokenSource cts;
@@ -108,7 +108,7 @@ namespace CIARE.Roslyn
                     if (string.IsNullOrWhiteSpace(code))
                     {
                         ClearMarkersAndStatus(editor, statusLabel, warningsLabel);
-                        ClearErrorsPanel(errorsRTB, errorsTabPage);
+                        ClearErrorsPanel(errorsLV, errorsTabPage);
                         return;
                     }
 
@@ -124,7 +124,7 @@ namespace CIARE.Roslyn
                         ApplyMarkers(editor, errors, warnings);
                         UpdateErrorLabel(statusLabel, errors.Count);
                         UpdateWarningLabel(warningsLabel, warnings.Count);
-                        UpdateErrorsPanel(errorsRTB, errorsTabPage, errors, warnings);
+                        UpdateErrorsPanel(errorsLV, errorsTabPage, errors, warnings);
                     }));
                 }
                 catch (OperationCanceledException) { }
@@ -397,31 +397,30 @@ namespace CIARE.Roslyn
             }));
         }
 
-        private static void UpdateErrorsPanel(RichTextBox errorsRTB, TabPage errorsTabPage,
+        private static void UpdateErrorsPanel(ListView errorsLV, TabPage errorsTabPage,
             List<Diagnostic> errors, List<Diagnostic> warnings)
         {
-            if (errorsRTB == null) return;
+            if (errorsLV == null) return;
 
-            errorsRTB.Clear();
+            errorsLV.BeginUpdate();
+            errorsLV.Items.Clear();
 
             foreach (var d in errors.Concat(warnings))
             {
                 var location = d.Location;
                 int line = location.IsInSource ? location.GetLineSpan().StartLinePosition.Line + 1 : 0;
                 var icon = d.Severity == DiagnosticSeverity.Error ? "\u2716" : "\u26a0";
-                var entry = line > 0
-                    ? $"{icon}  Line {line,-5}  {d.Id,-8}  {d.GetMessage()}\n"
-                    : $"{icon}  {d.Id,-8}  {d.GetMessage()}\n";
+                var rowColor = d.Severity == DiagnosticSeverity.Error ? Color.Red : Color.Orange;
 
-                int start = errorsRTB.TextLength;
-                errorsRTB.AppendText(entry);
-
-                // Colour the icon red/orange
-                errorsRTB.Select(start, 1);
-                errorsRTB.SelectionColor = d.Severity == DiagnosticSeverity.Error ? Color.Red : Color.Orange;
-                errorsRTB.Select(errorsRTB.TextLength, 0);
-                errorsRTB.SelectionColor = errorsRTB.ForeColor;
+                var item = new ListViewItem(icon) { ForeColor = rowColor };
+                item.SubItems.Add(line > 0 ? line.ToString() : string.Empty);
+                item.SubItems.Add(d.Id);
+                item.SubItems.Add(d.GetMessage());
+                item.Tag = d;
+                errorsLV.Items.Add(item);
             }
+
+            errorsLV.EndUpdate();
 
             if (errorsTabPage != null)
             {
@@ -430,10 +429,10 @@ namespace CIARE.Roslyn
             }
         }
 
-        private static void ClearErrorsPanel(RichTextBox errorsRTB, TabPage errorsTabPage)
+        private static void ClearErrorsPanel(ListView errorsLV, TabPage errorsTabPage)
         {
-            if (errorsRTB == null) return;
-            errorsRTB.Clear();
+            if (errorsLV == null) return;
+            errorsLV.Items.Clear();
             if (errorsTabPage != null)
                 errorsTabPage.Text = "Errors";
         }
