@@ -953,6 +953,28 @@ namespace CIARE
             return string.Empty;
         }
 
+        public string GetActiveCompileProjectPath()
+        {
+            string filePath = GetActiveEditorFilePath();
+
+            if (Directory.Exists(_fileExplorerRootPath) &&
+                (string.IsNullOrEmpty(filePath) || IsPathInsideFolder(filePath, _fileExplorerRootPath)))
+            {
+                string openFolderTarget = FindBuildTargetFile(_fileExplorerRootPath, filePath);
+                if (!string.IsNullOrEmpty(openFolderTarget))
+                    return openFolderTarget;
+            }
+
+            if (IsCSharpFilePath(filePath))
+            {
+                string activeFileTarget = FindBuildTargetFromActiveFile(filePath);
+                if (!string.IsNullOrEmpty(activeFileTarget))
+                    return activeFileTarget;
+            }
+
+            return string.Empty;
+        }
+
         private static bool IsCSharpFilePath(string filePath)
         {
             return !string.IsNullOrWhiteSpace(filePath) &&
@@ -967,6 +989,168 @@ namespace CIARE
                     .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
                 string fullPath = Path.GetFullPath(filePath);
                 return fullPath.StartsWith(fullFolder, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string FindBuildTargetFile(string folderPath, string activeFilePath = null)
+        {
+            if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+                return string.Empty;
+
+            string rootSolution = FindTopLevelBuildFile(folderPath, "*.sln");
+            if (!string.IsNullOrEmpty(rootSolution))
+                return rootSolution;
+
+            if (IsCSharpFilePath(activeFilePath))
+            {
+                string activeFolder = Path.GetDirectoryName(activeFilePath);
+
+                string activeSolution = FindNearestBuildFile(activeFolder, folderPath, "*.sln");
+                if (!string.IsNullOrEmpty(activeSolution))
+                    return activeSolution;
+
+                string activeProject = FindNearestBuildFile(activeFolder, folderPath, "*.csproj");
+                if (!string.IsNullOrEmpty(activeProject))
+                    return activeProject;
+            }
+
+            string rootProject = FindTopLevelBuildFile(folderPath, "*.csproj");
+            if (!string.IsNullOrEmpty(rootProject))
+                return rootProject;
+
+            string singleSolution = FindSingleRecursiveBuildFile(folderPath, "*.sln");
+            if (!string.IsNullOrEmpty(singleSolution))
+                return singleSolution;
+
+            return FindSingleRecursiveBuildFile(folderPath, "*.csproj");
+        }
+
+        private static string FindBuildTargetFromActiveFile(string filePath)
+        {
+            if (!IsCSharpFilePath(filePath))
+                return string.Empty;
+
+            string activeFolder = Path.GetDirectoryName(filePath);
+            string solution = FindNearestBuildFile(activeFolder, null, "*.sln");
+            if (!string.IsNullOrEmpty(solution))
+                return solution;
+
+            return FindNearestBuildFile(activeFolder, null, "*.csproj");
+        }
+
+        private static string FindTopLevelBuildFile(string folderPath, string searchPattern)
+        {
+            try
+            {
+                return Directory.GetFiles(folderPath, searchPattern, SearchOption.TopDirectoryOnly)
+                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .FirstOrDefault() ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string FindNearestBuildFile(string startFolder, string stopFolder, string searchPattern)
+        {
+            if (string.IsNullOrEmpty(startFolder) || !Directory.Exists(startFolder))
+                return string.Empty;
+
+            if (!string.IsNullOrEmpty(stopFolder) && !IsSameOrChildDirectory(startFolder, stopFolder))
+                return string.Empty;
+
+            string folder = startFolder;
+            while (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
+            {
+                string buildFile = FindTopLevelBuildFile(folder, searchPattern);
+                if (!string.IsNullOrEmpty(buildFile))
+                    return buildFile;
+
+                if (!string.IsNullOrEmpty(stopFolder) &&
+                    string.Equals(NormalizeCompletionPath(folder), NormalizeCompletionPath(stopFolder), StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                string parent = Path.GetDirectoryName(folder);
+                if (string.IsNullOrEmpty(parent) || parent == folder)
+                    break;
+
+                if (!string.IsNullOrEmpty(stopFolder) && !IsSameOrChildDirectory(parent, stopFolder))
+                    break;
+
+                folder = parent;
+            }
+
+            return string.Empty;
+        }
+
+        private static string FindSingleRecursiveBuildFile(string folderPath, string searchPattern)
+        {
+            try
+            {
+                var matches = EnumerateBuildFiles(folderPath, searchPattern)
+                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .Take(2)
+                    .ToList();
+
+                return matches.Count == 1 ? matches[0] : string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static IEnumerable<string> EnumerateBuildFiles(string folderPath, string searchPattern)
+        {
+            var pending = new Stack<string>();
+            pending.Push(folderPath);
+
+            while (pending.Count > 0)
+            {
+                string current = pending.Pop();
+
+                IEnumerable<string> files;
+                try { files = Directory.EnumerateFiles(current, searchPattern); }
+                catch { files = Array.Empty<string>(); }
+
+                foreach (string file in files)
+                    yield return file;
+
+                IEnumerable<string> directories;
+                try { directories = Directory.EnumerateDirectories(current); }
+                catch { directories = Array.Empty<string>(); }
+
+                foreach (string directory in directories)
+                {
+                    string name = Path.GetFileName(directory);
+                    if (string.Equals(name, ".git", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, ".vs", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "bin", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "obj", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "node_modules", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "packages", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    pending.Push(directory);
+                }
+            }
+        }
+
+        private static bool IsSameOrChildDirectory(string path, string folderPath)
+        {
+            try
+            {
+                string fullPath = NormalizeCompletionPath(path);
+                string fullFolder = NormalizeCompletionPath(folderPath);
+
+                return string.Equals(fullPath, fullFolder, StringComparison.OrdinalIgnoreCase) ||
+                    fullPath.StartsWith(fullFolder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                    fullPath.StartsWith(fullFolder + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
             }
             catch
             {
@@ -1680,6 +1864,7 @@ namespace CIARE
         private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GlobalVariables.binaryPublish = false;
+            FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
             if (outputTabControl.SelectedTab == errorsTabPage)
                 outputTabControl.SelectedTab = outputTabPage;
             RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
@@ -1693,6 +1878,7 @@ namespace CIARE
         private void compileToDLLCtrlSfitBToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GlobalVariables.binaryPublish = true;
+            FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
             if (outputTabControl.SelectedTab == errorsTabPage)
                 outputTabControl.SelectedTab = outputTabPage;
             RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);

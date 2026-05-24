@@ -19,6 +19,7 @@ using System.Runtime.Loader;
 using System.Drawing.Text;
 using CIARE.Utils.OpenAISettings;
 using CIARE.Utils.Options;
+using System.Text.RegularExpressions;
 
 namespace CIARE.Roslyn
 {
@@ -37,6 +38,23 @@ namespace CIARE.Roslyn
         private static string s_errorMessage = "";
         private static string s_codeAI = "";
         private static string s_line = "";
+
+        private sealed class ProjectBuildCommand
+        {
+            public ProjectBuildCommand(string processName, string arguments, string displayName, bool usesFullFrameworkMsBuild)
+            {
+                ProcessName = processName;
+                Arguments = arguments;
+                DisplayName = displayName;
+                UsesFullFrameworkMsBuild = usesFullFrameworkMsBuild;
+            }
+
+            public string ProcessName { get; }
+            public string Arguments { get; }
+            public string DisplayName { get; }
+            public bool UsesFullFrameworkMsBuild { get; }
+        }
+
         /// <summary>
         /// Compile and run C# using Roslyn.
         /// </summary>
@@ -353,6 +371,9 @@ namespace CIARE.Roslyn
         /// </summary>
         public static void CompileBinary(TextEditorControl textEditor, SplitContainer splitContainer, RichTextBox outLogRtb, bool runner, OutputKind outputKind = OutputKind.ConsoleApplication)
         {
+            if (TryCompileActiveProject(splitContainer, outLogRtb, runner))
+                return;
+
             BinaryName binaryName = new BinaryName();
             var code = textEditor.Text;
             if (string.IsNullOrEmpty(code))
@@ -370,6 +391,367 @@ namespace CIARE.Roslyn
                 BinaryCompile(textEditor.Text, false, GlobalVariables.binaryName, outLogRtb, GlobalVariables.OUnsafeCode);
             RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             GC.Collect();
+        }
+
+        private static bool TryCompileActiveProject(SplitContainer splitContainer, RichTextBox outLogRtb, bool runner)
+        {
+            string projectPath = string.Empty;
+
+            try
+            {
+                projectPath = MainForm.Instance?.GetActiveCompileProjectPath() ?? string.Empty;
+            }
+            catch
+            {
+                projectPath = string.Empty;
+            }
+
+            if (string.IsNullOrEmpty(projectPath))
+                return false;
+
+            if (GlobalVariables.darkColor)
+                outLogRtb.ForeColor = Color.FromArgb(192, 215, 207);
+            else
+                outLogRtb.ForeColor = Color.Black;
+
+            OutputWindowManage.ShowOutputWindow(splitContainer, outLogRtb);
+            BuildExistingProject(projectPath, outLogRtb, GlobalVariables.binaryPublish);
+            RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
+            GC.Collect();
+            return true;
+        }
+
+        private static void BuildExistingProject(string projectPath, RichTextBox logOutput, bool publish)
+        {
+            try
+            {
+                if (!File.Exists(projectPath))
+                {
+                    RichExtColor.ErrorDisplay(logOutput, $"ERROR: Project file does not exist -> {projectPath}");
+                    return;
+                }
+
+                string action = publish ? "Publish" : "Build";
+                logOutput.Text = $"{action} project ...\n{projectPath}";
+
+                string workingDirectory = Path.GetDirectoryName(projectPath);
+                ProjectBuildCommand command = CreateBuildCommand(projectPath, publish, BuildTargetPrefersFullFrameworkMsBuild(projectPath));
+                ProcessRunResult build = RunBuildCommand(command, workingDirectory);
+
+                if (!command.UsesFullFrameworkMsBuild && RequiresFullFrameworkMsBuild(build.Output))
+                {
+                    ProjectBuildCommand msBuildCommand = CreateBuildCommand(projectPath, publish, true);
+                    if (msBuildCommand.UsesFullFrameworkMsBuild)
+                    {
+                        command = msBuildCommand;
+                        ProcessRunResult retryBuild = RunBuildCommand(command, workingDirectory);
+                        build = new ProcessRunResult(retryBuild.ExitCode,
+                            "dotnet build cannot handle this project because it requires ResolveComReference. " +
+                            $"Retrying with {command.DisplayName}...\n\n" + retryBuild.Output);
+                    }
+                    else
+                    {
+                        build = new ProcessRunResult(build.ExitCode,
+                            build.Output.Trim() + "\n\nThis project requires the .NET Framework version of MSBuild because it uses COM references. " +
+                            "Install Visual Studio or Build Tools with the .NET desktop build workload, then retry.");
+                    }
+                }
+
+                string buildOutput = FormatBuildOutput(build);
+                if (!build.Success || BuildHasErrors(buildOutput))
+                    logOutput.Text = buildOutput + $"\nCompleted task with errors! ({command.DisplayName}, exit code {build.ExitCode})";
+                else
+                    logOutput.Text = buildOutput + $"\nDone! ({command.DisplayName})";
+
+                logOutput.SelectionStart = logOutput.Text.Length;
+                logOutput.ScrollToCaret();
+            }
+            catch (UnauthorizedAccessException uae)
+            {
+                RichExtColor.ErrorDisplay(logOutput, $"ERROR: {uae.Message}. Process may be running!");
+            }
+            catch (Exception e)
+            {
+                RichExtColor.ErrorDisplay(logOutput, $"ERROR: {e.Message}");
+            }
+        }
+
+        private static ProjectBuildCommand CreateBuildCommand(string projectPath, bool publish, bool preferFullFrameworkMsBuild)
+        {
+            if (preferFullFrameworkMsBuild && TryFindFullFrameworkMsBuild(out string msBuildPath))
+            {
+                return new ProjectBuildCommand(msBuildPath, BuildExistingProjectMsBuildArguments(projectPath, publish),
+                    "Visual Studio MSBuild", true);
+            }
+
+            return new ProjectBuildCommand("dotnet", BuildExistingProjectDotnetArguments(projectPath, publish),
+                ".NET SDK MSBuild", false);
+        }
+
+        private static ProcessRunResult RunBuildCommand(ProjectBuildCommand command, string workingDirectory)
+        {
+            ProcessRun processRun = new ProcessRun(command.ProcessName, command.Arguments, workingDirectory);
+            return processRun.RunWithResult();
+        }
+
+        private static string BuildExistingProjectDotnetArguments(string projectPath, bool publish)
+        {
+            string quotedProjectPath = QuoteProcessArgument(projectPath);
+            string configuration = ExistingProjectConfiguration();
+            string platform = ExistingProjectPlatformDotnetArgument();
+
+            if (publish)
+                return $"publish {quotedProjectPath} --configuration {configuration} {platform}".Trim();
+
+            return $"build {quotedProjectPath} --configuration {configuration} {platform}".Trim();
+        }
+
+        private static string BuildExistingProjectMsBuildArguments(string projectPath, bool publish)
+        {
+            string quotedProjectPath = QuoteProcessArgument(projectPath);
+            string configuration = ExistingProjectConfiguration();
+            string platform = ExistingProjectPlatformMsBuildArgument();
+            string target = publish ? "Publish" : "Build";
+
+            return $"{quotedProjectPath} /restore /t:{target} /p:Configuration={configuration} {platform}".Trim();
+        }
+
+        private static string ExistingProjectConfiguration() =>
+            GlobalVariables.configParam.Contains("Release") ? "Release" : "Debug";
+
+        private static string ExistingProjectPlatformDotnetArgument()
+        {
+            string platform = ExistingProjectPlatform();
+            return string.IsNullOrEmpty(platform) ? string.Empty : $"--property:Platform={QuoteProcessArgument(platform)}";
+        }
+
+        private static string ExistingProjectPlatformMsBuildArgument()
+        {
+            string platform = ExistingProjectPlatform();
+            return string.IsNullOrEmpty(platform) ? string.Empty : $"/p:Platform={QuoteProcessArgument(platform)}";
+        }
+
+        private static string ExistingProjectPlatform()
+        {
+            if (string.IsNullOrWhiteSpace(GlobalVariables.platformParam))
+                return string.Empty;
+
+            const string platformKey = "Platform=";
+            int platformIndex = GlobalVariables.platformParam.IndexOf(platformKey, StringComparison.OrdinalIgnoreCase);
+            if (platformIndex < 0)
+                return string.Empty;
+
+            return GlobalVariables.platformParam
+                .Substring(platformIndex + platformKey.Length)
+                .Trim()
+                .Trim('"');
+        }
+
+        private static string QuoteProcessArgument(string argument) =>
+            "\"" + argument.Replace("\"", "\\\"") + "\"";
+
+        private static bool BuildTargetPrefersFullFrameworkMsBuild(string buildTargetPath)
+        {
+            try
+            {
+                string extension = Path.GetExtension(buildTargetPath);
+                if (string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase))
+                    return ProjectFilePrefersFullFrameworkMsBuild(buildTargetPath);
+
+                if (string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase))
+                    return SolutionPrefersFullFrameworkMsBuild(buildTargetPath);
+            }
+            catch
+            {
+                return false;
+            }
+
+            return false;
+        }
+
+        private static bool SolutionPrefersFullFrameworkMsBuild(string solutionPath)
+        {
+            foreach (string projectPath in GetSolutionProjectPaths(solutionPath))
+            {
+                if (ProjectFilePrefersFullFrameworkMsBuild(projectPath))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static IEnumerable<string> GetSolutionProjectPaths(string solutionPath)
+        {
+            List<string> projectPaths = new List<string>();
+            string solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
+
+            try
+            {
+                foreach (string line in File.ReadLines(solutionPath))
+                {
+                    Match match = Regex.Match(line,
+                        @"Project\(""\{[^}]+\}""\)\s*=\s*""[^""]+"",\s*""([^""]+\.csproj)""",
+                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+                    if (!match.Success)
+                        continue;
+
+                    string projectPath = match.Groups[1].Value;
+                    if (!Path.IsPathRooted(projectPath))
+                        projectPath = Path.GetFullPath(Path.Combine(solutionDirectory, projectPath));
+
+                    projectPaths.Add(projectPath);
+                }
+            }
+            catch
+            {
+                return Array.Empty<string>();
+            }
+
+            return projectPaths;
+        }
+
+        private static bool ProjectFilePrefersFullFrameworkMsBuild(string projectPath)
+        {
+            if (!File.Exists(projectPath))
+                return false;
+
+            string projectXml = File.ReadAllText(projectPath);
+            return projectXml.IndexOf("<COMReference", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                projectXml.IndexOf("<COMFileReference", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                projectXml.IndexOf("<TargetFrameworkVersion>v4", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                Regex.IsMatch(projectXml, @"<TargetFrameworks?>\s*net4", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        }
+
+        private static bool RequiresFullFrameworkMsBuild(string buildOutput)
+        {
+            if (string.IsNullOrEmpty(buildOutput))
+                return false;
+
+            return buildOutput.IndexOf("MSB4803", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (buildOutput.IndexOf("ResolveComReference", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                buildOutput.IndexOf(".NET Core version of MSBuild", StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static bool TryFindFullFrameworkMsBuild(out string msBuildPath)
+        {
+            msBuildPath = FindMsBuildWithVsWhere();
+            if (!string.IsNullOrEmpty(msBuildPath))
+                return true;
+
+            foreach (string candidate in GetKnownMsBuildPaths())
+            {
+                if (File.Exists(candidate))
+                {
+                    msBuildPath = candidate;
+                    return true;
+                }
+            }
+
+            msBuildPath = string.Empty;
+            return false;
+        }
+
+        private static string FindMsBuildWithVsWhere()
+        {
+            string vsWherePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                "Microsoft Visual Studio", "Installer", "vswhere.exe");
+
+            if (!File.Exists(vsWherePath))
+                return string.Empty;
+
+            try
+            {
+                ProcessStartInfo startInfo = new ProcessStartInfo(vsWherePath)
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    Arguments = "-latest -products * -requires Microsoft.Component.MSBuild -find \"MSBuild\\**\\Bin\\MSBuild.exe\""
+                };
+
+                using (Process process = Process.Start(startInfo))
+                {
+                    if (process == null)
+                        return string.Empty;
+
+                    if (!process.WaitForExit(5000))
+                    {
+                        try
+                        {
+                            process.Kill();
+                        }
+                        catch
+                        {
+                        }
+
+                        return string.Empty;
+                    }
+
+                    string output = process.StandardOutput.ReadToEnd();
+                    return output
+                        .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(path => path.Trim())
+                        .FirstOrDefault(File.Exists) ?? string.Empty;
+                }
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static IEnumerable<string> GetKnownMsBuildPaths()
+        {
+            string[] roots =
+            {
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)
+            };
+            string[] versions = { "2022", "2019", "2017" };
+            string[] editions = { "BuildTools", "Community", "Professional", "Enterprise" };
+
+            foreach (string root in roots.Where(root => !string.IsNullOrEmpty(root)).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                foreach (string version in versions)
+                {
+                    foreach (string edition in editions)
+                    {
+                        string msBuildRoot = Path.Combine(root, "Microsoft Visual Studio", version, edition, "MSBuild");
+                        yield return Path.Combine(msBuildRoot, "Current", "Bin", "MSBuild.exe");
+                        yield return Path.Combine(msBuildRoot, "Current", "Bin", "amd64", "MSBuild.exe");
+                    }
+                }
+            }
+
+            string programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            if (!string.IsNullOrEmpty(programFilesX86))
+            {
+                yield return Path.Combine(programFilesX86, "MSBuild", "14.0", "Bin", "MSBuild.exe");
+                yield return Path.Combine(programFilesX86, "MSBuild", "12.0", "Bin", "MSBuild.exe");
+            }
+        }
+
+        private static string FormatBuildOutput(ProcessRunResult build)
+        {
+            string output = build.Output?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(output))
+                return output;
+
+            return build.Success
+                ? "Build completed with no output."
+                : $"Build failed with exit code {build.ExitCode}.";
+        }
+
+        private static bool BuildHasErrors(string buildOutput)
+        {
+            if (string.IsNullOrEmpty(buildOutput))
+                return false;
+
+            return buildOutput.IndexOf(" error ", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                buildOutput.IndexOf(": error", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                buildOutput.IndexOf("Build FAILED.", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                buildOutput.StartsWith("Error:", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
