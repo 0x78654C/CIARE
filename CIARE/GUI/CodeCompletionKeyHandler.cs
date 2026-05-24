@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 using ICSharpCode.TextEditor;
@@ -11,9 +12,12 @@ namespace CIARE.GUI
     [SupportedOSPlatform("windows")]
     class CodeCompletionKeyHandler
 	{
-        MainForm mainForm;
+		MainForm mainForm;
 		TextEditorControl editor;
 		CodeCompletionWindow codeCompletionWindow;
+		string pendingDefinitionWord;
+		int pendingDefinitionOffset = -1;
+		Point pendingDefinitionMouseLocation;
 		static readonly HashSet<string> DeclarationTypeKeywords = new HashSet<string>(StringComparer.Ordinal)
 		{
 			"var", "bool", "byte", "sbyte", "char", "decimal", "double", "float",
@@ -45,6 +49,7 @@ namespace CIARE.GUI
 
 			editor.ActiveTextAreaControl.TextArea.KeyEventHandler += h.TextAreaKeyEventHandler;
 				editor.ActiveTextAreaControl.TextArea.MouseDown += h.TextAreaMouseDown;
+				editor.ActiveTextAreaControl.TextArea.MouseUp += h.TextAreaMouseUp;
 
 				// When the editor is disposed, close the code completion window
 				editor.Disposed += h.CloseCodeCompletionWindow;
@@ -584,6 +589,9 @@ namespace CIARE.GUI
 
 		void TextAreaMouseDown(object sender, MouseEventArgs e)
 		{
+			pendingDefinitionWord = null;
+			pendingDefinitionOffset = -1;
+
 			if (e.Button != MouseButtons.Left || (Control.ModifierKeys & Keys.Control) == 0)
 				return;
 
@@ -603,6 +611,29 @@ namespace CIARE.GUI
 			string word = textArea.Document.GetText(wordStart, wordEnd - wordStart);
 			if (string.IsNullOrEmpty(word) || (!char.IsLetter(word[0]) && word[0] != '_'))
 				return;
+
+			pendingDefinitionWord = word;
+			pendingDefinitionOffset = wordStart;
+			pendingDefinitionMouseLocation = e.Location;
+		}
+
+		void TextAreaMouseUp(object sender, MouseEventArgs e)
+		{
+			if (e.Button != MouseButtons.Left || pendingDefinitionWord == null || pendingDefinitionOffset < 0)
+				return;
+
+			if (Math.Abs(e.X - pendingDefinitionMouseLocation.X) > SystemInformation.DragSize.Width ||
+				Math.Abs(e.Y - pendingDefinitionMouseLocation.Y) > SystemInformation.DragSize.Height)
+			{
+				pendingDefinitionWord = null;
+				pendingDefinitionOffset = -1;
+				return;
+			}
+
+			string word = pendingDefinitionWord;
+			int wordStart = pendingDefinitionOffset;
+			pendingDefinitionWord = null;
+			pendingDefinitionOffset = -1;
 
 			editor.BeginInvoke(new MethodInvoker(delegate
 			{
