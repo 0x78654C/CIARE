@@ -24,7 +24,7 @@ namespace CIARE.GUI
                 MainForm.Instance.visibleSplitContainer = false;
                 GlobalVariables.outPutDisplay = false;
                 outLogRtb.Focus();
-                outLogRtb.ScrollToEnd();
+                outLogRtb.ScrollToEnd(true);
                 return;
             }
 
@@ -34,7 +34,7 @@ namespace CIARE.GUI
                 MainForm.Instance.visibleSplitContainer = false;
                 GlobalVariables.outPutDisplay = false;
                 outLogRtb.Focus();
-                outLogRtb.ScrollToEnd();
+                outLogRtb.ScrollToEnd(true);
             }
         }
 

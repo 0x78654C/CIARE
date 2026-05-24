@@ -332,14 +332,13 @@ namespace CIARE.Roslyn
         /// </summary>
         public static void RunCode(RichTextBox outLogRtb, PictureBox runCodePb, TextEditorControl textEditor, SplitContainer splitContainer, bool runner)
         {
-            OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
             if (GlobalVariables.darkColor)
                 outLogRtb.ForeColor = Color.FromArgb(192, 215, 207);
             else
                 outLogRtb.ForeColor = Color.Black;
 
-            outLogRtb.Clear();
-            outLogRtb.Text = "Compile and Runing..\n";
+            outLogRtb.Text = "Compile and Running..\n";
+            OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
             runCodePb.Image = Properties.Resources.runButton_gray;
             runCodePb.Enabled = false;
             CompileAndRun(textEditor.Text, outLogRtb, GlobalVariables.OUnsafeCode);
