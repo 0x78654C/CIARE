@@ -3818,7 +3818,8 @@ namespace CIARE
                 GridLines = true,
                 HideSelection = false,
                 MultiSelect = false,
-                ShowItemToolTips = true
+                ShowItemToolTips = true,
+                Activation = ItemActivation.Standard
             };
             list.Columns.Add("File", 340);
             list.Columns.Add("Line", 70);
@@ -3877,15 +3878,6 @@ namespace CIARE
             openButton.Click += (sender, e) => OpenSelectedUsage();
             closeButton.Click += (sender, e) => form.Close();
             list.ItemActivate += (sender, e) => OpenSelectedUsage();
-            list.MouseClick += (sender, e) =>
-            {
-                if (e.Button != MouseButtons.Left)
-                    return;
-
-                var hit = list.HitTest(e.Location);
-                if (hit.Item?.Tag is UsageLocation usage)
-                    NavigateToUsageLocation(usage.FilePath, usage.Line, usage.Column);
-            };
             list.SelectedIndexChanged += (sender, e) =>
                 openButton.Enabled = list.SelectedItems.Count > 0 && list.SelectedItems[0].Tag is UsageLocation;
             list.KeyDown += (sender, e) =>
