@@ -18,6 +18,11 @@ namespace ICSharpCode.TextEditor
         /// </summary>
         public Action AskAIAction { get; set; }
 
+        /// <summary>
+        /// When set, "Find Usages" is shown in the context menu and this action is invoked on click.
+        /// </summary>
+        public Action FindUsagesAction { get; set; }
+
         public ContextMenu(TextAreaControl parent)
         {
             this.parent = parent;
@@ -28,6 +33,7 @@ namespace ICSharpCode.TextEditor
             copy.Click += OnClickCopy;
             paste.Click += OnClickPaste;
             selectAll.Click += OnSelectAll;
+            findUsages.Click += OnClickFindUsages;
             askAI.Click += OnClickAskAI;
         }
 
@@ -66,12 +72,21 @@ namespace ICSharpCode.TextEditor
             AskAIAction?.Invoke();
         }
 
+        void OnClickFindUsages(object sender, EventArgs e)
+        {
+            FindUsagesAction?.Invoke();
+        }
+
         void OnOpening(object sender, CancelEventArgs e)
         {
             undo.Enabled = parent.Document.UndoStack.CanUndo;
             cut.Enabled = copy.Enabled = delete.Enabled = parent.SelectionManager.HasSomethingSelected;
             paste.Enabled = parent.TextArea.ClipboardHandler.EnablePaste;
             selectAll.Enabled = !string.IsNullOrEmpty(parent.Document.TextContent);
+            bool showFindUsages = FindUsagesAction != null;
+            findUsages.Visible = showFindUsages;
+            findUsagesSeparator.Visible = showFindUsages;
+            findUsages.Enabled = showFindUsages && !string.IsNullOrEmpty(parent.Document.TextContent);
             bool showAI = AskAIAction != null;
             askAI.Visible = showAI;
             aiSeparator.Visible = showAI;

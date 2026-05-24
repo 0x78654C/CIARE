@@ -167,12 +167,13 @@ namespace CIARE.Roslyn
                 else
                     param = $"build {GlobalVariables.configParam} {GlobalVariables.platformParam}";
                 ProcessRun processRun = new ProcessRun("dotnet", param, projectDir);
-                string build = processRun.Run();
-                if (build.Contains("error"))
-                    logOutput.Text = build.Trim() + "\nCompleted task with errors!";
+                ProcessRunResult build = processRun.RunWithResult();
+                string buildOutput = FormatBuildOutput(build);
+                if (!build.Success || BuildHasErrors(buildOutput))
+                    logOutput.Text = buildOutput + $"\nCompleted task with errors! (exit code {build.ExitCode})";
                 else
                 {
-                    logOutput.Text = build.Trim()+"\nDone!";
+                    logOutput.Text = buildOutput + "\nDone!";
                 }
                 logOutput.SelectionStart = logOutput.Text.Length;
                 logOutput.ScrollToCaret();
@@ -197,6 +198,28 @@ namespace CIARE.Roslyn
             var splitCount = path.Split(Path.DirectorySeparatorChar).Count();
             var getType = path.Split(Path.DirectorySeparatorChar)[splitCount - 3];
             return getType;
+        }
+
+        private static string FormatBuildOutput(ProcessRunResult build)
+        {
+            string output = build.Output?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(output))
+                return output;
+
+            return build.Success
+                ? "Build completed with no output."
+                : $"Build failed with exit code {build.ExitCode}.";
+        }
+
+        private static bool BuildHasErrors(string buildOutput)
+        {
+            if (string.IsNullOrEmpty(buildOutput))
+                return false;
+
+            return buildOutput.IndexOf(" error ", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                buildOutput.IndexOf(": error", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                buildOutput.IndexOf("Build FAILED.", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                buildOutput.StartsWith("Error:", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

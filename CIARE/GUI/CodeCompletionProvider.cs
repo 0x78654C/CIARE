@@ -93,36 +93,57 @@ namespace CIARE.GUI
 			NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
 			List<ICompletionData> resultList = new List<ICompletionData>();
 
-			if (charTyped == '.')
-			{
-				Dom.ResolveResult rr = resolver.Resolve(FindExpression(textArea),
-														MainForm.parseInformation,
-														textArea.MotherTextEditorControl.Text);
-				if (rr != null)
+				// For top-level statement files the code has no class/method context, so the
+				// NRefactory resolver cannot find a scope.  Wrap the code before passing it to
+				// the resolver and adjust the caret line accordingly.
+				string rawCode = textArea.MotherTextEditorControl.Text;
+				string resolverCode = MainForm.WrapTopLevelStatementsForNRefactory(rawCode, out int wrapLineOffset, out int bodyStartLine);
+				int caretLine = textArea.Caret.Line + 1;
+				int caretCol  = textArea.Caret.Column + 1;
+				if (wrapLineOffset > 0 && caretLine >= bodyStartLine)
+					caretLine += wrapLineOffset;
+
+				if (charTyped == '.')
 				{
-					ArrayList completionData = rr.GetCompletionData(MainForm.myProjectContent);
+					Dom.ExpressionResult expression = FindExpression(textArea);
+					if (wrapLineOffset > 0 && !expression.Region.IsEmpty && expression.Region.BeginLine >= bodyStartLine)
+					{
+						int adjustedBegin = expression.Region.BeginLine + wrapLineOffset;
+						expression.Region = expression.Region.EndLine == -1
+							? new Dom.DomRegion(adjustedBegin, expression.Region.BeginColumn)
+							: new Dom.DomRegion(adjustedBegin, expression.Region.BeginColumn,
+								expression.Region.EndLine + wrapLineOffset, expression.Region.EndColumn);
+					}
+					Dom.ResolveResult rr = resolver.Resolve(expression,
+															MainForm.parseInformation,
+															resolverCode);
+					ArrayList completionData = null;
+					if (rr != null)
+					{
+						completionData = rr.GetCompletionData(MainForm.myProjectContent);
+					}
+
+					completionData = MergeCompletionData(completionData, mainForm.GetWorkspaceMemberCompletionData(expression.Expression));
+					if (completionData != null)
+						AddCompletionData(resultList, completionData);
+				}
+				else
+				{
+					Dom.ExpressionResult expression = FindExpression(textArea);
+					ArrayList completionData = resolver.CtrlSpace(caretLine,
+																  caretCol,
+																  MainForm.parseInformation,
+																  resolverCode,
+																  expression.Context);
 					if (completionData != null)
 					{
 						AddCompletionData(resultList, completionData);
 					}
+					AddCompletionData(resultList, mainForm.GetWorkspaceMethodCompletionData(preSelection));
+					AddDirectTypingKeywords(resultList);
 				}
+				return resultList.ToArray();
 			}
-			else
-			{
-				Dom.ExpressionResult expression = FindExpression(textArea);
-				ArrayList completionData = resolver.CtrlSpace(textArea.Caret.Line + 1,
-															  textArea.Caret.Column + 1,
-															  MainForm.parseInformation,
-															  textArea.MotherTextEditorControl.Text,
-															  expression.Context);
-				if (completionData != null)
-				{
-					AddCompletionData(resultList, completionData);
-				}
-				AddDirectTypingKeywords(resultList);
-			}
-			return resultList.ToArray();
-		}
 
 		/// <summary>
 		/// Find the expression the cursor is at.
@@ -172,29 +193,37 @@ namespace CIARE.GUI
 				else if (obj is Dom.IClass)
 				{
 					Dom.IClass c = (Dom.IClass)obj;
-					resultList.Add(new CodeCompletionData(c));
-				}
-				else if (obj is Dom.IMember)
-				{
-					Dom.IMember m = (Dom.IMember)obj;
-					if (m is Dom.IMethod && ((m as Dom.IMethod).IsConstructor))
-					{
-						// Skip constructors
-						continue;
+						if (!ContainsCompletionText(resultList, c.Name))
+							resultList.Add(new CodeCompletionData(c));
 					}
-					// Group results by name and add "(x Overloads)" to the
-					// description if there are multiple results with the same name.
+					else if (obj is Dom.IMember)
+					{
+						Dom.IMember m = (Dom.IMember)obj;
+						if (m is Dom.IMethod && ((m as Dom.IMethod).IsConstructor))
+						{
+							// Skip constructors
+							continue;
+						}
+						// Group results by name and add "(x Overloads)" to the
+						// description if there are multiple results with the same name.
+						// Also guard against duplicates introduced by a previous AddCompletionData call.
 
-					CodeCompletionData data;
-					if (nameDictionary.TryGetValue(m.Name, out data))
-					{
-						data.AddOverload();
+						CodeCompletionData data;
+						if (nameDictionary.TryGetValue(m.Name, out data))
+						{
+							data.AddOverload();
+						}
+						else if (!ContainsCompletionText(resultList, m.Name))
+						{
+							nameDictionary[m.Name] = data = new CodeCompletionData(m);
+							resultList.Add(data);
+						}
 					}
-					else
-					{
-						nameDictionary[m.Name] = data = new CodeCompletionData(m);
+				else if (obj is ICompletionData)
+				{
+					ICompletionData data = (ICompletionData)obj;
+					if (!ContainsCompletionText(resultList, data.Text))
 						resultList.Add(data);
-					}
 				}
 				else
 				{
@@ -202,6 +231,49 @@ namespace CIARE.GUI
 					throw new NotSupportedException();
 				}
 			}
+		}
+
+		static ArrayList MergeCompletionData(ArrayList primary, ArrayList fallback)
+		{
+			if (fallback == null || fallback.Count == 0)
+				return primary;
+			if (primary == null || primary.Count == 0)
+				return fallback;
+
+			ArrayList merged = new ArrayList(primary);
+			foreach (object item in fallback)
+			{
+				if (!ContainsCompletionObject(merged, item))
+					merged.Add(item);
+			}
+			return merged;
+		}
+
+		static bool ContainsCompletionObject(ArrayList completionData, object candidate)
+		{
+			string candidateText = GetCompletionObjectText(candidate);
+			if (candidateText == null)
+				return completionData.Contains(candidate);
+
+			foreach (object item in completionData)
+			{
+				if (string.Equals(GetCompletionObjectText(item), candidateText, StringComparison.Ordinal))
+					return true;
+			}
+			return false;
+		}
+
+		static string GetCompletionObjectText(object item)
+		{
+			if (item is string)
+				return (string)item;
+			if (item is ICompletionData)
+				return ((ICompletionData)item).Text;
+			if (item is Dom.IClass)
+				return ((Dom.IClass)item).Name;
+			if (item is Dom.IMember)
+				return ((Dom.IMember)item).Name;
+			return null;
 		}
 
 		void AddDirectTypingKeywords(List<ICompletionData> resultList)

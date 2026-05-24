@@ -20,22 +20,23 @@ namespace CIARE.GUI
         {
             if (runner)
             {
-                SplitContainerHideShow.ShowSplitContainer(splitContainer);
-                MainForm.Instance.visibleSplitContainer = false;
-                GlobalVariables.outPutDisplay = false;
-                outLogRtb.Focus();
-                outLogRtb.ScrollToEnd();
+                ShowOutputWindow(splitContainer, outLogRtb);
                 return;
             }
 
             if (GlobalVariables.outPutDisplay)
             {
-                SplitContainerHideShow.ShowSplitContainer(splitContainer);
-                MainForm.Instance.visibleSplitContainer = false;
-                GlobalVariables.outPutDisplay = false;
-                outLogRtb.Focus();
-                outLogRtb.ScrollToEnd();
+                ShowOutputWindow(splitContainer, outLogRtb);
             }
+        }
+
+        public static void ShowOutputWindow(SplitContainer splitContainer, RichTextBox outLogRtb)
+        {
+            SplitContainerHideShow.ShowSplitContainer(splitContainer);
+            MainForm.Instance.visibleSplitContainer = false;
+            GlobalVariables.outPutDisplay = false;
+            outLogRtb.Focus();
+            outLogRtb.ScrollToEnd(true);
         }
 
         /// <summary>

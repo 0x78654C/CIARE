@@ -1,7 +1,23 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace CIARE.Utils
 {
+    public sealed class ProcessRunResult
+    {
+        public ProcessRunResult(int exitCode, string output)
+        {
+            ExitCode = exitCode;
+            Output = output ?? string.Empty;
+        }
+
+        public int ExitCode { get; }
+        public string Output { get; }
+        public bool Success => ExitCode == 0;
+
+        public override string ToString() => Output;
+    }
+
     public class ProcessRun
     {
         private string ProcessToRun { get; set; }
@@ -27,33 +43,53 @@ namespace CIARE.Utils
         /// <returns></returns>
         public string Run()
         {
-            string outData = string.Empty;
+            return RunWithResult().Output;
+        }
+
+        /// <summary>
+        /// Run process with console output redirect and return the process exit code.
+        /// </summary>
+        public ProcessRunResult RunWithResult()
+        {
             if (string.IsNullOrEmpty(ProcessToRun) || string.IsNullOrEmpty(Arguments) || string.IsNullOrEmpty(WorkingDirectory))
-                return "Error: Check process parameters!";
+                return new ProcessRunResult(-1, "Error: Check process parameters!");
 
             ProcessStartInfo startInfo = new ProcessStartInfo(ProcessToRun);
             startInfo.UseShellExecute = false;
-            startInfo.Arguments =Arguments;
+            startInfo.Arguments = Arguments;
             startInfo.WorkingDirectory = WorkingDirectory;
             startInfo.CreateNoWindow = true;
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
             startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            Process process = new Process();
-            process.OutputDataReceived += (sender2, args) =>
+            using (Process process = new Process())
             {
-                outData +=args.Data + " \n";
-            };
-            process.ErrorDataReceived += (sender2, args) =>
-            {
-                outData += args.Data + " \n";
-            };
-            process.StartInfo = startInfo;
-            process.Start();
-            process.BeginErrorReadLine();
-            process.BeginOutputReadLine();
-            process.WaitForExit();
-            return outData;
+                process.StartInfo = startInfo;
+                process.Start();
+
+                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> errorTask = process.StandardError.ReadToEndAsync();
+
+                process.WaitForExit();
+                Task.WaitAll(outputTask, errorTask);
+
+                string outData = CombineOutput(outputTask.Result, errorTask.Result);
+                if (string.IsNullOrWhiteSpace(outData) && process.ExitCode != 0)
+                    outData = $"{ProcessToRun} exited with code {process.ExitCode}.";
+
+                return new ProcessRunResult(process.ExitCode, outData);
+            }
+        }
+
+        private static string CombineOutput(string standardOutput, string standardError)
+        {
+            if (string.IsNullOrWhiteSpace(standardOutput))
+                return standardError ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(standardError))
+                return standardOutput;
+
+            return standardOutput.TrimEnd() + "\n" + standardError;
         }
 
         /// <summary>
@@ -65,7 +101,7 @@ namespace CIARE.Utils
                 return;
             ProcessStartInfo startInfo = new ProcessStartInfo(ProcessToRun);
             startInfo.UseShellExecute = false;
-            startInfo.Arguments = "\""+Arguments+"\"";
+            startInfo.Arguments = "\"" + Arguments + "\"";
             Process process = new Process();
             process.StartInfo = startInfo;
             process.Start();

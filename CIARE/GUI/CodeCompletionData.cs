@@ -38,6 +38,8 @@ namespace CIARE.GUI
 			overloads++;
 		}
 
+
+
 		static int GetMemberImageIndex(IMember member)
 		{
 			// Missing: different icons for private/public member

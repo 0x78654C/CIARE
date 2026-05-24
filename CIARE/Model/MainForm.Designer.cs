@@ -75,6 +75,7 @@ namespace CIARE
             splitVEditorToolStripMenuItem = new ToolStripMenuItem();
             compileStripSeparator1 = new ToolStripSeparator();
             showHideHSCToolStripMenuItem = new ToolStripMenuItem();
+            showHideExplorerToolStripMenuItem = new ToolStripMenuItem();
             viewSeparator1 = new ToolStripSeparator();
             fullScreenToolStripMenuItem = new ToolStripMenuItem();
             liveToolStripMenuItem = new ToolStripMenuItem();
@@ -108,7 +109,7 @@ namespace CIARE
             outputTabControl = new CIARE.GUI.DarkTabControl();
             outputTabPage = new TabPage();
             errorsTabPage = new TabPage();
-            errorsRTB = new RichTextBox();
+            errorsLV = new ListView();
             progressBar = new ProgressBar();
             ((System.ComponentModel.ISupportInitialize)runCodePb).BeginInit();
             menuStrip1.SuspendLayout();
@@ -151,27 +152,36 @@ namespace CIARE
             // 
             // errorsTabPage
             // 
-            errorsTabPage.Controls.Add(errorsRTB);
+            errorsTabPage.Controls.Add(errorsLV);
             errorsTabPage.Name = "errorsTabPage";
             errorsTabPage.Text = "Errors";
-            errorsRTB.Size = new System.Drawing.Size(88, 50);
+            errorsLV.Size = new System.Drawing.Size(88, 50);
             errorsTabPage.UseVisualStyleBackColor = true;
             // 
-            // errorsRTB
+            // errorsLV
             // 
-            errorsRTB.BackColor = System.Drawing.SystemColors.Window;
-            errorsRTB.BorderStyle = BorderStyle.None;
-            errorsRTB.Dock = DockStyle.Fill;
-            errorsRTB.Font = new System.Drawing.Font("Consolas", 10.5F);
-            errorsRTB.ForeColor = System.Drawing.SystemColors.MenuText;
-            errorsRTB.Name = "errorsRTB";
-            errorsRTB.ReadOnly = true;
-            errorsRTB.ScrollBars = RichTextBoxScrollBars.Vertical;
-            errorsRTB.TabIndex = 0;
-            errorsRTB.Text = "";
-            errorsRTB.ContextMenuStrip = errorsContextMenu;
-            errorsRTB.MouseDown += errorsRTB_MouseDown;
-            errorsRTB.MouseDoubleClick += errorsRTB_MouseDoubleClick;
+            errorsLV.BackColor = System.Drawing.SystemColors.Window;
+            errorsLV.BorderStyle = BorderStyle.None;
+            errorsLV.Dock = DockStyle.Fill;
+            errorsLV.Font = new System.Drawing.Font("Consolas", 10.5F);
+            errorsLV.ForeColor = System.Drawing.SystemColors.MenuText;
+            errorsLV.FullRowSelect = true;
+            errorsLV.GridLines = false;
+            errorsLV.HeaderStyle = ColumnHeaderStyle.Clickable;
+            errorsLV.HideSelection = false;
+            errorsLV.MultiSelect = false;
+            errorsLV.Name = "errorsLV";
+            errorsLV.TabIndex = 0;
+            errorsLV.View = View.Details;
+            errorsLV.Columns.Add(string.Empty, 28, HorizontalAlignment.Center);
+            errorsLV.Columns.Add("Line", 60, HorizontalAlignment.Right);
+            errorsLV.Columns.Add("Code", 75, HorizontalAlignment.Left);
+            errorsLV.Columns.Add("Message", -2, HorizontalAlignment.Left);
+            errorsLV.ListViewItemSorter = new CIARE.GUI.ListViewColumnSorter();
+            errorsLV.ContextMenuStrip = errorsContextMenu;
+            errorsLV.MouseDown += errorsLV_MouseDown;
+            errorsLV.ItemActivate += errorsLV_ItemActivate;
+            errorsLV.ColumnClick += errorsLV_ColumnClick;
             // 
             // outputTabControl
             // 
@@ -427,7 +437,7 @@ namespace CIARE
             // 
             // viewToolStripMenuItem
             // 
-            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { splitEditorToolStripMenuItem, splitVEditorToolStripMenuItem, compileStripSeparator1, showHideHSCToolStripMenuItem, viewSeparator1, fullScreenToolStripMenuItem });
+            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { splitEditorToolStripMenuItem, splitVEditorToolStripMenuItem, compileStripSeparator1, showHideHSCToolStripMenuItem, showHideExplorerToolStripMenuItem, viewSeparator1, fullScreenToolStripMenuItem });
             viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             viewToolStripMenuItem.Text = "View";
@@ -457,6 +467,13 @@ namespace CIARE
             showHideHSCToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
             showHideHSCToolStripMenuItem.Text = "Show/Hide Output          ( CTRL + K )";
             showHideHSCToolStripMenuItem.Click += showHideSCToolStripMenuItem_Click;
+            // 
+            // showHideExplorerToolStripMenuItem
+            // 
+            showHideExplorerToolStripMenuItem.Name = "showHideExplorerToolStripMenuItem";
+            showHideExplorerToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
+            showHideExplorerToolStripMenuItem.Text = "Show/Hide Explorer        ( CTRL + E )";
+            showHideExplorerToolStripMenuItem.Click += showHideExplorerToolStripMenuItem_Click;
             // 
             // viewSeparator1
             // 
@@ -853,7 +870,7 @@ namespace CIARE
         public CIARE.GUI.DarkTabControl outputTabControl;
         public System.Windows.Forms.TabPage outputTabPage;
         public System.Windows.Forms.TabPage errorsTabPage;
-        public System.Windows.Forms.RichTextBox errorsRTB;
+        public System.Windows.Forms.ListView errorsLV;
         private System.Windows.Forms.ToolTip toolTip1;
         public System.Windows.Forms.ToolStripMenuItem fIleToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
@@ -888,6 +905,7 @@ namespace CIARE
         public System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem splitEditorToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem showHideHSCToolStripMenuItem;
+        public System.Windows.Forms.ToolStripMenuItem showHideExplorerToolStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator viewSeparator1;
         public System.Windows.Forms.ToolStripMenuItem fullScreenToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem goToLineStripMenuItem;

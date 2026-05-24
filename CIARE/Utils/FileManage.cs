@@ -25,6 +25,21 @@ namespace CIARE.Utils
         private static SaveFileDialog s_saveFileDialog = new SaveFileDialog();
         private static List<string> s_packageLibs = new List<string>();
         private static bool s_isTabOpen = false;
+        private static HashSet<string> s_platformAsmNames;
+
+        // Returns the set of assembly filenames that are part of the trusted platform (BCL).
+        // These should never be added to customRefAsm from a NuGet package because they are
+        // already included via TRUSTED_PLATFORM_ASSEMBLIES in the Roslyn compilation.
+        private static HashSet<string> GetPlatformAsmNames()
+        {
+            if (s_platformAsmNames != null) return s_platformAsmNames;
+            var trusted = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES");
+            if (string.IsNullOrEmpty(trusted))
+                return s_platformAsmNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            return s_platformAsmNames = new HashSet<string>(
+                trusted.Split(Path.PathSeparator).Select(Path.GetFileName),
+                StringComparer.OrdinalIgnoreCase);
+        }
 
         /// <summary>
         /// Open file dialog.
@@ -605,7 +620,8 @@ MessageBoxIcon.Information);
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
-                            if (!GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
+                            if (!GetPlatformAsmNames().Contains(fileInfo.Name) &&
+                                !GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
                                 GlobalVariables.customRefAsm.Add(file);
                             break;
                         }
@@ -616,7 +632,8 @@ MessageBoxIcon.Information);
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
-                            if (!GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
+                            if (!GetPlatformAsmNames().Contains(fileInfo.Name) &&
+                                !GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
                                 GlobalVariables.customRefAsm.Add(file);
                             break;
                         }
@@ -627,7 +644,8 @@ MessageBoxIcon.Information);
                         var fileInfo = new FileInfo(file);
                         if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
                         {
-                            if (!GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
+                            if (!GetPlatformAsmNames().Contains(fileInfo.Name) &&
+                                !GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
                                 GlobalVariables.customRefAsm.Add(file);
                             break;
                         }

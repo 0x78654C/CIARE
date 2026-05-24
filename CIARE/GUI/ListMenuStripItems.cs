@@ -39,6 +39,7 @@ namespace CIARE.GUI
                 MainForm.Instance.viewToolStripMenuItem,
                 MainForm.Instance.splitEditorToolStripMenuItem,
                 MainForm.Instance.showHideHSCToolStripMenuItem,
+                MainForm.Instance.showHideExplorerToolStripMenuItem,
                 MainForm.Instance.goToLineStripMenuItem,
                 MainForm.Instance.cmdLinesArgsStripMenuItem,
                 MainForm.Instance.splitVEditorToolStripMenuItem,
