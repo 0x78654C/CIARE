@@ -925,8 +925,12 @@ namespace CIARE
                 return;
             }
 
+            string workspaceFolder = GetActiveWorkspaceFolder();
+            bool useProjectReferences = !string.IsNullOrEmpty(workspaceFolder) &&
+                IsPathInsideFolder(filePath, workspaceFolder);
+
             RealTimeChecker.ScheduleCheck(editor.Text, editor, typeCheckLbl, errorsLV, errorsTabPage,
-                warningsCheckLbl, GetActiveWorkspaceFolder(), filePath);
+                warningsCheckLbl, workspaceFolder, filePath, useProjectReferences);
         }
 
         private string GetActiveEditorFilePath()

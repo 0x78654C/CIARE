@@ -96,21 +96,25 @@ namespace CIARE.Utils.NuGetManage
         /// <param name="cancellationToken"></param>
         /// <param name="richTextBox"></param>
         /// <returns></returns>
-        private void  GetDependencies(MemoryStream packageStreamDep, CancellationToken cancellationToken, string version)
+        private void GetDependencies(MemoryStream packageStreamDep, CancellationToken cancellationToken, string version)
         {
             using var packageReader = new PackageArchiveReader(packageStreamDep);
             var nuspecReader = Task.Run(() => packageReader.GetNuspecReaderAsync(cancellationToken)).Result;
             nuspecReader.GetDescription();
+
+            // Build the set of platform assembly names once, outside the per-package loop.
+            var trusted = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES");
+            if (!string.IsNullOrEmpty(trusted))
+            {
+                foreach (var dep in trusted.Split(Path.PathSeparator))
+                    LocalDependencies.Add(GetRefName(dep));
+            }
+
             foreach (var dependencyGroup in nuspecReader.GetDependencyGroups())
             {
                 foreach (var dependecyPackage in dependencyGroup.Packages)
                 {
                     var pakageName = GetPackageName(dependecyPackage.ToString());
-                    var refList = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator).ToList();
-                    foreach (var dep in refList)
-                    {
-                        LocalDependencies.Add(GetRefName(dep));
-                    }
                     if (!Dependencies.Contains(pakageName) && !LocalDependencies.Contains(pakageName))
                     {
                         Dependencies.Add(pakageName);

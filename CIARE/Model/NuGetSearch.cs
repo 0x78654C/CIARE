@@ -165,7 +165,8 @@ MessageBoxIcon.Warning);
         {
             var packageName = nugetListView.SelectedItems[0].Text;
             var version = nugetListView.SelectedItems[0].SubItems[1].Text;
-            if (GlobalVariables.customRefAsm.Any(x => x.Contains(packageName)))
+            if (GlobalVariables.customRefAsm.Any(x => x.Contains(packageName)) ||
+                GlobalVariables.nugetNames.Any(x => x.StartsWith(packageName + "|")))
             {
                 MessageBox.Show($"NuGet package {packageName} is already downloaded and added to reference!", "CIARE", MessageBoxButtons.OK,
 MessageBoxIcon.Warning);
