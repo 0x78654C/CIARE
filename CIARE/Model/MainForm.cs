@@ -45,6 +45,7 @@ using ICSharpCode.TextEditor.Gui.CompletionWindow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using CIARE.Properties;
 
 
 namespace CIARE
@@ -106,6 +107,11 @@ namespace CIARE
             = new List<WorkspaceCompletionClass>();
         private readonly List<WorkspaceCompletionItem> _topLevelLocalFunctions
             = new List<WorkspaceCompletionItem>();
+        private Form _findUsagesWindow;
+        private static readonly object _usageReferencesLock = new object();
+        private static List<MetadataReference> _usagePlatformReferences;
+        private static List<MetadataReference> _usageCustomReferences = new List<MetadataReference>();
+        private static string _usageCustomReferenceKey = string.Empty;
 
 
         // Used for tab's auto-resize
@@ -2953,15 +2959,17 @@ namespace CIARE
             Cursor.Current = Cursors.WaitCursor;
             try
             {
-                var documents = BuildUsageDocuments();
+                var documents = BuildUsageDocuments(identifier);
                 if (documents.Count == 0)
                 {
                     ShowFindUsagesMessage("No C# files found to search.");
                     return;
                 }
 
-                var usages = FindSemanticUsages(identifier, identifierOffset, documents) ??
-                    FindSyntaxUsages(identifier, documents);
+                var semanticUsages = FindSemanticUsages(identifier, identifierOffset, documents, out bool targetResolved);
+                var usages = targetResolved
+                    ? semanticUsages
+                    : FindSyntaxUsages(identifier, documents);
 
                 ShowFindUsagesResults(identifier, usages);
             }
@@ -3022,34 +3030,88 @@ namespace CIARE
             return true;
         }
 
-        private List<UsageDocument> BuildUsageDocuments()
+        private List<UsageDocument> BuildUsageDocuments(string identifier)
         {
             var documents = new List<UsageDocument>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var parseOptions = CSharpParseOptions.Default;
             string activeFilePath = GetActiveEditorFilePath();
-            var editor = SelectedEditor.GetSelectedEditor();
 
-            if (editor != null)
-                AddUsageDocument(documents, seen, activeFilePath, editor.Text ?? string.Empty, true, parseOptions);
+            AddOpenUsageDocuments(documents, seen, parseOptions, identifier);
 
-            string workspaceFolder = GetUsageWorkspaceFolder(activeFilePath);
-            if (!Directory.Exists(workspaceFolder))
-                return documents;
-
-            foreach (var filePath in GetWorkspaceCsFiles(workspaceFolder))
+            foreach (var workspaceFolder in GetUsageWorkspaceFolders(activeFilePath))
             {
-                try
+                if (!Directory.Exists(workspaceFolder))
+                    continue;
+
+                foreach (var filePath in GetWorkspaceCsFiles(workspaceFolder))
                 {
-                    AddUsageDocument(documents, seen, filePath, File.ReadAllText(filePath), false, parseOptions);
+                    try
+                    {
+                        if (!FileContainsIdentifier(filePath, identifier))
+                            continue;
+
+                        AddUsageDocument(documents, seen, filePath, File.ReadAllText(filePath), false, parseOptions);
+                    }
+                    catch
+                    {
+                        // Ignore unreadable files; the rest of the workspace can still be searched.
+                    }
                 }
-                catch
+            }
+
+            lock (_completionDataLock)
+            {
+                foreach (var filePath in _workspaceCompilationUnits.Keys)
                 {
-                    // Ignore unreadable files; the rest of the workspace can still be searched.
+                    try
+                    {
+                        if (!FileContainsIdentifier(filePath, identifier))
+                            continue;
+
+                        AddUsageDocument(documents, seen, filePath, File.ReadAllText(filePath), false, parseOptions);
+                    }
+                    catch { }
                 }
             }
 
             return documents;
+        }
+
+        private void AddOpenUsageDocuments(List<UsageDocument> documents, HashSet<string> seen,
+            CSharpParseOptions parseOptions, string identifier)
+        {
+            for (int i = 0; i < EditorTabControl.TabPages.Count; i++)
+            {
+                var tabPage = EditorTabControl.TabPages[i];
+                var editor = tabPage.Controls.Count > 0 ? tabPage.Controls[0] as TextEditorControl : null;
+                if (editor == null)
+                    continue;
+
+                bool isActive = i == EditorTabControl.SelectedIndex;
+                string filePath = tabPage.ToolTipText?.Trim() ?? string.Empty;
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    if (isActive)
+                        AddUsageDocument(documents, seen, string.Empty, editor.Text ?? string.Empty, true, parseOptions);
+                    continue;
+                }
+
+                if (!IsCSharpFilePath(filePath))
+                    continue;
+
+                if (!isActive && !TextContainsIdentifier(editor.Text, identifier))
+                    continue;
+
+                AddUsageDocument(documents, seen, filePath, editor.Text ?? string.Empty, isActive, parseOptions);
+            }
+
+            if (!documents.Any(document => document.IsActive))
+            {
+                var editor = SelectedEditor.GetSelectedEditor();
+                if (editor != null)
+                    AddUsageDocument(documents, seen, GetActiveEditorFilePath(), editor.Text ?? string.Empty, true, parseOptions);
+            }
         }
 
         private static void AddUsageDocument(List<UsageDocument> documents, HashSet<string> seen,
@@ -3065,25 +3127,138 @@ namespace CIARE
             documents.Add(new UsageDocument(filePath, text, syntaxTree, root, isActive));
         }
 
-        private string GetUsageWorkspaceFolder(string activeFilePath)
+        private static bool FileContainsIdentifier(string filePath, string identifier)
         {
-            string workspaceFolder = GetActiveWorkspaceFolder();
-            if (Directory.Exists(workspaceFolder))
-                return workspaceFolder;
+            if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(identifier))
+                return false;
 
-            if (!string.IsNullOrEmpty(activeFilePath))
+            try
             {
-                string activeFolder = Path.GetDirectoryName(activeFilePath);
-                workspaceFolder = FindWorkspaceRoot(activeFolder);
-                if (Directory.Exists(workspaceFolder))
-                    return workspaceFolder;
+                foreach (string line in File.ReadLines(filePath))
+                {
+                    if (TextContainsIdentifier(line, identifier))
+                        return true;
+                }
             }
+            catch { }
 
-            return string.Empty;
+            return false;
         }
 
-        private List<UsageLocation> FindSemanticUsages(string identifier, int identifierOffset, List<UsageDocument> documents)
+        private static bool TextContainsIdentifier(string text, string identifier)
         {
+            if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(identifier))
+                return false;
+
+            int index = -1;
+            while ((index = text.IndexOf(identifier, index + 1, StringComparison.Ordinal)) >= 0)
+            {
+                int beforeIndex = index - 1;
+                int afterIndex = index + identifier.Length;
+                bool startsAtIdentifierBoundary = beforeIndex < 0 ||
+                    text[beforeIndex] == '@' ||
+                    !IsIdentifierPart(text[beforeIndex]);
+                bool endsAtIdentifierBoundary = afterIndex >= text.Length ||
+                    !IsIdentifierPart(text[afterIndex]);
+
+                if (startsAtIdentifierBoundary && endsAtIdentifierBoundary)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsIdentifierPart(char value)
+        {
+            return char.IsLetterOrDigit(value) || value == '_';
+        }
+
+        private IEnumerable<string> GetUsageWorkspaceFolders(string activeFilePath)
+        {
+            var folders = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void AddFolder(string folder)
+            {
+                if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+                    return;
+
+                string normalized = NormalizeCompletionPath(folder);
+                if (seen.Add(normalized))
+                    folders.Add(folder);
+            }
+
+            AddFolder(GetActiveWorkspaceFolder());
+            AddUsageFoldersForFile(activeFilePath, AddFolder);
+
+            foreach (TabPage tabPage in EditorTabControl.TabPages)
+            {
+                string tabPath = tabPage.ToolTipText?.Trim();
+                if (IsCSharpFilePath(tabPath))
+                    AddUsageFoldersForFile(tabPath, AddFolder);
+            }
+
+            lock (_completionDataLock)
+            {
+                foreach (var filePath in _workspaceCompilationUnits.Keys)
+                    AddUsageFoldersForFile(filePath, AddFolder);
+            }
+
+            return folders;
+        }
+
+        private string GetUsageWorkspaceFolder(string activeFilePath)
+        {
+            return GetUsageWorkspaceFolders(activeFilePath).FirstOrDefault() ?? string.Empty;
+        }
+
+        private static void AddUsageFoldersForFile(string filePath, Action<string> addFolder)
+        {
+            if (!IsCSharpFilePath(filePath))
+                return;
+
+            string activeFolder = Path.GetDirectoryName(filePath);
+            addFolder(FindWorkspaceRoot(activeFolder));
+            addFolder(FindSolutionOrRepositoryRoot(activeFolder));
+        }
+
+        private static string FindSolutionOrRepositoryRoot(string startDir)
+        {
+            if (string.IsNullOrEmpty(startDir))
+                return startDir;
+
+            string dir = startDir;
+            string projectRoot = string.Empty;
+            for (int i = 0; i < 10; i++)
+            {
+                if (!Directory.Exists(dir))
+                    break;
+
+                try
+                {
+                    if (Directory.GetFiles(dir, "*.sln", SearchOption.TopDirectoryOnly).Length > 0 ||
+                        Directory.Exists(Path.Combine(dir, ".git")))
+                        return dir;
+
+                    if (string.IsNullOrEmpty(projectRoot) &&
+                        Directory.GetFiles(dir, "*.csproj", SearchOption.TopDirectoryOnly).Length > 0)
+                        projectRoot = dir;
+                }
+                catch { }
+
+                string parent = Path.GetDirectoryName(dir);
+                if (string.IsNullOrEmpty(parent) || parent == dir)
+                    break;
+                dir = parent;
+            }
+
+            return projectRoot;
+        }
+
+        private List<UsageLocation> FindSemanticUsages(string identifier, int identifierOffset,
+            List<UsageDocument> documents, out bool targetResolved)
+        {
+            targetResolved = false;
             try
             {
                 var activeDocument = documents.FirstOrDefault(document => document.IsActive);
@@ -3103,8 +3278,10 @@ namespace CIARE
                 if (targetSymbol == null)
                     return null;
 
+                targetResolved = true;
                 targetSymbol = NormalizeUsageSymbol(targetSymbol);
                 var usages = new List<UsageLocation>();
+                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var document in documents)
                 {
                     var semanticModel = compilation.GetSemanticModel(document.SyntaxTree, true);
@@ -3115,7 +3292,13 @@ namespace CIARE
 
                         ISymbol symbol = GetReferenceSymbolForIdentifier(semanticModel, token);
                         if (SymbolsMatch(targetSymbol, symbol))
-                            usages.Add(CreateUsageLocation(document, token));
+                        {
+                            AddUsageLocation(usages, seen, CreateUsageLocation(document, token));
+                            continue;
+                        }
+
+                        if (symbol == null && IsPotentialUnresolvedUsage(token, targetSymbol))
+                            AddUsageLocation(usages, seen, CreateUsageLocation(document, token));
                     }
                 }
 
@@ -3123,6 +3306,7 @@ namespace CIARE
             }
             catch
             {
+                targetResolved = false;
                 return null;
             }
         }
@@ -3192,6 +3376,69 @@ namespace CIARE
             return symbol?.OriginalDefinition ?? symbol;
         }
 
+        private static bool IsPotentialUnresolvedUsage(SyntaxToken token, ISymbol targetSymbol)
+        {
+            if (targetSymbol is IMethodSymbol method)
+            {
+                var invocation = GetInvocationForIdentifier(token);
+                if (invocation == null || !ArgumentCountMatches(method, invocation.ArgumentList.Arguments.Count))
+                    return false;
+
+                string qualifier = GetInvocationQualifier(token);
+                if (string.IsNullOrEmpty(qualifier))
+                    return true;
+
+                string containingTypeName = method.ContainingType?.Name;
+                string containingTypeFullName = method.ContainingType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                    ?.Replace("global::", string.Empty);
+                return string.Equals(qualifier, containingTypeName, StringComparison.Ordinal) ||
+                    string.Equals(qualifier, containingTypeFullName, StringComparison.Ordinal) ||
+                    qualifier.EndsWith("." + containingTypeName, StringComparison.Ordinal);
+            }
+
+            return token.Parent is IdentifierNameSyntax;
+        }
+
+        private static InvocationExpressionSyntax GetInvocationForIdentifier(SyntaxToken token)
+        {
+            if (!(token.Parent is SimpleNameSyntax simpleName))
+                return null;
+
+            if (simpleName.Parent is InvocationExpressionSyntax directInvocation &&
+                directInvocation.Expression == simpleName)
+                return directInvocation;
+
+            if (simpleName.Parent is MemberAccessExpressionSyntax memberAccess &&
+                memberAccess.Name == simpleName &&
+                memberAccess.Parent is InvocationExpressionSyntax memberInvocation &&
+                memberInvocation.Expression == memberAccess)
+                return memberInvocation;
+
+            return null;
+        }
+
+        private static string GetInvocationQualifier(SyntaxToken token)
+        {
+            if (token.Parent is SimpleNameSyntax simpleName &&
+                simpleName.Parent is MemberAccessExpressionSyntax memberAccess &&
+                memberAccess.Name == simpleName)
+                return NormalizeCompletionExpression(memberAccess.Expression.ToString());
+
+            return string.Empty;
+        }
+
+        private static bool ArgumentCountMatches(IMethodSymbol method, int argumentCount)
+        {
+            if (method == null)
+                return false;
+
+            int requiredCount = method.Parameters.Count(parameter => !parameter.HasExplicitDefaultValue && !parameter.IsParams);
+            int totalCount = method.Parameters.Length;
+            bool hasParams = method.Parameters.Length > 0 && method.Parameters[method.Parameters.Length - 1].IsParams;
+
+            return argumentCount >= requiredCount && (hasParams || argumentCount <= totalCount);
+        }
+
         private static bool IsDeclarationIdentifier(SyntaxToken token)
         {
             SyntaxNode node = token.Parent;
@@ -3231,6 +3478,16 @@ namespace CIARE
             return new UsageLocation(document.DisplayPath, line, column, document.GetLineText(line).Trim());
         }
 
+        private static void AddUsageLocation(List<UsageLocation> usages, HashSet<string> seen, UsageLocation usage)
+        {
+            if (usage == null)
+                return;
+
+            string key = $"{usage.FilePath}|{usage.Line}|{usage.Column}";
+            if (seen.Add(key))
+                usages.Add(usage);
+        }
+
         private static List<UsageLocation> SortUsageLocations(List<UsageLocation> usages)
         {
             return usages
@@ -3242,64 +3499,272 @@ namespace CIARE
 
         private static IEnumerable<MetadataReference> BuildUsageReferences()
         {
-            var references = new List<MetadataReference>();
-            string trusted = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
-            if (!string.IsNullOrEmpty(trusted))
+            lock (_usageReferencesLock)
             {
-                foreach (var referencePath in trusted.Split(Path.PathSeparator))
+                if (_usagePlatformReferences == null)
                 {
-                    if (!string.IsNullOrEmpty(referencePath) && File.Exists(referencePath))
-                        references.Add(MetadataReference.CreateFromFile(referencePath));
+                    _usagePlatformReferences = new List<MetadataReference>();
+                    string trusted = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
+                    if (!string.IsNullOrEmpty(trusted))
+                    {
+                        foreach (var referencePath in trusted.Split(Path.PathSeparator))
+                        {
+                            if (!string.IsNullOrEmpty(referencePath) && File.Exists(referencePath))
+                                _usagePlatformReferences.Add(MetadataReference.CreateFromFile(referencePath));
+                        }
+                    }
                 }
-            }
 
-            foreach (var customReference in GlobalVariables.customRefList ?? new List<string>())
-            {
-                try
+                var customReferences = GlobalVariables.customRefList ?? new List<string>();
+                string customReferenceKey = string.Join("|", customReferences);
+                if (!string.Equals(_usageCustomReferenceKey, customReferenceKey, StringComparison.Ordinal))
                 {
-                    var parts = customReference.Split('|');
-                    string referencePath = parts.Length >= 2 ? parts[1] : customReference;
-                    if (!string.IsNullOrEmpty(referencePath) && File.Exists(referencePath))
-                        references.Add(MetadataReference.CreateFromFile(referencePath));
+                    _usageCustomReferenceKey = customReferenceKey;
+                    _usageCustomReferences = new List<MetadataReference>();
+                    foreach (var customReference in customReferences)
+                    {
+                        try
+                        {
+                            var parts = customReference.Split('|');
+                            string referencePath = parts.Length >= 2 ? parts[1] : customReference;
+                            if (!string.IsNullOrEmpty(referencePath) && File.Exists(referencePath))
+                                _usageCustomReferences.Add(MetadataReference.CreateFromFile(referencePath));
+                        }
+                        catch { }
+                    }
                 }
-                catch { }
-            }
 
-            return references;
+                return _usagePlatformReferences.Concat(_usageCustomReferences).ToList();
+            }
         }
 
         private void ShowFindUsagesResults(string identifier, List<UsageLocation> usages)
         {
-            PrepareOutputForFindUsages();
-            outputRBT.AppendText($"Usages of '{identifier}' ({usages.Count}){Environment.NewLine}");
-            if (usages.Count == 0)
+            CloseFindUsagesWindow();
+
+            var form = new Form
             {
-                outputRBT.AppendText("No usages found." + Environment.NewLine);
-            }
-            else
+                Text = "Find Usages - " + identifier,
+                Icon = this.Icon,
+                Size = new Size(900, 480),
+                MinimumSize = new Size(640, 320),
+                StartPosition = FormStartPosition.Manual,
+                ShowInTaskbar = false,
+                ShowIcon = true,
+                KeyPreview = true,
+            };
+            form.Location = new Point(
+                Math.Max(0, Left + 80),
+                Math.Max(0, Top + 80));
+
+            var header = new Label
             {
-                foreach (var usage in usages)
-                    outputRBT.AppendText($"{usage.FilePath}({usage.Line},{usage.Column}): {usage.Text}{Environment.NewLine}");
+                Dock = DockStyle.Top,
+                Height = 36,
+                Padding = new Padding(10, 9, 10, 0),
+                Text = $"Usages of '{identifier}' ({usages.Count})"
+            };
+
+            var list = new ListView
+            {
+                Dock = DockStyle.Fill,
+                View = View.Details,
+                FullRowSelect = true,
+                GridLines = true,
+                HideSelection = false,
+                MultiSelect = false,
+                ShowItemToolTips = true
+            };
+            list.Columns.Add("File", 340);
+            list.Columns.Add("Line", 70);
+            list.Columns.Add("Column", 70);
+            list.Columns.Add("Code", 400);
+
+            foreach (var usage in usages)
+            {
+                var item = new ListViewItem(GetUsageWindowDisplayPath(usage.FilePath))
+                {
+                    Tag = usage,
+                    ToolTipText = usage.FilePath
+                };
+                item.SubItems.Add(usage.Line.ToString());
+                item.SubItems.Add(usage.Column.ToString());
+                item.SubItems.Add(usage.Text);
+                list.Items.Add(item);
             }
 
-            outputRBT.SelectionStart = 0;
-            outputRBT.ScrollToCaret();
+            if (usages.Count == 0)
+                list.Items.Add(new ListViewItem(new[] { "No usages found.", string.Empty, string.Empty, string.Empty }));
+
+            var footer = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 42,
+                FlowDirection = FlowDirection.RightToLeft,
+                Padding = new Padding(8),
+                WrapContents = false
+            };
+            var closeButton = new Button
+            {
+                Text = "Close",
+                Width = 90,
+                Height = 26
+            };
+            var openButton = new Button
+            {
+                Text = "Open",
+                Width = 90,
+                Height = 26,
+                Enabled = usages.Count > 0
+            };
+            footer.Controls.Add(closeButton);
+            footer.Controls.Add(openButton);
+
+            void OpenSelectedUsage()
+            {
+                if (list.SelectedItems.Count == 0)
+                    return;
+
+                if (list.SelectedItems[0].Tag is UsageLocation usage)
+                    NavigateToUsageLocation(usage.FilePath, usage.Line, usage.Column);
+            }
+
+            openButton.Click += (sender, e) => OpenSelectedUsage();
+            closeButton.Click += (sender, e) => form.Close();
+            list.ItemActivate += (sender, e) => OpenSelectedUsage();
+            list.MouseClick += (sender, e) =>
+            {
+                if (e.Button != MouseButtons.Left)
+                    return;
+
+                var hit = list.HitTest(e.Location);
+                if (hit.Item?.Tag is UsageLocation usage)
+                    NavigateToUsageLocation(usage.FilePath, usage.Line, usage.Column);
+            };
+            list.SelectedIndexChanged += (sender, e) =>
+                openButton.Enabled = list.SelectedItems.Count > 0 && list.SelectedItems[0].Tag is UsageLocation;
+            list.KeyDown += (sender, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    OpenSelectedUsage();
+                    e.Handled = true;
+                }
+            };
+            form.KeyDown += (sender, e) =>
+            {
+                if (e.KeyCode == Keys.Escape)
+                    form.Close();
+            };
+            list.Resize += (sender, e) => ResizeFindUsagesColumns(list);
+
+            ApplyFindUsagesWindowTheme(form, header, list, footer, openButton, closeButton);
+            form.HandleCreated += (sender, e) => ApplyFindUsagesDarkTitleBar(form);
+
+            form.Controls.Add(list);
+            form.Controls.Add(footer);
+            form.Controls.Add(header);
+            form.Shown += (sender, e) =>
+            {
+                ApplyFindUsagesDarkTitleBar(form);
+                ResizeFindUsagesColumns(list);
+                if (list.Items.Count > 0 && list.Items[0].Tag is UsageLocation)
+                    list.Items[0].Selected = true;
+                list.Focus();
+            };
+            form.FormClosed += (sender, e) =>
+            {
+                if (ReferenceEquals(_findUsagesWindow, form))
+                    _findUsagesWindow = null;
+            };
+
+            _findUsagesWindow = form;
+            form.Show(this);
         }
 
         private void ShowFindUsagesMessage(string message)
         {
-            PrepareOutputForFindUsages();
-            outputRBT.AppendText(message + Environment.NewLine);
+            MessageBox.Show(this, message, "Find Usages", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void PrepareOutputForFindUsages()
+        private void CloseFindUsagesWindow()
         {
-            if (outputTabControl.SelectedTab != outputTabPage)
-                outputTabControl.SelectedTab = outputTabPage;
+            if (_findUsagesWindow != null && !_findUsagesWindow.IsDisposed)
+                _findUsagesWindow.Close();
+            _findUsagesWindow = null;
+        }
 
-            outputRBT.Clear();
-            outputRBT.ForeColor = GlobalVariables.darkColor ? Color.FromArgb(192, 215, 207) : SystemColors.MenuText;
-            OutputWindowManage.ShowOutputOnCompileRun(true, splitContainer1, outputRBT);
+        private string GetUsageWindowDisplayPath(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath) || string.Equals(filePath, CurrentFileUsageDisplayName, StringComparison.Ordinal))
+                return CurrentFileUsageDisplayName;
+
+            try
+            {
+                string workspaceFolder = GetUsageWorkspaceFolder(GetActiveEditorFilePath());
+                if (Directory.Exists(workspaceFolder) && IsPathInsideFolder(filePath, workspaceFolder))
+                    return Path.GetRelativePath(workspaceFolder, filePath);
+            }
+            catch { }
+
+            return filePath;
+        }
+
+        private static void ResizeFindUsagesColumns(ListView list)
+        {
+            if (list == null || list.Columns.Count < 4)
+                return;
+
+            int width = Math.Max(480, list.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6);
+            int lineWidth = 70;
+            int columnWidth = 70;
+            int fileWidth = Math.Max(220, width * 40 / 100);
+            int codeWidth = Math.Max(180, width - fileWidth - lineWidth - columnWidth);
+
+            list.Columns[0].Width = fileWidth;
+            list.Columns[1].Width = lineWidth;
+            list.Columns[2].Width = columnWidth;
+            list.Columns[3].Width = codeWidth;
+        }
+
+        private static void ApplyFindUsagesWindowTheme(Form form, Label header, ListView list,
+            FlowLayoutPanel footer, params Button[] buttons)
+        {
+            if (!GlobalVariables.darkColor)
+                return;
+
+            Color background = GlobalVariables.controlBgColor;
+            Color foreground = Color.FromArgb(192, 215, 207);
+            form.BackColor = background;
+            form.ForeColor = foreground;
+            header.BackColor = background;
+            header.ForeColor = foreground;
+            list.BackColor = Color.FromArgb(30, 30, 30);
+            list.ForeColor = foreground;
+            footer.BackColor = background;
+
+            foreach (var button in buttons)
+            {
+                button.BackColor = Color.FromArgb(45, 45, 48);
+                button.ForeColor = foreground;
+                button.FlatStyle = FlatStyle.Flat;
+                button.FlatAppearance.BorderColor = Color.FromArgb(80, 80, 85);
+            }
+        }
+
+        private static void ApplyFindUsagesDarkTitleBar(Form form)
+        {
+            if (!GlobalVariables.darkColor || form == null || form.IsDisposed)
+                return;
+
+            try
+            {
+                FrmColorMod.EnableDarkTitleBar(form.Handle);
+            }
+            catch
+            {
+                // The usages window should still work if DWM dark title bars are unavailable.
+            }
         }
 
         private static string NormalizeIdentifierText(string identifier)
@@ -3527,24 +3992,6 @@ namespace CIARE
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void outputRBT_MouseWheel(object sender, MouseEventArgs e) => GlobalVariables.zoomFactor = outputRBT.ZoomFactor;
-
-        private void outputRBT_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-            int charIndex = outputRBT.GetCharIndexFromPosition(e.Location);
-            int rtbLine = outputRBT.GetLineFromCharIndex(charIndex);
-            if (rtbLine < 0 || rtbLine >= outputRBT.Lines.Length)
-                return;
-
-            var match = Regex.Match(outputRBT.Lines[rtbLine], @"^(?<file>.+)\((?<line>\d+),(?<column>\d+)\):");
-            if (!match.Success)
-                return;
-
-            if (!int.TryParse(match.Groups["line"].Value, out int targetLine) ||
-                !int.TryParse(match.Groups["column"].Value, out int targetColumn))
-                return;
-
-            NavigateToUsageLocation(match.Groups["file"].Value, targetLine, targetColumn);
-        }
 
         /// <summary>
         /// Create/close new tab with new editor.
