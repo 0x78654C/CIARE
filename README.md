@@ -148,8 +148,8 @@ https://user-images.githubusercontent.com/13780514/201774933-e53d3ba2-95e0-434e-
 
 ## 🤖 AI Integration
 
-### ChatGPT / OpenRouter / GitHub Copilot / OpenAI Codex
-
+### ChatGPT / OpenRouter / GitHub Copilot / Ollama / OpenAI Codex
+- **Ollama local LLM integration** - (auto-detects installed models)
 - [ChatGPT](https://openai.com) — precise AI answers and code generation
 - [OpenRouter](https://openrouter.ai/) — access multiple AI models from different providers
 - **GitHub Copilot** — use your active Copilot subscription; supports GPT-4o, Claude Sonnet, Gemini, and more
