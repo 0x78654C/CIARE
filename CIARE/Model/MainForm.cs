@@ -103,7 +103,10 @@ namespace CIARE
         private ListView _fileExplorerNuGetList;
         private ColumnHeader _fileExplorerNuGetPackageColumn;
         private ColumnHeader _fileExplorerNuGetVersionColumn;
+        private ColumnHeader _fileExplorerNuGetUpdateColumn;
+        private ColumnHeader _fileExplorerNuGetStatusColumn;
         private ContextMenuStrip _fileExplorerNuGetContextMenu;
+        private ToolStripMenuItem _fileExplorerNuGetUpdateMenuItem;
         private ToolStripMenuItem _fileExplorerNuGetRemoveMenuItem;
         private ImageList _fileExplorerImageList;
         private string _fileExplorerRootPath = string.Empty;
@@ -115,6 +118,7 @@ namespace CIARE
         private bool _pendingProjectPackageRestore;
         private bool _pendingProjectPackageShowRestoreFailure;
         private int _projectPackageRefreshVersion;
+        private int _fileExplorerNuGetListRefreshVersion;
         private bool _suppressFileExplorerExpandedStateSave;
         private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const int WorkspaceCompletionMethodLimit = 300;
@@ -294,6 +298,8 @@ namespace CIARE
 
             _fileExplorerNuGetPackageColumn = new ColumnHeader { Text = "Package", Width = 130 };
             _fileExplorerNuGetVersionColumn = new ColumnHeader { Text = "Version", Width = 80 };
+            _fileExplorerNuGetUpdateColumn = new ColumnHeader { Text = "Update", Width = 80 };
+            _fileExplorerNuGetStatusColumn = new ColumnHeader { Text = "Status", Width = 70 };
 
             _fileExplorerNuGetTitleLabel = new Label
             {
@@ -308,7 +314,13 @@ namespace CIARE
             _fileExplorerNuGetList = new ListView
             {
                 BorderStyle = BorderStyle.None,
-                Columns = { _fileExplorerNuGetPackageColumn, _fileExplorerNuGetVersionColumn },
+                Columns =
+                {
+                    _fileExplorerNuGetPackageColumn,
+                    _fileExplorerNuGetVersionColumn,
+                    _fileExplorerNuGetUpdateColumn,
+                    _fileExplorerNuGetStatusColumn
+                },
                 Dock = DockStyle.Fill,
                 FullRowSelect = true,
                 GridLines = false,
@@ -321,6 +333,12 @@ namespace CIARE
             _fileExplorerNuGetList.Resize += (sender, args) => ResizeFileExplorerNuGetColumns();
             _fileExplorerNuGetList.MouseClick += fileExplorerNuGetList_MouseClick;
 
+            _fileExplorerNuGetUpdateMenuItem = new ToolStripMenuItem
+            {
+                Text = "Update package"
+            };
+            _fileExplorerNuGetUpdateMenuItem.Click += fileExplorerNuGetUpdateMenuItem_Click;
+
             _fileExplorerNuGetRemoveMenuItem = new ToolStripMenuItem
             {
                 Text = "Remove from Project"
@@ -328,6 +346,8 @@ namespace CIARE
             _fileExplorerNuGetRemoveMenuItem.Click += fileExplorerNuGetRemoveMenuItem_Click;
 
             _fileExplorerNuGetContextMenu = new ContextMenuStrip(components);
+            _fileExplorerNuGetContextMenu.Items.Add(_fileExplorerNuGetUpdateMenuItem);
+            _fileExplorerNuGetContextMenu.Items.Add(new ToolStripSeparator());
             _fileExplorerNuGetContextMenu.Items.Add(_fileExplorerNuGetRemoveMenuItem);
 
             _fileExplorerNuGetPanel = new Panel
@@ -1033,6 +1053,8 @@ namespace CIARE
             }
 
             string projectPath = GetActivePackageProjectPath();
+            int refreshVersion = Interlocked.Increment(ref _fileExplorerNuGetListRefreshVersion);
+            List<ProjectNuGetPackageReference> packages = null;
             _fileExplorerNuGetList.BeginUpdate();
             try
             {
@@ -1048,7 +1070,7 @@ namespace CIARE
                 _fileExplorerNuGetTitleLabel.Text = $"NuGet: {Path.GetFileName(projectPath)}";
                 toolTip1.SetToolTip(_fileExplorerNuGetTitleLabel, projectPath);
 
-                var packages = ProjectNuGetManager.GetPackageReferences(projectPath);
+                packages = ProjectNuGetManager.GetPackageReferences(projectPath);
                 if (packages.Count == 0)
                 {
                     AddFileExplorerNuGetPlaceholder("No PackageReference items");
@@ -1057,10 +1079,16 @@ namespace CIARE
 
                 foreach (var package in packages)
                 {
-                    var item = new ListViewItem(new[] { package.Name, package.Version })
+                    var item = new ListViewItem(new[]
+                    {
+                        package.Name,
+                        package.Version,
+                        "Checking...",
+                        "Checking..."
+                    })
                     {
                         Tag = package,
-                        ToolTipText = $"{package.Name} {package.Version}"
+                        ToolTipText = FormatExplorerNuGetToolTip(package)
                     };
                     _fileExplorerNuGetList.Items.Add(item);
                 }
@@ -1070,6 +1098,9 @@ namespace CIARE
                 _fileExplorerNuGetList.EndUpdate();
                 ResizeFileExplorerNuGetColumns();
             }
+
+            if (packages != null && packages.Count > 0)
+                ScheduleExplorerNuGetPackageMetadataRefresh(projectPath, packages, refreshVersion);
         }
 
         public void RefreshProjectPackageContext(string projectPath, bool restoreProject,
@@ -1212,9 +1243,120 @@ namespace CIARE
                   Environment.NewLine + Environment.NewLine + output;
         }
 
+        private void ScheduleExplorerNuGetPackageMetadataRefresh(string projectPath,
+            List<ProjectNuGetPackageReference> packages, int refreshVersion)
+        {
+            var packageSnapshot = packages
+                .Select(package => new ProjectNuGetPackageReference
+                {
+                    Name = package.Name,
+                    Version = package.Version,
+                    ProjectPath = package.ProjectPath
+                })
+                .ToList();
+
+            Task.Run(() =>
+            {
+                ProjectNuGetManager.PopulateLatestPackageVersions(packageSnapshot);
+                ProjectNuGetManager.PopulateUnusedPackageStatus(projectPath, packageSnapshot);
+                return packageSnapshot;
+            }).ContinueWith(task =>
+            {
+                if (task.Status != TaskStatus.RanToCompletion ||
+                    IsDisposed ||
+                    !IsHandleCreated ||
+                    refreshVersion != _fileExplorerNuGetListRefreshVersion)
+                {
+                    return;
+                }
+
+                TryBeginInvoke(() => ApplyExplorerNuGetPackageMetadata(projectPath, task.Result,
+                    refreshVersion));
+            });
+        }
+
+        private void ApplyExplorerNuGetPackageMetadata(string projectPath,
+            List<ProjectNuGetPackageReference> packages, int refreshVersion)
+        {
+            if (refreshVersion != _fileExplorerNuGetListRefreshVersion ||
+                !string.Equals(GetActivePackageProjectPath(), projectPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var metadataByName = packages
+                .GroupBy(package => package.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+            _fileExplorerNuGetList.BeginUpdate();
+            try
+            {
+                foreach (ListViewItem item in _fileExplorerNuGetList.Items)
+                {
+                    if (!(item.Tag is ProjectNuGetPackageReference package) ||
+                        !metadataByName.TryGetValue(package.Name, out var metadata))
+                    {
+                        continue;
+                    }
+
+                    package.LatestVersion = metadata.LatestVersion;
+                    package.HasUpdate = metadata.HasUpdate;
+                    package.UnusedCheckCompleted = metadata.UnusedCheckCompleted;
+                    package.IsUnused = metadata.IsUnused;
+
+                    EnsureExplorerNuGetSubItemCount(item);
+                    item.SubItems[2].Text = FormatExplorerNuGetUpdateText(package);
+                    item.SubItems[3].Text = FormatExplorerNuGetStatusText(package);
+                    item.ToolTipText = FormatExplorerNuGetToolTip(package);
+                    item.ForeColor = package.UnusedCheckCompleted && package.IsUnused
+                        ? (GlobalVariables.darkColor ? Color.FromArgb(245, 174, 96) : Color.DarkOrange)
+                        : _fileExplorerNuGetList.ForeColor;
+                }
+            }
+            finally
+            {
+                _fileExplorerNuGetList.EndUpdate();
+                ResizeFileExplorerNuGetColumns();
+            }
+        }
+
+        private static void EnsureExplorerNuGetSubItemCount(ListViewItem item)
+        {
+            while (item.SubItems.Count < 4)
+                item.SubItems.Add(string.Empty);
+        }
+
+        private static string FormatExplorerNuGetUpdateText(ProjectNuGetPackageReference package)
+        {
+            if (package.HasUpdate)
+                return package.LatestVersion;
+
+            return string.IsNullOrWhiteSpace(package.LatestVersion) ? "Unknown" : "Current";
+        }
+
+        private static string FormatExplorerNuGetStatusText(ProjectNuGetPackageReference package)
+        {
+            if (!package.UnusedCheckCompleted)
+                return "Checking...";
+
+            return package.IsUnused ? "Unused" : "Used";
+        }
+
+        private static string FormatExplorerNuGetToolTip(ProjectNuGetPackageReference package)
+        {
+            string updateStatus = package.HasUpdate
+                ? $"Update available: {package.LatestVersion}"
+                : (!string.IsNullOrWhiteSpace(package.LatestVersion) ? "No update available" : "Update unknown");
+            string usageStatus = package.UnusedCheckCompleted
+                ? (package.IsUnused ? "Marked unused by source scan" : "Used by source scan")
+                : "Usage unknown";
+
+            return $"{package.Name} {package.Version}{Environment.NewLine}{updateStatus}{Environment.NewLine}{usageStatus}";
+        }
+
         private void AddFileExplorerNuGetPlaceholder(string text)
         {
-            var item = new ListViewItem(new[] { text, string.Empty })
+            var item = new ListViewItem(new[] { text, string.Empty, string.Empty, string.Empty })
             {
                 ForeColor = GlobalVariables.darkColor ? Color.FromArgb(150, 170, 165) : SystemColors.GrayText
             };
@@ -1225,7 +1367,7 @@ namespace CIARE
         {
             if (_fileExplorerNuGetList == null ||
                 _fileExplorerNuGetList.IsDisposed ||
-                _fileExplorerNuGetList.Columns.Count < 2)
+                _fileExplorerNuGetList.Columns.Count < 4)
             {
                 return;
             }
@@ -1234,9 +1376,15 @@ namespace CIARE
             if (availableWidth <= 0)
                 return;
 
-            int versionWidth = Math.Max(70, Math.Min(92, availableWidth / 3));
+            int versionWidth = Math.Max(64, Math.Min(86, availableWidth / 5));
+            int updateWidth = Math.Max(72, Math.Min(96, availableWidth / 4));
+            int statusWidth = Math.Max(62, Math.Min(76, availableWidth / 5));
+            int packageWidth = Math.Max(90, availableWidth - versionWidth - updateWidth - statusWidth);
+
             _fileExplorerNuGetVersionColumn.Width = versionWidth;
-            _fileExplorerNuGetPackageColumn.Width = Math.Max(90, availableWidth - versionWidth);
+            _fileExplorerNuGetUpdateColumn.Width = updateWidth;
+            _fileExplorerNuGetStatusColumn.Width = statusWidth;
+            _fileExplorerNuGetPackageColumn.Width = packageWidth;
         }
 
         private void ScheduleExplorerNuGetRefresh()
@@ -1328,9 +1476,42 @@ namespace CIARE
                 return;
 
             hit.Item.Selected = true;
+            _fileExplorerNuGetUpdateMenuItem.Tag = package;
+            _fileExplorerNuGetUpdateMenuItem.Enabled = package.HasUpdate &&
+                !string.IsNullOrWhiteSpace(package.LatestVersion);
+            _fileExplorerNuGetUpdateMenuItem.Text = _fileExplorerNuGetUpdateMenuItem.Enabled
+                ? $"Update {package.Name} to {package.LatestVersion}"
+                : "No update available";
+
             _fileExplorerNuGetRemoveMenuItem.Tag = package;
             _fileExplorerNuGetRemoveMenuItem.Text = $"Remove {package.Name} from Project";
             _fileExplorerNuGetContextMenu.Show(_fileExplorerNuGetList, e.Location);
+        }
+
+        private void fileExplorerNuGetUpdateMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!(_fileExplorerNuGetUpdateMenuItem.Tag is ProjectNuGetPackageReference package) ||
+                !package.HasUpdate ||
+                string.IsNullOrWhiteSpace(package.LatestVersion))
+            {
+                return;
+            }
+
+            DialogResult dialog = MessageBox.Show(
+                $"Update NuGet package {package.Name} from {package.Version} to {package.LatestVersion}?",
+                "CIARE", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (dialog != DialogResult.Yes)
+                return;
+
+            if (!ProjectNuGetManager.UpdatePackageReference(package.ProjectPath, package.Name,
+                    package.LatestVersion, out string message))
+            {
+                MessageBox.Show(message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            RefreshProjectPackageContext(package.ProjectPath, restoreProject: true);
+            MessageBox.Show(message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void fileExplorerNuGetRemoveMenuItem_Click(object sender, EventArgs e)

@@ -4,8 +4,15 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using CIARE.Utils;
+using Mono.Cecil;
+using NuGet.Common;
+using NuGet.Protocol;
+using NuGet.Protocol.Core.Types;
+using NuGet.Versioning;
 
 namespace CIARE.Utils.NuGetManage
 {
@@ -14,6 +21,10 @@ namespace CIARE.Utils.NuGetManage
     {
         public string Name { get; set; } = string.Empty;
         public string Version { get; set; } = string.Empty;
+        public string LatestVersion { get; set; } = string.Empty;
+        public bool HasUpdate { get; set; }
+        public bool UnusedCheckCompleted { get; set; }
+        public bool IsUnused { get; set; }
         public string ProjectPath { get; set; } = string.Empty;
     }
 
@@ -155,6 +166,148 @@ namespace CIARE.Utils.NuGetManage
             }
         }
 
+        public static bool UpdatePackageReference(string projectPath, string packageName, string version,
+            out string message)
+        {
+            message = string.Empty;
+            if (!IsProjectFile(projectPath))
+            {
+                message = "No valid .csproj file was found for the opened explorer project.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(packageName) || string.IsNullOrWhiteSpace(version))
+            {
+                message = "The NuGet package name or version is empty.";
+                return false;
+            }
+
+            try
+            {
+                string cleanVersion = version.Trim();
+                var document = XDocument.Load(projectPath, LoadOptions.PreserveWhitespace);
+                XElement packageReference = FindPackageReferenceElements(document)
+                    .FirstOrDefault(element => string.Equals(GetPackageName(element), packageName,
+                        StringComparison.OrdinalIgnoreCase));
+
+                if (packageReference == null)
+                {
+                    message = $"NuGet package {packageName} is not installed in {Path.GetFileName(projectPath)}.";
+                    return false;
+                }
+
+                if (TrySetPackageVersion(packageReference, cleanVersion))
+                {
+                    document.Save(projectPath, SaveOptions.DisableFormatting);
+                    message = $"NuGet package {packageName} was updated to {cleanVersion}.";
+                    return true;
+                }
+
+                string centralVersionPath = FindCentralPackageVersionFile(projectPath, packageName);
+                if (!string.IsNullOrWhiteSpace(centralVersionPath))
+                {
+                    var centralDocument = XDocument.Load(centralVersionPath, LoadOptions.PreserveWhitespace);
+                    XElement packageVersion = FindPackageVersionElement(centralDocument, packageName);
+                    if (packageVersion != null)
+                    {
+                        if (!TrySetPackageVersion(packageVersion, cleanVersion))
+                            packageVersion.SetAttributeValue("Version", cleanVersion);
+
+                        centralDocument.Save(centralVersionPath, SaveOptions.DisableFormatting);
+                        message = $"NuGet package {packageName} was updated to {cleanVersion}.";
+                        return true;
+                    }
+                }
+
+                packageReference.SetAttributeValue("Version", cleanVersion);
+                document.Save(projectPath, SaveOptions.DisableFormatting);
+                message = $"NuGet package {packageName} was updated to {cleanVersion}.";
+                return true;
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+                return false;
+            }
+        }
+
+        public static void PopulateLatestPackageVersions(IList<ProjectNuGetPackageReference> packages)
+        {
+            if (packages == null || packages.Count == 0 || string.IsNullOrWhiteSpace(GlobalVariables.nugetApi))
+                return;
+
+            try
+            {
+                ILogger logger = NullLogger.Instance;
+                using var cache = new SourceCacheContext();
+                SourceRepository repository = Repository.Factory.GetCoreV3(GlobalVariables.nugetApi);
+                FindPackageByIdResource resource =
+                    Task.Run(() => repository.GetResourceAsync<FindPackageByIdResource>()).Result;
+
+                foreach (var package in packages)
+                {
+                    string latestVersion = GetLatestStablePackageVersion(resource, cache, logger, package.Name);
+                    package.LatestVersion = latestVersion;
+                    package.HasUpdate = IsNewerPackageVersion(package.Version, latestVersion);
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        public static void PopulateUnusedPackageStatus(string projectPath,
+            IList<ProjectNuGetPackageReference> packages)
+        {
+            if (packages == null || packages.Count == 0)
+                return;
+
+            foreach (var package in packages)
+            {
+                package.UnusedCheckCompleted = true;
+                package.IsUnused = false;
+            }
+
+            if (!IsProjectFile(projectPath))
+                return;
+
+            string projectDirectory = Path.GetDirectoryName(projectPath);
+            string assetsPath = GetProjectAssetsPath(projectPath);
+            if (string.IsNullOrEmpty(projectDirectory) || string.IsNullOrEmpty(assetsPath))
+                return;
+
+            var sourceTexts = ReadProjectSourceTexts(projectDirectory);
+            if (sourceTexts.Count == 0)
+                return;
+
+            var referencesByPackage = ReadCompileReferencesByPackage(assetsPath);
+            foreach (var package in packages)
+            {
+                if (!referencesByPackage.TryGetValue(package.Name, out var referencePaths) ||
+                    referencePaths.Count == 0)
+                {
+                    continue;
+                }
+
+                var namespaces = ReadAssemblyNamespaces(referencePaths);
+                if (namespaces.Count == 0)
+                    continue;
+
+                package.IsUnused = !SourceTextsContainAnyNamespace(sourceTexts, namespaces);
+            }
+        }
+
+        public static bool IsNewerPackageVersion(string installedVersion, string latestVersion)
+        {
+            if (!NuGetVersion.TryParse((installedVersion ?? string.Empty).Trim(), out var installed))
+                return false;
+
+            if (!NuGetVersion.TryParse((latestVersion ?? string.Empty).Trim(), out var latest))
+                return false;
+
+            return latest.CompareTo(installed) > 0;
+        }
+
         public static ProcessRunResult RestoreProject(string projectPath)
         {
             if (!IsProjectFile(projectPath))
@@ -188,6 +341,28 @@ namespace CIARE.Utils.NuGetManage
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+        }
+
+        private static string GetLatestStablePackageVersion(FindPackageByIdResource resource,
+            SourceCacheContext cache, ILogger logger, string packageName)
+        {
+            if (string.IsNullOrWhiteSpace(packageName))
+                return string.Empty;
+
+            try
+            {
+                var versions = Task.Run(() => resource.GetAllVersionsAsync(packageName, cache, logger,
+                    CancellationToken.None)).Result;
+                return versions
+                    .Where(version => !version.IsPrerelease)
+                    .OrderBy(version => version)
+                    .LastOrDefault()
+                    ?.ToNormalizedString() ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         private static string GetProjectAssetsPath(string projectPath)
@@ -344,6 +519,27 @@ namespace CIARE.Utils.NuGetManage
             return version;
         }
 
+        private static bool TrySetPackageVersion(XElement packageElement, string version)
+        {
+            XAttribute versionAttribute = packageElement.Attribute("Version");
+            if (versionAttribute != null)
+            {
+                versionAttribute.Value = version;
+                return true;
+            }
+
+            XElement versionElement = packageElement.Elements()
+                .FirstOrDefault(element => string.Equals(element.Name.LocalName, "Version",
+                    StringComparison.Ordinal));
+            if (versionElement != null)
+            {
+                versionElement.Value = version;
+                return true;
+            }
+
+            return false;
+        }
+
         private static string ResolveCentralPackageVersion(string projectPath, string packageName)
         {
             try
@@ -370,6 +566,35 @@ namespace CIARE.Utils.NuGetManage
             return string.Empty;
         }
 
+        private static string FindCentralPackageVersionFile(string projectPath, string packageName)
+        {
+            string folder = Path.GetDirectoryName(projectPath);
+            while (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
+            {
+                string propsPath = Path.Combine(folder, "Directory.Packages.props");
+                if (File.Exists(propsPath))
+                {
+                    try
+                    {
+                        var document = XDocument.Load(propsPath, LoadOptions.PreserveWhitespace);
+                        if (FindPackageVersionElement(document, packageName) != null)
+                            return propsPath;
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                string parent = Path.GetDirectoryName(folder);
+                if (string.IsNullOrEmpty(parent) || string.Equals(parent, folder, StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                folder = parent;
+            }
+
+            return string.Empty;
+        }
+
         private static string ReadCentralPackageVersion(string propsPath, string packageName)
         {
             if (!File.Exists(propsPath))
@@ -378,28 +603,26 @@ namespace CIARE.Utils.NuGetManage
             try
             {
                 var document = XDocument.Load(propsPath, LoadOptions.PreserveWhitespace);
-                foreach (var packageVersion in document.Root.Descendants()
-                    .Where(element => string.Equals(element.Name.LocalName, "PackageVersion",
-                        StringComparison.Ordinal)))
-                {
-                    string name = ((string)packageVersion.Attribute("Include") ??
-                                   (string)packageVersion.Attribute("Update") ??
-                                   string.Empty).Trim();
-                    if (!string.Equals(name, packageName, StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    return ((string)packageVersion.Attribute("Version") ??
-                            packageVersion.Elements()
-                                .FirstOrDefault(element => string.Equals(element.Name.LocalName, "Version",
-                                    StringComparison.Ordinal))?.Value ??
-                            string.Empty).Trim();
-                }
+                XElement packageVersion = FindPackageVersionElement(document, packageName);
+                return packageVersion == null ? string.Empty : GetPackageVersion(packageVersion);
             }
             catch
             {
             }
 
             return string.Empty;
+        }
+
+        private static XElement FindPackageVersionElement(XDocument document, string packageName)
+        {
+            if (document?.Root == null)
+                return null;
+
+            return document.Root.Descendants()
+                .Where(element => string.Equals(element.Name.LocalName, "PackageVersion",
+                    StringComparison.Ordinal))
+                .FirstOrDefault(element => string.Equals(GetPackageName(element), packageName,
+                    StringComparison.OrdinalIgnoreCase));
         }
 
         private static IEnumerable<string> ReadCompileReferencesFromAssets(string assetsPath)
@@ -441,6 +664,134 @@ namespace CIARE.Utils.NuGetManage
             }
 
             return references;
+        }
+
+        private static Dictionary<string, List<string>> ReadCompileReferencesByPackage(string assetsPath)
+        {
+            var referencesByPackage = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(assetsPath));
+                var root = document.RootElement;
+                var packageFolders = ReadPackageFolders(root);
+
+                if (!root.TryGetProperty("targets", out var targets))
+                    return referencesByPackage;
+
+                foreach (var target in targets.EnumerateObject())
+                {
+                    foreach (var library in target.Value.EnumerateObject())
+                    {
+                        string[] libraryParts = library.Name.Split('/');
+                        if (libraryParts.Length != 2)
+                            continue;
+
+                        if (!library.Value.TryGetProperty("compile", out var compileAssets))
+                            continue;
+
+                        foreach (var compileAsset in compileAssets.EnumerateObject())
+                        {
+                            foreach (var referencePath in ResolvePackageAssetPaths(library.Name,
+                                compileAsset.Name, packageFolders))
+                            {
+                                if (!referencesByPackage.TryGetValue(libraryParts[0], out var packageReferences))
+                                {
+                                    packageReferences = new List<string>();
+                                    referencesByPackage[libraryParts[0]] = packageReferences;
+                                }
+
+                                if (!packageReferences.Contains(referencePath, StringComparer.OrdinalIgnoreCase))
+                                    packageReferences.Add(referencePath);
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return referencesByPackage;
+        }
+
+        private static List<string> ReadProjectSourceTexts(string projectDirectory)
+        {
+            var sourceTexts = new List<string>();
+            try
+            {
+                foreach (string filePath in Directory.EnumerateFiles(projectDirectory, "*.cs",
+                    SearchOption.AllDirectories))
+                {
+                    if (IsPathInIgnoredBuildDirectory(filePath))
+                        continue;
+
+                    try
+                    {
+                        sourceTexts.Add(File.ReadAllText(filePath));
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return sourceTexts;
+        }
+
+        private static bool IsPathInIgnoredBuildDirectory(string path)
+        {
+            string normalized = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            string separator = Path.DirectorySeparatorChar.ToString();
+            return normalized.IndexOf(separator + "bin" + separator, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                normalized.IndexOf(separator + "obj" + separator, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static HashSet<string> ReadAssemblyNamespaces(IEnumerable<string> referencePaths)
+        {
+            var namespaces = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string referencePath in referencePaths)
+            {
+                try
+                {
+                    using var assembly = AssemblyDefinition.ReadAssembly(referencePath);
+                    foreach (var module in assembly.Modules)
+                        CollectTypeNamespaces(module.Types, namespaces);
+                }
+                catch
+                {
+                }
+            }
+
+            return namespaces;
+        }
+
+        private static void CollectTypeNamespaces(IEnumerable<TypeDefinition> types, HashSet<string> namespaces)
+        {
+            foreach (var type in types)
+            {
+                if (!string.IsNullOrWhiteSpace(type.Namespace))
+                    namespaces.Add(type.Namespace);
+
+                if (type.HasNestedTypes)
+                    CollectTypeNamespaces(type.NestedTypes, namespaces);
+            }
+        }
+
+        private static bool SourceTextsContainAnyNamespace(List<string> sourceTexts, HashSet<string> namespaces)
+        {
+            foreach (string sourceText in sourceTexts)
+            {
+                foreach (string namespaceName in namespaces)
+                {
+                    if (sourceText.Contains(namespaceName, StringComparison.Ordinal))
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         private static List<string> ReadPackageFolders(JsonElement root)
