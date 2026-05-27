@@ -24,8 +24,18 @@ namespace CIARE.Model
         private List<string> netFrameworks = new List<string>();
         private int s_initialSizeForm = 0;
         private string s_packageName { get; set; }
+        private readonly string _projectPackageProjectPath;
         public NuGetSearch()
+            : this(string.Empty)
         {
+        }
+
+        public NuGetSearch(string projectPackageProjectPath)
+        {
+            _projectPackageProjectPath = File.Exists(projectPackageProjectPath) &&
+                string.Equals(Path.GetExtension(projectPackageProjectPath), ".csproj", StringComparison.OrdinalIgnoreCase)
+                    ? projectPackageProjectPath
+                    : string.Empty;
             InitializeComponent();
         }
 
@@ -58,6 +68,12 @@ MessageBoxIcon.Warning);
 
             // Set water marg on search textbox.
             WaterMark.TextBoxWaterMark(SearchBox, "Enter package name...");
+
+            if (HasProjectPackageTarget())
+            {
+                Text = $"NuGet Package Manager - {Path.GetFileName(_projectPackageProjectPath)}";
+                addToReference.Text = "Add PackageReference to Project";
+            }
         }
 
         /// <summary>
@@ -163,8 +179,18 @@ MessageBoxIcon.Warning);
         /// <param name="nugetListView"></param>
         private void AddNuGetPackageToRef(ListView nugetListView)
         {
+            if (nugetListView.SelectedItems.Count == 0)
+                return;
+
             var packageName = nugetListView.SelectedItems[0].Text;
             var version = nugetListView.SelectedItems[0].SubItems[1].Text;
+
+            if (HasProjectPackageTarget())
+            {
+                AddNuGetPackageToProject(packageName, version);
+                return;
+            }
+
             if (GlobalVariables.customRefAsm.Any(x => x.Contains(packageName)) ||
                 GlobalVariables.nugetNames.Any(x => x.StartsWith(packageName + "|")))
             {
@@ -186,6 +212,37 @@ MessageBoxIcon.Warning);
                 GlobalVariables.nugetNames.Add(nameVersion);
 
             Task.Run(() => Download(s_packageName));
+        }
+
+        private bool HasProjectPackageTarget()
+        {
+            return !string.IsNullOrWhiteSpace(_projectPackageProjectPath) &&
+                File.Exists(_projectPackageProjectPath);
+        }
+
+        private void AddNuGetPackageToProject(string packageName, string version)
+        {
+            if (ProjectNuGetManager.HasPackageReference(_projectPackageProjectPath, packageName))
+            {
+                MessageBox.Show($"NuGet package {packageName} is already installed in {Path.GetFileName(_projectPackageProjectPath)}.",
+                    "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var dialog = MessageBox.Show(
+                $"Do you want to add {packageName} {version} to {Path.GetFileName(_projectPackageProjectPath)}?",
+                "CIARE", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+            if (dialog == DialogResult.No)
+                return;
+
+            if (!ProjectNuGetManager.AddPackageReference(_projectPackageProjectPath, packageName, version, out string message))
+            {
+                MessageBox.Show(message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            MainForm.Instance?.RefreshProjectPackageContext(_projectPackageProjectPath, restoreProject: true);
+            MessageBox.Show(message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         /// <summary>

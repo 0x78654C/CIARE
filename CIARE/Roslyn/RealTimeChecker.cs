@@ -106,6 +106,17 @@ namespace CIARE.Roslyn
             }
         }
 
+        public static void InvalidateReferenceCache()
+        {
+            lock (_refLock)
+            {
+                _lastCustomRefSnapshot = null;
+                _customRefs = new List<MetadataReference>();
+                _lastNuGetRefSnapshot = null;
+                _nuGetRefs = new List<MetadataReference>();
+            }
+        }
+
         private static void RunCheck(string code, TextEditorControl editor, Label statusLabel,
             ListView errorsLV, TabPage errorsTabPage, Label warningsLabel,
             string workspaceFolder, string currentFilePath, bool useProjectReferences)

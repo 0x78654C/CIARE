@@ -33,6 +33,7 @@ using System.Linq;
 using CIARE.LiveShareManage;
 using System.Threading.Tasks;
 using CIARE.Utils.OpenAISettings;
+using CIARE.Utils.NuGetManage;
 using Button = System.Windows.Forms.Button;
 using CIARE.Model;
 using System.Collections.Generic;
@@ -95,7 +96,15 @@ namespace CIARE
         private Button _fileExplorerOpenFolderButton;
         private Button _fileExplorerHideButton;
         private Button _fileExplorerShowButton;
+        private SplitContainer _fileExplorerContentSplitContainer;
         private TreeView _fileExplorerTree;
+        private Panel _fileExplorerNuGetPanel;
+        private Label _fileExplorerNuGetTitleLabel;
+        private ListView _fileExplorerNuGetList;
+        private ColumnHeader _fileExplorerNuGetPackageColumn;
+        private ColumnHeader _fileExplorerNuGetVersionColumn;
+        private ContextMenuStrip _fileExplorerNuGetContextMenu;
+        private ToolStripMenuItem _fileExplorerNuGetRemoveMenuItem;
         private ImageList _fileExplorerImageList;
         private string _fileExplorerRootPath = string.Empty;
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
@@ -107,6 +116,8 @@ namespace CIARE
         private readonly object _completionDataLock = new object();
         private readonly Dictionary<string, Dom.ICompilationUnit> _workspaceCompilationUnits
             = new Dictionary<string, Dom.ICompilationUnit>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Dom.IProjectContent> _projectPackageCompletionContents
+            = new Dictionary<string, Dom.IProjectContent>(StringComparer.OrdinalIgnoreCase);
         private readonly List<WorkspaceCompletionClass> _workspaceCompletionClasses
             = new List<WorkspaceCompletionClass>();
         private readonly List<WorkspaceCompletionItem> _topLevelLocalFunctions
@@ -209,6 +220,15 @@ namespace CIARE
                 Padding = new Padding(0)
             };
 
+            _fileExplorerContentSplitContainer = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                Orientation = Orientation.Horizontal,
+                FixedPanel = FixedPanel.Panel2,
+                SplitterWidth = 4,
+                Panel2MinSize = 90
+            };
+
             _fileExplorerHeader = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
@@ -263,13 +283,62 @@ namespace CIARE
             _fileExplorerTree.BeforeExpand += fileExplorerTree_BeforeExpand;
             _fileExplorerTree.AfterExpand += fileExplorerTree_AfterExpand;
             _fileExplorerTree.AfterCollapse += fileExplorerTree_AfterCollapse;
+            _fileExplorerTree.AfterSelect += fileExplorerTree_AfterSelect;
             _fileExplorerTree.NodeMouseDoubleClick += fileExplorerTree_NodeMouseDoubleClick;
             _fileExplorerTree.KeyDown += fileExplorerTree_KeyDown;
+
+            _fileExplorerNuGetPackageColumn = new ColumnHeader { Text = "Package", Width = 130 };
+            _fileExplorerNuGetVersionColumn = new ColumnHeader { Text = "Version", Width = 80 };
+
+            _fileExplorerNuGetTitleLabel = new Label
+            {
+                AutoEllipsis = true,
+                Dock = DockStyle.Top,
+                Height = 24,
+                Padding = new Padding(6, 4, 4, 0),
+                Text = "NuGet packages",
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            _fileExplorerNuGetList = new ListView
+            {
+                BorderStyle = BorderStyle.None,
+                Columns = { _fileExplorerNuGetPackageColumn, _fileExplorerNuGetVersionColumn },
+                Dock = DockStyle.Fill,
+                FullRowSelect = true,
+                GridLines = false,
+                HeaderStyle = ColumnHeaderStyle.Nonclickable,
+                HideSelection = false,
+                MultiSelect = false,
+                ShowItemToolTips = true,
+                View = View.Details
+            };
+            _fileExplorerNuGetList.Resize += (sender, args) => ResizeFileExplorerNuGetColumns();
+            _fileExplorerNuGetList.MouseClick += fileExplorerNuGetList_MouseClick;
+
+            _fileExplorerNuGetRemoveMenuItem = new ToolStripMenuItem
+            {
+                Text = "Remove from Project"
+            };
+            _fileExplorerNuGetRemoveMenuItem.Click += fileExplorerNuGetRemoveMenuItem_Click;
+
+            _fileExplorerNuGetContextMenu = new ContextMenuStrip();
+            _fileExplorerNuGetContextMenu.Items.Add(_fileExplorerNuGetRemoveMenuItem);
+
+            _fileExplorerNuGetPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(0)
+            };
+            _fileExplorerNuGetPanel.Controls.Add(_fileExplorerNuGetList);
+            _fileExplorerNuGetPanel.Controls.Add(_fileExplorerNuGetTitleLabel);
 
             _fileExplorerHeader.Controls.Add(_fileExplorerTitleLabel, 0, 0);
             _fileExplorerHeader.Controls.Add(_fileExplorerOpenFolderButton, 1, 0);
             _fileExplorerHeader.Controls.Add(_fileExplorerHideButton, 2, 0);
-            _fileExplorerPanel.Controls.Add(_fileExplorerTree);
+            _fileExplorerContentSplitContainer.Panel1.Controls.Add(_fileExplorerTree);
+            _fileExplorerContentSplitContainer.Panel2.Controls.Add(_fileExplorerNuGetPanel);
+            _fileExplorerPanel.Controls.Add(_fileExplorerContentSplitContainer);
             _fileExplorerPanel.Controls.Add(_fileExplorerHeader);
 
             ConfigureEditorTabControlLayout();
@@ -299,6 +368,7 @@ namespace CIARE
             {
                 ApplyEditorExplorerMinimumWidths();
                 SetFileExplorerWidth(FileExplorerDefaultWidth);
+                SetFileExplorerNuGetHeight(350);
                 PositionFileExplorerShowButton();
                 RefreshEditorLayoutBounds();
             }));
@@ -428,6 +498,27 @@ namespace CIARE
                 _editorExplorerSplitContainer.SplitterDistance = dist;
 
             RefreshEditorLayoutBounds();
+        }
+
+        private void SetFileExplorerNuGetHeight(int height)
+        {
+            if (_fileExplorerContentSplitContainer == null ||
+                _fileExplorerContentSplitContainer.IsDisposed ||
+                _fileExplorerContentSplitContainer.Panel2Collapsed)
+            {
+                return;
+            }
+
+            int splitHeight = _fileExplorerContentSplitContainer.ClientSize.Height;
+            int availableHeight = splitHeight - _fileExplorerContentSplitContainer.SplitterWidth;
+            if (availableHeight <= 0)
+                return;
+
+            int minPanel1 = 120;
+            int nuGetHeight = Math.Max(_fileExplorerContentSplitContainer.Panel2MinSize,
+                Math.Min(height, Math.Max(_fileExplorerContentSplitContainer.Panel2MinSize,
+                    availableHeight - minPanel1)));
+            _fileExplorerContentSplitContainer.SplitterDistance = Math.Max(0, availableHeight - nuGetHeight);
         }
 
         private int GetEditorExplorerSplitWidth()
@@ -624,6 +715,8 @@ namespace CIARE
 
             StartFileExplorerWatcher(folderPath);
             SaveFileExplorerExpandedState();
+            RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                showRestoreFailure: false);
             ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
         }
 
@@ -636,12 +729,13 @@ namespace CIARE
 
             _fileExplorerWatcher = new FileSystemWatcher(folderPath)
             {
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName,
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite,
                 IncludeSubdirectories = true,
                 EnableRaisingEvents = true
             };
             _fileExplorerWatcher.Created += OnFileExplorerWatcherEvent;
             _fileExplorerWatcher.Deleted += OnFileExplorerWatcherEvent;
+            _fileExplorerWatcher.Changed += OnFileExplorerWatcherChanged;
             _fileExplorerWatcher.Renamed += OnFileExplorerWatcherRenamed;
 
             _fileExplorerRefreshTimer = new System.Windows.Forms.Timer { Interval = 300 };
@@ -670,6 +764,15 @@ namespace CIARE
             string parentDir = Path.GetDirectoryName(e.FullPath);
             if (!string.IsNullOrEmpty(parentDir))
                 ScheduleExplorerRefresh(parentDir);
+
+            if (ShouldRefreshExplorerNuGetPackages(e.FullPath))
+                ScheduleExplorerNuGetRefresh();
+        }
+
+        private void OnFileExplorerWatcherChanged(object sender, FileSystemEventArgs e)
+        {
+            if (ShouldRefreshExplorerNuGetPackages(e.FullPath))
+                ScheduleExplorerNuGetRefresh();
         }
 
         private void OnFileExplorerWatcherRenamed(object sender, RenamedEventArgs e)
@@ -677,6 +780,12 @@ namespace CIARE
             string parentDir = Path.GetDirectoryName(e.FullPath);
             if (!string.IsNullOrEmpty(parentDir))
                 ScheduleExplorerRefresh(parentDir);
+
+            if (ShouldRefreshExplorerNuGetPackages(e.FullPath) ||
+                ShouldRefreshExplorerNuGetPackages(e.OldFullPath))
+            {
+                ScheduleExplorerNuGetRefresh();
+            }
         }
 
         private void ScheduleExplorerRefresh(string dirPath)
@@ -838,6 +947,11 @@ namespace CIARE
             SaveFileExplorerExpandedState();
         }
 
+        private void fileExplorerTree_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            RefreshExplorerNuGetPackages();
+        }
+
         private void SaveFileExplorerExpandedState()
         {
             if (_suppressFileExplorerExpandedStateSave ||
@@ -889,6 +1003,277 @@ namespace CIARE
             }
 
             return expandedPaths;
+        }
+
+        public void RefreshExplorerNuGetPackages()
+        {
+            if (_fileExplorerNuGetList == null || _fileExplorerNuGetList.IsDisposed)
+                return;
+
+            if (InvokeRequired)
+            {
+                BeginInvoke((Action)RefreshExplorerNuGetPackages);
+                return;
+            }
+
+            string projectPath = GetActivePackageProjectPath();
+            _fileExplorerNuGetList.BeginUpdate();
+            try
+            {
+                _fileExplorerNuGetList.Items.Clear();
+                if (string.IsNullOrEmpty(projectPath))
+                {
+                    _fileExplorerNuGetTitleLabel.Text = "NuGet packages";
+                    toolTip1.SetToolTip(_fileExplorerNuGetTitleLabel, "Open a project folder or select a .csproj file");
+                    AddFileExplorerNuGetPlaceholder("No project selected");
+                    return;
+                }
+
+                _fileExplorerNuGetTitleLabel.Text = $"NuGet: {Path.GetFileName(projectPath)}";
+                toolTip1.SetToolTip(_fileExplorerNuGetTitleLabel, projectPath);
+
+                var packages = ProjectNuGetManager.GetPackageReferences(projectPath);
+                if (packages.Count == 0)
+                {
+                    AddFileExplorerNuGetPlaceholder("No PackageReference items");
+                    return;
+                }
+
+                foreach (var package in packages)
+                {
+                    var item = new ListViewItem(new[] { package.Name, package.Version })
+                    {
+                        Tag = package,
+                        ToolTipText = $"{package.Name} {package.Version}"
+                    };
+                    _fileExplorerNuGetList.Items.Add(item);
+                }
+            }
+            finally
+            {
+                _fileExplorerNuGetList.EndUpdate();
+                ResizeFileExplorerNuGetColumns();
+            }
+        }
+
+        public void RefreshProjectPackageContext(string projectPath, bool restoreProject,
+            bool showRestoreFailure = true)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke((Action)(() => RefreshProjectPackageContext(projectPath, restoreProject,
+                    showRestoreFailure)));
+                return;
+            }
+
+            RefreshExplorerNuGetPackages();
+
+            if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
+            {
+                RealTimeChecker.InvalidateReferenceCache();
+                ClearProjectPackageCompletionReferences();
+                ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+                return;
+            }
+
+            RealTimeChecker.InvalidateReferenceCache();
+            Task.Run(() =>
+            {
+                ProcessRunResult restoreResult = null;
+                if (restoreProject)
+                    restoreResult = ProjectNuGetManager.RestoreProject(projectPath);
+
+                RealTimeChecker.InvalidateReferenceCache();
+                RefreshProjectPackageCompletionReferences(projectPath);
+                return restoreResult;
+            }).ContinueWith(task =>
+            {
+                if (IsDisposed || !IsHandleCreated)
+                    return;
+
+                BeginInvoke((Action)(() =>
+                {
+                    RefreshExplorerNuGetPackages();
+                    ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+
+                    ProcessRunResult restoreResult = null;
+                    if (task.Status == TaskStatus.RanToCompletion)
+                        restoreResult = task.Result;
+                    else if (task.Exception != null)
+                        restoreResult = new ProcessRunResult(-1,
+                            task.Exception.GetBaseException()?.Message ?? task.Exception.Message);
+
+                    if (showRestoreFailure && restoreResult != null && !restoreResult.Success)
+                    {
+                        MessageBox.Show(FormatProjectRestoreFailure(restoreResult.Output),
+                            "NuGet restore", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }));
+            });
+        }
+
+        private void RefreshProjectPackageCompletionReferences(string projectPath)
+        {
+            if (!GlobalVariables.OCodeCompletion || pcRegistry == null || myProjectContent == null)
+                return;
+
+            var referencePaths = ProjectNuGetManager.GetCompileReferencePaths(projectPath);
+            var activeReferences = new HashSet<string>(referencePaths, StringComparer.OrdinalIgnoreCase);
+
+            lock (_completionDataLock)
+            {
+                var removedReferences = _projectPackageCompletionContents.Keys
+                    .Where(path => !activeReferences.Contains(path))
+                    .ToList();
+
+                foreach (var referencePath in removedReferences)
+                {
+                    Dom.IProjectContent projectContent = _projectPackageCompletionContents[referencePath];
+                    myProjectContent.ReferencedContents.Remove(projectContent);
+                    projectContent.Dispose();
+                    _projectPackageCompletionContents.Remove(referencePath);
+                }
+
+                foreach (var referencePath in referencePaths)
+                {
+                    if (_projectPackageCompletionContents.ContainsKey(referencePath))
+                        continue;
+
+                    Dom.IProjectContent projectContent = LoadProjectPackageCompletionContent(referencePath);
+                    if (projectContent == null)
+                        continue;
+
+                    _projectPackageCompletionContents[referencePath] = projectContent;
+                    myProjectContent.AddReferencedContent(projectContent);
+                }
+            }
+        }
+
+        private void ClearProjectPackageCompletionReferences()
+        {
+            if (myProjectContent == null)
+                return;
+
+            lock (_completionDataLock)
+            {
+                foreach (var projectContent in _projectPackageCompletionContents.Values)
+                {
+                    myProjectContent.ReferencedContents.Remove(projectContent);
+                    projectContent.Dispose();
+                }
+
+                _projectPackageCompletionContents.Clear();
+            }
+        }
+
+        private Dom.IProjectContent LoadProjectPackageCompletionContent(string referencePath)
+        {
+            try
+            {
+                var assembly = System.Reflection.Assembly.LoadFile(referencePath);
+                var projectContent = new Dom.ReflectionProjectContent(assembly, pcRegistry);
+                projectContent.InitializeReferences();
+                return projectContent;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string FormatProjectRestoreFailure(string restoreOutput)
+        {
+            string output = (restoreOutput ?? string.Empty).Trim();
+            if (output.Length > 1800)
+                output = output.Substring(0, 1800) + Environment.NewLine + "...";
+
+            return string.IsNullOrWhiteSpace(output)
+                ? "NuGet restore failed. Project references may be stale until restore succeeds."
+                : "NuGet restore failed. Project references may be stale until restore succeeds." +
+                  Environment.NewLine + Environment.NewLine + output;
+        }
+
+        private void AddFileExplorerNuGetPlaceholder(string text)
+        {
+            var item = new ListViewItem(new[] { text, string.Empty })
+            {
+                ForeColor = GlobalVariables.darkColor ? Color.FromArgb(150, 170, 165) : SystemColors.GrayText
+            };
+            _fileExplorerNuGetList.Items.Add(item);
+        }
+
+        private void ResizeFileExplorerNuGetColumns()
+        {
+            if (_fileExplorerNuGetList == null ||
+                _fileExplorerNuGetList.IsDisposed ||
+                _fileExplorerNuGetList.Columns.Count < 2)
+            {
+                return;
+            }
+
+            int availableWidth = _fileExplorerNuGetList.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 4;
+            if (availableWidth <= 0)
+                return;
+
+            int versionWidth = Math.Max(70, Math.Min(92, availableWidth / 3));
+            _fileExplorerNuGetVersionColumn.Width = versionWidth;
+            _fileExplorerNuGetPackageColumn.Width = Math.Max(90, availableWidth - versionWidth);
+        }
+
+        private void ScheduleExplorerNuGetRefresh()
+        {
+            if (IsDisposed || !IsHandleCreated)
+                return;
+
+            BeginInvoke((Action)(() =>
+                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                    showRestoreFailure: false)));
+        }
+
+        private static bool ShouldRefreshExplorerNuGetPackages(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            return string.Equals(Path.GetExtension(path), ".csproj", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(Path.GetFileName(path), "Directory.Packages.props", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(Path.GetFileName(path), "project.assets.json", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void fileExplorerNuGetList_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right || _fileExplorerNuGetList == null)
+                return;
+
+            ListViewHitTestInfo hit = _fileExplorerNuGetList.HitTest(e.Location);
+            if (!(hit.Item?.Tag is ProjectNuGetPackageReference package))
+                return;
+
+            hit.Item.Selected = true;
+            _fileExplorerNuGetRemoveMenuItem.Tag = package;
+            _fileExplorerNuGetRemoveMenuItem.Text = $"Remove {package.Name} from Project";
+            _fileExplorerNuGetContextMenu.Show(_fileExplorerNuGetList, e.Location);
+        }
+
+        private void fileExplorerNuGetRemoveMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!(_fileExplorerNuGetRemoveMenuItem.Tag is ProjectNuGetPackageReference package))
+                return;
+
+            DialogResult dialog = MessageBox.Show(
+                $"Remove NuGet package {package.Name} from {Path.GetFileName(package.ProjectPath)}?",
+                "CIARE", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (dialog != DialogResult.Yes)
+                return;
+
+            if (!ProjectNuGetManager.RemovePackageReference(package.ProjectPath, package.Name, out string message))
+            {
+                MessageBox.Show(message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            RefreshProjectPackageContext(package.ProjectPath, restoreProject: true);
+            MessageBox.Show(message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void PopulateDirectoryNode(TreeNode node)
@@ -986,6 +1371,8 @@ namespace CIARE
                     TabControllerManage.AddNewTab(EditorTabControl);
 
                 FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), filePath);
+                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                    showRestoreFailure: false);
                 ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
             }
             catch (Exception ex)
@@ -1055,10 +1442,84 @@ namespace CIARE
             return string.Empty;
         }
 
+        public string GetActivePackageProjectPath()
+        {
+            if (!Directory.Exists(_fileExplorerRootPath))
+                return string.Empty;
+
+            string selectedPath = _fileExplorerTree?.SelectedNode?.Tag as string;
+            string selectedProject = FindProjectFileForPath(selectedPath, _fileExplorerRootPath);
+            if (!string.IsNullOrEmpty(selectedProject))
+                return selectedProject;
+
+            string activeProject = FindProjectFileForPath(GetActiveEditorFilePath(), _fileExplorerRootPath);
+            if (!string.IsNullOrEmpty(activeProject))
+                return activeProject;
+
+            string rootProject = FindTopLevelBuildFile(_fileExplorerRootPath, "*.csproj");
+            if (!string.IsNullOrEmpty(rootProject))
+                return rootProject;
+
+            return FindSingleRecursiveBuildFile(_fileExplorerRootPath, "*.csproj");
+        }
+
+        public string GetActivePackageInstallProjectPath()
+        {
+            if (!Directory.Exists(_fileExplorerRootPath))
+                return string.Empty;
+
+            string filePath = GetActiveEditorFilePath();
+            if (!File.Exists(filePath) || !IsPathInsideFolder(filePath, _fileExplorerRootPath))
+                return string.Empty;
+
+            return FindProjectFileForPath(filePath, _fileExplorerRootPath);
+        }
+
+        private string GetActiveEditorPackageProjectPath()
+        {
+            string activeProject = GetActivePackageInstallProjectPath();
+            return !string.IsNullOrEmpty(activeProject) ? activeProject : GetActivePackageProjectPath();
+        }
+
         private static bool IsCSharpFilePath(string filePath)
         {
             return !string.IsNullOrWhiteSpace(filePath) &&
                 string.Equals(Path.GetExtension(filePath), ".cs", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsProjectFilePath(string filePath)
+        {
+            return !string.IsNullOrWhiteSpace(filePath) &&
+                File.Exists(filePath) &&
+                string.Equals(Path.GetExtension(filePath), ".csproj", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string FindProjectFileForPath(string path, string workspaceFolder)
+        {
+            if (string.IsNullOrWhiteSpace(path) ||
+                string.IsNullOrWhiteSpace(workspaceFolder) ||
+                !Directory.Exists(workspaceFolder))
+            {
+                return string.Empty;
+            }
+
+            if (IsProjectFilePath(path) && IsPathInsideFolder(path, workspaceFolder))
+                return path;
+
+            string folder = Directory.Exists(path)
+                ? path
+                : File.Exists(path)
+                    ? Path.GetDirectoryName(path)
+                    : string.Empty;
+
+            if (string.IsNullOrEmpty(folder) || !IsSameOrChildDirectory(folder, workspaceFolder))
+                return string.Empty;
+
+            string childProject = FindTopLevelBuildFile(folder, "*.csproj");
+            if (!string.IsNullOrEmpty(childProject))
+                return childProject;
+
+            return FindNearestBuildFile(folder, workspaceFolder, "*.csproj");
         }
 
         private static bool IsPathInsideFolder(string filePath, string folderPath)
@@ -1260,6 +1721,12 @@ namespace CIARE
             _fileExplorerTree.BackColor = backColor;
             _fileExplorerTree.ForeColor = foreColor;
             _fileExplorerTree.LineColor = borderColor;
+            _fileExplorerContentSplitContainer.BackColor = borderColor;
+            _fileExplorerNuGetPanel.BackColor = backColor;
+            _fileExplorerNuGetTitleLabel.BackColor = headerColor;
+            _fileExplorerNuGetTitleLabel.ForeColor = foreColor;
+            _fileExplorerNuGetList.BackColor = backColor;
+            _fileExplorerNuGetList.ForeColor = foreColor;
 
             ApplyFileExplorerButtonTheme(_fileExplorerOpenFolderButton, buttonBackColor, foreColor, borderColor);
             ApplyFileExplorerButtonTheme(_fileExplorerHideButton, buttonBackColor, foreColor, borderColor);
@@ -4403,6 +4870,8 @@ namespace CIARE
             {
                 var editor = SelectedEditor.GetSelectedEditor();
                 if (editor == null) return;
+                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                    showRestoreFailure: false);
                 ScheduleCurrentTypeCheck(editor);
             }
             catch { }
