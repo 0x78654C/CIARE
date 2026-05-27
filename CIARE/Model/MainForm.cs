@@ -110,6 +110,11 @@ namespace CIARE
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
         private FileSystemWatcher _fileExplorerWatcher;
         private System.Windows.Forms.Timer _fileExplorerRefreshTimer;
+        private System.Windows.Forms.Timer _fileExplorerNuGetRefreshTimer;
+        private string _pendingProjectPackageRefreshPath = string.Empty;
+        private bool _pendingProjectPackageRestore;
+        private bool _pendingProjectPackageShowRestoreFailure;
+        private int _projectPackageRefreshVersion;
         private bool _suppressFileExplorerExpandedStateSave;
         private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const int WorkspaceCompletionMethodLimit = 300;
@@ -322,7 +327,7 @@ namespace CIARE
             };
             _fileExplorerNuGetRemoveMenuItem.Click += fileExplorerNuGetRemoveMenuItem_Click;
 
-            _fileExplorerNuGetContextMenu = new ContextMenuStrip();
+            _fileExplorerNuGetContextMenu = new ContextMenuStrip(components);
             _fileExplorerNuGetContextMenu.Items.Add(_fileExplorerNuGetRemoveMenuItem);
 
             _fileExplorerNuGetPanel = new Panel
@@ -378,7 +383,7 @@ namespace CIARE
 
         private ImageList CreateFileExplorerImageList()
         {
-            _fileExplorerImageList = new ImageList
+            _fileExplorerImageList = new ImageList(components)
             {
                 ColorDepth = ColorDepth.Depth32Bit,
                 ImageSize = new Size(16, 16),
@@ -753,9 +758,20 @@ namespace CIARE
             if (_fileExplorerRefreshTimer != null)
             {
                 _fileExplorerRefreshTimer.Stop();
+                _fileExplorerRefreshTimer.Tick -= OnFileExplorerRefreshTimer;
                 _fileExplorerRefreshTimer.Dispose();
                 _fileExplorerRefreshTimer = null;
             }
+            if (_fileExplorerNuGetRefreshTimer != null)
+            {
+                _fileExplorerNuGetRefreshTimer.Stop();
+                _fileExplorerNuGetRefreshTimer.Tick -= OnFileExplorerNuGetRefreshTimer;
+                _fileExplorerNuGetRefreshTimer.Dispose();
+                _fileExplorerNuGetRefreshTimer = null;
+            }
+            _pendingProjectPackageRefreshPath = string.Empty;
+            _pendingProjectPackageRestore = false;
+            _pendingProjectPackageShowRestoreFailure = false;
             _pendingRefreshPaths.Clear();
         }
 
@@ -1012,7 +1028,7 @@ namespace CIARE
 
             if (InvokeRequired)
             {
-                BeginInvoke((Action)RefreshExplorerNuGetPackages);
+                TryBeginInvoke(RefreshExplorerNuGetPackages);
                 return;
             }
 
@@ -1061,11 +1077,11 @@ namespace CIARE
         {
             if (InvokeRequired)
             {
-                BeginInvoke((Action)(() => RefreshProjectPackageContext(projectPath, restoreProject,
-                    showRestoreFailure)));
+                TryBeginInvoke(() => RefreshProjectPackageContext(projectPath, restoreProject, showRestoreFailure));
                 return;
             }
 
+            int refreshVersion = Interlocked.Increment(ref _projectPackageRefreshVersion);
             RefreshExplorerNuGetPackages();
 
             if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
@@ -1088,11 +1104,14 @@ namespace CIARE
                 return restoreResult;
             }).ContinueWith(task =>
             {
-                if (IsDisposed || !IsHandleCreated)
+                if (IsDisposed || !IsHandleCreated || refreshVersion != _projectPackageRefreshVersion)
                     return;
 
-                BeginInvoke((Action)(() =>
+                TryBeginInvoke(() =>
                 {
+                    if (refreshVersion != _projectPackageRefreshVersion)
+                        return;
+
                     RefreshExplorerNuGetPackages();
                     ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
 
@@ -1108,7 +1127,7 @@ namespace CIARE
                         MessageBox.Show(FormatProjectRestoreFailure(restoreResult.Output),
                             "NuGet restore", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
-                }));
+                });
             });
         }
 
@@ -1225,9 +1244,68 @@ namespace CIARE
             if (IsDisposed || !IsHandleCreated)
                 return;
 
-            BeginInvoke((Action)(() =>
-                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
-                    showRestoreFailure: false)));
+            TryBeginInvoke(() => ScheduleProjectPackageContextRefresh(GetActiveEditorPackageProjectPath(),
+                restoreProject: false, showRestoreFailure: false));
+        }
+
+        private void ScheduleProjectPackageContextRefresh(string projectPath, bool restoreProject,
+            bool showRestoreFailure = true)
+        {
+            if (IsDisposed || !IsHandleCreated)
+                return;
+
+            if (InvokeRequired)
+            {
+                TryBeginInvoke(() => ScheduleProjectPackageContextRefresh(projectPath, restoreProject,
+                    showRestoreFailure));
+                return;
+            }
+
+            _pendingProjectPackageRefreshPath = projectPath;
+            _pendingProjectPackageRestore = _pendingProjectPackageRestore || restoreProject;
+            _pendingProjectPackageShowRestoreFailure =
+                _pendingProjectPackageShowRestoreFailure || showRestoreFailure;
+
+            if (_fileExplorerNuGetRefreshTimer == null)
+            {
+                _fileExplorerNuGetRefreshTimer = new System.Windows.Forms.Timer { Interval = 300 };
+                _fileExplorerNuGetRefreshTimer.Tick += OnFileExplorerNuGetRefreshTimer;
+            }
+
+            _fileExplorerNuGetRefreshTimer.Stop();
+            _fileExplorerNuGetRefreshTimer.Start();
+        }
+
+        private void OnFileExplorerNuGetRefreshTimer(object sender, EventArgs e)
+        {
+            _fileExplorerNuGetRefreshTimer?.Stop();
+
+            string projectPath = _pendingProjectPackageRefreshPath;
+            bool restoreProject = _pendingProjectPackageRestore;
+            bool showRestoreFailure = _pendingProjectPackageShowRestoreFailure;
+
+            _pendingProjectPackageRefreshPath = string.Empty;
+            _pendingProjectPackageRestore = false;
+            _pendingProjectPackageShowRestoreFailure = false;
+
+            RefreshProjectPackageContext(projectPath, restoreProject, showRestoreFailure);
+        }
+
+        private void TryBeginInvoke(Action action)
+        {
+            if (action == null || IsDisposed || !IsHandleCreated)
+                return;
+
+            try
+            {
+                if (InvokeRequired)
+                    BeginInvoke(action);
+                else
+                    action();
+            }
+            catch (InvalidOperationException)
+            {
+            }
         }
 
         private static bool ShouldRefreshExplorerNuGetPackages(string path)
