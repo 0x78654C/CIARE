@@ -187,10 +187,10 @@ namespace ICSharpCode.TextEditor
 			
 			ResizeRedraw = true;
 			
-			SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
-//			SetStyle(ControlStyles.AllPaintingInWmPaint, true);
-//			SetStyle(ControlStyles.UserPaint, true);
-			SetStyle(ControlStyles.Opaque, false);
+			SetStyle(ControlStyles.OptimizedDoubleBuffer |
+			         ControlStyles.AllPaintingInWmPaint |
+			         ControlStyles.UserPaint, true);
+			SetStyle(ControlStyles.Opaque, true);
 			SetStyle(ControlStyles.ResizeRedraw, true);
 			SetStyle(ControlStyles.Selectable, true);
 			

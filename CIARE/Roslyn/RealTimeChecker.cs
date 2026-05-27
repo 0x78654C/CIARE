@@ -46,6 +46,8 @@ namespace CIARE.Roslyn
         private static List<MetadataReference> _customRefs = new List<MetadataReference>();
         private static List<string> _lastNuGetRefSnapshot;
         private static List<MetadataReference> _nuGetRefs = new List<MetadataReference>();
+        private static List<string> _lastFrameworkRefSnapshot;
+        private static List<MetadataReference> _frameworkRefs = new List<MetadataReference>();
 
         private static readonly string[] SdkImplicitUsingNamespaces =
         {
@@ -56,6 +58,18 @@ namespace CIARE.Roslyn
             "System.Net.Http",
             "System.Threading",
             "System.Threading.Tasks"
+        };
+        private static readonly string[] AspNetCoreImplicitUsingNamespaces =
+        {
+            "System.Net.Http.Json",
+            "Microsoft.AspNetCore.Builder",
+            "Microsoft.AspNetCore.Hosting",
+            "Microsoft.AspNetCore.Http",
+            "Microsoft.AspNetCore.Routing",
+            "Microsoft.Extensions.Configuration",
+            "Microsoft.Extensions.DependencyInjection",
+            "Microsoft.Extensions.Hosting",
+            "Microsoft.Extensions.Logging"
         };
 
         /// <summary>
@@ -96,7 +110,7 @@ namespace CIARE.Roslyn
                 editor.BeginInvoke((Action)(() =>
                 {
                     editor.Document.MarkerStrategy.RemoveAll(_ => true);
-                    editor.Refresh();
+                    InvalidateEditorTextArea(editor);
                     if (statusLabel != null)
                         statusLabel.Text = string.Empty;
                     if (warningsLabel != null)
@@ -114,6 +128,8 @@ namespace CIARE.Roslyn
                 _customRefs = new List<MetadataReference>();
                 _lastNuGetRefSnapshot = null;
                 _nuGetRefs = new List<MetadataReference>();
+                _lastFrameworkRefSnapshot = null;
+                _frameworkRefs = new List<MetadataReference>();
             }
         }
 
@@ -178,9 +194,17 @@ namespace CIARE.Roslyn
             var syntaxTrees = new List<SyntaxTree> { syntaxTree };
             bool hasProjectContext = useProjectReferences &&
                 HasOpenedProjectContext(workspaceFolder, currentFilePath);
+            bool hasAspNetCoreContext = hasProjectContext &&
+                ProjectUsesAspNetCore(workspaceFolder, currentFilePath, hasProjectContext);
             if (hasProjectContext)
             {
-                syntaxTrees.Add(BuildImplicitUsingsSyntaxTree(parseOptions, ct));
+                var generatedGlobalUsings = BuildProjectGlobalUsingsSyntaxTrees(workspaceFolder,
+                    currentFilePath, parseOptions, ct);
+                if (generatedGlobalUsings.Count > 0)
+                    syntaxTrees.AddRange(generatedGlobalUsings);
+                else
+                    syntaxTrees.Add(BuildImplicitUsingsSyntaxTree(parseOptions, ct, hasAspNetCoreContext));
+
                 syntaxTrees.AddRange(BuildWorkspaceSyntaxTrees(workspaceFolder, currentFilePath, parseOptions, ct));
             }
 
@@ -225,13 +249,87 @@ namespace CIARE.Roslyn
                 .ToList();
         }
 
-        private static SyntaxTree BuildImplicitUsingsSyntaxTree(CSharpParseOptions parseOptions, CancellationToken ct)
+        private static SyntaxTree BuildImplicitUsingsSyntaxTree(CSharpParseOptions parseOptions, CancellationToken ct,
+            bool includeAspNetCoreUsings = false)
         {
+            var namespaces = includeAspNetCoreUsings
+                ? SdkImplicitUsingNamespaces.Concat(AspNetCoreImplicitUsingNamespaces)
+                : SdkImplicitUsingNamespaces;
             string code = string.Join(Environment.NewLine,
-                SdkImplicitUsingNamespaces.Select(ns => $"global using {ns};"));
+                namespaces.Distinct(StringComparer.Ordinal).Select(ns => $"global using {ns};"));
 
             return CSharpSyntaxTree.ParseText(code, parseOptions, path: "__CIARE_ImplicitUsings.g.cs",
                 cancellationToken: ct);
+        }
+
+        private static List<SyntaxTree> BuildProjectGlobalUsingsSyntaxTrees(string workspaceFolder,
+            string currentFilePath, CSharpParseOptions parseOptions, CancellationToken ct)
+        {
+            var trees = new List<SyntaxTree>();
+            foreach (string filePath in FindProjectGlobalUsingsFiles(workspaceFolder, currentFilePath))
+            {
+                ct.ThrowIfCancellationRequested();
+                try
+                {
+                    trees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(filePath), parseOptions,
+                        path: filePath, cancellationToken: ct));
+                }
+                catch
+                {
+                    // Fall back to the built-in implicit usings when generated files are unreadable.
+                }
+            }
+
+            return trees;
+        }
+
+        private static List<string> FindProjectGlobalUsingsFiles(string workspaceFolder, string currentFilePath)
+        {
+            string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
+            if (string.IsNullOrWhiteSpace(projectFile))
+                return new List<string>();
+
+            string projectDirectory = Path.GetDirectoryName(projectFile);
+            if (string.IsNullOrEmpty(projectDirectory))
+                return new List<string>();
+
+            string objDirectory = Path.Combine(projectDirectory, "obj");
+            if (!Directory.Exists(objDirectory))
+                return new List<string>();
+
+            try
+            {
+                var files = Directory.EnumerateFiles(objDirectory, "*GlobalUsings.g.cs",
+                        SearchOption.AllDirectories)
+                    .Where(path => File.Exists(path))
+                    .OrderByDescending(path => IsPreferredGlobalUsingsFile(path))
+                    .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                var preferredFiles = files
+                    .Where(IsPreferredGlobalUsingsFile)
+                    .ToList();
+                if (preferredFiles.Count > 0)
+                    return preferredFiles.Take(1).ToList();
+
+                return files.Take(1).ToList();
+            }
+            catch
+            {
+                return new List<string>();
+            }
+        }
+
+        private static bool IsPreferredGlobalUsingsFile(string filePath)
+        {
+            string framework = GlobalVariables.Framework;
+            if (string.IsNullOrWhiteSpace(framework))
+                return false;
+
+            return filePath
+                .Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+                    StringSplitOptions.RemoveEmptyEntries)
+                .Any(segment => segment.StartsWith(framework, StringComparison.OrdinalIgnoreCase));
         }
 
         private static List<SyntaxTree> BuildWorkspaceSyntaxTrees(string workspaceFolder, string currentFilePath,
@@ -384,6 +482,20 @@ namespace CIARE.Roslyn
 
                 if (hasProjectContext)
                 {
+                    var currentFrameworkRefs = ResolveFrameworkReferencePaths(workspaceFolder, currentFilePath,
+                        hasProjectContext);
+                    if (_lastFrameworkRefSnapshot == null ||
+                        !_lastFrameworkRefSnapshot.SequenceEqual(currentFrameworkRefs))
+                    {
+                        _lastFrameworkRefSnapshot = currentFrameworkRefs.ToList();
+                        _frameworkRefs = new List<MetadataReference>();
+                        foreach (var lib in currentFrameworkRefs)
+                        {
+                            if (TryCreateMetadataReference(lib, out var reference))
+                                _frameworkRefs.Add(reference);
+                        }
+                    }
+
                     var currentNuGetRefs = ResolveNuGetReferencePaths(workspaceFolder, currentFilePath,
                         hasProjectContext);
                     if (_lastNuGetRefSnapshot == null || !_lastNuGetRefSnapshot.SequenceEqual(currentNuGetRefs))
@@ -399,6 +511,8 @@ namespace CIARE.Roslyn
                 }
                 else
                 {
+                    _lastFrameworkRefSnapshot = new List<string>();
+                    _frameworkRefs = new List<MetadataReference>();
                     _lastNuGetRefSnapshot = new List<string>();
                     _nuGetRefs = new List<MetadataReference>();
                 }
@@ -410,6 +524,9 @@ namespace CIARE.Roslyn
                     hasProjectContext);
 
                 AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames, _platformRefs, false);
+                if (hasProjectContext)
+                    AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames,
+                        _frameworkRefs, true);
                 AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames, _customRefs, true);
                 if (hasProjectContext)
                     AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames, _nuGetRefs, true);
@@ -728,6 +845,399 @@ namespace CIARE.Roslyn
             }
         }
 
+        private static bool ProjectUsesAspNetCore(string workspaceFolder, string currentFilePath,
+            bool hasProjectContext)
+        {
+            if (!hasProjectContext)
+                return false;
+
+            string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
+            if (ProjectFileUsesAspNetCore(projectFile))
+                return true;
+
+            foreach (string assetsPath in ResolveProjectAssetsFiles(workspaceFolder, currentFilePath,
+                hasProjectContext))
+            {
+                if (ReadFrameworkReferencesFromAssets(assetsPath)
+                    .Contains("Microsoft.AspNetCore.App"))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static List<string> ResolveFrameworkReferencePaths(string workspaceFolder, string currentFilePath,
+            bool hasProjectContext)
+        {
+            if (!hasProjectContext)
+                return new List<string>();
+
+            string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
+            var frameworkReferences = ReadFrameworkReferencesFromProjectFile(projectFile);
+            foreach (string assetsPath in ResolveProjectAssetsFiles(workspaceFolder, currentFilePath,
+                hasProjectContext))
+            {
+                frameworkReferences.UnionWith(ReadFrameworkReferencesFromAssets(assetsPath));
+            }
+
+            if (!frameworkReferences.Contains("Microsoft.AspNetCore.App"))
+                return new List<string>();
+
+            string targetFramework = ReadProjectTargetFramework(projectFile);
+            if (string.IsNullOrWhiteSpace(targetFramework))
+            {
+                foreach (string assetsPath in ResolveProjectAssetsFiles(workspaceFolder, currentFilePath,
+                    hasProjectContext))
+                {
+                    targetFramework = ReadTargetFrameworkFromAssets(assetsPath);
+                    if (!string.IsNullOrWhiteSpace(targetFramework))
+                        break;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(targetFramework))
+                targetFramework = GlobalVariables.Framework;
+
+            return ResolveAspNetCoreReferencePaths(targetFramework)
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static bool ProjectFileUsesAspNetCore(string projectFile)
+        {
+            return ReadFrameworkReferencesFromProjectFile(projectFile)
+                .Contains("Microsoft.AspNetCore.App");
+        }
+
+        private static HashSet<string> ReadFrameworkReferencesFromProjectFile(string projectFile)
+        {
+            var frameworkReferences = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(projectFile) || !File.Exists(projectFile))
+                return frameworkReferences;
+
+            try
+            {
+                var document = XDocument.Load(projectFile);
+                if (SdkListContainsAspNetCoreWeb(document.Root?.Attribute("Sdk")?.Value))
+                    frameworkReferences.Add("Microsoft.AspNetCore.App");
+
+                foreach (var sdkElement in document.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "Sdk", StringComparison.Ordinal)))
+                {
+                    string sdkName = sdkElement.Attribute("Name")?.Value ?? sdkElement.Attribute("Sdk")?.Value;
+                    if (SdkListContainsAspNetCoreWeb(sdkName))
+                        frameworkReferences.Add("Microsoft.AspNetCore.App");
+                }
+
+                foreach (var frameworkReference in document.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "FrameworkReference",
+                        StringComparison.Ordinal)))
+                {
+                    string name = frameworkReference.Attribute("Include")?.Value ??
+                        frameworkReference.Attribute("Update")?.Value;
+                    if (!string.IsNullOrWhiteSpace(name))
+                        frameworkReferences.Add(name.Trim());
+                }
+            }
+            catch
+            {
+            }
+
+            return frameworkReferences;
+        }
+
+        private static bool SdkListContainsAspNetCoreWeb(string sdkList)
+        {
+            if (string.IsNullOrWhiteSpace(sdkList))
+                return false;
+
+            return sdkList
+                .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Any(sdk => sdk.Trim().StartsWith("Microsoft.NET.Sdk.Web",
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static HashSet<string> ReadFrameworkReferencesFromAssets(string assetsPath)
+        {
+            var frameworkReferences = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(assetsPath) || !File.Exists(assetsPath))
+                return frameworkReferences;
+
+            try
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(assetsPath));
+                var root = document.RootElement;
+                if (!root.TryGetProperty("project", out var project) ||
+                    !project.TryGetProperty("frameworks", out var frameworks))
+                {
+                    return frameworkReferences;
+                }
+
+                foreach (var framework in frameworks.EnumerateObject())
+                {
+                    if (!framework.Value.TryGetProperty("frameworkReferences", out var references))
+                        continue;
+
+                    foreach (var reference in references.EnumerateObject())
+                    {
+                        if (!string.IsNullOrWhiteSpace(reference.Name))
+                            frameworkReferences.Add(reference.Name);
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return frameworkReferences;
+        }
+
+        private static string ReadProjectTargetFramework(string projectFile)
+        {
+            if (string.IsNullOrWhiteSpace(projectFile) || !File.Exists(projectFile))
+                return string.Empty;
+
+            try
+            {
+                var document = XDocument.Load(projectFile);
+                string targetFramework = document.Descendants()
+                    .FirstOrDefault(element => string.Equals(element.Name.LocalName, "TargetFramework",
+                        StringComparison.Ordinal))?.Value?.Trim();
+                if (!string.IsNullOrWhiteSpace(targetFramework))
+                    return targetFramework;
+
+                string targetFrameworks = document.Descendants()
+                    .FirstOrDefault(element => string.Equals(element.Name.LocalName, "TargetFrameworks",
+                        StringComparison.Ordinal))?.Value;
+                return SplitTargetFrameworks(targetFrameworks).FirstOrDefault() ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static IEnumerable<string> SplitTargetFrameworks(string targetFrameworks)
+        {
+            if (string.IsNullOrWhiteSpace(targetFrameworks))
+                return Enumerable.Empty<string>();
+
+            return targetFrameworks
+                .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(framework => framework.Trim())
+                .Where(framework => framework.Length > 0);
+        }
+
+        private static string ReadTargetFrameworkFromAssets(string assetsPath)
+        {
+            if (string.IsNullOrWhiteSpace(assetsPath) || !File.Exists(assetsPath))
+                return string.Empty;
+
+            try
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(assetsPath));
+                var root = document.RootElement;
+                if (root.TryGetProperty("project", out var project) &&
+                    project.TryGetProperty("frameworks", out var frameworks))
+                {
+                    foreach (var framework in frameworks.EnumerateObject())
+                    {
+                        string normalized = NormalizeTargetFramework(framework.Name);
+                        if (!string.IsNullOrEmpty(normalized))
+                            return normalized;
+                    }
+                }
+
+                if (root.TryGetProperty("targets", out var targets))
+                {
+                    foreach (var target in targets.EnumerateObject())
+                    {
+                        string normalized = NormalizeTargetFramework(target.Name);
+                        if (!string.IsNullOrEmpty(normalized))
+                            return normalized;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return string.Empty;
+        }
+
+        private static string NormalizeTargetFramework(string frameworkName)
+        {
+            if (string.IsNullOrWhiteSpace(frameworkName))
+                return string.Empty;
+
+            string name = frameworkName.Trim();
+            int slashIndex = name.IndexOf('/');
+            if (slashIndex >= 0)
+                name = name.Substring(0, slashIndex);
+
+            if (name.StartsWith("net", StringComparison.OrdinalIgnoreCase))
+                return name;
+
+            const string netCoreAppPrefix = ".NETCoreApp,Version=v";
+            if (name.StartsWith(netCoreAppPrefix, StringComparison.OrdinalIgnoreCase))
+                return "net" + name.Substring(netCoreAppPrefix.Length);
+
+            return string.Empty;
+        }
+
+        private static IEnumerable<string> ResolveAspNetCoreReferencePaths(string targetFramework)
+        {
+            string refTargetFramework = GetReferenceTargetFramework(targetFramework);
+            if (string.IsNullOrEmpty(refTargetFramework))
+                return Enumerable.Empty<string>();
+
+            string versionPrefix = GetVersionPrefixFromTargetFramework(refTargetFramework);
+            if (string.IsNullOrEmpty(versionPrefix))
+                return Enumerable.Empty<string>();
+
+            foreach (string dotnetRoot in GetDotnetRootCandidates())
+            {
+                string packRoot = Path.Combine(dotnetRoot, "packs", "Microsoft.AspNetCore.App.Ref");
+                string packVersionDirectory = FindBestFrameworkVersionDirectory(packRoot, versionPrefix,
+                    versionDirectory => Directory.Exists(Path.Combine(versionDirectory, "ref",
+                        refTargetFramework)));
+                if (!string.IsNullOrEmpty(packVersionDirectory))
+                {
+                    string refDirectory = Path.Combine(packVersionDirectory, "ref", refTargetFramework);
+                    try
+                    {
+                        return Directory.EnumerateFiles(refDirectory, "*.dll").ToList();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            foreach (string dotnetRoot in GetDotnetRootCandidates())
+            {
+                string sharedRoot = Path.Combine(dotnetRoot, "shared", "Microsoft.AspNetCore.App");
+                string sharedVersionDirectory = FindBestFrameworkVersionDirectory(sharedRoot, versionPrefix,
+                    Directory.Exists);
+                if (!string.IsNullOrEmpty(sharedVersionDirectory))
+                {
+                    try
+                    {
+                        return Directory.EnumerateFiles(sharedVersionDirectory, "*.dll").ToList();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            return Enumerable.Empty<string>();
+        }
+
+        private static string GetReferenceTargetFramework(string targetFramework)
+        {
+            if (string.IsNullOrWhiteSpace(targetFramework))
+                return string.Empty;
+
+            string normalized = NormalizeTargetFramework(targetFramework);
+            if (string.IsNullOrEmpty(normalized))
+                normalized = targetFramework.Trim();
+
+            int dashIndex = normalized.IndexOf('-');
+            if (dashIndex > 0)
+                normalized = normalized.Substring(0, dashIndex);
+
+            return normalized.StartsWith("net", StringComparison.OrdinalIgnoreCase)
+                ? normalized
+                : string.Empty;
+        }
+
+        private static string GetVersionPrefixFromTargetFramework(string targetFramework)
+        {
+            if (string.IsNullOrWhiteSpace(targetFramework) ||
+                !targetFramework.StartsWith("net", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            string version = targetFramework.Substring(3);
+            int dashIndex = version.IndexOf('-');
+            if (dashIndex > 0)
+                version = version.Substring(0, dashIndex);
+
+            return version;
+        }
+
+        private static IEnumerable<string> GetDotnetRootCandidates()
+        {
+            var roots = new List<string>();
+            AddDirectoryCandidate(roots, Environment.GetEnvironmentVariable("DOTNET_ROOT"));
+            AddDirectoryCandidate(roots, Environment.GetEnvironmentVariable("DOTNET_ROOT(x86)"));
+
+            try
+            {
+                string runtimeDirectory = Path.GetDirectoryName(typeof(object).Assembly.Location);
+                string dotnetRoot = Directory.GetParent(runtimeDirectory)?.Parent?.Parent?.FullName;
+                AddDirectoryCandidate(roots, dotnetRoot);
+            }
+            catch
+            {
+            }
+
+            AddDirectoryCandidate(roots, Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "dotnet"));
+            AddDirectoryCandidate(roots, Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "dotnet"));
+
+            return roots.Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static void AddDirectoryCandidate(List<string> candidates, string path)
+        {
+            if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path))
+                candidates.Add(path);
+        }
+
+        private static string FindBestFrameworkVersionDirectory(string frameworkRoot, string versionPrefix,
+            Func<string, bool> predicate)
+        {
+            if (string.IsNullOrWhiteSpace(frameworkRoot) || !Directory.Exists(frameworkRoot))
+                return string.Empty;
+
+            try
+            {
+                return Directory.EnumerateDirectories(frameworkRoot)
+                    .Where(directory => VersionMatchesPrefix(Path.GetFileName(directory), versionPrefix))
+                    .Where(directory => predicate == null || predicate(directory))
+                    .OrderByDescending(directory => ParseFrameworkVersion(Path.GetFileName(directory)))
+                    .FirstOrDefault() ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static bool VersionMatchesPrefix(string version, string versionPrefix)
+        {
+            if (string.IsNullOrWhiteSpace(version) || string.IsNullOrWhiteSpace(versionPrefix))
+                return false;
+
+            return string.Equals(version, versionPrefix, StringComparison.OrdinalIgnoreCase) ||
+                version.StartsWith(versionPrefix + ".", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static Version ParseFrameworkVersion(string version)
+        {
+            return Version.TryParse(version, out var parsed)
+                ? parsed
+                : new Version(0, 0);
+        }
+
         private static List<string> ResolveNuGetReferencePaths(string workspaceFolder, string currentFilePath,
             bool hasProjectContext)
         {
@@ -1003,7 +1513,19 @@ namespace CIARE.Roslyn
                 editor.Document.MarkerStrategy.AddMarker(marker);
             }
 
-            editor.Refresh();
+            InvalidateEditorTextArea(editor);
+        }
+
+        private static void InvalidateEditorTextArea(TextEditorControl editor)
+        {
+            var textArea = editor?.ActiveTextAreaControl?.TextArea;
+            if (textArea == null || textArea.IsDisposed)
+            {
+                editor?.Invalidate();
+                return;
+            }
+
+            textArea.Invalidate();
         }
 
         private static void UpdateErrorLabel(Label label, int errorCount)
@@ -1035,7 +1557,7 @@ namespace CIARE.Roslyn
             editor.BeginInvoke((Action)(() =>
             {
                 editor.Document.MarkerStrategy.RemoveAll(_ => true);
-                editor.Refresh();
+                InvalidateEditorTextArea(editor);
                 if (statusLabel != null)
                     statusLabel.Text = string.Empty;
                 if (warningsLabel != null)
@@ -1055,7 +1577,7 @@ namespace CIARE.Roslyn
                 editor.BeginInvoke((Action)(() =>
                 {
                     editor.Document.MarkerStrategy.RemoveAll(_ => true);
-                    editor.Refresh();
+                    InvalidateEditorTextArea(editor);
 
                     if (statusLabel != null)
                     {

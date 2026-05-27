@@ -55,6 +55,15 @@ namespace CIARE
     [SupportedOSPlatform("windows")]
     public partial class MainForm : Form
     {
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                cp.ExStyle |= 0x02000000; // WS_EX_COMPOSITED reduces flicker on resize and redraws.
+                return cp;
+            }
+        }
         public HubConnection hubConnection;
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
@@ -83,11 +92,21 @@ namespace CIARE
         private const int FileExplorerDefaultWidth = 280;
         private const int FileExplorerMinWidth = 220;
         private const int EditorPaneMinWidth = 180;
+        private const int FileExplorerDefaultNuGetHeight = 350;
+        private const int FileExplorerNuGetMinHeight = 90;
+        private const int FileExplorerTreeMinHeight = 120;
+        private const int FileExplorerLayoutApplyMaxAttempts = 20;
+        private const int FileExplorerLayoutApplyStabilizeAttempts = 4;
+        private const int FileExplorerLayoutApplyInterval = 50;
         private const string FileExplorerLoadingTag = "__loading__";
         private const string FileExplorerPathKey = "fileExplorerPath";
         private const string FileExplorerVisibleKey = "fileExplorerVisible";
+        private const string FileExplorerWidthKey = "fileExplorerWidth";
+        private const string FileExplorerNuGetHeightKey = "fileExplorerNuGetHeight";
         private static readonly string FileExplorerExpandedPathsFilePath =
             Path.Combine(GlobalVariables.userProfileDirectory, "fileExplorerExpandedPaths.cDat");
+        private static readonly string FileExplorerLayoutFilePath =
+            Path.Combine(GlobalVariables.userProfileDirectory, "fileExplorerLayout.cDat");
         private Panel _editorWorkspacePanel;
         private SplitContainer _editorExplorerSplitContainer;
         private Panel _fileExplorerPanel;
@@ -111,6 +130,7 @@ namespace CIARE
         private ImageList _fileExplorerImageList;
         private string _fileExplorerRootPath = string.Empty;
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
+        private int _fileExplorerNuGetHeight = FileExplorerDefaultNuGetHeight;
         private FileSystemWatcher _fileExplorerWatcher;
         private System.Windows.Forms.Timer _fileExplorerRefreshTimer;
         private System.Windows.Forms.Timer _fileExplorerNuGetRefreshTimer;
@@ -120,8 +140,27 @@ namespace CIARE
         private int _projectPackageRefreshVersion;
         private int _fileExplorerNuGetListRefreshVersion;
         private bool _suppressFileExplorerExpandedStateSave;
+        private bool _suppressFileExplorerLayoutSave;
+        private bool _applyingFileExplorerLayout;
+        private bool _pendingFileExplorerLayoutApply;
+        private int _fileExplorerLayoutApplyAttempts;
+        private System.Windows.Forms.Timer _fileExplorerLayoutApplyTimer;
+        private bool _fileExplorerLayoutReadyForUserSave;
+        private bool _fileExplorerWidthDragInProgress;
+        private bool _fileExplorerNuGetHeightDragInProgress;
         private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const int WorkspaceCompletionMethodLimit = 300;
+        private const int RoslynCompletionSourceFileLimit = 300;
+        private static readonly string[] CompletionImplicitUsingNamespaces =
+        {
+            "System",
+            "System.Collections.Generic",
+            "System.IO",
+            "System.Linq",
+            "System.Net.Http",
+            "System.Threading",
+            "System.Threading.Tasks"
+        };
         private readonly object _completionDataLock = new object();
         private readonly Dictionary<string, Dom.ICompilationUnit> _workspaceCompilationUnits
             = new Dictionary<string, Dom.ICompilationUnit>(StringComparer.OrdinalIgnoreCase);
@@ -200,6 +239,8 @@ namespace CIARE
             if (_editorExplorerSplitContainer != null)
                 return;
 
+            LoadFileExplorerLayoutValues();
+
             splitContainer1.Panel1.SuspendLayout();
             EditorTabControl.SuspendLayout();
 
@@ -221,7 +262,29 @@ namespace CIARE
             _editorExplorerSplitContainer.Panel1.Padding = Padding.Empty;
             _editorExplorerSplitContainer.Panel2.Padding = Padding.Empty;
             _editorExplorerSplitContainer.Panel1.Resize += (sender, args) => RefreshEditorLayoutBounds();
-            _editorExplorerSplitContainer.SplitterMoved += (sender, args) => RefreshEditorLayoutBounds();
+            _editorExplorerSplitContainer.SizeChanged += (sender, args) =>
+            {
+                OnFileExplorerLayoutContainerSizeChanged();
+            };
+            _editorExplorerSplitContainer.SplitterMoving += (sender, args) =>
+            {
+                _fileExplorerWidthDragInProgress = true;
+                CancelPendingFileExplorerLayoutApplyForUserResize();
+            };
+            _editorExplorerSplitContainer.SplitterMoved += (sender, args) =>
+            {
+                if (_fileExplorerWidthDragInProgress)
+                    QueueFileExplorerWidthSave();
+                RefreshEditorLayoutBounds();
+            };
+            _editorExplorerSplitContainer.MouseUp += (sender, args) =>
+            {
+                if (!_fileExplorerWidthDragInProgress)
+                    return;
+
+                _fileExplorerWidthDragInProgress = false;
+                QueueFileExplorerWidthSave();
+            };
 
             _fileExplorerPanel = new Panel
             {
@@ -235,8 +298,33 @@ namespace CIARE
                 Orientation = Orientation.Horizontal,
                 FixedPanel = FixedPanel.Panel2,
                 SplitterWidth = 4,
-                Panel2MinSize = 90
+                Panel2MinSize = FileExplorerNuGetMinHeight
             };
+            _fileExplorerContentSplitContainer.SizeChanged += (sender, args) =>
+            {
+                OnFileExplorerLayoutContainerSizeChanged();
+            };
+            _fileExplorerContentSplitContainer.SplitterMoving +=
+                (sender, args) =>
+                {
+                    _fileExplorerNuGetHeightDragInProgress = true;
+                    CancelPendingFileExplorerLayoutApplyForUserResize();
+                };
+            _fileExplorerContentSplitContainer.SplitterMoved +=
+                (sender, args) =>
+                {
+                    if (_fileExplorerNuGetHeightDragInProgress)
+                        QueueFileExplorerNuGetHeightSave();
+                };
+            _fileExplorerContentSplitContainer.MouseUp +=
+                (sender, args) =>
+                {
+                    if (!_fileExplorerNuGetHeightDragInProgress)
+                        return;
+
+                    _fileExplorerNuGetHeightDragInProgress = false;
+                    QueueFileExplorerNuGetHeightSave();
+                };
 
             _fileExplorerHeader = new TableLayoutPanel
             {
@@ -385,6 +473,7 @@ namespace CIARE
             _fileExplorerShowButton.Click += (sender, args) => ToggleFileExplorer(true);
             _editorWorkspacePanel.Controls.Add(_fileExplorerShowButton);
             _editorWorkspacePanel.Resize += (sender, args) => PositionFileExplorerShowButton();
+            Shown += (sender, args) => QueueFileExplorerLayoutApply();
 
             splitContainer1.Panel1.Controls.Add(_editorWorkspacePanel);
             splitContainer1.Panel1.ResumeLayout();
@@ -392,8 +481,7 @@ namespace CIARE
             BeginInvoke((Action)(() =>
             {
                 ApplyEditorExplorerMinimumWidths();
-                SetFileExplorerWidth(FileExplorerDefaultWidth);
-                SetFileExplorerNuGetHeight(350);
+                QueueFileExplorerLayoutApply();
                 PositionFileExplorerShowButton();
                 RefreshEditorLayoutBounds();
             }));
@@ -472,13 +560,14 @@ namespace CIARE
             {
                 _editorExplorerSplitContainer.Panel2Collapsed = false;
                 ApplyEditorExplorerMinimumWidths();
-                SetFileExplorerWidth(_fileExplorerWidth);
+                ApplyFileExplorerLayoutValues();
+                QueueFileExplorerLayoutApply();
                 _fileExplorerShowButton.Visible = false;
             }
             else
             {
                 if (saveWidth)
-                    _fileExplorerWidth = Math.Max(_editorExplorerSplitContainer.Panel2.Width, FileExplorerMinWidth);
+                    SaveFileExplorerWidth();
                 _editorExplorerSplitContainer.Panel2Collapsed = true;
                 _fileExplorerShowButton.Visible = true;
                 PositionFileExplorerShowButton();
@@ -515,8 +604,7 @@ namespace CIARE
 
             int minDist = _editorExplorerSplitContainer.Panel1MinSize;
             int maxDist = Math.Max(minDist, availableWidth - _editorExplorerSplitContainer.Panel2MinSize);
-            int explorerWidth = Math.Max(_editorExplorerSplitContainer.Panel2MinSize,
-                Math.Min(width, Math.Max(0, availableWidth - minDist)));
+            int explorerWidth = GetClampedFileExplorerWidth(width);
             int dist = Math.Max(minDist, Math.Min(maxDist, availableWidth - explorerWidth));
 
             if (!_editorExplorerSplitContainer.Panel2Collapsed)
@@ -539,11 +627,385 @@ namespace CIARE
             if (availableHeight <= 0)
                 return;
 
-            int minPanel1 = 120;
-            int nuGetHeight = Math.Max(_fileExplorerContentSplitContainer.Panel2MinSize,
-                Math.Min(height, Math.Max(_fileExplorerContentSplitContainer.Panel2MinSize,
-                    availableHeight - minPanel1)));
+            int nuGetHeight = GetClampedFileExplorerNuGetHeight(height);
             _fileExplorerContentSplitContainer.SplitterDistance = Math.Max(0, availableHeight - nuGetHeight);
+        }
+
+        private int GetClampedFileExplorerWidth(int width)
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+                return width;
+
+            int availableWidth = GetEditorExplorerSplitWidth() - _editorExplorerSplitContainer.SplitterWidth;
+            if (availableWidth <= 0)
+                return width;
+
+            int minExplorerWidth = Math.Max(0, _editorExplorerSplitContainer.Panel2MinSize);
+            int maxExplorerWidth = Math.Max(minExplorerWidth,
+                availableWidth - Math.Max(0, _editorExplorerSplitContainer.Panel1MinSize));
+            return Math.Max(minExplorerWidth, Math.Min(width, maxExplorerWidth));
+        }
+
+        private int GetClampedFileExplorerNuGetHeight(int height)
+        {
+            if (_fileExplorerContentSplitContainer == null ||
+                _fileExplorerContentSplitContainer.IsDisposed)
+            {
+                return height;
+            }
+
+            int availableHeight = _fileExplorerContentSplitContainer.ClientSize.Height -
+                _fileExplorerContentSplitContainer.SplitterWidth;
+            if (availableHeight <= 0)
+                return height;
+
+            int minNuGetHeight = Math.Max(0, _fileExplorerContentSplitContainer.Panel2MinSize);
+            int maxNuGetHeight = Math.Max(minNuGetHeight, availableHeight - FileExplorerTreeMinHeight);
+            return Math.Max(minNuGetHeight, Math.Min(height, maxNuGetHeight));
+        }
+
+        private void LoadFileExplorerLayoutValues()
+        {
+            _fileExplorerWidth = ReadFileExplorerLayoutValue(FileExplorerWidthKey,
+                FileExplorerDefaultWidth, FileExplorerMinWidth);
+            _fileExplorerNuGetHeight = ReadFileExplorerLayoutValue(FileExplorerNuGetHeightKey,
+                FileExplorerDefaultNuGetHeight, FileExplorerNuGetMinHeight);
+        }
+
+        private static int ReadFileExplorerLayoutValue(string key, int defaultValue, int minValue)
+        {
+            string savedFileValue = ReadFileExplorerLayoutFileValue(key);
+            if (int.TryParse(savedFileValue, out int fileValue) && fileValue >= minValue)
+                return fileValue;
+
+            string savedValue = RegistryManagement.RegKey_Read(
+                $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", key);
+            if (int.TryParse(savedValue, out int value) && value >= minValue)
+                return value;
+
+            return defaultValue;
+        }
+
+        private void ApplyFileExplorerLayoutValues()
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+                return;
+
+            _suppressFileExplorerLayoutSave = true;
+            _applyingFileExplorerLayout = true;
+            try
+            {
+                _editorExplorerSplitContainer.SuspendLayout();
+                _fileExplorerContentSplitContainer?.SuspendLayout();
+
+                if (!_editorExplorerSplitContainer.Panel2Collapsed)
+                    SetFileExplorerWidth(_fileExplorerWidth);
+                SetFileExplorerNuGetHeight(_fileExplorerNuGetHeight);
+            }
+            finally
+            {
+                _fileExplorerContentSplitContainer?.ResumeLayout(true);
+                _editorExplorerSplitContainer.ResumeLayout(true);
+                _applyingFileExplorerLayout = false;
+                _suppressFileExplorerLayoutSave = false;
+            }
+        }
+
+        private void QueueFileExplorerLayoutApply()
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed || IsDisposed)
+                return;
+
+            _pendingFileExplorerLayoutApply = true;
+            _fileExplorerLayoutApplyAttempts = 0;
+            _fileExplorerLayoutReadyForUserSave = false;
+            SchedulePendingFileExplorerLayoutApply();
+        }
+
+        private void OnFileExplorerLayoutContainerSizeChanged()
+        {
+            if (_fileExplorerWidthDragInProgress ||
+                _fileExplorerNuGetHeightDragInProgress ||
+                _applyingFileExplorerLayout ||
+                !_pendingFileExplorerLayoutApply ||
+                _fileExplorerLayoutReadyForUserSave)
+            {
+                return;
+            }
+
+            SchedulePendingFileExplorerLayoutApply();
+        }
+
+        private void CancelPendingFileExplorerLayoutApplyForUserResize()
+        {
+            _pendingFileExplorerLayoutApply = false;
+            _fileExplorerLayoutReadyForUserSave = true;
+            _fileExplorerLayoutApplyTimer?.Stop();
+        }
+
+        private void SchedulePendingFileExplorerLayoutApply()
+        {
+            if (IsDisposed || !IsHandleCreated)
+                return;
+
+            EnsureFileExplorerLayoutApplyTimer();
+            _fileExplorerLayoutApplyTimer.Interval =
+                _fileExplorerLayoutApplyAttempts < FileExplorerLayoutApplyMaxAttempts
+                    ? FileExplorerLayoutApplyInterval
+                    : Math.Max(FileExplorerLayoutApplyInterval, 250);
+            _fileExplorerLayoutApplyTimer.Stop();
+            _fileExplorerLayoutApplyTimer.Start();
+        }
+
+        private void EnsureFileExplorerLayoutApplyTimer()
+        {
+            if (_fileExplorerLayoutApplyTimer != null)
+                return;
+
+            _fileExplorerLayoutApplyTimer = new System.Windows.Forms.Timer(components)
+            {
+                Interval = FileExplorerLayoutApplyInterval
+            };
+            _fileExplorerLayoutApplyTimer.Tick += OnFileExplorerLayoutApplyTimer;
+        }
+
+        private void OnFileExplorerLayoutApplyTimer(object sender, EventArgs e)
+        {
+            _fileExplorerLayoutApplyTimer?.Stop();
+            ApplyPendingFileExplorerLayoutValues();
+        }
+
+        private void ApplyPendingFileExplorerLayoutValues()
+        {
+            if (!_pendingFileExplorerLayoutApply ||
+                _editorExplorerSplitContainer == null ||
+                _editorExplorerSplitContainer.IsDisposed)
+            {
+                return;
+            }
+
+            if (!CanApplyFileExplorerLayoutValues())
+            {
+                _fileExplorerLayoutApplyAttempts++;
+                SchedulePendingFileExplorerLayoutApply();
+                return;
+            }
+
+            ApplyEditorExplorerMinimumWidths();
+            ApplyFileExplorerLayoutValues();
+            PositionFileExplorerShowButton();
+            RefreshEditorLayoutBounds();
+
+            _fileExplorerLayoutApplyAttempts++;
+            if (_fileExplorerLayoutApplyAttempts < FileExplorerLayoutApplyStabilizeAttempts ||
+                !IsFileExplorerLayoutApplied())
+            {
+                if (_fileExplorerLayoutApplyAttempts < FileExplorerLayoutApplyMaxAttempts)
+                {
+                    SchedulePendingFileExplorerLayoutApply();
+                    return;
+                }
+            }
+
+            _pendingFileExplorerLayoutApply = false;
+            _fileExplorerLayoutReadyForUserSave = true;
+        }
+
+        private bool CanApplyFileExplorerLayoutValues()
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+                return false;
+
+            if (!Visible || WindowState == FormWindowState.Minimized)
+                return false;
+
+            int splitWidth = GetEditorExplorerSplitWidth();
+            if (splitWidth <= _editorExplorerSplitContainer.SplitterWidth)
+                return false;
+
+            if (_fileExplorerContentSplitContainer == null || _fileExplorerContentSplitContainer.IsDisposed)
+                return true;
+
+            int splitHeight = _fileExplorerContentSplitContainer.ClientSize.Height;
+            if (splitHeight <= _fileExplorerContentSplitContainer.SplitterWidth)
+                return false;
+
+            return true;
+        }
+
+        private bool IsFileExplorerLayoutApplied()
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+                return false;
+
+            if (!_editorExplorerSplitContainer.Panel2Collapsed)
+            {
+                int currentWidth = GetCurrentFileExplorerWidth();
+                int targetWidth = GetClampedFileExplorerWidth(_fileExplorerWidth);
+                if (currentWidth <= 0 || Math.Abs(currentWidth - targetWidth) > 1)
+                    return false;
+            }
+
+            if (_fileExplorerContentSplitContainer == null ||
+                _fileExplorerContentSplitContainer.IsDisposed ||
+                _fileExplorerContentSplitContainer.Panel2Collapsed)
+            {
+                return true;
+            }
+
+            int currentHeight = GetCurrentFileExplorerNuGetHeight();
+            int targetHeight = GetClampedFileExplorerNuGetHeight(_fileExplorerNuGetHeight);
+            return currentHeight > 0 && Math.Abs(currentHeight - targetHeight) <= 1;
+        }
+
+        private void QueueFileExplorerWidthSave()
+        {
+            if (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave)
+                return;
+
+            SaveFileExplorerWidth();
+        }
+
+        private void QueueFileExplorerNuGetHeightSave()
+        {
+            if (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave)
+                return;
+
+            SaveFileExplorerNuGetHeight();
+        }
+
+        private void SaveFileExplorerWidth(bool force = false)
+        {
+            if (!force && (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave))
+                return;
+
+            if (_editorExplorerSplitContainer == null ||
+                _editorExplorerSplitContainer.IsDisposed ||
+                _editorExplorerSplitContainer.Panel2Collapsed)
+            {
+                return;
+            }
+
+            int splitterWidth = GetCurrentFileExplorerWidth();
+            if (splitterWidth <= 0)
+                return;
+
+            _fileExplorerWidth = Math.Max(FileExplorerMinWidth, splitterWidth);
+            WriteFileExplorerLayoutValue(FileExplorerWidthKey, _fileExplorerWidth);
+        }
+
+        private void SaveFileExplorerNuGetHeight(bool force = false)
+        {
+            if (!force && (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave))
+                return;
+
+            if (_fileExplorerContentSplitContainer == null ||
+                _fileExplorerContentSplitContainer.IsDisposed ||
+                _fileExplorerContentSplitContainer.Panel2Collapsed)
+            {
+                return;
+            }
+
+            int splitterHeight = GetCurrentFileExplorerNuGetHeight();
+            if (splitterHeight <= 0)
+                return;
+
+            _fileExplorerNuGetHeight = Math.Max(FileExplorerNuGetMinHeight, splitterHeight);
+            WriteFileExplorerLayoutValue(FileExplorerNuGetHeightKey, _fileExplorerNuGetHeight);
+        }
+
+        private int GetCurrentFileExplorerWidth()
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+                return 0;
+
+            if (_editorExplorerSplitContainer.Panel2.Width > 0)
+                return _editorExplorerSplitContainer.Panel2.Width;
+
+            int availableWidth = GetEditorExplorerSplitWidth() - _editorExplorerSplitContainer.SplitterWidth;
+            return availableWidth > 0
+                ? Math.Max(0, availableWidth - _editorExplorerSplitContainer.SplitterDistance)
+                : 0;
+        }
+
+        private int GetCurrentFileExplorerNuGetHeight()
+        {
+            if (_fileExplorerContentSplitContainer == null ||
+                _fileExplorerContentSplitContainer.IsDisposed)
+            {
+                return 0;
+            }
+
+            if (_fileExplorerContentSplitContainer.Panel2.Height > 0)
+                return _fileExplorerContentSplitContainer.Panel2.Height;
+
+            int availableHeight = _fileExplorerContentSplitContainer.ClientSize.Height -
+                _fileExplorerContentSplitContainer.SplitterWidth;
+            return availableHeight > 0
+                ? Math.Max(0, availableHeight - _fileExplorerContentSplitContainer.SplitterDistance)
+                : 0;
+        }
+
+        private static void WriteFileExplorerLayoutValue(string key, int value)
+        {
+            InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, key, value.ToString());
+            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, key, value.ToString());
+            WriteFileExplorerLayoutFileValue(key, value);
+        }
+
+        private static string ReadFileExplorerLayoutFileValue(string key)
+        {
+            try
+            {
+                if (!File.Exists(FileExplorerLayoutFilePath))
+                    return string.Empty;
+
+                foreach (string line in File.ReadAllLines(FileExplorerLayoutFilePath))
+                {
+                    int separatorIndex = line.IndexOf('=');
+                    if (separatorIndex <= 0)
+                        continue;
+
+                    string savedKey = line.Substring(0, separatorIndex).Trim();
+                    if (string.Equals(savedKey, key, StringComparison.OrdinalIgnoreCase))
+                        return line.Substring(separatorIndex + 1).Trim();
+                }
+            }
+            catch
+            {
+            }
+
+            return string.Empty;
+        }
+
+        private static void WriteFileExplorerLayoutFileValue(string key, int value)
+        {
+            try
+            {
+                var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                if (File.Exists(FileExplorerLayoutFilePath))
+                {
+                    foreach (string line in File.ReadAllLines(FileExplorerLayoutFilePath))
+                    {
+                        int separatorIndex = line.IndexOf('=');
+                        if (separatorIndex <= 0)
+                            continue;
+
+                        values[line.Substring(0, separatorIndex).Trim()] =
+                            line.Substring(separatorIndex + 1).Trim();
+                    }
+                }
+
+                values[key] = value.ToString();
+                Directory.CreateDirectory(GlobalVariables.userProfileDirectory);
+                File.WriteAllLines(FileExplorerLayoutFilePath,
+                    values.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                        .Select(pair => pair.Key + "=" + pair.Value));
+            }
+            catch
+            {
+                // Layout state persistence is best-effort.
+            }
         }
 
         private int GetEditorExplorerSplitWidth()
@@ -698,6 +1160,7 @@ namespace CIARE
         {
             InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerPathKey, string.Empty);
             InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerVisibleKey, "True");
+            LoadFileExplorerLayoutValues();
 
             string savedPath = RegistryManagement.RegKey_Read(
                 $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", FileExplorerPathKey);
@@ -709,6 +1172,8 @@ namespace CIARE
 
             if (savedVisible == "False")
                 ToggleFileExplorer(false, saveWidth: false);
+            else
+                QueueFileExplorerLayoutApply();
         }
 
         private void LoadFileExplorerFolder(string folderPath)
@@ -1675,12 +2140,34 @@ namespace CIARE
 
         private string GetActiveWorkspaceFolder()
         {
-            if (!Directory.Exists(_fileExplorerRootPath))
-                return string.Empty;
-
             string filePath = GetActiveEditorFilePath();
+
+            if (!Directory.Exists(_fileExplorerRootPath))
+            {
+                string buildTarget = FindBuildTargetFromActiveFile(filePath);
+                string buildFolder = string.IsNullOrEmpty(buildTarget)
+                    ? string.Empty
+                    : Path.GetDirectoryName(buildTarget);
+                return !string.IsNullOrEmpty(buildFolder) &&
+                    Directory.Exists(buildFolder) &&
+                    IsPathInsideFolder(filePath, buildFolder)
+                        ? buildFolder
+                        : string.Empty;
+            }
+
             if (string.IsNullOrEmpty(filePath) || IsPathInsideFolder(filePath, _fileExplorerRootPath))
                 return _fileExplorerRootPath;
+
+            string activeBuildTarget = FindBuildTargetFromActiveFile(filePath);
+            string activeBuildFolder = string.IsNullOrEmpty(activeBuildTarget)
+                ? string.Empty
+                : Path.GetDirectoryName(activeBuildTarget);
+            if (!string.IsNullOrEmpty(activeBuildFolder) &&
+                Directory.Exists(activeBuildFolder) &&
+                IsPathInsideFolder(filePath, activeBuildFolder))
+            {
+                return activeBuildFolder;
+            }
 
             return string.Empty;
         }
@@ -2071,6 +2558,7 @@ namespace CIARE
 
             // Run initial type check so errors are underlined from the first load.
             RestoreFileExplorerState();
+            QueueFileExplorerLayoutApply();
             RefreshEditorLayoutBounds();
             var startEditor = SelectedEditor.GetSelectedEditor();
             if (startEditor != null && !string.IsNullOrWhiteSpace(startEditor.Text))
@@ -2941,7 +3429,8 @@ namespace CIARE
             AddRoslynCompletionClasses(workspaceCompletionClasses, code, currentFilePath);
             var topLevelFunctions = new List<WorkspaceCompletionItem>();
             CollectTopLevelLocalFunctions(topLevelFunctions, code, currentFilePath);
-            string parsedCode = IsVisualBasic ? code : WrapTopLevelStatementsForNRefactory(ConvertFileScopedNamespace(code), out _, out _);
+            string parsedCode = PrepareCodeForNRefactoryCompletion(code, currentFilePath,
+                out _, out _, out _);
             TextReader textReader = new StringReader(parsedCode);
             Dom.ICompilationUnit newCompilationUnit;
             NRefactory.SupportedLanguage supportedLanguage;
@@ -3000,7 +3489,8 @@ namespace CIARE
                 {
                     string originalFileCode = File.ReadAllText(filePath);
                     AddRoslynCompletionClasses(workspaceCompletionClasses, originalFileCode, filePath);
-                    string fileCode = ConvertFileScopedNamespace(originalFileCode);
+                    string fileCode = PrepareCodeForNRefactoryCompletion(originalFileCode, filePath,
+                        out _, out _, out _);
                     Dom.ICompilationUnit newCU;
                     using (var reader = new StringReader(fileCode))
                     using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(NRefactory.SupportedLanguage.CSharp, reader))
@@ -3084,6 +3574,422 @@ namespace CIARE
             }
 
             return result;
+        }
+
+        internal ArrayList GetRoslynMemberCompletionData(string code, int caretOffset, string expressionText)
+        {
+            var result = new ArrayList();
+            if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
+                return result;
+
+            try
+            {
+                var context = BuildRoslynCompletionContext(code);
+                if (context == null)
+                    return result;
+
+                int position = Math.Max(0, Math.Min(caretOffset, code.Length));
+                ExpressionSyntax expression = FindRoslynMemberAccessExpression(context.Root, position, expressionText);
+                if (expression == null)
+                    return result;
+
+                var symbolInfo = context.SemanticModel.GetSymbolInfo(expression);
+                var typeInfo = context.SemanticModel.GetTypeInfo(expression);
+                ISymbol expressionSymbol = symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
+
+                if (expressionSymbol is INamespaceSymbol namespaceSymbol)
+                {
+                    AddRoslynSymbolsToCompletionData(result, namespaceSymbol.GetMembers(), string.Empty,
+                        staticOnly: false, instanceOnly: false);
+                    return result;
+                }
+
+                bool staticOnly = expressionSymbol is INamedTypeSymbol;
+                ITypeSymbol typeSymbol = staticOnly
+                    ? expressionSymbol as ITypeSymbol
+                    : typeInfo.Type ?? typeInfo.ConvertedType;
+                if (typeSymbol == null)
+                    return result;
+
+                AddRoslynSymbolsToCompletionData(result,
+                    GetRoslynTypeMembers(typeSymbol, staticOnly),
+                    string.Empty,
+                    staticOnly,
+                    instanceOnly: !staticOnly);
+            }
+            catch
+            {
+            }
+
+            return result;
+        }
+
+        internal ArrayList GetRoslynCtrlSpaceCompletionData(string code, int caretOffset, string prefix)
+        {
+            var result = new ArrayList();
+            if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
+                return result;
+
+            try
+            {
+                var context = BuildRoslynCompletionContext(code);
+                if (context == null)
+                    return result;
+
+                int position = Math.Max(0, Math.Min(caretOffset, code.Length));
+                AddRoslynSymbolsToCompletionData(result,
+                    context.SemanticModel.LookupSymbols(position),
+                    prefix,
+                    staticOnly: false,
+                    instanceOnly: false);
+            }
+            catch
+            {
+            }
+
+            return result;
+        }
+
+        private RoslynCompletionContext BuildRoslynCompletionContext(string code)
+        {
+            string currentFilePath = GetActiveEditorFilePath();
+            string projectPath = GetCompletionProjectPath(currentFilePath);
+            var parseOptions = BuildCompletionParseOptions();
+            SyntaxTree activeTree;
+            var syntaxTrees = BuildRoslynCompletionSyntaxTrees(code, currentFilePath, projectPath,
+                parseOptions, out activeTree);
+            if (activeTree == null)
+                return null;
+
+            var compilation = CSharpCompilation.Create(
+                "__CiareCompletion",
+                syntaxTrees,
+                BuildCompletionReferences(projectPath),
+                new CSharpCompilationOptions(
+                    OutputKind.DynamicallyLinkedLibrary,
+                    allowUnsafe: GlobalVariables.OUnsafeCode));
+
+            var root = activeTree.GetCompilationUnitRoot();
+            return new RoslynCompletionContext(
+                activeTree,
+                root,
+                compilation,
+                compilation.GetSemanticModel(activeTree, true));
+        }
+
+        private List<SyntaxTree> BuildRoslynCompletionSyntaxTrees(string code, string currentFilePath,
+            string projectPath, CSharpParseOptions parseOptions, out SyntaxTree activeTree)
+        {
+            string activePath = string.IsNullOrWhiteSpace(currentFilePath) ? DummyFileName : currentFilePath;
+            activeTree = CSharpSyntaxTree.ParseText(code ?? string.Empty, parseOptions, path: activePath);
+            var syntaxTrees = new List<SyntaxTree> { activeTree };
+
+            string globalUsingsPath = FindProjectGlobalUsingsFile(projectPath);
+            if (!string.IsNullOrEmpty(globalUsingsPath))
+                AddRoslynCompletionSyntaxTree(syntaxTrees, globalUsingsPath, parseOptions);
+            else if (!string.IsNullOrEmpty(projectPath))
+                syntaxTrees.Add(CSharpSyntaxTree.ParseText(BuildCompletionImplicitUsingsCode(),
+                    parseOptions, path: "__CIARE_ImplicitUsings.g.cs"));
+
+            string sourceRoot = GetCompletionSourceRoot(currentFilePath, projectPath);
+            if (string.IsNullOrEmpty(sourceRoot) || !Directory.Exists(sourceRoot))
+                return syntaxTrees;
+
+            string normalizedCurrent = NormalizeCompletionPath(currentFilePath);
+            int sourceFileCount = 0;
+            foreach (string filePath in GetWorkspaceCsFiles(sourceRoot))
+            {
+                if (!string.IsNullOrEmpty(normalizedCurrent) &&
+                    string.Equals(NormalizeCompletionPath(filePath), normalizedCurrent, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (++sourceFileCount > RoslynCompletionSourceFileLimit)
+                    break;
+
+                AddRoslynCompletionSyntaxTree(syntaxTrees, filePath, parseOptions);
+            }
+
+            return syntaxTrees;
+        }
+
+        private static void AddRoslynCompletionSyntaxTree(List<SyntaxTree> syntaxTrees,
+            string filePath, CSharpParseOptions parseOptions)
+        {
+            try
+            {
+                if (!File.Exists(filePath))
+                    return;
+
+                syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(filePath),
+                    parseOptions, path: filePath));
+            }
+            catch
+            {
+            }
+        }
+
+        private string GetCompletionSourceRoot(string currentFilePath, string projectPath)
+        {
+            if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
+                return Path.GetDirectoryName(projectPath);
+
+            if (Directory.Exists(_fileExplorerRootPath))
+                return _fileExplorerRootPath;
+
+            if (!string.IsNullOrEmpty(currentFilePath) && File.Exists(currentFilePath))
+                return FindWorkspaceRoot(Path.GetDirectoryName(currentFilePath));
+
+            return string.Empty;
+        }
+
+        private static IEnumerable<MetadataReference> BuildCompletionReferences(string projectPath)
+        {
+            var references = new List<MetadataReference>();
+            var referencePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            string trusted = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
+            if (!string.IsNullOrEmpty(trusted))
+            {
+                foreach (var referencePath in trusted.Split(Path.PathSeparator))
+                    AddCompletionReference(references, referencePaths, referencePath);
+            }
+
+            AddCompletionReferencePaths(references, referencePaths, GlobalVariables.customRefList);
+            AddCompletionReferencePaths(references, referencePaths, GlobalVariables.filteredCustomRef);
+            AddCompletionReferencePaths(references, referencePaths, GlobalVariables.customRefAsm);
+
+            if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
+            {
+                foreach (var referencePath in ProjectNuGetManager.GetCompileReferencePaths(projectPath))
+                    AddCompletionReference(references, referencePaths, referencePath);
+            }
+
+            return references;
+        }
+
+        private static void AddCompletionReferencePaths(List<MetadataReference> references,
+            HashSet<string> referencePaths, IEnumerable<string> storedReferences)
+        {
+            if (storedReferences == null)
+                return;
+
+            foreach (string storedReference in storedReferences)
+                AddCompletionReference(references, referencePaths, GetCompletionReferencePath(storedReference));
+        }
+
+        private static void AddCompletionReference(List<MetadataReference> references,
+            HashSet<string> referencePaths, string referencePath)
+        {
+            if (string.IsNullOrWhiteSpace(referencePath) || !File.Exists(referencePath))
+                return;
+
+            try
+            {
+                string normalizedPath = NormalizeCompletionPath(referencePath);
+                if (!referencePaths.Add(normalizedPath))
+                    return;
+
+                references.Add(MetadataReference.CreateFromFile(referencePath));
+            }
+            catch
+            {
+            }
+        }
+
+        private static string GetCompletionReferencePath(string storedReference)
+        {
+            if (string.IsNullOrWhiteSpace(storedReference))
+                return string.Empty;
+
+            string[] parts = storedReference.Split('|');
+            return parts.Length >= 2 ? parts[1] : storedReference;
+        }
+
+        private static CSharpParseOptions BuildCompletionParseOptions()
+        {
+            string framework = GlobalVariables.Framework ?? string.Empty;
+            var languageVersion = LanguageVersion.Default;
+            if (framework.StartsWith("net6.0", StringComparison.OrdinalIgnoreCase))
+                languageVersion = LanguageVersion.CSharp10;
+            else if (framework.StartsWith("net7.0", StringComparison.OrdinalIgnoreCase))
+                languageVersion = LanguageVersion.CSharp11;
+            else if (framework.StartsWith("net8.0", StringComparison.OrdinalIgnoreCase))
+                languageVersion = LanguageVersion.CSharp12;
+            else if (framework.StartsWith("net9.0", StringComparison.OrdinalIgnoreCase))
+                languageVersion = LanguageVersion.CSharp13;
+            else if (framework.StartsWith("net10.0", StringComparison.OrdinalIgnoreCase))
+                languageVersion = LanguageVersion.CSharp14;
+
+            return CSharpParseOptions.Default.WithLanguageVersion(languageVersion);
+        }
+
+        private static string BuildCompletionImplicitUsingsCode()
+        {
+            return string.Join(Environment.NewLine,
+                CompletionImplicitUsingNamespaces.Select(ns => $"global using {ns};"));
+        }
+
+        private static ExpressionSyntax FindRoslynMemberAccessExpression(
+            CompilationUnitSyntax root, int caretOffset, string expressionText)
+        {
+            if (root == null)
+                return null;
+
+            int lookupPosition = Math.Max(0, Math.Min(caretOffset - 1, root.FullSpan.End));
+            SyntaxToken token = root.FindToken(lookupPosition);
+            var memberAccess = token.Parent?.AncestorsAndSelf()
+                .OfType<MemberAccessExpressionSyntax>()
+                .Where(access => access.OperatorToken.SpanStart <= lookupPosition &&
+                                 access.SpanStart <= lookupPosition)
+                .OrderByDescending(access => access.SpanStart)
+                .FirstOrDefault();
+            if (memberAccess != null)
+                return memberAccess.Expression;
+
+            string normalizedExpression = NormalizeCompletionExpression(expressionText);
+            if (string.IsNullOrEmpty(normalizedExpression))
+                return null;
+
+            return root.DescendantNodes()
+                .OfType<ExpressionSyntax>()
+                .Where(expression => expression.Span.End <= caretOffset &&
+                                     string.Equals(NormalizeCompletionExpression(expression.ToString()),
+                                         normalizedExpression, StringComparison.Ordinal))
+                .OrderByDescending(expression => expression.Span.End)
+                .FirstOrDefault();
+        }
+
+        private static IEnumerable<ISymbol> GetRoslynTypeMembers(ITypeSymbol typeSymbol, bool staticOnly)
+        {
+            if (typeSymbol == null)
+                yield break;
+
+            if (staticOnly)
+            {
+                foreach (var member in typeSymbol.GetMembers())
+                    yield return member;
+                yield break;
+            }
+
+            for (INamedTypeSymbol current = typeSymbol as INamedTypeSymbol;
+                current != null;
+                current = current.BaseType)
+            {
+                foreach (var member in current.GetMembers())
+                    yield return member;
+            }
+        }
+
+        private static void AddRoslynSymbolsToCompletionData(ArrayList result, IEnumerable<ISymbol> symbols,
+            string prefix, bool staticOnly, bool instanceOnly)
+        {
+            if (result == null || symbols == null)
+                return;
+
+            string normalizedPrefix = prefix ?? string.Empty;
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var symbol in symbols.OrderBy(symbol => symbol.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                if (!IsRoslynCompletionSymbol(symbol, staticOnly, instanceOnly))
+                    continue;
+
+                string name = GetRoslynCompletionName(symbol);
+                if (string.IsNullOrEmpty(name))
+                    continue;
+
+                if (!string.IsNullOrEmpty(normalizedPrefix) &&
+                    !name.StartsWith(normalizedPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!seen.Add(name))
+                    continue;
+
+                result.Add(new DefaultCompletionData(name,
+                    GetRoslynCompletionDescription(symbol),
+                    GetRoslynCompletionImageIndex(symbol)));
+                if (result.Count >= WorkspaceCompletionMethodLimit)
+                    return;
+            }
+        }
+
+        private static bool IsRoslynCompletionSymbol(ISymbol symbol, bool staticOnly, bool instanceOnly)
+        {
+            if (symbol == null || symbol.IsImplicitlyDeclared || string.IsNullOrEmpty(symbol.Name))
+                return false;
+
+            if (symbol is IMethodSymbol method)
+            {
+                if (method.MethodKind != MethodKind.Ordinary &&
+                    method.MethodKind != MethodKind.ReducedExtension)
+                {
+                    return false;
+                }
+            }
+
+            if (staticOnly && symbol.Kind != SymbolKind.NamedType && !symbol.IsStatic)
+                return false;
+
+            if (instanceOnly && symbol.IsStatic && symbol.Kind != SymbolKind.NamedType)
+                return false;
+
+            return symbol.Kind == SymbolKind.Method ||
+                   symbol.Kind == SymbolKind.Property ||
+                   symbol.Kind == SymbolKind.Field ||
+                   symbol.Kind == SymbolKind.Event ||
+                   symbol.Kind == SymbolKind.NamedType ||
+                   symbol.Kind == SymbolKind.Namespace ||
+                   symbol.Kind == SymbolKind.Local ||
+                   symbol.Kind == SymbolKind.Parameter;
+        }
+
+        private static string GetRoslynCompletionName(ISymbol symbol)
+        {
+            if (symbol == null)
+                return string.Empty;
+
+            if (symbol is INamedTypeSymbol namedType && !string.IsNullOrEmpty(namedType.Name))
+                return namedType.Name;
+
+            return symbol.Name ?? string.Empty;
+        }
+
+        private static string GetRoslynCompletionDescription(ISymbol symbol)
+        {
+            try
+            {
+                return symbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+            }
+            catch
+            {
+                return symbol?.Name ?? string.Empty;
+            }
+        }
+
+        private static int GetRoslynCompletionImageIndex(ISymbol symbol)
+        {
+            switch (symbol?.Kind)
+            {
+                case SymbolKind.Method:
+                    return 1;
+                case SymbolKind.Property:
+                    return 2;
+                case SymbolKind.Field:
+                case SymbolKind.Local:
+                case SymbolKind.Parameter:
+                    return 3;
+                case SymbolKind.Event:
+                    return 6;
+                case SymbolKind.NamedType:
+                    return symbol is INamedTypeSymbol namedType && namedType.TypeKind == TypeKind.Enum ? 4 : 0;
+                case SymbolKind.Namespace:
+                    return 5;
+                default:
+                    return 0;
+            }
         }
 
         private static void AddWorkspaceClassCompletionItems(ArrayList result, HashSet<string> seen, WorkspaceCompletionClass completionClass)
@@ -3487,6 +4393,156 @@ namespace CIARE
             return before + "namespace " + nsName + "\n{" + after + "\n}";
         }
 
+        internal string PrepareCodeForNRefactoryCompletion(string code, out int prefixLineOffset,
+            out int wrapLineOffset, out int bodyStartLine)
+        {
+            return PrepareCodeForNRefactoryCompletion(code, GetActiveEditorFilePath(),
+                out prefixLineOffset, out wrapLineOffset, out bodyStartLine);
+        }
+
+        private string PrepareCodeForNRefactoryCompletion(string code, string filePath,
+            out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine)
+        {
+            prefixLineOffset = 0;
+            wrapLineOffset = 0;
+            bodyStartLine = 1;
+
+            if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
+                return code;
+
+            string globalUsings = GetProjectGlobalUsingsForCompletion(filePath);
+            string codeWithGlobalUsings = code;
+            if (!string.IsNullOrEmpty(globalUsings))
+            {
+                prefixLineOffset = CountLineBreaks(globalUsings);
+                codeWithGlobalUsings = globalUsings + code;
+            }
+
+            return WrapTopLevelStatementsForNRefactory(ConvertFileScopedNamespace(codeWithGlobalUsings),
+                out wrapLineOffset, out bodyStartLine);
+        }
+
+        private string GetProjectGlobalUsingsForCompletion(string sourceFilePath)
+        {
+            return ReadGlobalUsingsAsRegularDirectives(GetCompletionProjectPath(sourceFilePath));
+        }
+
+        private string GetCompletionProjectPath(string sourceFilePath)
+        {
+            string projectPath = string.Empty;
+            if (!string.IsNullOrWhiteSpace(sourceFilePath) && File.Exists(sourceFilePath))
+            {
+                if (Directory.Exists(_fileExplorerRootPath))
+                    projectPath = FindProjectFileForPath(sourceFilePath, _fileExplorerRootPath);
+
+                if (string.IsNullOrEmpty(projectPath))
+                    projectPath = FindNearestBuildFile(Path.GetDirectoryName(sourceFilePath), null, "*.csproj");
+            }
+
+            if (string.IsNullOrEmpty(projectPath))
+                projectPath = GetActiveEditorPackageProjectPath();
+
+            return projectPath;
+        }
+
+        private static string ReadGlobalUsingsAsRegularDirectives(string projectPath)
+        {
+            string globalUsingsPath = FindProjectGlobalUsingsFile(projectPath);
+            if (string.IsNullOrEmpty(globalUsingsPath))
+                return string.Empty;
+
+            try
+            {
+                var directives = new List<string>();
+                var seen = new HashSet<string>(StringComparer.Ordinal);
+                foreach (string line in File.ReadAllLines(globalUsingsPath))
+                {
+                    string directive = ConvertGlobalUsingLine(line);
+                    if (directive.Length > 0 && seen.Add(directive))
+                        directives.Add(directive);
+                }
+
+                return directives.Count == 0
+                    ? string.Empty
+                    : string.Join(Environment.NewLine, directives) + Environment.NewLine;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string FindProjectGlobalUsingsFile(string projectPath)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
+                return string.Empty;
+
+            string projectDirectory = Path.GetDirectoryName(projectPath);
+            if (string.IsNullOrEmpty(projectDirectory))
+                return string.Empty;
+
+            string objDirectory = Path.Combine(projectDirectory, "obj");
+            if (!Directory.Exists(objDirectory))
+                return string.Empty;
+
+            try
+            {
+                var files = Directory.EnumerateFiles(objDirectory, "*GlobalUsings.g.cs",
+                        SearchOption.AllDirectories)
+                    .Where(File.Exists)
+                    .OrderByDescending(IsPreferredGlobalUsingsPath)
+                    .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                return files.FirstOrDefault(IsPreferredGlobalUsingsPath) ??
+                    files.FirstOrDefault() ??
+                    string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static bool IsPreferredGlobalUsingsPath(string filePath)
+        {
+            string framework = GlobalVariables.Framework;
+            if (string.IsNullOrWhiteSpace(framework))
+                return false;
+
+            return filePath
+                .Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+                    StringSplitOptions.RemoveEmptyEntries)
+                .Any(segment => segment.StartsWith(framework, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string ConvertGlobalUsingLine(string line)
+        {
+            string trimmed = (line ?? string.Empty).Trim();
+            const string prefix = "global using ";
+            if (!trimmed.StartsWith(prefix, StringComparison.Ordinal))
+                return string.Empty;
+
+            string body = trimmed.Substring(prefix.Length);
+            if (body.StartsWith("static ", StringComparison.Ordinal))
+                return string.Empty;
+
+            string directive = "using " + body.Replace("global::", string.Empty);
+            return directive.EndsWith(";", StringComparison.Ordinal) ? directive : directive + ";";
+        }
+
+        private static int CountLineBreaks(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return 0;
+
+            int count = 0;
+            foreach (char ch in text)
+                if (ch == '\n')
+                    count++;
+            return count;
+        }
+
         /// <summary>
         /// When code uses top-level statements (C# 9+), wraps the body in a synthetic
         /// class and method so the NRefactory resolver can find a method scope and
@@ -3875,6 +4931,23 @@ namespace CIARE
             {
                 return new WorkspaceCompletionItem(Name, KindKeyword + " " + FullName, ImageIndex);
             }
+        }
+
+        private sealed class RoslynCompletionContext
+        {
+            public RoslynCompletionContext(SyntaxTree activeTree, CompilationUnitSyntax root,
+                CSharpCompilation compilation, SemanticModel semanticModel)
+            {
+                ActiveTree = activeTree;
+                Root = root;
+                Compilation = compilation;
+                SemanticModel = semanticModel;
+            }
+
+            public SyntaxTree ActiveTree { get; }
+            public CompilationUnitSyntax Root { get; }
+            public CSharpCompilation Compilation { get; }
+            public SemanticModel SemanticModel { get; }
         }
 
         private sealed class WorkspaceCompletionItem

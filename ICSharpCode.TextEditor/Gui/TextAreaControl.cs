@@ -101,6 +101,9 @@ namespace ICSharpCode.TextEditor
 		public TextAreaControl(TextEditorControl motherTextEditorControl)
 		{
 			this.motherTextEditorControl = motherTextEditorControl;
+			SetStyle(ControlStyles.OptimizedDoubleBuffer |
+			         ControlStyles.AllPaintingInWmPaint |
+			         ControlStyles.ResizeRedraw, true);
 			
 			this.textArea                = new TextArea(motherTextEditorControl, this);
 			Controls.Add(textArea);

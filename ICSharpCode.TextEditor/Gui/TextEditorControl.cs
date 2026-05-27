@@ -106,7 +106,10 @@ namespace ICSharpCode.TextEditor
 
         public TextEditorControl()
         {
-            SetStyle(ControlStyles.ContainerControl, true);
+            SetStyle(ControlStyles.ContainerControl |
+                     ControlStyles.OptimizedDoubleBuffer |
+                     ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.ResizeRedraw, true);
 
             textAreaPanel.Dock = DockStyle.Fill;
 
