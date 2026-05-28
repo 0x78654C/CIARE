@@ -1620,8 +1620,7 @@ namespace CIARE.Roslyn
 
                     errorsLV.EndUpdate();
 
-                    if (errorsTabPage != null)
-                        errorsTabPage.Text = "Errors (1)";
+                    SetErrorsTabTitle(errorsTabPage, "Errors (1)");
                 }));
             }
             catch
@@ -1657,7 +1656,7 @@ namespace CIARE.Roslyn
             if (errorsTabPage != null)
             {
                 int total = errors.Count + warnings.Count;
-                errorsTabPage.Text = total > 0 ? $"Errors ({total})" : "Errors";
+                SetErrorsTabTitle(errorsTabPage, total > 0 ? $"Errors ({total})" : "Errors");
             }
         }
 
@@ -1665,8 +1664,29 @@ namespace CIARE.Roslyn
         {
             if (errorsLV == null) return;
             errorsLV.Items.Clear();
-            if (errorsTabPage != null)
-                errorsTabPage.Text = "Errors";
+            SetErrorsTabTitle(errorsTabPage, "Errors");
+        }
+
+        private static void SetErrorsTabTitle(TabPage errorsTabPage, string title)
+        {
+            if (errorsTabPage == null)
+                return;
+
+            errorsTabPage.Text = title;
+            var tabControl = errorsTabPage.Parent as TabControl;
+            if (tabControl == null)
+                return;
+
+            int titleWidth = TextRenderer.MeasureText(title, tabControl.Font).Width + 24;
+            int tabWidth = Math.Max(130, titleWidth);
+            if (tabControl.ItemSize.Width != tabWidth)
+                tabControl.ItemSize = new Size(tabWidth, tabControl.ItemSize.Height);
+
+            int index = tabControl.TabPages.IndexOf(errorsTabPage);
+            if (index >= 0)
+                tabControl.Invalidate(tabControl.GetTabRect(index));
+            else
+                tabControl.Invalidate();
         }
 
         private static CSharpParseOptions BuildParseOptions(string framework)

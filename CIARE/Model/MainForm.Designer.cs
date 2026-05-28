@@ -192,6 +192,7 @@ namespace CIARE
             outputTabControl.ItemSize = new System.Drawing.Size(130, 22);
             outputTabControl.Location = new System.Drawing.Point(4, 14);
             outputTabControl.Name = "outputTabControl";
+            outputTabControl.SizeMode = TabSizeMode.Fixed;
             outputTabControl.Size = new System.Drawing.Size(1394, 163);
             outputTabControl.TabIndex = 3;
             outputTabControl.DrawItem += OutputTabControl_DrawItem;

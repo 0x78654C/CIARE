@@ -90,13 +90,15 @@ namespace CIARE.GUI
 
 		public ICompletionData[] GenerateCompletionData(string fileName, TextArea textArea, char charTyped)
 		{
+			string rawCode = textArea.MotherTextEditorControl.Text;
+			mainForm.RefreshActiveCompletionUnit(rawCode);
+			mainForm.ResetCompletionWorkspaceIfInactive();
 			NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
 			List<ICompletionData> resultList = new List<ICompletionData>();
 
 				// For top-level statement files the code has no class/method context, so the
 				// NRefactory resolver cannot find a scope.  Wrap the code before passing it to
 				// the resolver and adjust the caret line accordingly.
-				string rawCode = textArea.MotherTextEditorControl.Text;
 				string resolverCode = mainForm.PrepareCodeForNRefactoryCompletion(rawCode,
 					out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine);
 				int caretLine = textArea.Caret.Line + 1 + prefixLineOffset;
@@ -135,6 +137,7 @@ namespace CIARE.GUI
 						completionData = rr.GetCompletionData(MainForm.myProjectContent);
 					}
 
+					completionData = mainForm.FilterCompletionDataForActiveProject(completionData);
 					completionData = MergeCompletionData(completionData, mainForm.GetWorkspaceMemberCompletionData(expression.Expression));
 					completionData = MergeCompletionData(completionData,
 						mainForm.GetRoslynMemberCompletionData(rawCode, textArea.Caret.Offset, expression.Expression));
@@ -151,10 +154,9 @@ namespace CIARE.GUI
 																  expression.Context);
 					if (completionData != null)
 					{
+						completionData = mainForm.FilterCompletionDataForActiveProject(completionData);
 						AddCompletionData(resultList, completionData);
 					}
-					AddCompletionData(resultList,
-						mainForm.GetRoslynCtrlSpaceCompletionData(rawCode, textArea.Caret.Offset, preSelection));
 					AddCompletionData(resultList, mainForm.GetWorkspaceMethodCompletionData(preSelection));
 					AddDirectTypingKeywords(resultList);
 				}
