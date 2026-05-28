@@ -17,6 +17,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 using System.Reflection;
 using CIARE.Utils;
+using CIARE.Utils.NuGetManage;
 
 namespace CIARE.Roslyn
 {
@@ -194,6 +195,9 @@ namespace CIARE.Roslyn
             var syntaxTrees = new List<SyntaxTree> { syntaxTree };
             bool hasProjectContext = useProjectReferences &&
                 HasOpenedProjectContext(workspaceFolder, currentFilePath);
+            string projectFile = hasProjectContext
+                ? FindNearestProjectFile(currentFilePath, workspaceFolder)
+                : string.Empty;
             bool hasAspNetCoreContext = hasProjectContext &&
                 ProjectUsesAspNetCore(workspaceFolder, currentFilePath, hasProjectContext);
             if (hasProjectContext)
@@ -203,7 +207,8 @@ namespace CIARE.Roslyn
                 if (generatedGlobalUsings.Count > 0)
                     syntaxTrees.AddRange(generatedGlobalUsings);
                 else
-                    syntaxTrees.Add(BuildImplicitUsingsSyntaxTree(parseOptions, ct, hasAspNetCoreContext));
+                    syntaxTrees.Add(BuildImplicitUsingsSyntaxTree(parseOptions, ct,
+                        hasAspNetCoreContext, projectFile));
 
                 syntaxTrees.AddRange(BuildWorkspaceSyntaxTrees(workspaceFolder, currentFilePath, parseOptions, ct));
             }
@@ -250,11 +255,20 @@ namespace CIARE.Roslyn
         }
 
         private static SyntaxTree BuildImplicitUsingsSyntaxTree(CSharpParseOptions parseOptions, CancellationToken ct,
-            bool includeAspNetCoreUsings = false)
+            bool includeAspNetCoreUsings = false, string projectFile = null)
         {
-            var namespaces = includeAspNetCoreUsings
-                ? SdkImplicitUsingNamespaces.Concat(AspNetCoreImplicitUsingNamespaces)
-                : SdkImplicitUsingNamespaces;
+            IEnumerable<string> namespaces = ProjectNuGetManager.GetImplicitUsingNamespaces(projectFile);
+            if (!namespaces.Any())
+            {
+                namespaces = includeAspNetCoreUsings
+                    ? SdkImplicitUsingNamespaces.Concat(AspNetCoreImplicitUsingNamespaces)
+                    : SdkImplicitUsingNamespaces;
+            }
+            else if (includeAspNetCoreUsings)
+            {
+                namespaces = namespaces.Concat(AspNetCoreImplicitUsingNamespaces);
+            }
+
             string code = string.Join(Environment.NewLine,
                 namespaces.Distinct(StringComparer.Ordinal).Select(ns => $"global using {ns};"));
 
@@ -875,6 +889,10 @@ namespace CIARE.Roslyn
                 return new List<string>();
 
             string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
+            var projectFrameworkReferencePaths = ProjectNuGetManager.GetFrameworkReferencePaths(projectFile);
+            if (projectFrameworkReferencePaths.Count > 0)
+                return projectFrameworkReferencePaths;
+
             var frameworkReferences = ReadFrameworkReferencesFromProjectFile(projectFile);
             foreach (string assetsPath in ResolveProjectAssetsFiles(workspaceFolder, currentFilePath,
                 hasProjectContext))

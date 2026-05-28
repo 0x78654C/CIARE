@@ -40,6 +40,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
+using System.Reflection;
 using CIARE.Utils.Encryption;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -3227,6 +3228,8 @@ namespace CIARE
             // Stop Live share if connected.
             Task.Run(() => _apiConnectionEvents.CloseConnection(hubConnection));
 
+            SaveFileExplorerWidth(force: true);
+            SaveFileExplorerNuGetHeight(force: true);
             SaveFileExplorerExpandedState();
             StopFileExplorerWatcher();
         }
@@ -3415,7 +3418,7 @@ namespace CIARE
             string code = null;
             string workspaceFolder = null;
             string currentFilePath = null;
-            Invoke(new MethodInvoker(delegate
+            Invoke(new System.Windows.Forms.MethodInvoker(delegate
             {
                 code = SelectedEditor.GetSelectedEditor().Text;
                 workspaceFolder = !string.IsNullOrEmpty(_fileExplorerRootPath)
@@ -3589,7 +3592,11 @@ namespace CIARE
                     return result;
 
                 int position = Math.Max(0, Math.Min(caretOffset, code.Length));
-                ExpressionSyntax expression = FindRoslynMemberAccessExpression(context.Root, position, expressionText);
+                string completionExpression = NormalizeCompletionExpression(expressionText);
+                if (string.IsNullOrEmpty(completionExpression))
+                    completionExpression = GetMemberCompletionExpressionText(code, position);
+
+                ExpressionSyntax expression = FindRoslynMemberAccessExpression(context.Root, position, completionExpression);
                 if (expression == null)
                     return result;
 
@@ -3622,6 +3629,38 @@ namespace CIARE
             }
 
             return result;
+        }
+
+        private static string GetMemberCompletionExpressionText(string code, int caretOffset)
+        {
+            if (string.IsNullOrEmpty(code))
+                return string.Empty;
+
+            int offset = Math.Max(0, Math.Min(caretOffset, code.Length));
+            while (offset > 0 && char.IsWhiteSpace(code[offset - 1]))
+                offset--;
+
+            if (offset > 0 && code[offset - 1] == '.')
+                offset--;
+
+            while (offset > 0 && char.IsWhiteSpace(code[offset - 1]))
+                offset--;
+
+            int end = offset;
+            while (offset > 0 && IsSimpleMemberExpressionChar(code[offset - 1]))
+                offset--;
+
+            return end > offset
+                ? NormalizeCompletionExpression(code.Substring(offset, end - offset))
+                : string.Empty;
+        }
+
+        private static bool IsSimpleMemberExpressionChar(char ch)
+        {
+            return char.IsLetterOrDigit(ch) ||
+                   ch == '_' ||
+                   ch == '@' ||
+                   ch == '.';
         }
 
         internal ArrayList GetRoslynCtrlSpaceCompletionData(string code, int caretOffset, string prefix)
@@ -3688,7 +3727,7 @@ namespace CIARE
             if (!string.IsNullOrEmpty(globalUsingsPath))
                 AddRoslynCompletionSyntaxTree(syntaxTrees, globalUsingsPath, parseOptions);
             else if (!string.IsNullOrEmpty(projectPath))
-                syntaxTrees.Add(CSharpSyntaxTree.ParseText(BuildCompletionImplicitUsingsCode(),
+                syntaxTrees.Add(CSharpSyntaxTree.ParseText(BuildCompletionImplicitUsingsCode(projectPath),
                     parseOptions, path: "__CIARE_ImplicitUsings.g.cs"));
 
             string sourceRoot = GetCompletionSourceRoot(currentFilePath, projectPath);
@@ -3748,39 +3787,51 @@ namespace CIARE
         {
             var references = new List<MetadataReference>();
             var referencePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var referenceAssemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
+            {
+                foreach (var referencePath in ProjectNuGetManager.GetFrameworkReferencePaths(projectPath))
+                    AddCompletionReference(references, referencePaths, referenceAssemblyNames, referencePath);
+            }
+
+            AddCompletionReferencePaths(references, referencePaths, referenceAssemblyNames,
+                GlobalVariables.customRefList);
+            AddCompletionReferencePaths(references, referencePaths, referenceAssemblyNames,
+                GlobalVariables.filteredCustomRef);
+            AddCompletionReferencePaths(references, referencePaths, referenceAssemblyNames,
+                GlobalVariables.customRefAsm);
+
+            if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
+            {
+                foreach (var referencePath in ProjectNuGetManager.GetCompileReferencePaths(projectPath))
+                    AddCompletionReference(references, referencePaths, referenceAssemblyNames, referencePath);
+            }
 
             string trusted = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
             if (!string.IsNullOrEmpty(trusted))
             {
                 foreach (var referencePath in trusted.Split(Path.PathSeparator))
-                    AddCompletionReference(references, referencePaths, referencePath);
-            }
-
-            AddCompletionReferencePaths(references, referencePaths, GlobalVariables.customRefList);
-            AddCompletionReferencePaths(references, referencePaths, GlobalVariables.filteredCustomRef);
-            AddCompletionReferencePaths(references, referencePaths, GlobalVariables.customRefAsm);
-
-            if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
-            {
-                foreach (var referencePath in ProjectNuGetManager.GetCompileReferencePaths(projectPath))
-                    AddCompletionReference(references, referencePaths, referencePath);
+                    AddCompletionReference(references, referencePaths, referenceAssemblyNames, referencePath);
             }
 
             return references;
         }
 
         private static void AddCompletionReferencePaths(List<MetadataReference> references,
-            HashSet<string> referencePaths, IEnumerable<string> storedReferences)
+            HashSet<string> referencePaths, HashSet<string> referenceAssemblyNames,
+            IEnumerable<string> storedReferences)
         {
             if (storedReferences == null)
                 return;
 
             foreach (string storedReference in storedReferences)
-                AddCompletionReference(references, referencePaths, GetCompletionReferencePath(storedReference));
+                AddCompletionReference(references, referencePaths, referenceAssemblyNames,
+                    GetCompletionReferencePath(storedReference));
         }
 
         private static void AddCompletionReference(List<MetadataReference> references,
-            HashSet<string> referencePaths, string referencePath)
+            HashSet<string> referencePaths, HashSet<string> referenceAssemblyNames, string referencePath)
         {
             if (string.IsNullOrWhiteSpace(referencePath) || !File.Exists(referencePath))
                 return;
@@ -3791,10 +3842,30 @@ namespace CIARE
                 if (!referencePaths.Add(normalizedPath))
                     return;
 
+                string assemblyName = GetCompletionReferenceAssemblyName(referencePath);
+                if (!string.IsNullOrEmpty(assemblyName) &&
+                    !referenceAssemblyNames.Add(assemblyName))
+                {
+                    referencePaths.Remove(normalizedPath);
+                    return;
+                }
+
                 references.Add(MetadataReference.CreateFromFile(referencePath));
             }
             catch
             {
+            }
+        }
+
+        private static string GetCompletionReferenceAssemblyName(string referencePath)
+        {
+            try
+            {
+                return AssemblyName.GetAssemblyName(referencePath).Name ?? string.Empty;
+            }
+            catch
+            {
+                return Path.GetFileNameWithoutExtension(referencePath);
             }
         }
 
@@ -3825,10 +3896,14 @@ namespace CIARE
             return CSharpParseOptions.Default.WithLanguageVersion(languageVersion);
         }
 
-        private static string BuildCompletionImplicitUsingsCode()
+        private static string BuildCompletionImplicitUsingsCode(string projectPath)
         {
+            var namespaces = ProjectNuGetManager.GetImplicitUsingNamespaces(projectPath);
+            if (namespaces.Count == 0)
+                namespaces.AddRange(CompletionImplicitUsingNamespaces);
+
             return string.Join(Environment.NewLine,
-                CompletionImplicitUsingNamespaces.Select(ns => $"global using {ns};"));
+                namespaces.Distinct(StringComparer.Ordinal).Select(ns => $"global using {ns};"));
         }
 
         private static ExpressionSyntax FindRoslynMemberAccessExpression(
@@ -4447,20 +4522,25 @@ namespace CIARE
 
         private static string ReadGlobalUsingsAsRegularDirectives(string projectPath)
         {
+            var directives = new List<string>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
             string globalUsingsPath = FindProjectGlobalUsingsFile(projectPath);
-            if (string.IsNullOrEmpty(globalUsingsPath))
-                return string.Empty;
+            if (!string.IsNullOrEmpty(globalUsingsPath))
+                AddGlobalUsingDirectivesFromFile(globalUsingsPath, directives, seen);
 
             try
             {
-                var directives = new List<string>();
-                var seen = new HashSet<string>(StringComparer.Ordinal);
-                foreach (string line in File.ReadAllLines(globalUsingsPath))
+                string projectDirectory = string.IsNullOrWhiteSpace(projectPath)
+                    ? string.Empty
+                    : Path.GetDirectoryName(projectPath);
+                if (!string.IsNullOrEmpty(projectDirectory) && Directory.Exists(projectDirectory))
                 {
-                    string directive = ConvertGlobalUsingLine(line);
-                    if (directive.Length > 0 && seen.Add(directive))
-                        directives.Add(directive);
+                    foreach (string filePath in GetWorkspaceCsFiles(projectDirectory))
+                        AddGlobalUsingDirectivesFromFile(filePath, directives, seen);
                 }
+
+                foreach (string namespaceName in ProjectNuGetManager.GetImplicitUsingNamespaces(projectPath))
+                    AddRegularUsingDirective("using " + namespaceName + ";", directives, seen);
 
                 return directives.Count == 0
                     ? string.Empty
@@ -4470,6 +4550,29 @@ namespace CIARE
             {
                 return string.Empty;
             }
+        }
+
+        private static void AddGlobalUsingDirectivesFromFile(string filePath, List<string> directives,
+            HashSet<string> seen)
+        {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+                return;
+
+            try
+            {
+                foreach (string line in File.ReadAllLines(filePath))
+                    AddRegularUsingDirective(ConvertGlobalUsingLine(line), directives, seen);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void AddRegularUsingDirective(string directive, List<string> directives,
+            HashSet<string> seen)
+        {
+            if (!string.IsNullOrWhiteSpace(directive) && seen.Add(directive))
+                directives.Add(directive);
         }
 
         private static string FindProjectGlobalUsingsFile(string projectPath)
@@ -4487,14 +4590,15 @@ namespace CIARE
 
             try
             {
+                string targetFramework = ProjectNuGetManager.GetProjectTargetFramework(projectPath);
                 var files = Directory.EnumerateFiles(objDirectory, "*GlobalUsings.g.cs",
                         SearchOption.AllDirectories)
                     .Where(File.Exists)
-                    .OrderByDescending(IsPreferredGlobalUsingsPath)
+                    .OrderByDescending(path => IsPreferredGlobalUsingsPath(path, targetFramework))
                     .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
-                return files.FirstOrDefault(IsPreferredGlobalUsingsPath) ??
+                return files.FirstOrDefault(path => IsPreferredGlobalUsingsPath(path, targetFramework)) ??
                     files.FirstOrDefault() ??
                     string.Empty;
             }
@@ -4504,9 +4608,11 @@ namespace CIARE
             }
         }
 
-        private static bool IsPreferredGlobalUsingsPath(string filePath)
+        private static bool IsPreferredGlobalUsingsPath(string filePath, string targetFramework)
         {
-            string framework = GlobalVariables.Framework;
+            string framework = string.IsNullOrWhiteSpace(targetFramework)
+                ? GlobalVariables.Framework
+                : targetFramework;
             if (string.IsNullOrWhiteSpace(framework))
                 return false;
 

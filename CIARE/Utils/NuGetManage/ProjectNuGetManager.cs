@@ -31,6 +31,48 @@ namespace CIARE.Utils.NuGetManage
     [SupportedOSPlatform("windows")]
     public static class ProjectNuGetManager
     {
+        private static readonly string[] SdkImplicitUsingNamespaces =
+        {
+            "System",
+            "System.Collections.Generic",
+            "System.IO",
+            "System.Linq",
+            "System.Net.Http",
+            "System.Threading",
+            "System.Threading.Tasks"
+        };
+
+        private static readonly string[] AspNetCoreImplicitUsingNamespaces =
+        {
+            "System.Net.Http.Json",
+            "Microsoft.AspNetCore.Builder",
+            "Microsoft.AspNetCore.Hosting",
+            "Microsoft.AspNetCore.Http",
+            "Microsoft.AspNetCore.Routing",
+            "Microsoft.Extensions.Configuration",
+            "Microsoft.Extensions.DependencyInjection",
+            "Microsoft.Extensions.Hosting",
+            "Microsoft.Extensions.Logging"
+        };
+
+        private static readonly string[] WindowsFormsImplicitUsingNamespaces =
+        {
+            "System.Drawing",
+            "System.Windows.Forms"
+        };
+
+        private static readonly string[] WpfImplicitUsingNamespaces =
+        {
+            "System.Windows",
+            "System.Windows.Controls",
+            "System.Windows.Data",
+            "System.Windows.Documents",
+            "System.Windows.Media",
+            "System.Windows.Media.Imaging",
+            "System.Windows.Navigation",
+            "System.Windows.Shapes"
+        };
+
         public static List<ProjectNuGetPackageReference> GetPackageReferences(string projectPath)
         {
             var packages = new List<ProjectNuGetPackageReference>();
@@ -343,6 +385,96 @@ namespace CIARE.Utils.NuGetManage
                 .ToList();
         }
 
+        public static List<string> GetFrameworkReferencePaths(string projectPath)
+        {
+            if (!IsProjectFile(projectPath))
+                return new List<string>();
+
+            var frameworkReferences = ReadFrameworkReferencesFromProjectFile(projectPath);
+            string assetsPath = GetProjectAssetsPath(projectPath);
+            frameworkReferences.UnionWith(ReadFrameworkReferencesFromAssets(assetsPath));
+
+            if (frameworkReferences.Count == 0)
+                return new List<string>();
+
+            string targetFramework = GetProjectTargetFramework(projectPath);
+            if (string.IsNullOrWhiteSpace(targetFramework))
+                targetFramework = ReadTargetFrameworkFromAssets(assetsPath);
+
+            var paths = new List<string>();
+            foreach (string frameworkReference in frameworkReferences)
+                paths.AddRange(ResolveFrameworkReferencePaths(frameworkReference, targetFramework));
+
+            return paths
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        public static List<string> GetImplicitUsingNamespaces(string projectPath)
+        {
+            if (!IsProjectFile(projectPath) || !ProjectHasImplicitUsingsEnabled(projectPath))
+                return new List<string>();
+
+            var namespaces = new List<string>();
+            namespaces.AddRange(SdkImplicitUsingNamespaces);
+
+            var frameworkReferences = ReadFrameworkReferencesFromProjectFile(projectPath);
+            string assetsPath = GetProjectAssetsPath(projectPath);
+            frameworkReferences.UnionWith(ReadFrameworkReferencesFromAssets(assetsPath));
+
+            if (frameworkReferences.Any(IsAspNetCoreFrameworkReference) ||
+                ProjectSdkContains(projectPath, "Microsoft.NET.Sdk.Web"))
+            {
+                namespaces.AddRange(AspNetCoreImplicitUsingNamespaces);
+            }
+
+            if (ProjectUsesWindowsForms(projectPath) ||
+                frameworkReferences.Any(reference =>
+                    reference.StartsWith("Microsoft.WindowsDesktop.App", StringComparison.OrdinalIgnoreCase)))
+            {
+                namespaces.AddRange(WindowsFormsImplicitUsingNamespaces);
+            }
+
+            if (ProjectUsesWpf(projectPath) ||
+                frameworkReferences.Any(reference =>
+                    reference.IndexOf("WPF", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                namespaces.AddRange(WpfImplicitUsingNamespaces);
+            }
+
+            return namespaces
+                .Where(ns => !string.IsNullOrWhiteSpace(ns))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+        }
+
+        public static string GetProjectTargetFramework(string projectPath)
+        {
+            if (!IsProjectFile(projectPath))
+                return string.Empty;
+
+            try
+            {
+                var document = XDocument.Load(projectPath);
+                string targetFramework = document.Descendants()
+                    .FirstOrDefault(element => string.Equals(element.Name.LocalName, "TargetFramework",
+                        StringComparison.Ordinal))?.Value?.Trim();
+                if (!string.IsNullOrWhiteSpace(targetFramework))
+                    return targetFramework;
+
+                string targetFrameworks = document.Descendants()
+                    .FirstOrDefault(element => string.Equals(element.Name.LocalName, "TargetFrameworks",
+                        StringComparison.Ordinal))?.Value;
+                return SplitTargetFrameworks(targetFrameworks).FirstOrDefault() ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
         private static string GetLatestStablePackageVersion(FindPackageByIdResource resource,
             SourceCacheContext cache, ILogger logger, string packageName)
         {
@@ -383,6 +515,444 @@ namespace CIARE.Utils.NuGetManage
             return !string.IsNullOrWhiteSpace(projectPath) &&
                 File.Exists(projectPath) &&
                 string.Equals(Path.GetExtension(projectPath), ".csproj", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static HashSet<string> ReadFrameworkReferencesFromProjectFile(string projectPath)
+        {
+            var frameworkReferences = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!IsProjectFile(projectPath))
+                return frameworkReferences;
+
+            try
+            {
+                var document = XDocument.Load(projectPath);
+                string sdkList = document.Root?.Attribute("Sdk")?.Value;
+                if (SdkListContains(sdkList, "Microsoft.NET.Sdk.Web"))
+                    frameworkReferences.Add("Microsoft.AspNetCore.App");
+                if (SdkListContains(sdkList, "Microsoft.NET.Sdk.WindowsDesktop"))
+                    frameworkReferences.Add("Microsoft.WindowsDesktop.App");
+
+                foreach (var sdkElement in document.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "Sdk", StringComparison.Ordinal)))
+                {
+                    string sdkName = sdkElement.Attribute("Name")?.Value ?? sdkElement.Attribute("Sdk")?.Value;
+                    if (SdkListContains(sdkName, "Microsoft.NET.Sdk.Web"))
+                        frameworkReferences.Add("Microsoft.AspNetCore.App");
+                    if (SdkListContains(sdkName, "Microsoft.NET.Sdk.WindowsDesktop"))
+                        frameworkReferences.Add("Microsoft.WindowsDesktop.App");
+                }
+
+                if (ProjectUsesWindowsForms(document))
+                    frameworkReferences.Add("Microsoft.WindowsDesktop.App.WindowsForms");
+                if (ProjectUsesWpf(document))
+                    frameworkReferences.Add("Microsoft.WindowsDesktop.App.WPF");
+
+                foreach (var frameworkReference in document.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "FrameworkReference",
+                        StringComparison.Ordinal)))
+                {
+                    string name = frameworkReference.Attribute("Include")?.Value ??
+                        frameworkReference.Attribute("Update")?.Value;
+                    if (!string.IsNullOrWhiteSpace(name))
+                        frameworkReferences.Add(name.Trim());
+                }
+            }
+            catch
+            {
+            }
+
+            return frameworkReferences;
+        }
+
+        private static HashSet<string> ReadFrameworkReferencesFromAssets(string assetsPath)
+        {
+            var frameworkReferences = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(assetsPath) || !File.Exists(assetsPath))
+                return frameworkReferences;
+
+            try
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(assetsPath));
+                var root = document.RootElement;
+                if (!root.TryGetProperty("project", out var project) ||
+                    !project.TryGetProperty("frameworks", out var frameworks))
+                {
+                    return frameworkReferences;
+                }
+
+                foreach (var framework in frameworks.EnumerateObject())
+                {
+                    if (!framework.Value.TryGetProperty("frameworkReferences", out var references))
+                        continue;
+
+                    foreach (var reference in references.EnumerateObject())
+                    {
+                        if (!string.IsNullOrWhiteSpace(reference.Name))
+                            frameworkReferences.Add(reference.Name);
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return frameworkReferences;
+        }
+
+        private static IEnumerable<string> ResolveFrameworkReferencePaths(string frameworkReference,
+            string targetFramework)
+        {
+            string packName = GetFrameworkReferencePackName(frameworkReference);
+            string sharedName = GetSharedFrameworkName(frameworkReference);
+            string refTargetFramework = GetReferenceTargetFramework(targetFramework);
+            if (string.IsNullOrEmpty(packName) ||
+                string.IsNullOrEmpty(sharedName) ||
+                string.IsNullOrEmpty(refTargetFramework))
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            string versionPrefix = GetVersionPrefixFromTargetFramework(refTargetFramework);
+            if (string.IsNullOrEmpty(versionPrefix))
+                return Enumerable.Empty<string>();
+
+            foreach (string dotnetRoot in GetDotnetRootCandidates())
+            {
+                string packRoot = Path.Combine(dotnetRoot, "packs", packName);
+                string packVersionDirectory = FindBestFrameworkVersionDirectory(packRoot, versionPrefix,
+                    versionDirectory => Directory.Exists(Path.Combine(versionDirectory, "ref",
+                        refTargetFramework)));
+                if (!string.IsNullOrEmpty(packVersionDirectory))
+                {
+                    string refDirectory = Path.Combine(packVersionDirectory, "ref", refTargetFramework);
+                    try
+                    {
+                        return Directory.EnumerateFiles(refDirectory, "*.dll").ToList();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            foreach (string dotnetRoot in GetDotnetRootCandidates())
+            {
+                string sharedRoot = Path.Combine(dotnetRoot, "shared", sharedName);
+                string sharedVersionDirectory = FindBestFrameworkVersionDirectory(sharedRoot, versionPrefix,
+                    Directory.Exists);
+                if (!string.IsNullOrEmpty(sharedVersionDirectory))
+                {
+                    try
+                    {
+                        return Directory.EnumerateFiles(sharedVersionDirectory, "*.dll").ToList();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            return Enumerable.Empty<string>();
+        }
+
+        private static string GetFrameworkReferencePackName(string frameworkReference)
+        {
+            if (IsAspNetCoreFrameworkReference(frameworkReference))
+                return "Microsoft.AspNetCore.App.Ref";
+
+            if (!string.IsNullOrWhiteSpace(frameworkReference) &&
+                frameworkReference.StartsWith("Microsoft.WindowsDesktop.App",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return "Microsoft.WindowsDesktop.App.Ref";
+            }
+
+            return string.Empty;
+        }
+
+        private static string GetSharedFrameworkName(string frameworkReference)
+        {
+            if (IsAspNetCoreFrameworkReference(frameworkReference))
+                return "Microsoft.AspNetCore.App";
+
+            if (!string.IsNullOrWhiteSpace(frameworkReference) &&
+                frameworkReference.StartsWith("Microsoft.WindowsDesktop.App",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return "Microsoft.WindowsDesktop.App";
+            }
+
+            return string.Empty;
+        }
+
+        private static bool IsAspNetCoreFrameworkReference(string frameworkReference)
+        {
+            return !string.IsNullOrWhiteSpace(frameworkReference) &&
+                frameworkReference.StartsWith("Microsoft.AspNetCore.App",
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ReadTargetFrameworkFromAssets(string assetsPath)
+        {
+            if (string.IsNullOrWhiteSpace(assetsPath) || !File.Exists(assetsPath))
+                return string.Empty;
+
+            try
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(assetsPath));
+                var root = document.RootElement;
+                if (root.TryGetProperty("project", out var project) &&
+                    project.TryGetProperty("frameworks", out var frameworks))
+                {
+                    foreach (var framework in frameworks.EnumerateObject())
+                    {
+                        string normalized = NormalizeTargetFramework(framework.Name);
+                        if (!string.IsNullOrEmpty(normalized))
+                            return normalized;
+                    }
+                }
+
+                if (root.TryGetProperty("targets", out var targets))
+                {
+                    foreach (var target in targets.EnumerateObject())
+                    {
+                        string normalized = NormalizeTargetFramework(target.Name);
+                        if (!string.IsNullOrEmpty(normalized))
+                            return normalized;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return string.Empty;
+        }
+
+        private static string NormalizeTargetFramework(string frameworkName)
+        {
+            if (string.IsNullOrWhiteSpace(frameworkName))
+                return string.Empty;
+
+            string name = frameworkName.Trim();
+            int slashIndex = name.IndexOf('/');
+            if (slashIndex >= 0)
+                name = name.Substring(0, slashIndex);
+
+            if (name.StartsWith("net", StringComparison.OrdinalIgnoreCase))
+                return name;
+
+            const string netCoreAppPrefix = ".NETCoreApp,Version=v";
+            if (name.StartsWith(netCoreAppPrefix, StringComparison.OrdinalIgnoreCase))
+                return "net" + name.Substring(netCoreAppPrefix.Length);
+
+            return string.Empty;
+        }
+
+        private static string GetReferenceTargetFramework(string targetFramework)
+        {
+            if (string.IsNullOrWhiteSpace(targetFramework))
+                return string.Empty;
+
+            string normalized = NormalizeTargetFramework(targetFramework);
+            if (string.IsNullOrEmpty(normalized))
+                normalized = targetFramework.Trim();
+
+            int dashIndex = normalized.IndexOf('-');
+            if (dashIndex > 0)
+                normalized = normalized.Substring(0, dashIndex);
+
+            return normalized.StartsWith("net", StringComparison.OrdinalIgnoreCase)
+                ? normalized
+                : string.Empty;
+        }
+
+        private static string GetVersionPrefixFromTargetFramework(string targetFramework)
+        {
+            if (string.IsNullOrWhiteSpace(targetFramework) ||
+                !targetFramework.StartsWith("net", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            string version = targetFramework.Substring(3);
+            int dashIndex = version.IndexOf('-');
+            if (dashIndex > 0)
+                version = version.Substring(0, dashIndex);
+
+            return version;
+        }
+
+        private static IEnumerable<string> GetDotnetRootCandidates()
+        {
+            var roots = new List<string>();
+            AddDirectoryCandidate(roots, Environment.GetEnvironmentVariable("DOTNET_ROOT"));
+            AddDirectoryCandidate(roots, Environment.GetEnvironmentVariable("DOTNET_ROOT(x86)"));
+
+            try
+            {
+                string runtimeDirectory = Path.GetDirectoryName(typeof(object).Assembly.Location);
+                string dotnetRoot = Directory.GetParent(runtimeDirectory)?.Parent?.Parent?.FullName;
+                AddDirectoryCandidate(roots, dotnetRoot);
+            }
+            catch
+            {
+            }
+
+            AddDirectoryCandidate(roots, Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "dotnet"));
+            AddDirectoryCandidate(roots, Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "dotnet"));
+
+            return roots.Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static void AddDirectoryCandidate(List<string> candidates, string path)
+        {
+            if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path))
+                candidates.Add(path);
+        }
+
+        private static string FindBestFrameworkVersionDirectory(string frameworkRoot, string versionPrefix,
+            Func<string, bool> predicate)
+        {
+            if (string.IsNullOrWhiteSpace(frameworkRoot) || !Directory.Exists(frameworkRoot))
+                return string.Empty;
+
+            try
+            {
+                return Directory.EnumerateDirectories(frameworkRoot)
+                    .Where(directory => VersionMatchesPrefix(Path.GetFileName(directory), versionPrefix))
+                    .Where(directory => predicate == null || predicate(directory))
+                    .OrderByDescending(directory => ParseFrameworkVersion(Path.GetFileName(directory)))
+                    .FirstOrDefault() ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static bool VersionMatchesPrefix(string version, string versionPrefix)
+        {
+            if (string.IsNullOrWhiteSpace(version) || string.IsNullOrWhiteSpace(versionPrefix))
+                return false;
+
+            return string.Equals(version, versionPrefix, StringComparison.OrdinalIgnoreCase) ||
+                version.StartsWith(versionPrefix + ".", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static Version ParseFrameworkVersion(string version)
+        {
+            return Version.TryParse(version, out var parsed)
+                ? parsed
+                : new Version(0, 0);
+        }
+
+        private static bool ProjectHasImplicitUsingsEnabled(string projectPath)
+        {
+            try
+            {
+                var document = XDocument.Load(projectPath);
+                string value = document.Descendants()
+                    .FirstOrDefault(element => string.Equals(element.Name.LocalName, "ImplicitUsings",
+                        StringComparison.Ordinal))?.Value?.Trim();
+
+                return string.Equals(value, "enable", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool ProjectSdkContains(string projectPath, string sdkName)
+        {
+            try
+            {
+                var document = XDocument.Load(projectPath);
+                if (SdkListContains(document.Root?.Attribute("Sdk")?.Value, sdkName))
+                    return true;
+
+                return document.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "Sdk", StringComparison.Ordinal))
+                    .Any(element => SdkListContains(
+                        element.Attribute("Name")?.Value ?? element.Attribute("Sdk")?.Value,
+                        sdkName));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool SdkListContains(string sdkList, string sdkName)
+        {
+            if (string.IsNullOrWhiteSpace(sdkList) || string.IsNullOrWhiteSpace(sdkName))
+                return false;
+
+            return sdkList
+                .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Any(sdk => sdk.Trim().StartsWith(sdkName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool ProjectUsesWindowsForms(string projectPath)
+        {
+            try
+            {
+                return ProjectUsesWindowsForms(XDocument.Load(projectPath));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool ProjectUsesWindowsForms(XDocument document)
+        {
+            return ProjectPropertyIsTrue(document, "UseWindowsForms");
+        }
+
+        private static bool ProjectUsesWpf(string projectPath)
+        {
+            try
+            {
+                return ProjectUsesWpf(XDocument.Load(projectPath));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool ProjectUsesWpf(XDocument document)
+        {
+            return ProjectPropertyIsTrue(document, "UseWPF");
+        }
+
+        private static bool ProjectPropertyIsTrue(XDocument document, string propertyName)
+        {
+            if (document?.Root == null || string.IsNullOrWhiteSpace(propertyName))
+                return false;
+
+            string value = document.Descendants()
+                .FirstOrDefault(element => string.Equals(element.Name.LocalName, propertyName,
+                    StringComparison.OrdinalIgnoreCase))?.Value?.Trim();
+
+            return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "enable", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static IEnumerable<string> SplitTargetFrameworks(string targetFrameworks)
+        {
+            if (string.IsNullOrWhiteSpace(targetFrameworks))
+                return Enumerable.Empty<string>();
+
+            return targetFrameworks
+                .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(framework => framework.Trim())
+                .Where(framework => framework.Length > 0);
         }
 
         private static string QuoteArgument(string value)
