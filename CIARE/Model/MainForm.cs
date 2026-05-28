@@ -120,7 +120,7 @@ namespace CIARE
         private TreeView _fileExplorerTree;
         private Panel _fileExplorerNuGetPanel;
         private Label _fileExplorerNuGetTitleLabel;
-        private ListView _fileExplorerNuGetList;
+        private DoubleBufferedListView _fileExplorerNuGetList;
         private ColumnHeader _fileExplorerNuGetPackageColumn;
         private ColumnHeader _fileExplorerNuGetVersionColumn;
         private ColumnHeader _fileExplorerNuGetUpdateColumn;
@@ -133,6 +133,8 @@ namespace CIARE
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
         private int _fileExplorerNuGetHeight = FileExplorerDefaultNuGetHeight;
         private FileSystemWatcher _fileExplorerWatcher;
+        private System.Windows.Forms.Timer _foldingTimer;
+        private TextEditorControl _foldingTargetEditor;
         private System.Windows.Forms.Timer _fileExplorerRefreshTimer;
         private System.Windows.Forms.Timer _fileExplorerNuGetRefreshTimer;
         private string _pendingProjectPackageRefreshPath = string.Empty;
@@ -195,6 +197,8 @@ namespace CIARE
             autoStartFile.CheckSetAtiveFormState();
             autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
+            _foldingTimer = new System.Windows.Forms.Timer { Interval = 300 };
+            _foldingTimer.Tick += FoldingTimer_Tick;
         }
 
         /// <summary>
@@ -403,7 +407,7 @@ namespace CIARE
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            _fileExplorerNuGetList = new ListView
+            _fileExplorerNuGetList = new DoubleBufferedListView
             {
                 BorderStyle = BorderStyle.None,
                 Columns =
@@ -562,6 +566,22 @@ namespace CIARE
 
             if (show)
             {
+                // Pre-position the splitter before uncollapsing so WinForms uses the
+                // correct distance immediately rather than the stale initial value.
+                ApplyEditorExplorerMinimumWidths();
+                int splitWidth = GetEditorExplorerSplitWidth();
+                int availableWidth = splitWidth - _editorExplorerSplitContainer.SplitterWidth;
+                if (availableWidth > 0)
+                {
+                    int explorerW = GetClampedFileExplorerWidth(_fileExplorerWidth);
+                    int minDist = _editorExplorerSplitContainer.Panel1MinSize;
+                    int maxDist = Math.Max(minDist, availableWidth - _editorExplorerSplitContainer.Panel2MinSize);
+                    int dist = Math.Max(minDist, Math.Min(maxDist, availableWidth - explorerW));
+                    _suppressFileExplorerLayoutSave = true;
+                    try { _editorExplorerSplitContainer.SplitterDistance = dist; }
+                    catch { }
+                    finally { _suppressFileExplorerLayoutSave = false; }
+                }
                 _editorExplorerSplitContainer.Panel2Collapsed = false;
                 ApplyEditorExplorerMinimumWidths();
                 ApplyFileExplorerLayoutValues();
@@ -2158,7 +2178,7 @@ namespace CIARE
                 warningsCheckLbl, workspaceFolder, filePath, useProjectReferences);
         }
 
-        private string GetActiveEditorFilePath()
+        internal string GetActiveEditorFilePath()
         {
             try
             {
@@ -2719,14 +2739,25 @@ namespace CIARE
             }
 
             LinesManage.GetTotalLinesCount(linesCountLbl);
-            SelectedEditor.GetSelectedEditor().Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
-            SelectedEditor.GetSelectedEditor().Document.FoldingManager.UpdateFoldings(null, null);
+            _foldingTargetEditor = SelectedEditor.GetSelectedEditor();
+            _foldingTimer.Stop();
+            _foldingTimer.Start();
 
             // Trigger real-time type checking after a short debounce.
             ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
 
             // Send live share data to api.
             SendData();
+        }
+
+        private void FoldingTimer_Tick(object sender, EventArgs e)
+        {
+            _foldingTimer.Stop();
+            var editor = _foldingTargetEditor;
+            _foldingTargetEditor = null;
+            if (editor == null || editor.IsDisposed) return;
+            editor.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
+            editor.Document.FoldingManager.UpdateFoldings(null, null);
         }
 
         /// <summary>
@@ -3471,7 +3502,7 @@ namespace CIARE
                 completionScope.CurrentFilePath);
         }
 
-        private Dom.ICompilationUnit ParseCompletionCompilationUnit(string code, string currentFilePath)
+        internal Dom.ICompilationUnit ParseCompletionCompilationUnit(string code, string currentFilePath)
         {
             string parsedCode = PrepareCodeForNRefactoryCompletion(code ?? string.Empty, currentFilePath,
                 out _, out _, out _);
@@ -3638,6 +3669,33 @@ namespace CIARE
                 return result;
 
             if (!ShouldUseWorkspaceCompletionData())
+                return result;
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            lock (_completionDataLock)
+            {
+                AddCompilationUnitMethods(result, seen, parseInformation.MostRecentCompilationUnit, prefix);
+                foreach (var unit in _workspaceCompilationUnits.Values)
+                {
+                    AddCompilationUnitMethods(result, seen, unit, prefix);
+                    if (result.Count >= WorkspaceCompletionMethodLimit)
+                        break;
+                }
+
+                foreach (var func in _topLevelLocalFunctions)
+                {
+                    if (func.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && seen.Add(func.Name))
+                        result.Add(new DefaultCompletionData(func.Name, func.Description, func.ImageIndex));
+                }
+            }
+
+            return result;
+        }
+
+        internal ArrayList GetWorkspaceMethodCompletionData(string prefix, bool shouldUseWorkspace)
+        {
+            var result = new ArrayList();
+            if (string.IsNullOrWhiteSpace(prefix) || !shouldUseWorkspace)
                 return result;
 
             var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -3889,7 +3947,7 @@ namespace CIARE
             return string.Empty;
         }
 
-        private string GetCompletionWorkspaceFolder(string currentFilePath)
+        internal string GetCompletionWorkspaceFolder(string currentFilePath)
         {
             string projectPath = GetCompletionProjectPath(currentFilePath);
             if (string.IsNullOrEmpty(projectPath))
@@ -3941,6 +3999,21 @@ namespace CIARE
             string workspaceFolder = GetCompletionWorkspaceFolder(activeFilePath);
             var filtered = new ArrayList(completionData.Count);
 
+            foreach (object item in completionData)
+            {
+                if (ShouldKeepCompletionDataItem(item, activeFilePath, workspaceFolder))
+                    filtered.Add(item);
+            }
+
+            return filtered;
+        }
+
+        internal ArrayList FilterCompletionDataForActiveProject(ArrayList completionData, string activeFilePath, string workspaceFolder)
+        {
+            if (completionData == null || completionData.Count == 0)
+                return completionData;
+
+            var filtered = new ArrayList(completionData.Count);
             foreach (object item in completionData)
             {
                 if (ShouldKeepCompletionDataItem(item, activeFilePath, workspaceFolder))
@@ -4684,7 +4757,7 @@ namespace CIARE
                 out prefixLineOffset, out wrapLineOffset, out bodyStartLine);
         }
 
-        private string PrepareCodeForNRefactoryCompletion(string code, string filePath,
+        internal string PrepareCodeForNRefactoryCompletion(string code, string filePath,
             out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine)
         {
             prefixLineOffset = 0;
@@ -6419,11 +6492,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void liveStatusPb_Paint(object sender, PaintEventArgs e)
         {
-            if (GlobalVariables.connected && GlobalVariables.liveDisconnected)
-            {
-                if (GlobalVariables.apiRemoteConnected || GlobalVariables.apiConnected)
-                    ApiConnectionEvents.ManageHubDisconnection(hubConnection, new Button());
-            }
+            // Disconnection is handled directly in ApiConnectionEvents.ApiConnection via BeginInvoke.
         }
 
         /// <summary>

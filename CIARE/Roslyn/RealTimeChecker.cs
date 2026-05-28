@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -24,7 +25,7 @@ namespace CIARE.Roslyn
     [SupportedOSPlatform("windows")]
     public static class RealTimeChecker
     {
-        private const int DebounceMs = 800;
+        private const int DebounceMs = 500;
         private static System.Threading.Timer _debounceTimer;
         private static CancellationTokenSource _cts;
         private static readonly object _lock = new object();
@@ -49,6 +50,14 @@ namespace CIARE.Roslyn
         private static List<MetadataReference> _nuGetRefs = new List<MetadataReference>();
         private static List<string> _lastFrameworkRefSnapshot;
         private static List<MetadataReference> _frameworkRefs = new List<MetadataReference>();
+
+        // Assembly-name cache: avoids re-reading PE headers for already-seen assemblies.
+        private static readonly ConcurrentDictionary<string, string> _assemblyNameCache =
+            new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // Workspace syntax-tree cache: avoids re-parsing unchanged source files on every check.
+        private static readonly ConcurrentDictionary<string, (DateTime ModifiedAt, SyntaxTree Tree)> _workspaceSyntaxCache =
+            new ConcurrentDictionary<string, (DateTime, SyntaxTree)>(StringComparer.OrdinalIgnoreCase);
 
         private static readonly string[] SdkImplicitUsingNamespaces =
         {
@@ -132,6 +141,7 @@ namespace CIARE.Roslyn
                 _lastFrameworkRefSnapshot = null;
                 _frameworkRefs = new List<MetadataReference>();
             }
+            _workspaceSyntaxCache.Clear();
         }
 
         private static void RunCheck(string code, TextEditorControl editor, Label statusLabel,
@@ -365,8 +375,18 @@ namespace CIARE.Roslyn
 
                 try
                 {
+                    DateTime lastWrite = File.GetLastWriteTimeUtc(filePath);
+                    if (_workspaceSyntaxCache.TryGetValue(filePath, out var cached) &&
+                        cached.ModifiedAt == lastWrite)
+                    {
+                        trees.Add(cached.Tree);
+                        continue;
+                    }
+
                     var code = File.ReadAllText(filePath);
-                    trees.Add(CSharpSyntaxTree.ParseText(code, parseOptions, path: filePath, cancellationToken: ct));
+                    var tree = CSharpSyntaxTree.ParseText(code, parseOptions, path: filePath, cancellationToken: ct);
+                    _workspaceSyntaxCache[filePath] = (lastWrite, tree);
+                    trees.Add(tree);
                 }
                 catch
                 {
@@ -849,14 +869,15 @@ namespace CIARE.Roslyn
             if (string.IsNullOrEmpty(filePath))
                 return string.Empty;
 
-            try
-            {
-                return AssemblyName.GetAssemblyName(filePath).Name ?? string.Empty;
-            }
-            catch
-            {
-                return Path.GetFileNameWithoutExtension(filePath);
-            }
+            if (_assemblyNameCache.TryGetValue(filePath, out var cached))
+                return cached;
+
+            string name;
+            try { name = AssemblyName.GetAssemblyName(filePath).Name ?? string.Empty; }
+            catch { name = Path.GetFileNameWithoutExtension(filePath); }
+
+            _assemblyNameCache[filePath] = name;
+            return name;
         }
 
         private static bool ProjectUsesAspNetCore(string workspaceFolder, string currentFilePath,

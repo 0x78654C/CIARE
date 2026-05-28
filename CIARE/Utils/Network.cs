@@ -1,7 +1,7 @@
-﻿using System.Net;
+using System;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Http;
-using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Runtime.Versioning;
 
@@ -12,6 +12,8 @@ namespace CIARE.Utils
     {
         private string IpAddress { get; set; }
         private int Port { get; set; } = 80;
+
+        private static readonly HttpClient _sharedClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
 
         /// <summary>
         /// Check network connections.
@@ -61,11 +63,8 @@ namespace CIARE.Utils
         {
             try
             {
-                HttpClient client = new HttpClient();
-                HttpResponseMessage response = Task.Run(()=> client.GetAsync(IpAddress)).Result;
-                HttpContent httpContent = response.Content;
-                bool isResponding = response.StatusCode == HttpStatusCode.OK;
-                return isResponding;
+                HttpResponseMessage response = _sharedClient.GetAsync(IpAddress).GetAwaiter().GetResult();
+                return response.StatusCode == HttpStatusCode.OK;
             }
             catch
             {
@@ -99,14 +98,12 @@ namespace CIARE.Utils
         /// <returns></returns>
         public bool IsLiveApiConnected()
         {
-            var url = IpAddress.EndsWith("/live") ? GlobalVariables.apiUrl.Replace("/live", "/ping"):"";
+            var url = IpAddress.EndsWith("/live") ? GlobalVariables.apiUrl.Replace("/live", "/ping") : "";
+            if (string.IsNullOrEmpty(url)) return false;
             try
             {
-                HttpClient client = new HttpClient();
-                HttpResponseMessage response = Task.Run(() => client.GetAsync(url)).Result;
-                HttpContent httpContent = response.Content;
-                bool isResponding = response.StatusCode == HttpStatusCode.OK;
-                return isResponding;
+                HttpResponseMessage response = _sharedClient.GetAsync(url).GetAwaiter().GetResult();
+                return response.StatusCode == HttpStatusCode.OK;
             }
             catch
             {
