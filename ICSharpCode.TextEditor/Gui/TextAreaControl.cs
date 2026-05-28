@@ -29,8 +29,7 @@ namespace ICSharpCode.TextEditor
 		TextArea   textArea;
 		bool       doHandleMousewheel = true;
 		bool       disposed;
-        bool autoHideScrollbars = true;
-		bool       adjustScrollBarsPending;
+        bool autoHideScrollbars;
 		private readonly string _editFontSizeName = "editorFontSizeZoom";
 
 		public TextArea TextArea {
@@ -85,6 +84,9 @@ namespace ICSharpCode.TextEditor
                 return autoHideScrollbars;
             }
             set {
+                if (autoHideScrollbars == value)
+                    return;
+
                 autoHideScrollbars = value;
                 AdjustScrollBars();
             }
@@ -341,21 +343,8 @@ namespace ICSharpCode.TextEditor
 		void VScrollBarValueChanged(object sender, EventArgs e)
 		{
 			textArea.VirtualTop = new Point(textArea.VirtualTop.X, vScrollBar.Value);
-			ScheduleAdjustScrollBars();
-		}
-
-		void ScheduleAdjustScrollBars()
-		{
-			if (adjustScrollBarsPending || disposed || IsDisposed || !IsHandleCreated)
-				return;
-
-			adjustScrollBarsPending = true;
-			BeginInvoke((MethodInvoker)delegate
-			{
-				adjustScrollBarsPending = false;
-				if (!disposed && !IsDisposed && textArea != null && vScrollBar != null && hScrollBar != null)
-					AdjustScrollBars();
-			});
+			textArea.Invalidate();
+			AdjustScrollBars();
 		}
 		
 		void HScrollBarValueChanged(object sender, EventArgs e)

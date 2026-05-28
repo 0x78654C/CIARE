@@ -149,8 +149,7 @@ namespace CIARE
         private bool _fileExplorerLayoutReadyForUserSave;
         private bool _fileExplorerWidthDragInProgress;
         private bool _fileExplorerNuGetHeightDragInProgress;
-        private bool _suppressEditorLayoutRefresh;
-        private bool _editorPaneRedrawSuspended;
+        private bool _refreshingEditorLayoutBounds;
         private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const int WorkspaceCompletionMethodLimit = 300;
         private const int RoslynCompletionSourceFileLimit = 300;
@@ -189,7 +188,6 @@ namespace CIARE
         [DllImport("user32.dll")]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);
         private const int TCM_SETMINTABWIDTH = 0x1300 + 49;
-        private const int WM_SETREDRAW = 0x000B;
         //----------------------------
 
         public MainForm()
@@ -282,22 +280,26 @@ namespace CIARE
             };
             _editorExplorerSplitContainer.SplitterMoving += (sender, args) =>
             {
-                BeginFileExplorerWidthResize();
+                _fileExplorerWidthDragInProgress = true;
                 CancelPendingFileExplorerLayoutApplyForUserResize();
             };
             _editorExplorerSplitContainer.SplitterMoved += (sender, args) =>
             {
-                EndFileExplorerWidthResize(saveWidth: true);
+                if (_fileExplorerWidthDragInProgress)
+                {
+                    _fileExplorerWidthDragInProgress = false;
+                    QueueFileExplorerWidthSave();
+                }
+
                 RefreshEditorLayoutBounds();
             };
             _editorExplorerSplitContainer.MouseUp += (sender, args) =>
             {
-                EndFileExplorerWidthResize(saveWidth: true);
-            };
-            _editorExplorerSplitContainer.MouseCaptureChanged += (sender, args) =>
-            {
                 if (_fileExplorerWidthDragInProgress)
-                    EndFileExplorerWidthResize(saveWidth: true);
+                {
+                    _fileExplorerWidthDragInProgress = false;
+                    QueueFileExplorerWidthSave();
+                }
             };
 
             _fileExplorerPanel = new Panel
@@ -589,7 +591,9 @@ namespace CIARE
             if (_editorExplorerSplitContainer == null)
                 return;
 
-            SetEditorWorkspaceRedraw(false);
+            _editorWorkspacePanel?.SuspendLayout();
+            _editorExplorerSplitContainer.SuspendLayout();
+            EditorTabControl.SuspendLayout();
             try
             {
                 if (show)
@@ -616,7 +620,9 @@ namespace CIARE
             }
             finally
             {
-                SetEditorWorkspaceRedraw(true);
+                EditorTabControl.ResumeLayout(true);
+                _editorExplorerSplitContainer.ResumeLayout(true);
+                _editorWorkspacePanel?.ResumeLayout(true);
             }
         }
 
@@ -1081,95 +1087,6 @@ namespace CIARE
             }
         }
 
-        private static void SetRedraw(Control control, bool enabled)
-        {
-            if (control == null || control.IsDisposed || !control.IsHandleCreated)
-                return;
-
-            SendMessage(control.Handle, WM_SETREDRAW, enabled ? (IntPtr)1 : IntPtr.Zero, IntPtr.Zero);
-            if (!enabled)
-                return;
-
-            control.Invalidate(true);
-            control.Update();
-        }
-
-        private void BeginFileExplorerWidthResize()
-        {
-            if (_fileExplorerWidthDragInProgress)
-                return;
-
-            _fileExplorerWidthDragInProgress = true;
-            _suppressEditorLayoutRefresh = true;
-            SetEditorPaneRedraw(false);
-        }
-
-        private void EndFileExplorerWidthResize(bool saveWidth)
-        {
-            if (!_fileExplorerWidthDragInProgress && !_editorPaneRedrawSuspended)
-                return;
-
-            _fileExplorerWidthDragInProgress = false;
-            _suppressEditorLayoutRefresh = false;
-            if (saveWidth)
-                QueueFileExplorerWidthSave();
-            RefreshEditorLayoutBounds(force: true);
-            SetEditorPaneRedraw(true);
-        }
-
-        private void SetEditorWorkspaceRedraw(bool enabled)
-        {
-            if (enabled)
-            {
-                SetEditorPaneRedraw(true);
-                SetRedraw(_editorWorkspacePanel, true);
-                return;
-            }
-
-            SetRedraw(_editorWorkspacePanel, false);
-            SetEditorPaneRedraw(false);
-        }
-
-        private void SetEditorPaneRedraw(bool enabled)
-        {
-            if (!enabled)
-            {
-                if (_editorPaneRedrawSuspended)
-                    return;
-
-                _editorPaneRedrawSuspended = true;
-                SetRedraw(_editorExplorerSplitContainer?.Panel1, false);
-                SetRedraw(EditorTabControl, false);
-                SetActiveEditorRedraw(false);
-                return;
-            }
-
-            if (!_editorPaneRedrawSuspended)
-                return;
-
-            SetActiveEditorRedraw(true);
-            SetRedraw(EditorTabControl, true);
-            SetRedraw(_editorExplorerSplitContainer?.Panel1, true);
-            _editorPaneRedrawSuspended = false;
-        }
-
-        private void SetActiveEditorRedraw(bool enabled)
-        {
-            try
-            {
-                var editor = SelectedEditor.GetSelectedEditor();
-                if (editor == null)
-                    return;
-
-                SetRedraw(editor.ActiveTextAreaControl?.TextArea, enabled);
-                SetRedraw(editor.ActiveTextAreaControl, enabled);
-                SetRedraw(editor, enabled);
-            }
-            catch
-            {
-            }
-        }
-
         private void ApplyEditorExplorerMinimumWidths()
         {
             if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
@@ -1221,28 +1138,45 @@ namespace CIARE
                 return;
 
             EditorTabControl.SuspendLayout();
-            EditorTabControl.Anchor = AnchorStyles.None;
-            EditorTabControl.Dock = DockStyle.Fill;
-            EditorTabControl.Location = Point.Empty;
-            EditorTabControl.Margin = Padding.Empty;
-            EditorTabControl.BackColor = GetEditorSurfaceBackColor();
+            if (EditorTabControl.Anchor != AnchorStyles.None)
+                EditorTabControl.Anchor = AnchorStyles.None;
+            if (EditorTabControl.Dock != DockStyle.Fill)
+                EditorTabControl.Dock = DockStyle.Fill;
+            if (EditorTabControl.Location != Point.Empty)
+                EditorTabControl.Location = Point.Empty;
+            if (EditorTabControl.Margin != Padding.Empty)
+                EditorTabControl.Margin = Padding.Empty;
+
+            Color editorSurfaceBackColor = GetEditorSurfaceBackColor();
+            if (EditorTabControl.BackColor != editorSurfaceBackColor)
+                EditorTabControl.BackColor = editorSurfaceBackColor;
 
             foreach (TabPage tabPage in EditorTabControl.TabPages)
-                ConfigureEditorTabPageLayout(tabPage);
+                ConfigureEditorTabPageLayout(tabPage, editorSurfaceBackColor);
 
             EditorTabControl.ResumeLayout(true);
         }
 
         private void ConfigureEditorTabPageLayout(TabPage tabPage)
         {
+            ConfigureEditorTabPageLayout(tabPage, GetEditorSurfaceBackColor());
+        }
+
+        private void ConfigureEditorTabPageLayout(TabPage tabPage, Color editorSurfaceBackColor)
+        {
             if (tabPage == null)
                 return;
 
-            tabPage.AutoScroll = false;
-            tabPage.Margin = Padding.Empty;
-            tabPage.Padding = Padding.Empty;
-            tabPage.UseVisualStyleBackColor = false;
-            tabPage.BackColor = GetEditorSurfaceBackColor();
+            if (tabPage.AutoScroll)
+                tabPage.AutoScroll = false;
+            if (tabPage.Margin != Padding.Empty)
+                tabPage.Margin = Padding.Empty;
+            if (tabPage.Padding != Padding.Empty)
+                tabPage.Padding = Padding.Empty;
+            if (tabPage.UseVisualStyleBackColor)
+                tabPage.UseVisualStyleBackColor = false;
+            if (tabPage.BackColor != editorSurfaceBackColor)
+                tabPage.BackColor = editorSurfaceBackColor;
 
             foreach (Control control in tabPage.Controls)
             {
@@ -1257,10 +1191,14 @@ namespace CIARE
                 return;
 
             editor.SuspendLayout();
-            editor.Anchor = AnchorStyles.None;
-            editor.Dock = DockStyle.Fill;
-            editor.Location = Point.Empty;
-            editor.Margin = Padding.Empty;
+            if (editor.Anchor != AnchorStyles.None)
+                editor.Anchor = AnchorStyles.None;
+            if (editor.Dock != DockStyle.Fill)
+                editor.Dock = DockStyle.Fill;
+            if (editor.Location != Point.Empty)
+                editor.Location = Point.Empty;
+            if (editor.Margin != Padding.Empty)
+                editor.Margin = Padding.Empty;
             ConfigureEditorScrollBars(editor);
             editor.ResumeLayout(true);
         }
@@ -1271,26 +1209,37 @@ namespace CIARE
             if (textAreaControl == null)
                 return;
 
-            textAreaControl.AutoHideScrollbars = false;
-            textAreaControl.VScrollBar.Visible = true;
-            textAreaControl.HScrollBar.Visible = true;
+            if (textAreaControl.AutoHideScrollbars)
+                textAreaControl.AutoHideScrollbars = false;
+            if (!textAreaControl.VScrollBar.Visible)
+                textAreaControl.VScrollBar.Visible = true;
+            if (!textAreaControl.HScrollBar.Visible)
+                textAreaControl.HScrollBar.Visible = true;
             textAreaControl.ResizeTextArea();
             textAreaControl.AdjustScrollBars();
         }
 
-        private void RefreshEditorLayoutBounds(bool force = false)
+        private void RefreshEditorLayoutBounds()
         {
             if (EditorTabControl == null || EditorTabControl.IsDisposed)
                 return;
 
-            if (_suppressEditorLayoutRefresh && !force)
+            if (_refreshingEditorLayoutBounds)
                 return;
 
-            ConfigureEditorTabControlLayout();
-            EditorTabControl.PerformLayout();
+            _refreshingEditorLayoutBounds = true;
+            try
+            {
+                ConfigureEditorTabControlLayout();
+                EditorTabControl.PerformLayout();
 
-            foreach (TabPage tabPage in EditorTabControl.TabPages)
-                tabPage.PerformLayout();
+                foreach (TabPage tabPage in EditorTabControl.TabPages)
+                    tabPage.PerformLayout();
+            }
+            finally
+            {
+                _refreshingEditorLayoutBounds = false;
+            }
         }
 
         private void fileExplorerOpenFolderButton_Click(object sender, EventArgs e)
