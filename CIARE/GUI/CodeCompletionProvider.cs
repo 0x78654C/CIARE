@@ -16,6 +16,7 @@ namespace CIARE.GUI
 	{
 		MainForm mainForm;
 		readonly string preSelection;
+		const int RoslynMemberFallbackThreshold = 40;
 		static readonly string[] DirectTypingKeywords = {
 			"abstract", "as", "async", "await", "base", "bool", "break", "byte",
 			"case", "catch", "char", "checked", "class", "const", "continue",
@@ -91,7 +92,11 @@ namespace CIARE.GUI
 		public ICompletionData[] GenerateCompletionData(string fileName, TextArea textArea, char charTyped)
 		{
 			string rawCode = textArea.MotherTextEditorControl.Text;
-			mainForm.RefreshActiveCompletionUnit(rawCode);
+			bool usingDirectiveDotCompletion = charTyped == '.' && IsUsingDirectiveDotCompletion(textArea);
+			if (!usingDirectiveDotCompletion)
+			{
+				mainForm.RefreshActiveCompletionUnit(rawCode);
+			}
 			mainForm.ResetCompletionWorkspaceIfInactive();
 			NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
 			List<ICompletionData> resultList = new List<ICompletionData>();
@@ -139,8 +144,11 @@ namespace CIARE.GUI
 
 					completionData = mainForm.FilterCompletionDataForActiveProject(completionData);
 					completionData = MergeCompletionData(completionData, mainForm.GetWorkspaceMemberCompletionData(expression.Expression));
-					completionData = MergeCompletionData(completionData,
-						mainForm.GetRoslynMemberCompletionData(rawCode, textArea.Caret.Offset, expression.Expression));
+					if (ShouldUseRoslynMemberFallback(completionData, usingDirectiveDotCompletion))
+					{
+						completionData = MergeCompletionData(completionData,
+							mainForm.GetRoslynMemberCompletionData(rawCode, textArea.Caret.Offset, expression.Expression));
+					}
 					if (completionData != null)
 						AddCompletionData(resultList, completionData);
 				}
@@ -162,6 +170,55 @@ namespace CIARE.GUI
 				}
 				return resultList.ToArray();
 			}
+
+		static bool IsUsingDirectiveDotCompletion(TextArea textArea)
+		{
+			if (textArea == null || textArea.Document == null)
+				return false;
+
+			try
+			{
+				var line = textArea.Document.GetLineSegment(textArea.Caret.Line);
+				int column = Math.Max(0, Math.Min(textArea.Caret.Column, line.Length));
+				string textBeforeCaret = textArea.Document.GetText(line.Offset, column).TrimStart();
+				if (textBeforeCaret.StartsWith("global ", StringComparison.Ordinal))
+					textBeforeCaret = textBeforeCaret.Substring("global ".Length).TrimStart();
+
+				return (textBeforeCaret.StartsWith("using ", StringComparison.Ordinal) ||
+					textBeforeCaret.StartsWith("using static ", StringComparison.Ordinal)) &&
+					!textBeforeCaret.StartsWith("using (", StringComparison.Ordinal) &&
+					textBeforeCaret.IndexOf('=') < 0;
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		static bool ShouldUseRoslynMemberFallback(ArrayList completionData, bool usingDirectiveDotCompletion)
+		{
+			if (usingDirectiveDotCompletion)
+				return false;
+
+			if (completionData == null || completionData.Count == 0)
+				return true;
+
+			if (completionData.Count >= RoslynMemberFallbackThreshold)
+				return false;
+
+			return !ContainsNamespaceCompletionData(completionData);
+		}
+
+		static bool ContainsNamespaceCompletionData(ArrayList completionData)
+		{
+			foreach (object item in completionData)
+			{
+				if (item is string)
+					return true;
+			}
+
+			return false;
+		}
 
 		/// <summary>
 		/// Find the expression the cursor is at.

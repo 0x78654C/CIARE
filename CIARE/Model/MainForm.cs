@@ -149,6 +149,8 @@ namespace CIARE
         private bool _fileExplorerLayoutReadyForUserSave;
         private bool _fileExplorerWidthDragInProgress;
         private bool _fileExplorerNuGetHeightDragInProgress;
+        private bool _suppressEditorLayoutRefresh;
+        private bool _editorPaneRedrawSuspended;
         private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const int WorkspaceCompletionMethodLimit = 300;
         private const int RoslynCompletionSourceFileLimit = 300;
@@ -179,12 +181,15 @@ namespace CIARE
         private static List<MetadataReference> _usagePlatformReferences;
         private static List<MetadataReference> _usageCustomReferences = new List<MetadataReference>();
         private static string _usageCustomReferenceKey = string.Empty;
+        private static readonly PropertyInfo DoubleBufferedProperty =
+            typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
 
 
         // Used for tab's auto-resize
         [DllImport("user32.dll")]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);
         private const int TCM_SETMINTABWIDTH = 0x1300 + 49;
+        private const int WM_SETREDRAW = 0x000B;
         //----------------------------
 
         public MainForm()
@@ -195,6 +200,7 @@ namespace CIARE
             autoStartFile.CheckSetAtiveFormState();
             autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
+            DoubleBuffered = true;
         }
 
         /// <summary>
@@ -253,7 +259,8 @@ namespace CIARE
             _editorWorkspacePanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(0)
+                Padding = new Padding(0),
+                BackColor = GetEditorSurfaceBackColor()
             };
 
             _editorExplorerSplitContainer = new SplitContainer
@@ -261,10 +268,13 @@ namespace CIARE
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
                 FixedPanel = FixedPanel.Panel2,
-                SplitterWidth = 5
+                SplitterWidth = 5,
+                BackColor = GetEditorSurfaceBackColor()
             };
             _editorExplorerSplitContainer.Panel1.Padding = Padding.Empty;
             _editorExplorerSplitContainer.Panel2.Padding = Padding.Empty;
+            _editorExplorerSplitContainer.Panel1.BackColor = GetEditorSurfaceBackColor();
+            _editorExplorerSplitContainer.Panel2.BackColor = GetEditorSurfaceBackColor();
             _editorExplorerSplitContainer.Panel1.Resize += (sender, args) => RefreshEditorLayoutBounds();
             _editorExplorerSplitContainer.SizeChanged += (sender, args) =>
             {
@@ -272,28 +282,29 @@ namespace CIARE
             };
             _editorExplorerSplitContainer.SplitterMoving += (sender, args) =>
             {
-                _fileExplorerWidthDragInProgress = true;
+                BeginFileExplorerWidthResize();
                 CancelPendingFileExplorerLayoutApplyForUserResize();
             };
             _editorExplorerSplitContainer.SplitterMoved += (sender, args) =>
             {
-                if (_fileExplorerWidthDragInProgress)
-                    QueueFileExplorerWidthSave();
+                EndFileExplorerWidthResize(saveWidth: true);
                 RefreshEditorLayoutBounds();
             };
             _editorExplorerSplitContainer.MouseUp += (sender, args) =>
             {
-                if (!_fileExplorerWidthDragInProgress)
-                    return;
-
-                _fileExplorerWidthDragInProgress = false;
-                QueueFileExplorerWidthSave();
+                EndFileExplorerWidthResize(saveWidth: true);
+            };
+            _editorExplorerSplitContainer.MouseCaptureChanged += (sender, args) =>
+            {
+                if (_fileExplorerWidthDragInProgress)
+                    EndFileExplorerWidthResize(saveWidth: true);
             };
 
             _fileExplorerPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(0)
+                Padding = new Padding(0),
+                BackColor = GetEditorSurfaceBackColor()
             };
 
             _fileExplorerContentSplitContainer = new SplitContainer
@@ -302,8 +313,11 @@ namespace CIARE
                 Orientation = Orientation.Horizontal,
                 FixedPanel = FixedPanel.Panel2,
                 SplitterWidth = 4,
-                Panel2MinSize = FileExplorerNuGetMinHeight
+                Panel2MinSize = FileExplorerNuGetMinHeight,
+                BackColor = GetEditorSurfaceBackColor()
             };
+            _fileExplorerContentSplitContainer.Panel1.BackColor = GetEditorSurfaceBackColor();
+            _fileExplorerContentSplitContainer.Panel2.BackColor = GetEditorSurfaceBackColor();
             _fileExplorerContentSplitContainer.SizeChanged += (sender, args) =>
             {
                 OnFileExplorerLayoutContainerSizeChanged();
@@ -479,6 +493,21 @@ namespace CIARE
             _editorWorkspacePanel.Resize += (sender, args) => PositionFileExplorerShowButton();
             Shown += (sender, args) => QueueFileExplorerLayoutApply();
 
+            EnableBufferedPainting(
+                splitContainer1,
+                splitContainer1.Panel1,
+                _editorWorkspacePanel,
+                _editorExplorerSplitContainer,
+                _editorExplorerSplitContainer.Panel1,
+                _editorExplorerSplitContainer.Panel2,
+                _fileExplorerPanel,
+                _fileExplorerHeader,
+                _fileExplorerContentSplitContainer,
+                _fileExplorerContentSplitContainer.Panel1,
+                _fileExplorerContentSplitContainer.Panel2,
+                _fileExplorerNuGetPanel,
+                EditorTabControl);
+
             splitContainer1.Panel1.Controls.Add(_editorWorkspacePanel);
             splitContainer1.Panel1.ResumeLayout();
             EditorTabControl.ResumeLayout();
@@ -560,27 +589,35 @@ namespace CIARE
             if (_editorExplorerSplitContainer == null)
                 return;
 
-            if (show)
+            SetEditorWorkspaceRedraw(false);
+            try
             {
-                _editorExplorerSplitContainer.Panel2Collapsed = false;
-                ApplyEditorExplorerMinimumWidths();
-                ApplyFileExplorerLayoutValues();
-                QueueFileExplorerLayoutApply();
-                _fileExplorerShowButton.Visible = false;
-            }
-            else
-            {
-                if (saveWidth)
-                    SaveFileExplorerWidth();
-                _editorExplorerSplitContainer.Panel2Collapsed = true;
-                _fileExplorerShowButton.Visible = true;
-                PositionFileExplorerShowButton();
-                SelectedEditor.GetSelectedEditor()?.Focus();
-            }
+                if (show)
+                {
+                    _editorExplorerSplitContainer.Panel2Collapsed = false;
+                    ApplyEditorExplorerMinimumWidths();
+                    ApplyFileExplorerLayoutValues();
+                    QueueFileExplorerLayoutApply();
+                    _fileExplorerShowButton.Visible = false;
+                }
+                else
+                {
+                    if (saveWidth)
+                        SaveFileExplorerWidth(force: true);
+                    _editorExplorerSplitContainer.Panel2Collapsed = true;
+                    _fileExplorerShowButton.Visible = true;
+                    PositionFileExplorerShowButton();
+                    SelectedEditor.GetSelectedEditor()?.Focus();
+                }
 
-            RefreshEditorLayoutBounds();
-            EditorTabControl.Invalidate();
-            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerVisibleKey, show.ToString());
+                RefreshEditorLayoutBounds();
+                EditorTabControl.Invalidate();
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerVisibleKey, show.ToString());
+            }
+            finally
+            {
+                SetEditorWorkspaceRedraw(true);
+            }
         }
 
         private void ToggleFileExplorer()
@@ -1022,6 +1059,117 @@ namespace CIARE
                 : _editorExplorerSplitContainer.Width;
         }
 
+        private static Color GetEditorSurfaceBackColor()
+        {
+            return GlobalVariables.darkColor ? GlobalVariables.controlBgColor : SystemColors.Window;
+        }
+
+        private static void EnableBufferedPainting(params Control[] controls)
+        {
+            foreach (Control control in controls)
+            {
+                if (control == null)
+                    continue;
+
+                try
+                {
+                    DoubleBufferedProperty?.SetValue(control, true, null);
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        private static void SetRedraw(Control control, bool enabled)
+        {
+            if (control == null || control.IsDisposed || !control.IsHandleCreated)
+                return;
+
+            SendMessage(control.Handle, WM_SETREDRAW, enabled ? (IntPtr)1 : IntPtr.Zero, IntPtr.Zero);
+            if (!enabled)
+                return;
+
+            control.Invalidate(true);
+            control.Update();
+        }
+
+        private void BeginFileExplorerWidthResize()
+        {
+            if (_fileExplorerWidthDragInProgress)
+                return;
+
+            _fileExplorerWidthDragInProgress = true;
+            _suppressEditorLayoutRefresh = true;
+            SetEditorPaneRedraw(false);
+        }
+
+        private void EndFileExplorerWidthResize(bool saveWidth)
+        {
+            if (!_fileExplorerWidthDragInProgress && !_editorPaneRedrawSuspended)
+                return;
+
+            _fileExplorerWidthDragInProgress = false;
+            _suppressEditorLayoutRefresh = false;
+            if (saveWidth)
+                QueueFileExplorerWidthSave();
+            RefreshEditorLayoutBounds(force: true);
+            SetEditorPaneRedraw(true);
+        }
+
+        private void SetEditorWorkspaceRedraw(bool enabled)
+        {
+            if (enabled)
+            {
+                SetEditorPaneRedraw(true);
+                SetRedraw(_editorWorkspacePanel, true);
+                return;
+            }
+
+            SetRedraw(_editorWorkspacePanel, false);
+            SetEditorPaneRedraw(false);
+        }
+
+        private void SetEditorPaneRedraw(bool enabled)
+        {
+            if (!enabled)
+            {
+                if (_editorPaneRedrawSuspended)
+                    return;
+
+                _editorPaneRedrawSuspended = true;
+                SetRedraw(_editorExplorerSplitContainer?.Panel1, false);
+                SetRedraw(EditorTabControl, false);
+                SetActiveEditorRedraw(false);
+                return;
+            }
+
+            if (!_editorPaneRedrawSuspended)
+                return;
+
+            SetActiveEditorRedraw(true);
+            SetRedraw(EditorTabControl, true);
+            SetRedraw(_editorExplorerSplitContainer?.Panel1, true);
+            _editorPaneRedrawSuspended = false;
+        }
+
+        private void SetActiveEditorRedraw(bool enabled)
+        {
+            try
+            {
+                var editor = SelectedEditor.GetSelectedEditor();
+                if (editor == null)
+                    return;
+
+                SetRedraw(editor.ActiveTextAreaControl?.TextArea, enabled);
+                SetRedraw(editor.ActiveTextAreaControl, enabled);
+                SetRedraw(editor, enabled);
+            }
+            catch
+            {
+            }
+        }
+
         private void ApplyEditorExplorerMinimumWidths()
         {
             if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
@@ -1077,6 +1225,7 @@ namespace CIARE
             EditorTabControl.Dock = DockStyle.Fill;
             EditorTabControl.Location = Point.Empty;
             EditorTabControl.Margin = Padding.Empty;
+            EditorTabControl.BackColor = GetEditorSurfaceBackColor();
 
             foreach (TabPage tabPage in EditorTabControl.TabPages)
                 ConfigureEditorTabPageLayout(tabPage);
@@ -1092,6 +1241,8 @@ namespace CIARE
             tabPage.AutoScroll = false;
             tabPage.Margin = Padding.Empty;
             tabPage.Padding = Padding.Empty;
+            tabPage.UseVisualStyleBackColor = false;
+            tabPage.BackColor = GetEditorSurfaceBackColor();
 
             foreach (Control control in tabPage.Controls)
             {
@@ -1127,9 +1278,12 @@ namespace CIARE
             textAreaControl.AdjustScrollBars();
         }
 
-        private void RefreshEditorLayoutBounds()
+        private void RefreshEditorLayoutBounds(bool force = false)
         {
             if (EditorTabControl == null || EditorTabControl.IsDisposed)
+                return;
+
+            if (_suppressEditorLayoutRefresh && !force)
                 return;
 
             ConfigureEditorTabControlLayout();
@@ -2472,6 +2626,8 @@ namespace CIARE
 
             _editorWorkspacePanel.BackColor = backColor;
             _editorExplorerSplitContainer.BackColor = borderColor;
+            _editorExplorerSplitContainer.Panel1.BackColor = backColor;
+            _editorExplorerSplitContainer.Panel2.BackColor = backColor;
             _fileExplorerPanel.BackColor = backColor;
             _fileExplorerHeader.BackColor = headerColor;
             _fileExplorerTitleLabel.BackColor = headerColor;
@@ -2480,6 +2636,8 @@ namespace CIARE
             _fileExplorerTree.ForeColor = foreColor;
             _fileExplorerTree.LineColor = borderColor;
             _fileExplorerContentSplitContainer.BackColor = borderColor;
+            _fileExplorerContentSplitContainer.Panel1.BackColor = backColor;
+            _fileExplorerContentSplitContainer.Panel2.BackColor = backColor;
             _fileExplorerNuGetPanel.BackColor = backColor;
             _fileExplorerNuGetTitleLabel.BackColor = headerColor;
             _fileExplorerNuGetTitleLabel.ForeColor = foreColor;
@@ -2995,6 +3153,7 @@ namespace CIARE
                     menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator(), GlobalVariables.isVStheme);
                 errorsLV.BackColor = darkBg;
                 errorsLV.ForeColor = darkFg;
+                ApplyTabControlDarkMode(EditorTabControl, darkBg);
                 ApplyTabControlDarkMode(outputTabControl, darkBg);
                 ApplyFileExplorerTheme(highlight);
                 return;
@@ -3004,6 +3163,7 @@ namespace CIARE
                 menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
             errorsLV.BackColor = SystemColors.Window;
             errorsLV.ForeColor = Color.Black;
+            ApplyTabControlDarkMode(EditorTabControl, SystemColors.Window);
             ApplyTabControlDarkMode(outputTabControl, SystemColors.Window);
             ApplyFileExplorerTheme(highlight);
         }
@@ -3043,9 +3203,15 @@ namespace CIARE
 
         private static void ApplyTabControlDarkMode(TabControl tabControl, Color backColor)
         {
+            if (tabControl == null)
+                return;
+
             tabControl.BackColor = backColor;
             foreach (TabPage page in tabControl.TabPages)
+            {
+                page.UseVisualStyleBackColor = false;
                 page.BackColor = backColor;
+            }
             tabControl.Invalidate();
         }
 
