@@ -18,7 +18,6 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
     public class CodeCompletionListView : System.Windows.Forms.UserControl
     {
         ICompletionData[] completionData;
-        string[] _cachedLowerText;
         int firstItem = 0;
         int selectedItem = -1;
         ImageList imageList;
@@ -89,9 +88,6 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
         {
             Array.Sort(completionData, DefaultCompletionData.Compare);
             this.completionData = completionData;
-            _cachedLowerText = new string[completionData.Length];
-            for (int i = 0; i < completionData.Length; i++)
-                _cachedLowerText[i] = completionData[i].Text.ToLower();
 
             SetStyle(ControlStyles.AllPaintingInWmPaint |
                      ControlStyles.OptimizedDoubleBuffer |
@@ -214,7 +210,7 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
             for (int i = 0; i < completionData.Length; ++i)
             {
                 string itemText = completionData[i].Text;
-                string lowerText = _cachedLowerText[i];
+                string lowerText = itemText.ToLower();
                 if (lowerText.StartsWith(startText))
                 {
                     double priority = completionData[i].Priority;

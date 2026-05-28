@@ -193,6 +193,15 @@ namespace CIARE
         }
 
         /// <summary>
+        /// Check if live share API is up.
+        /// </summary>
+        private void CheckIfAPIisALIVE()
+        {
+            Network network = new Network(GlobalVariables.apiUrl);
+                liveApiPb.Image = (network.IsLiveApiConnected()) ? Properties.Resources.green_dot : Properties.Resources.red_dot;
+        }
+
+        /// <summary>
         /// Connect to remote session.
         /// </summary>
         /// <param name="sender"></param>
@@ -307,8 +316,6 @@ namespace CIARE
             }
         }
 
-        private volatile bool _apiCheckInProgress;
-
         /// <summary>
         /// Timer function for call API live check if is up in background.
         /// </summary>
@@ -316,11 +323,8 @@ namespace CIARE
         /// <param name="e"></param>
         private void checkLiveAPITimer_Tick(object sender, EventArgs e)
         {
-            if (_apiCheckInProgress) return;
-            _apiCheckInProgress = true;
             var worker = new BackgroundWorker();
             worker.DoWork += APICheck_DoWork;
-            worker.RunWorkerCompleted += APICheck_RunWorkerCompleted;
             worker.RunWorkerAsync();
         }
 
@@ -329,22 +333,8 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void APICheck_DoWork(object sender, DoWorkEventArgs e)
-        {
-            var network = new Network(GlobalVariables.apiUrl);
-            e.Result = network.IsLiveApiConnected();
-        }
-
-        /// <summary>
-        /// Update API status indicator on UI thread after background check.
-        /// </summary>
-        private void APICheck_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            _apiCheckInProgress = false;
-            if (IsDisposed || !IsHandleCreated) return;
-            if (e.Error == null && !e.Cancelled && e.Result is bool isAlive)
-                liveApiPb.Image = isAlive ? Properties.Resources.green_dot : Properties.Resources.red_dot;
-        }
+        private void APICheck_DoWork(object sender, DoWorkEventArgs e) =>
+            CheckIfAPIisALIVE();
 
         /// <summary>
         /// Close timer on form closing.

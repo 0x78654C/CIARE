@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
-using CIARE.Utils;
 using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Gui.CompletionWindow;
 
@@ -186,84 +185,6 @@ namespace CIARE.GUI
 				expression.Region = new Dom.DomRegion(textArea.Caret.Line + 1, textArea.Caret.Column + 1);
 			}
 			return expression;
-		}
-
-		internal Dom.ExpressionResult FindExpressionAt(string textContent, int caretOffset, int caretLine, int caretCol)
-		{
-			Dom.IExpressionFinder finder;
-			if (MainForm.IsVisualBasic)
-				finder = new Dom.VBNet.VBExpressionFinder();
-			else
-				finder = new Dom.CSharp.CSharpExpressionFinder(MainForm.parseInformation);
-			Dom.ExpressionResult expression = finder.FindExpression(textContent, caretOffset);
-			if (expression.Region.IsEmpty)
-				expression.Region = new Dom.DomRegion(caretLine, caretCol);
-			return expression;
-		}
-
-		internal ICompletionData[] GenerateCompletionDataBackground(
-			string rawCode,
-			int caretLine,
-			int caretCol,
-			Dom.ExpressionResult expression,
-			string activeFilePath,
-			string workspaceFolder,
-			bool shouldUseWorkspace,
-			string capturedPreSelection,
-			System.Threading.CancellationToken ct)
-		{
-			ct.ThrowIfCancellationRequested();
-
-			if (!GlobalVariables.OCodeCompletion || MainForm.myProjectContent == null)
-				return null;
-
-			string resolverCode = mainForm.PrepareCodeForNRefactoryCompletion(rawCode, activeFilePath,
-				out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine);
-
-			ct.ThrowIfCancellationRequested();
-
-			Dom.ICompilationUnit localCU = mainForm.ParseCompletionCompilationUnit(rawCode, activeFilePath);
-			Dom.ParseInformation localParseInfo = new Dom.ParseInformation(localCU);
-
-			ct.ThrowIfCancellationRequested();
-
-			NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
-			List<ICompletionData> resultList = new List<ICompletionData>();
-
-			int adjustedCaretLine = caretLine + prefixLineOffset;
-			if (wrapLineOffset > 0 && adjustedCaretLine >= bodyStartLine)
-				adjustedCaretLine += wrapLineOffset;
-
-			ArrayList completionData = resolver.CtrlSpace(adjustedCaretLine, caretCol,
-				localParseInfo, resolverCode, expression.Context);
-
-			ct.ThrowIfCancellationRequested();
-
-			if (completionData != null)
-			{
-				completionData = mainForm.FilterCompletionDataForActiveProject(completionData, activeFilePath, workspaceFolder);
-				AddCompletionData(resultList, completionData);
-			}
-			AddCompletionData(resultList, mainForm.GetWorkspaceMethodCompletionData(capturedPreSelection, shouldUseWorkspace));
-			AddDirectTypingKeywordsForPrefix(resultList, capturedPreSelection);
-
-			return resultList.ToArray();
-		}
-
-		void AddDirectTypingKeywordsForPrefix(List<ICompletionData> resultList, string prefix)
-		{
-			if (MainForm.IsVisualBasic)
-				return;
-
-			string p = prefix ?? string.Empty;
-			foreach (string keyword in DirectTypingKeywords)
-			{
-				if (p.Length > 0 && !keyword.StartsWith(p, StringComparison.OrdinalIgnoreCase))
-					continue;
-				if (ContainsCompletionText(resultList, keyword))
-					continue;
-				resultList.Add(new DefaultCompletionData(keyword, "keyword " + keyword, 10));
-			}
 		}
 
 		void AddCompletionData(List<ICompletionData> resultList, ArrayList completionData)

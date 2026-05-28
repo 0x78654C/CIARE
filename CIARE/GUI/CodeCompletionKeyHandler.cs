@@ -2,13 +2,10 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.Versioning;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Document;
 using ICSharpCode.TextEditor.Gui.CompletionWindow;
-using Dom = ICSharpCode.SharpDevelop.Dom;
 
 namespace CIARE.GUI
 {
@@ -95,9 +92,6 @@ namespace CIARE.GUI
 			return false;
 		}
 
-		CancellationTokenSource _pendingCompletionCts;
-		int _completionRequestId;
-
 		void ShowAutomaticCompletionWindow(char key)
 		{
 			if (editor.IsDisposed || codeCompletionWindow != null)
@@ -131,60 +125,7 @@ namespace CIARE.GUI
 				return;
 			}
 
-			// Snapshot all UI state before going async.
-			string capturedRawCode = textArea.MotherTextEditorControl.Text;
-			int capturedCaretOffset = textArea.Caret.Offset;
-			int capturedCaretLine = textArea.Caret.Line + 1;
-			int capturedCaretCol = textArea.Caret.Column + 1;
-			string capturedPreSelection = preSelection;
-			string capturedActiveFilePath = mainForm.GetActiveEditorFilePath();
-			string capturedWorkspaceFolder = mainForm.GetCompletionWorkspaceFolder(capturedActiveFilePath);
-			bool capturedShouldUseWorkspace = !string.IsNullOrEmpty(capturedWorkspaceFolder);
-
-			var provider = new CodeCompletionProvider(mainForm, capturedPreSelection);
-			Dom.ExpressionResult capturedExpression = provider.FindExpressionAt(
-				capturedRawCode, capturedCaretOffset, capturedCaretLine, capturedCaretCol);
-
-			_pendingCompletionCts?.Cancel();
-			_pendingCompletionCts?.Dispose();
-			_pendingCompletionCts = new CancellationTokenSource();
-			var cts = _pendingCompletionCts;
-			int requestId = ++_completionRequestId;
-
-			Task.Run(() =>
-			{
-				try
-				{
-					ICompletionData[] completionData = provider.GenerateCompletionDataBackground(
-						capturedRawCode, capturedCaretLine, capturedCaretCol,
-						capturedExpression, capturedActiveFilePath, capturedWorkspaceFolder,
-						capturedShouldUseWorkspace, capturedPreSelection, cts.Token);
-
-					if (completionData == null || completionData.Length == 0)
-						return;
-
-					editor.BeginInvoke(new MethodInvoker(() =>
-					{
-						try
-						{
-							if (requestId != _completionRequestId || codeCompletionWindow != null || editor.IsDisposed)
-								return;
-
-							TextArea ta = editor.ActiveTextAreaControl.TextArea;
-							string currentWord = GetCurrentWord(ta);
-							if (!currentWord.StartsWith(capturedPreSelection, StringComparison.Ordinal))
-								return;
-
-							ShowCodeCompletionWindow(
-								new PrecomputedCompletionDataProvider(completionData, currentWord),
-								key, true);
-						}
-						catch (InvalidOperationException) { }
-						}));
-				}
-				catch (OperationCanceledException) { }
-				catch { }
-			});
+			ShowCodeCompletionWindow(new CodeCompletionProvider(mainForm, preSelection), key, true);
 		}
 
 		void ShowCodeCompletionWindow(ICompletionDataProvider completionDataProvider, char key, bool closeWhenCaretAtBeginning)
@@ -712,39 +653,4 @@ namespace CIARE.GUI
 			}
 		}
 	}
-
-		[SupportedOSPlatform("windows")]
-		sealed class PrecomputedCompletionDataProvider : ICompletionDataProvider
-		{
-			readonly ICompletionData[] _data;
-			readonly string _preSelection;
-
-			public PrecomputedCompletionDataProvider(ICompletionData[] data, string preSelection)
-			{
-				_data = data;
-				_preSelection = preSelection;
-			}
-
-			public System.Windows.Forms.ImageList ImageList => MainForm.Instance.imageList1;
-			public string PreSelection => _preSelection;
-			public int DefaultIndex => -1;
-
-			public CompletionDataProviderKeyResult ProcessKey(char key)
-			{
-				if (char.IsLetterOrDigit(key) || key == '_')
-					return CompletionDataProviderKeyResult.NormalKey;
-				return CompletionDataProviderKeyResult.InsertionKey;
-			}
-
-			public bool InsertAction(ICompletionData data, TextArea textArea, int insertionOffset, char key)
-			{
-				textArea.Caret.Position = textArea.Document.OffsetToPosition(insertionOffset);
-				return data.InsertAction(textArea, key);
-			}
-
-			public ICompletionData[] GenerateCompletionData(string fileName, TextArea textArea, char charTyped)
-			{
-				return _data;
-			}
-		}
 }

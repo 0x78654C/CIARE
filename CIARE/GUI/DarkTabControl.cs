@@ -12,10 +12,6 @@ namespace CIARE.GUI
         private const int WM_PAINT = 0x000F;
         private const int WM_ERASEBKGND = 0x0014;
 
-        public DarkTabControl()
-        {
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
-        }
         protected override void WndProc(ref Message m)
         {
             // In dark mode, fill the tab strip background ourselves so the

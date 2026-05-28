@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Runtime.Versioning;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CIARE.GUI;
@@ -15,8 +14,6 @@ namespace CIARE.LiveShareManage
     [SupportedOSPlatform("windows")]
     public class ApiConnectionEvents
     {
-        private static int _disconnectPromptActive = 0;
-
         /// <summary>
         /// Build connection events to API.
         /// </summary>
@@ -28,23 +25,11 @@ namespace CIARE.LiveShareManage
             if (string.IsNullOrEmpty(apiUrl))
                 return;
 
-            // Closed event — fires on a SignalR background thread.
+            // Closed event.
             hubConnection.Closed += (sender) =>
             {
+                CleanDot(MainForm.Instance.liveStatusPb);
                 GlobalVariables.liveDisconnected = true;
-                var form = MainForm.Instance;
-                if (form == null || form.IsDisposed || !form.IsHandleCreated)
-                    return Task.CompletedTask;
-
-                form.BeginInvoke(new Action(() =>
-                {
-                    CleanDot(form.liveStatusPb);
-                    if (GlobalVariables.connected &&
-                        (GlobalVariables.apiRemoteConnected || GlobalVariables.apiConnected))
-                    {
-                        ManageHubDisconnection(hubConnection, new Button());
-                    }
-                }));
                 return Task.CompletedTask;
             };
         }
@@ -324,11 +309,6 @@ namespace CIARE.LiveShareManage
         /// <param name="textEditorControl"></param>
         public static async void ManageHubDisconnection(HubConnection hubConnection, Button connection)
         {
-            // Prevent multiple overlapping disconnect dialogs.
-            if (Interlocked.CompareExchange(ref _disconnectPromptActive, 1, 0) != 0)
-                return;
-            try
-            {
             GlobalVariables.apiConnected = false;
             GlobalVariables.apiRemoteConnected = false;
             GlobalVariables.connected = false;
@@ -361,11 +341,6 @@ GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelec
                 GlobalVariables.liveDisconnected = false;
                 GlobalVariables.isConnected = false;
                 CleanDot(MainForm.Instance.liveStatusPb);
-            }
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _disconnectPromptActive, 0);
             }
         }
     }
