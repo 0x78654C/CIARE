@@ -182,6 +182,12 @@ namespace CIARE
         private static List<MetadataReference> _usagePlatformReferences;
         private static List<MetadataReference> _usageCustomReferences = new List<MetadataReference>();
         private static string _usageCustomReferenceKey = string.Empty;
+        private static readonly object _usageDocumentCacheLock = new object();
+        private static readonly Dictionary<string, UsageDocumentCacheEntry> _usageDocumentCache
+            = new Dictionary<string, UsageDocumentCacheEntry>(StringComparer.OrdinalIgnoreCase);
+        private const int UsageDocumentCacheLimit = 128;
+        private const long UsageFastReadMaxFileBytes = 256L * 1024L;
+        private const long UsageDocumentCacheMaxFileBytes = 1024L * 1024L;
         private bool _completionRegistryInitialized;
         private static readonly PropertyInfo DoubleBufferedProperty =
             typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -5486,7 +5492,8 @@ namespace CIARE
 
         private sealed class UsageDocument
         {
-            private readonly string[] _lines;
+            private readonly object _linesLock = new object();
+            private string[] _lines;
 
             public UsageDocument(string filePath, string text, SyntaxTree syntaxTree, CompilationUnitSyntax root, bool isActive)
             {
@@ -5495,7 +5502,6 @@ namespace CIARE
                 SyntaxTree = syntaxTree;
                 Root = root;
                 IsActive = isActive;
-                _lines = Regex.Split(Text, "\r\n|\r|\n");
             }
 
             public string FilePath { get; }
@@ -5508,7 +5514,45 @@ namespace CIARE
             public string GetLineText(int lineNumber)
             {
                 int index = lineNumber - 1;
-                return index >= 0 && index < _lines.Length ? _lines[index] : string.Empty;
+                var lines = GetLines();
+                return index >= 0 && index < lines.Length ? lines[index] : string.Empty;
+            }
+
+            private string[] GetLines()
+            {
+                if (_lines != null)
+                    return _lines;
+
+                lock (_linesLock)
+                {
+                    if (_lines == null)
+                    {
+                        _lines = Text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                    }
+
+                    return _lines;
+                }
+            }
+        }
+
+        private sealed class UsageDocumentCacheEntry
+        {
+            public UsageDocumentCacheEntry(UsageDocument document, long lastWriteUtcTicks, long length)
+            {
+                Document = document;
+                LastWriteUtcTicks = lastWriteUtcTicks;
+                Length = length;
+                LastAccessUtc = DateTime.UtcNow;
+            }
+
+            public UsageDocument Document { get; }
+            public long LastWriteUtcTicks { get; }
+            public long Length { get; }
+            public DateTime LastAccessUtc { get; private set; }
+
+            public void Touch()
+            {
+                LastAccessUtc = DateTime.UtcNow;
             }
         }
 
@@ -5703,20 +5747,10 @@ namespace CIARE
 
             // Scan and parse files in parallel (disk I/O + Roslyn parse are the bottleneck).
             var newDocs = new ConcurrentDictionary<string, UsageDocument>(StringComparer.OrdinalIgnoreCase);
-            Parallel.ForEach(pathsToScan, filePath =>
+            Parallel.ForEach(pathsToScan, CreateUsageParallelOptions(), filePath =>
             {
-                try
-                {
-                    if (!FileContainsIdentifier(filePath, identifier))
-                        return;
-                    string text = File.ReadAllText(filePath);
-                    var syntaxTree = CSharpSyntaxTree.ParseText(text, parseOptions, path: filePath);
-                    var root = syntaxTree.GetCompilationUnitRoot();
-                    string normalizedPath = NormalizeCompletionPath(filePath);
-                    if (!string.IsNullOrEmpty(normalizedPath))
-                        newDocs.TryAdd(normalizedPath, new UsageDocument(filePath, text, syntaxTree, root, false));
-                }
-                catch { }
+                if (TryGetUsageDocumentFromFile(filePath, identifier, parseOptions, out UsageDocument document))
+                    newDocs.TryAdd(NormalizeCompletionPath(filePath), document);
             });
 
             foreach (var kvp in newDocs)
@@ -5726,6 +5760,147 @@ namespace CIARE
             }
 
             return documents;
+        }
+
+        private static ParallelOptions CreateUsageParallelOptions()
+        {
+            return new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount)
+            };
+        }
+
+        private static bool TryGetUsageDocumentFromFile(string filePath, string identifier,
+            CSharpParseOptions parseOptions, out UsageDocument document)
+        {
+            document = null;
+            if (string.IsNullOrWhiteSpace(filePath) || string.IsNullOrEmpty(identifier))
+                return false;
+
+            string normalizedPath = NormalizeCompletionPath(filePath);
+            if (string.IsNullOrEmpty(normalizedPath))
+                return false;
+
+            FileInfo fileInfo;
+            try
+            {
+                fileInfo = new FileInfo(filePath);
+                if (!fileInfo.Exists)
+                    return false;
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (TryGetCachedUsageDocument(normalizedPath, fileInfo, identifier, out document))
+                return true;
+
+            try
+            {
+                if (!TryReadUsageFileTextIfContainsIdentifier(filePath, fileInfo, identifier, out string text))
+                    return false;
+
+                var syntaxTree = CSharpSyntaxTree.ParseText(text, parseOptions, path: filePath);
+                var root = syntaxTree.GetCompilationUnitRoot();
+                document = new UsageDocument(filePath, text, syntaxTree, root, false);
+                CacheUsageDocument(normalizedPath, document, fileInfo);
+                return true;
+            }
+            catch
+            {
+                document = null;
+                return false;
+            }
+        }
+
+        private static bool TryReadUsageFileTextIfContainsIdentifier(string filePath, FileInfo fileInfo,
+            string identifier, out string text)
+        {
+            text = null;
+            try
+            {
+                if (fileInfo.Length <= UsageFastReadMaxFileBytes)
+                {
+                    text = File.ReadAllText(filePath);
+                    if (TextContainsIdentifier(text, identifier))
+                        return true;
+
+                    text = null;
+                    return false;
+                }
+
+                if (!FileContainsIdentifier(filePath, identifier))
+                    return false;
+
+                text = File.ReadAllText(filePath);
+                return true;
+            }
+            catch
+            {
+                text = null;
+                return false;
+            }
+        }
+
+        private static bool TryGetCachedUsageDocument(string normalizedPath, FileInfo fileInfo,
+            string identifier, out UsageDocument document)
+        {
+            document = null;
+            UsageDocumentCacheEntry entry;
+            lock (_usageDocumentCacheLock)
+            {
+                if (!_usageDocumentCache.TryGetValue(normalizedPath, out entry))
+                    return false;
+
+                if (entry.LastWriteUtcTicks != fileInfo.LastWriteTimeUtc.Ticks ||
+                    entry.Length != fileInfo.Length)
+                {
+                    _usageDocumentCache.Remove(normalizedPath);
+                    return false;
+                }
+            }
+
+            if (!TextContainsIdentifier(entry.Document.Text, identifier))
+                return false;
+
+            lock (_usageDocumentCacheLock)
+            {
+                entry.Touch();
+            }
+
+            document = entry.Document;
+            return true;
+        }
+
+        private static void CacheUsageDocument(string normalizedPath, UsageDocument document, FileInfo fileInfo)
+        {
+            if (document == null || fileInfo.Length > UsageDocumentCacheMaxFileBytes)
+                return;
+
+            lock (_usageDocumentCacheLock)
+            {
+                _usageDocumentCache[normalizedPath] = new UsageDocumentCacheEntry(
+                    document,
+                    fileInfo.LastWriteTimeUtc.Ticks,
+                    fileInfo.Length);
+                TrimUsageDocumentCache();
+            }
+        }
+
+        private static void TrimUsageDocumentCache()
+        {
+            if (_usageDocumentCache.Count <= UsageDocumentCacheLimit)
+                return;
+
+            var keysToRemove = _usageDocumentCache
+                .OrderBy(kvp => kvp.Value.LastAccessUtc)
+                .Take(_usageDocumentCache.Count - UsageDocumentCacheLimit)
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (string key in keysToRemove)
+                _usageDocumentCache.Remove(key);
         }
 
         private static void AddUsageDocument(List<UsageDocument> documents, HashSet<string> seen,
@@ -5897,7 +6072,7 @@ namespace CIARE
 
                 // Search each document's tokens in parallel (Roslyn compilation/model is thread-safe for reads).
                 var rawUsages = new ConcurrentBag<UsageLocation>();
-                Parallel.ForEach(documents, document =>
+                Parallel.ForEach(documents, CreateUsageParallelOptions(), document =>
                 {
                     var semanticModel = compilation.GetSemanticModel(document.SyntaxTree, true);
                     foreach (var token in GetIdentifierTokens(document.Root, identifier))
@@ -5935,7 +6110,7 @@ namespace CIARE
         private static List<UsageLocation> FindSyntaxUsages(string identifier, List<UsageDocument> documents)
         {
             var rawUsages = new ConcurrentBag<UsageLocation>();
-            Parallel.ForEach(documents, document =>
+            Parallel.ForEach(documents, CreateUsageParallelOptions(), document =>
             {
                 foreach (var token in GetIdentifierTokens(document.Root, identifier))
                 {
@@ -6202,9 +6377,12 @@ namespace CIARE
             list.Columns.Add("Column", 70);
             list.Columns.Add("Code", 400);
 
+            string workspaceFolder = GetUsageWorkspaceFolder(GetActiveEditorFilePath());
+            bool hasWorkspaceFolder = Directory.Exists(workspaceFolder);
+            var usageItems = new List<ListViewItem>(Math.Max(1, usages.Count));
             foreach (var usage in usages)
             {
-                var item = new ListViewItem(GetUsageWindowDisplayPath(usage.FilePath))
+                var item = new ListViewItem(GetUsageWindowDisplayPath(usage.FilePath, workspaceFolder, hasWorkspaceFolder))
                 {
                     Tag = usage,
                     ToolTipText = usage.FilePath
@@ -6212,11 +6390,21 @@ namespace CIARE
                 item.SubItems.Add(usage.Line.ToString());
                 item.SubItems.Add(usage.Column.ToString());
                 item.SubItems.Add(usage.Text);
-                list.Items.Add(item);
+                usageItems.Add(item);
             }
 
             if (usages.Count == 0)
-                list.Items.Add(new ListViewItem(new[] { "No usages found.", string.Empty, string.Empty, string.Empty }));
+                usageItems.Add(new ListViewItem(new[] { "No usages found.", string.Empty, string.Empty, string.Empty }));
+
+            list.BeginUpdate();
+            try
+            {
+                list.Items.AddRange(usageItems.ToArray());
+            }
+            finally
+            {
+                list.EndUpdate();
+            }
 
             var footer = new FlowLayoutPanel
             {
@@ -6309,13 +6497,18 @@ namespace CIARE
 
         private string GetUsageWindowDisplayPath(string filePath)
         {
+            string workspaceFolder = GetUsageWorkspaceFolder(GetActiveEditorFilePath());
+            return GetUsageWindowDisplayPath(filePath, workspaceFolder, Directory.Exists(workspaceFolder));
+        }
+
+        private static string GetUsageWindowDisplayPath(string filePath, string workspaceFolder, bool hasWorkspaceFolder)
+        {
             if (string.IsNullOrEmpty(filePath) || string.Equals(filePath, CurrentFileUsageDisplayName, StringComparison.Ordinal))
                 return CurrentFileUsageDisplayName;
 
             try
             {
-                string workspaceFolder = GetUsageWorkspaceFolder(GetActiveEditorFilePath());
-                if (Directory.Exists(workspaceFolder) && IsPathInsideFolder(filePath, workspaceFolder))
+                if (hasWorkspaceFolder && IsPathInsideFolder(filePath, workspaceFolder))
                     return Path.GetRelativePath(workspaceFolder, filePath);
             }
             catch { }
