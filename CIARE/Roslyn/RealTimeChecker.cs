@@ -25,6 +25,7 @@ namespace CIARE.Roslyn
     public static class RealTimeChecker
     {
         private const int DebounceMs = 800;
+        private const int GeneratedXamlSyntaxTreeLimit = 128;
         private static System.Threading.Timer _debounceTimer;
         private static CancellationTokenSource _cts;
         private static readonly object _lock = new object();
@@ -210,6 +211,7 @@ namespace CIARE.Roslyn
                     syntaxTrees.Add(BuildImplicitUsingsSyntaxTree(parseOptions, ct,
                         hasAspNetCoreContext, projectFile));
 
+                syntaxTrees.AddRange(BuildProjectGeneratedXamlSyntaxTrees(projectFile, parseOptions, ct));
                 syntaxTrees.AddRange(BuildWorkspaceSyntaxTrees(workspaceFolder, currentFilePath, projectFile,
                     parseOptions, ct));
             }
@@ -377,6 +379,308 @@ namespace CIARE.Roslyn
             }
 
             return trees;
+        }
+
+        private sealed class GeneratedXamlClassInfo
+        {
+            public bool HasClass { get; set; }
+            public bool HasInitializeComponent { get; set; }
+            public HashSet<string> Fields { get; } = new HashSet<string>(StringComparer.Ordinal);
+        }
+
+        private static List<SyntaxTree> BuildProjectGeneratedXamlSyntaxTrees(string projectFile,
+            CSharpParseOptions parseOptions, CancellationToken ct)
+        {
+            var trees = new List<SyntaxTree>();
+            var generatedClasses = new Dictionary<string, GeneratedXamlClassInfo>(StringComparer.Ordinal);
+            if (string.IsNullOrWhiteSpace(projectFile) || !File.Exists(projectFile))
+                return trees;
+
+            foreach (string filePath in FindProjectGeneratedXamlCodeFiles(projectFile))
+            {
+                if (trees.Count >= GeneratedXamlSyntaxTreeLimit)
+                    break;
+
+                ct.ThrowIfCancellationRequested();
+                try
+                {
+                    var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(filePath), parseOptions,
+                        path: filePath, cancellationToken: ct);
+                    var classNames = GetGeneratedXamlClassNames(tree, ct).ToList();
+                    if (classNames.Count == 0 ||
+                        classNames.Any(className => generatedClasses.ContainsKey(className)))
+                    {
+                        continue;
+                    }
+
+                    trees.Add(tree);
+                    AddGeneratedXamlClassInfo(tree, generatedClasses, ct);
+                }
+                catch
+                {
+                    // Ignore stale or unreadable generated files and use the synthetic XAML fallback below.
+                }
+            }
+
+            foreach (var tree in BuildSyntheticXamlSyntaxTrees(projectFile, generatedClasses, parseOptions, ct))
+                trees.Add(tree);
+
+            return trees;
+        }
+
+        private static IEnumerable<string> FindProjectGeneratedXamlCodeFiles(string projectFile)
+        {
+            string projectDirectory = Path.GetDirectoryName(projectFile);
+            if (string.IsNullOrEmpty(projectDirectory))
+                return Enumerable.Empty<string>();
+
+            string objDirectory = Path.Combine(projectDirectory, "obj");
+            if (!Directory.Exists(objDirectory))
+                return Enumerable.Empty<string>();
+
+            string targetFramework = ReadProjectTargetFramework(projectFile);
+            string configuration = GetActiveBuildConfiguration();
+            try
+            {
+                return Directory.EnumerateFiles(objDirectory, "*.g*.cs", SearchOption.AllDirectories)
+                    .Where(IsXamlGeneratedCodeFile)
+                    .OrderByDescending(path => GetGeneratedXamlFileScore(path, targetFramework, configuration))
+                    .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+            catch
+            {
+                return Enumerable.Empty<string>();
+            }
+        }
+
+        private static bool IsXamlGeneratedCodeFile(string filePath)
+        {
+            string fileName = Path.GetFileName(filePath);
+            if (!fileName.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase) &&
+                !fileName.EndsWith(".g.i.cs", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return !fileName.EndsWith("GlobalUsings.g.cs", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int GetGeneratedXamlFileScore(string filePath, string targetFramework, string configuration)
+        {
+            int score = 0;
+            string[] segments = filePath.Split(new[]
+            {
+                Path.DirectorySeparatorChar,
+                Path.AltDirectorySeparatorChar
+            }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (!string.IsNullOrWhiteSpace(configuration) &&
+                segments.Any(segment => string.Equals(segment, configuration, StringComparison.OrdinalIgnoreCase)))
+            {
+                score += 2;
+            }
+
+            if (!string.IsNullOrWhiteSpace(targetFramework) &&
+                segments.Any(segment => segment.StartsWith(targetFramework, StringComparison.OrdinalIgnoreCase)))
+            {
+                score += 4;
+            }
+
+            if (filePath.EndsWith(".g.i.cs", StringComparison.OrdinalIgnoreCase))
+                score += 1;
+
+            return score;
+        }
+
+        private static IEnumerable<string> GetGeneratedXamlClassNames(SyntaxTree tree, CancellationToken ct)
+        {
+            var root = tree.GetRoot(ct);
+            return root.DescendantNodes()
+                .OfType<ClassDeclarationSyntax>()
+                .Select(GetFullTypeName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToList();
+        }
+
+        private static void AddGeneratedXamlClassInfo(SyntaxTree tree,
+            Dictionary<string, GeneratedXamlClassInfo> generatedClasses, CancellationToken ct)
+        {
+            var root = tree.GetRoot(ct);
+            foreach (var classDeclaration in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
+            {
+                ct.ThrowIfCancellationRequested();
+                string fullName = GetFullTypeName(classDeclaration);
+                if (string.IsNullOrWhiteSpace(fullName))
+                    continue;
+
+                if (!generatedClasses.TryGetValue(fullName, out var info))
+                {
+                    info = new GeneratedXamlClassInfo();
+                    generatedClasses[fullName] = info;
+                }
+
+                info.HasClass = true;
+                foreach (var field in classDeclaration.Members.OfType<FieldDeclarationSyntax>())
+                {
+                    foreach (var variable in field.Declaration.Variables)
+                        info.Fields.Add(variable.Identifier.ValueText);
+                }
+
+                if (classDeclaration.Members.OfType<MethodDeclarationSyntax>()
+                    .Any(method => string.Equals(method.Identifier.ValueText, "InitializeComponent",
+                        StringComparison.Ordinal)))
+                {
+                    info.HasInitializeComponent = true;
+                }
+            }
+        }
+
+        private static string GetFullTypeName(ClassDeclarationSyntax classDeclaration)
+        {
+            var names = new Stack<string>();
+            names.Push(classDeclaration.Identifier.ValueText);
+
+            foreach (var parentClass in classDeclaration.Ancestors().OfType<ClassDeclarationSyntax>())
+                names.Push(parentClass.Identifier.ValueText);
+
+            string namespaceName = classDeclaration.Ancestors()
+                .OfType<BaseNamespaceDeclarationSyntax>()
+                .FirstOrDefault()
+                ?.Name
+                ?.ToString();
+
+            string typeName = string.Join(".", names);
+            return string.IsNullOrWhiteSpace(namespaceName)
+                ? typeName
+                : namespaceName + "." + typeName;
+        }
+
+        private static IEnumerable<SyntaxTree> BuildSyntheticXamlSyntaxTrees(string projectFile,
+            Dictionary<string, GeneratedXamlClassInfo> generatedClasses, CSharpParseOptions parseOptions,
+            CancellationToken ct)
+        {
+            string projectDirectory = Path.GetDirectoryName(projectFile);
+            if (string.IsNullOrEmpty(projectDirectory) || !Directory.Exists(projectDirectory))
+                yield break;
+
+            foreach (string xamlPath in EnumerateProjectXamlFiles(projectDirectory, ct)
+                .Take(GeneratedXamlSyntaxTreeLimit))
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!TryBuildSyntheticXamlCode(xamlPath, generatedClasses, out string generatedCode))
+                    continue;
+
+                string path = "__CIARE_Xaml_" + Path.GetFileNameWithoutExtension(xamlPath) + ".g.cs";
+                yield return CSharpSyntaxTree.ParseText(generatedCode, parseOptions, path: path,
+                    cancellationToken: ct);
+            }
+        }
+
+        private static IEnumerable<string> EnumerateProjectXamlFiles(string projectDirectory, CancellationToken ct)
+        {
+            var pending = new Stack<string>();
+            pending.Push(projectDirectory);
+
+            while (pending.Count > 0)
+            {
+                ct.ThrowIfCancellationRequested();
+                string folder = pending.Pop();
+
+                IEnumerable<string> directories;
+                try { directories = Directory.EnumerateDirectories(folder); }
+                catch { directories = Array.Empty<string>(); }
+
+                foreach (string directory in directories)
+                {
+                    if (!ShouldSkipWorkspaceDirectory(directory) && !DirectoryContainsProjectFile(directory))
+                        pending.Push(directory);
+                }
+
+                IEnumerable<string> files;
+                try { files = Directory.EnumerateFiles(folder, "*.xaml"); }
+                catch { files = Array.Empty<string>(); }
+
+                foreach (string file in files.OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+                    yield return file;
+            }
+        }
+
+        private static bool TryBuildSyntheticXamlCode(string xamlPath,
+            Dictionary<string, GeneratedXamlClassInfo> generatedClasses, out string generatedCode)
+        {
+            generatedCode = string.Empty;
+            try
+            {
+                var document = XDocument.Load(xamlPath);
+                XNamespace xamlNamespace = "http://schemas.microsoft.com/winfx/2006/xaml";
+                string className = document.Root?.Attribute(xamlNamespace + "Class")?.Value?.Trim();
+                if (string.IsNullOrWhiteSpace(className))
+                    return false;
+
+                generatedClasses.TryGetValue(className, out var classInfo);
+                var fields = document.Descendants()
+                    .Skip(1)
+                    .Select(element => element.Attribute(xamlNamespace + "Name")?.Value ??
+                        element.Attribute("Name")?.Value)
+                    .Where(IsValidGeneratedFieldName)
+                    .Distinct(StringComparer.Ordinal)
+                    .Where(name => classInfo == null || !classInfo.Fields.Contains(name))
+                    .ToList();
+
+                bool needsInitializeComponent = classInfo == null || !classInfo.HasInitializeComponent;
+                if (fields.Count == 0 && !needsInitializeComponent)
+                    return false;
+
+                generatedCode = BuildSyntheticXamlPartialClass(className, fields, needsInitializeComponent);
+                return !string.IsNullOrWhiteSpace(generatedCode);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsValidGeneratedFieldName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return false;
+
+            string trimmed = name.Trim();
+            return SyntaxFacts.IsValidIdentifier(trimmed) &&
+                SyntaxFacts.GetKeywordKind(trimmed) == SyntaxKind.None;
+        }
+
+        private static string BuildSyntheticXamlPartialClass(string fullClassName, IEnumerable<string> fields,
+            bool includeInitializeComponent)
+        {
+            int lastDot = fullClassName.LastIndexOf('.');
+            string namespaceName = lastDot > 0 ? fullClassName.Substring(0, lastDot) : string.Empty;
+            string className = lastDot > 0 ? fullClassName.Substring(lastDot + 1) : fullClassName;
+            if (!IsValidGeneratedFieldName(className))
+                return string.Empty;
+
+            var builder = new System.Text.StringBuilder();
+            if (!string.IsNullOrWhiteSpace(namespaceName))
+            {
+                builder.Append("namespace ").Append(namespaceName).AppendLine();
+                builder.AppendLine("{");
+            }
+
+            string indent = string.IsNullOrWhiteSpace(namespaceName) ? string.Empty : "    ";
+            builder.Append(indent).Append("public partial class ").Append(className).AppendLine();
+            builder.Append(indent).AppendLine("{");
+            foreach (string field in fields)
+                builder.Append(indent).Append("    internal dynamic ").Append(field).AppendLine(";");
+
+            if (includeInitializeComponent)
+                builder.Append(indent).AppendLine("    private void InitializeComponent() { }");
+
+            builder.Append(indent).AppendLine("}");
+            if (!string.IsNullOrWhiteSpace(namespaceName))
+                builder.AppendLine("}");
+
+            return builder.ToString();
         }
 
         private static string GetProjectSourceFolder(string workspaceFolder, string projectFile)
@@ -940,9 +1244,6 @@ namespace CIARE.Roslyn
                 frameworkReferences.UnionWith(ReadFrameworkReferencesFromAssets(assetsPath));
             }
 
-            if (!frameworkReferences.Contains("Microsoft.AspNetCore.App"))
-                return new List<string>();
-
             string targetFramework = ReadProjectTargetFramework(projectFile);
             if (string.IsNullOrWhiteSpace(targetFramework))
             {
@@ -958,7 +1259,17 @@ namespace CIARE.Roslyn
             if (string.IsNullOrWhiteSpace(targetFramework))
                 targetFramework = GlobalVariables.Framework;
 
-            return ResolveAspNetCoreReferencePaths(targetFramework)
+            var referencePaths = new List<string>();
+            if (frameworkReferences.Contains("Microsoft.AspNetCore.App"))
+                referencePaths.AddRange(ResolveAspNetCoreReferencePaths(targetFramework));
+
+            if (FrameworkReferencesContainWindowsDesktop(frameworkReferences) ||
+                ProjectFileUsesWindowsDesktop(projectFile))
+            {
+                referencePaths.AddRange(ResolveWindowsDesktopReferencePaths(targetFramework));
+            }
+
+            return referencePaths
                 .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
@@ -982,6 +1293,8 @@ namespace CIARE.Roslyn
                 var document = XDocument.Load(projectFile);
                 if (SdkListContainsAspNetCoreWeb(document.Root?.Attribute("Sdk")?.Value))
                     frameworkReferences.Add("Microsoft.AspNetCore.App");
+                if (ProjectDocumentUsesWindowsDesktop(document))
+                    frameworkReferences.Add("Microsoft.WindowsDesktop.App");
 
                 foreach (var sdkElement in document.Descendants()
                     .Where(element => string.Equals(element.Name.LocalName, "Sdk", StringComparison.Ordinal)))
@@ -989,6 +1302,8 @@ namespace CIARE.Roslyn
                     string sdkName = sdkElement.Attribute("Name")?.Value ?? sdkElement.Attribute("Sdk")?.Value;
                     if (SdkListContainsAspNetCoreWeb(sdkName))
                         frameworkReferences.Add("Microsoft.AspNetCore.App");
+                    if (SdkListContainsWindowsDesktop(sdkName))
+                        frameworkReferences.Add("Microsoft.WindowsDesktop.App");
                 }
 
                 foreach (var frameworkReference in document.Descendants()
@@ -1016,6 +1331,69 @@ namespace CIARE.Roslyn
             return sdkList
                 .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
                 .Any(sdk => sdk.Trim().StartsWith("Microsoft.NET.Sdk.Web",
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool ProjectFileUsesWindowsDesktop(string projectFile)
+        {
+            if (string.IsNullOrWhiteSpace(projectFile) || !File.Exists(projectFile))
+                return false;
+
+            try
+            {
+                return ProjectDocumentUsesWindowsDesktop(XDocument.Load(projectFile));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool ProjectDocumentUsesWindowsDesktop(XDocument document)
+        {
+            if (document == null)
+                return false;
+
+            if (SdkListContainsWindowsDesktop(document.Root?.Attribute("Sdk")?.Value))
+                return true;
+
+            if (ProjectPropertyIsTrue(document, "UseWPF") ||
+                ProjectPropertyIsTrue(document, "UseWindowsForms"))
+            {
+                return true;
+            }
+
+            return document.Descendants()
+                .Where(element => string.Equals(element.Name.LocalName, "FrameworkReference",
+                    StringComparison.Ordinal))
+                .Select(element => element.Attribute("Include")?.Value ?? element.Attribute("Update")?.Value)
+                .Any(reference => !string.IsNullOrWhiteSpace(reference) &&
+                    reference.StartsWith("Microsoft.WindowsDesktop.App", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool ProjectPropertyIsTrue(XDocument document, string propertyName)
+        {
+            return document.Descendants()
+                .Where(element => string.Equals(element.Name.LocalName, propertyName, StringComparison.Ordinal))
+                .Select(element => element.Value?.Trim())
+                .Any(value => string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool SdkListContainsWindowsDesktop(string sdkList)
+        {
+            if (string.IsNullOrWhiteSpace(sdkList))
+                return false;
+
+            return sdkList
+                .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Any(sdk => sdk.Trim().StartsWith("Microsoft.NET.Sdk.WindowsDesktop",
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool FrameworkReferencesContainWindowsDesktop(HashSet<string> frameworkReferences)
+        {
+            return frameworkReferences != null &&
+                frameworkReferences.Any(reference => reference.StartsWith("Microsoft.WindowsDesktop.App",
                     StringComparison.OrdinalIgnoreCase));
         }
 
@@ -1179,6 +1557,55 @@ namespace CIARE.Roslyn
             foreach (string dotnetRoot in GetDotnetRootCandidates())
             {
                 string sharedRoot = Path.Combine(dotnetRoot, "shared", "Microsoft.AspNetCore.App");
+                string sharedVersionDirectory = FindBestFrameworkVersionDirectory(sharedRoot, versionPrefix,
+                    Directory.Exists);
+                if (!string.IsNullOrEmpty(sharedVersionDirectory))
+                {
+                    try
+                    {
+                        return Directory.EnumerateFiles(sharedVersionDirectory, "*.dll").ToList();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            return Enumerable.Empty<string>();
+        }
+
+        private static IEnumerable<string> ResolveWindowsDesktopReferencePaths(string targetFramework)
+        {
+            string refTargetFramework = GetReferenceTargetFramework(targetFramework);
+            if (string.IsNullOrEmpty(refTargetFramework))
+                return Enumerable.Empty<string>();
+
+            string versionPrefix = GetVersionPrefixFromTargetFramework(refTargetFramework);
+            if (string.IsNullOrEmpty(versionPrefix))
+                return Enumerable.Empty<string>();
+
+            foreach (string dotnetRoot in GetDotnetRootCandidates())
+            {
+                string packRoot = Path.Combine(dotnetRoot, "packs", "Microsoft.WindowsDesktop.App.Ref");
+                string packVersionDirectory = FindBestFrameworkVersionDirectory(packRoot, versionPrefix,
+                    versionDirectory => Directory.Exists(Path.Combine(versionDirectory, "ref",
+                        refTargetFramework)));
+                if (!string.IsNullOrEmpty(packVersionDirectory))
+                {
+                    string refDirectory = Path.Combine(packVersionDirectory, "ref", refTargetFramework);
+                    try
+                    {
+                        return Directory.EnumerateFiles(refDirectory, "*.dll").ToList();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            foreach (string dotnetRoot in GetDotnetRootCandidates())
+            {
+                string sharedRoot = Path.Combine(dotnetRoot, "shared", "Microsoft.WindowsDesktop.App");
                 string sharedVersionDirectory = FindBestFrameworkVersionDirectory(sharedRoot, versionPrefix,
                     Directory.Exists);
                 if (!string.IsNullOrEmpty(sharedVersionDirectory))
