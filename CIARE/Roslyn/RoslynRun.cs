@@ -359,11 +359,18 @@ namespace CIARE.Roslyn
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
             runCodePb.Image = Properties.Resources.runButton_gray;
             runCodePb.Enabled = false;
-            CompileAndRun(textEditor.Text, outLogRtb, GlobalVariables.OUnsafeCode);
-            RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
-            runCodePb.Image = Properties.Resources.runButton21;
-            runCodePb.Enabled = true;
-            GC.Collect();
+            try
+            {
+                if (!TryRunActiveProject(outLogRtb))
+                    CompileAndRun(textEditor.Text, outLogRtb, GlobalVariables.OUnsafeCode);
+            }
+            finally
+            {
+                RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
+                runCodePb.Image = Properties.Resources.runButton21;
+                runCodePb.Enabled = true;
+                GC.Collect();
+            }
         }
 
         /// <summary>
@@ -419,6 +426,59 @@ namespace CIARE.Roslyn
             RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
             GC.Collect();
             return true;
+        }
+
+        private static bool TryRunActiveProject(RichTextBox outLogRtb)
+        {
+            string projectPath = string.Empty;
+
+            try
+            {
+                projectPath = MainForm.Instance?.GetActiveRunProjectPath() ?? string.Empty;
+            }
+            catch
+            {
+                projectPath = string.Empty;
+            }
+
+            if (string.IsNullOrEmpty(projectPath))
+                return false;
+
+            RunExistingProject(projectPath, outLogRtb);
+            return true;
+        }
+
+        private static void RunExistingProject(string projectPath, RichTextBox logOutput)
+        {
+            try
+            {
+                if (!File.Exists(projectPath))
+                {
+                    RichExtColor.ErrorDisplay(logOutput, $"ERROR: Project file does not exist -> {projectPath}");
+                    return;
+                }
+
+                string workingDirectory = Path.GetDirectoryName(projectPath);
+                string configuration = ExistingProjectConfiguration();
+                string platform = ExistingProjectPlatformDotnetArgument(projectPath);
+                string arguments = $"run --project {QuoteProcessArgument(projectPath)} --configuration {configuration} {platform}".Trim();
+
+                logOutput.Text = $"Run project ...\n{projectPath}";
+                ProcessRunResult run = RunBuildCommand(
+                    new ProjectBuildCommand("dotnet", arguments, ".NET SDK", false), workingDirectory);
+                string runOutput = FormatBuildOutput(run);
+                if (!run.Success || BuildHasErrors(runOutput))
+                    logOutput.Text = runOutput + $"\nRun completed with errors! (exit code {run.ExitCode})";
+                else
+                    logOutput.Text = runOutput + "\nDone!";
+
+                logOutput.SelectionStart = logOutput.Text.Length;
+                logOutput.ScrollToCaret();
+            }
+            catch (Exception e)
+            {
+                RichExtColor.ErrorDisplay(logOutput, $"ERROR: {e.Message}");
+            }
         }
 
         private static void BuildExistingProject(string projectPath, RichTextBox logOutput, bool publish)

@@ -131,8 +131,11 @@ namespace CIARE
         private ColumnHeader _fileExplorerNuGetUpdateColumn;
         private ColumnHeader _fileExplorerNuGetStatusColumn;
         private ContextMenuStrip _fileExplorerContextMenu;
+        private ToolStripMenuItem _fileExplorerAddProjectMenuItem;
+        private ToolStripMenuItem _fileExplorerSetStartupProjectMenuItem;
         private ToolStripMenuItem _fileExplorerNewFileMenuItem;
         private ToolStripMenuItem _fileExplorerNewFolderMenuItem;
+        private ToolStripSeparator _fileExplorerProjectSeparator;
         private ToolStripSeparator _fileExplorerContextSeparator;
         private ToolStripMenuItem _fileExplorerRenameMenuItem;
         private ToolStripMenuItem _fileExplorerDeleteMenuItem;
@@ -142,6 +145,7 @@ namespace CIARE
         private TreeNode _fileExplorerContextNode;
         private ImageList _fileExplorerImageList;
         private string _fileExplorerRootPath = string.Empty;
+        private string _fileExplorerStartupProjectPath = string.Empty;
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
         private int _fileExplorerNuGetHeight = FileExplorerDefaultNuGetHeight;
         private FileSystemWatcher _fileExplorerWatcher;
@@ -475,6 +479,18 @@ namespace CIARE
             _fileExplorerTree.NodeMouseDoubleClick += fileExplorerTree_NodeMouseDoubleClick;
             _fileExplorerTree.KeyDown += fileExplorerTree_KeyDown;
 
+            _fileExplorerAddProjectMenuItem = new ToolStripMenuItem
+            {
+                Text = "Add New Project..."
+            };
+            _fileExplorerAddProjectMenuItem.Click += fileExplorerAddProjectMenuItem_Click;
+
+            _fileExplorerSetStartupProjectMenuItem = new ToolStripMenuItem
+            {
+                Text = "Set as Startup Project"
+            };
+            _fileExplorerSetStartupProjectMenuItem.Click += fileExplorerSetStartupProjectMenuItem_Click;
+
             _fileExplorerNewFileMenuItem = new ToolStripMenuItem
             {
                 Text = "New C# File..."
@@ -501,6 +517,10 @@ namespace CIARE
 
             _fileExplorerContextMenu = new ContextMenuStrip(components);
             _fileExplorerContextMenu.Opening += fileExplorerContextMenu_Opening;
+            _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectMenuItem);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerSetStartupProjectMenuItem);
+            _fileExplorerProjectSeparator = new ToolStripSeparator();
+            _fileExplorerContextMenu.Items.Add(_fileExplorerProjectSeparator);
             _fileExplorerContextMenu.Items.Add(_fileExplorerNewFileMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerNewFolderMenuItem);
             _fileExplorerContextSeparator = new ToolStripSeparator();
@@ -640,6 +660,10 @@ namespace CIARE
 
             _fileExplorerImageList.Images.Add("folder", DrawFolderIcon(false));
             _fileExplorerImageList.Images.Add("folder-open", DrawFolderIcon(true));
+            _fileExplorerImageList.Images.Add("folder-project", DrawSpecialFolderIcon(false, Color.FromArgb(110, 89, 191), "P"));
+            _fileExplorerImageList.Images.Add("folder-project-open", DrawSpecialFolderIcon(true, Color.FromArgb(110, 89, 191), "P"));
+            _fileExplorerImageList.Images.Add("folder-solution", DrawSpecialFolderIcon(false, Color.FromArgb(45, 136, 199), "S"));
+            _fileExplorerImageList.Images.Add("folder-solution-open", DrawSpecialFolderIcon(true, Color.FromArgb(45, 136, 199), "S"));
             _fileExplorerImageList.Images.Add("file", DrawFileIcon(Color.FromArgb(128, 128, 128), false));
             _fileExplorerImageList.Images.Add("cs", DrawFileIcon(Color.FromArgb(72, 133, 237), true));
             _fileExplorerImageList.Images.Add("project", DrawFileIcon(Color.FromArgb(110, 89, 191), false));
@@ -661,6 +685,20 @@ namespace CIARE
                 g.FillRectangle(body, 1, 5, 14, 9);
                 g.DrawRectangle(outline, 1, 5, 13, 8);
             }
+            return bitmap;
+        }
+
+        private static Bitmap DrawSpecialFolderIcon(bool open, Color accent, string label)
+        {
+            Bitmap bitmap = DrawFolderIcon(open);
+            using (var g = Graphics.FromImage(bitmap))
+            using (var accentBrush = new SolidBrush(accent))
+            using (var font = new Font("Segoe UI", 5.5F, FontStyle.Bold, GraphicsUnit.Point))
+            {
+                g.FillRectangle(accentBrush, 8, 8, 7, 6);
+                g.DrawString(label, font, Brushes.White, new PointF(8.2F, 6.9F));
+            }
+
             return bitmap;
         }
 
@@ -1443,6 +1481,12 @@ namespace CIARE
                 return;
 
             _fileExplorerRootPath = folderPath;
+            if (!IsProjectFilePath(_fileExplorerStartupProjectPath) ||
+                !IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
+            {
+                _fileExplorerStartupProjectPath = string.Empty;
+            }
+
             InvalidateCompletionWorkspace();
             Interlocked.Increment(ref _projectPackageRefreshVersion);
             ClearProjectPackageCompletionReferences();
@@ -1654,13 +1698,16 @@ namespace CIARE
         private TreeNode CreateDirectoryNode(DirectoryInfo directory)
         {
             string text = string.IsNullOrEmpty(directory.Name) ? directory.FullName : directory.Name;
+            string imageKey = GetDirectoryImageKey(directory.FullName, open: false);
+            string selectedImageKey = GetDirectoryImageKey(directory.FullName, open: true);
             var node = new TreeNode(text)
             {
                 Tag = directory.FullName,
-                ImageKey = "folder",
-                SelectedImageKey = "folder-open",
+                ImageKey = imageKey,
+                SelectedImageKey = selectedImageKey,
                 ToolTipText = directory.FullName
             };
+            ApplyStartupProjectNodeStyle(node);
             node.Nodes.Add(new TreeNode("Loading...") { Tag = FileExplorerLoadingTag });
             return node;
         }
@@ -1668,13 +1715,26 @@ namespace CIARE
         private TreeNode CreateFileNode(FileInfo file)
         {
             string imageKey = GetFileExplorerImageKey(file.FullName);
-            return new TreeNode(file.Name)
+            var node = new TreeNode(file.Name)
             {
                 Tag = file.FullName,
                 ImageKey = imageKey,
                 SelectedImageKey = imageKey,
                 ToolTipText = file.FullName
             };
+            ApplyStartupProjectNodeStyle(node);
+            return node;
+        }
+
+        private static string GetDirectoryImageKey(string folderPath, bool open)
+        {
+            if (DirectoryContainsSolutionFile(folderPath))
+                return open ? "folder-solution-open" : "folder-solution";
+
+            if (DirectoryContainsProjectFile(folderPath))
+                return open ? "folder-project-open" : "folder-project";
+
+            return open ? "folder-open" : "folder";
         }
 
         private static string GetFileExplorerImageKey(string filePath)
@@ -2361,6 +2421,17 @@ namespace CIARE
                 return;
             }
 
+            string solutionPath = GetSolutionPathFromExplorerPath(path);
+            string projectPath = GetProjectPathFromExplorerPath(path);
+            bool hasSolutionContext = !string.IsNullOrEmpty(solutionPath);
+            bool hasProjectContext = !string.IsNullOrEmpty(projectPath);
+
+            _fileExplorerAddProjectMenuItem.Visible = hasSolutionContext;
+            _fileExplorerSetStartupProjectMenuItem.Visible = hasProjectContext;
+            _fileExplorerSetStartupProjectMenuItem.Enabled = hasProjectContext;
+            _fileExplorerSetStartupProjectMenuItem.Checked = hasProjectContext &&
+                IsStartupProjectPath(projectPath);
+            _fileExplorerProjectSeparator.Visible = hasSolutionContext || hasProjectContext;
             _fileExplorerNewFileMenuItem.Visible = isDirectory;
             _fileExplorerNewFolderMenuItem.Visible = isDirectory;
             _fileExplorerContextSeparator.Visible = isDirectory;
@@ -2368,6 +2439,54 @@ namespace CIARE
             _fileExplorerRenameMenuItem.Enabled = !IsExplorerRootPath(path);
             _fileExplorerDeleteMenuItem.Visible = isDirectory || isFile;
             _fileExplorerDeleteMenuItem.Enabled = !IsExplorerRootPath(path);
+        }
+
+        private void fileExplorerAddProjectMenuItem_Click(object sender, EventArgs e)
+        {
+            string solutionPath = GetSolutionPathFromExplorerPath(
+                (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string);
+            if (string.IsNullOrEmpty(solutionPath))
+                return;
+
+            using (var dialog = new NewProject(solutionPath))
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return;
+
+                NewProjectResult project = dialog.CreatedProject;
+                if (project == null)
+                    return;
+
+                string solutionDirectory = Path.GetDirectoryName(solutionPath);
+                string projectDirectory = Path.GetDirectoryName(project.ProjectFilePath);
+                if (!string.IsNullOrEmpty(solutionDirectory))
+                    RefreshAndExpandExplorerFolder(solutionDirectory);
+                if (!string.IsNullOrEmpty(projectDirectory))
+                    RefreshAndExpandExplorerFolder(projectDirectory);
+
+                SelectExplorerPath(project.ProjectFilePath);
+                if (File.Exists(project.StarterFilePath))
+                    OpenFileFromExplorer(project.StarterFilePath);
+
+                InvalidateCompletionWorkspace();
+                RealTimeChecker.InvalidateReferenceCache();
+                RefreshProjectPackageContext(project.ProjectFilePath, restoreProject: true,
+                    showRestoreFailure: false);
+                ShowProjectStatus("Added project to solution", project.ProjectFilePath, solutionPath);
+            }
+        }
+
+        private void fileExplorerSetStartupProjectMenuItem_Click(object sender, EventArgs e)
+        {
+            string projectPath = GetProjectPathFromExplorerPath(
+                (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string);
+            if (!IsProjectFilePath(projectPath))
+                return;
+
+            _fileExplorerStartupProjectPath = projectPath;
+            UpdateFileExplorerStartupProjectHighlight();
+            ShowProjectStatus("Startup project set", projectPath, FindNearestBuildFile(
+                Path.GetDirectoryName(projectPath), _fileExplorerRootPath, "*.sln"));
         }
 
         private void fileExplorerNewFileMenuItem_Click(object sender, EventArgs e)
@@ -2487,11 +2606,13 @@ namespace CIARE
             try
             {
                 MoveExplorerItem(path, newPath, isDirectory);
+                UpdateStartupProjectAfterExplorerRename(path, newPath, isDirectory);
                 UpdateProjectReferencesAfterExplorerRename(path, newPath, isDirectory);
                 UpdateOpenTabsAfterExplorerRename(path, newPath, isDirectory);
 
                 RefreshAndExpandExplorerFolder(parentPath);
                 SelectExplorerPath(newPath);
+                UpdateFileExplorerStartupProjectHighlight();
 
                 InvalidateCompletionWorkspace();
                 RealTimeChecker.InvalidateReferenceCache();
@@ -2545,8 +2666,10 @@ namespace CIARE
                         VBRecycleOption.SendToRecycleBin);
                 }
 
+                ClearStartupProjectAfterExplorerDelete(path, isDirectory);
                 if (!string.IsNullOrEmpty(parentPath))
                     RefreshExplorerNodeForPath(parentPath);
+                UpdateFileExplorerStartupProjectHighlight();
                 RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
                     showRestoreFailure: false);
             }
@@ -3191,6 +3314,12 @@ namespace CIARE
 
             if (Directory.Exists(_fileExplorerRootPath))
             {
+                if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
+                    IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
+                {
+                    return _fileExplorerStartupProjectPath;
+                }
+
                 string activeFilePath = File.Exists(filePath) &&
                     IsPathInsideFolder(filePath, _fileExplorerRootPath)
                     ? filePath
@@ -3202,6 +3331,33 @@ namespace CIARE
             }
 
             return string.Empty;
+        }
+
+        public string GetActiveRunProjectPath()
+        {
+            if (!Directory.Exists(_fileExplorerRootPath))
+                return string.Empty;
+
+            if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
+                IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
+            {
+                return _fileExplorerStartupProjectPath;
+            }
+
+            string activeProject = FindProjectFileForPath(GetActiveEditorFilePath(), _fileExplorerRootPath);
+            if (!string.IsNullOrEmpty(activeProject))
+                return activeProject;
+
+            string selectedPath = _fileExplorerTree?.SelectedNode?.Tag as string;
+            string selectedProject = FindProjectFileForPath(selectedPath, _fileExplorerRootPath);
+            if (!string.IsNullOrEmpty(selectedProject))
+                return selectedProject;
+
+            string rootProject = FindTopLevelBuildFile(_fileExplorerRootPath, "*.csproj");
+            if (!string.IsNullOrEmpty(rootProject))
+                return rootProject;
+
+            return FindSingleRecursiveBuildFile(_fileExplorerRootPath, "*.csproj");
         }
 
         public string GetActivePackageProjectPath()
@@ -3254,6 +3410,35 @@ namespace CIARE
             return !string.IsNullOrWhiteSpace(filePath) &&
                 File.Exists(filePath) &&
                 string.Equals(Path.GetExtension(filePath), ".csproj", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsSolutionFilePath(string filePath)
+        {
+            return !string.IsNullOrWhiteSpace(filePath) &&
+                File.Exists(filePath) &&
+                string.Equals(Path.GetExtension(filePath), ".sln", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string GetProjectPathFromExplorerPath(string path)
+        {
+            if (IsProjectFilePath(path))
+                return path;
+
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+                return string.Empty;
+
+            return FindTopLevelBuildFile(path, "*.csproj");
+        }
+
+        private static string GetSolutionPathFromExplorerPath(string path)
+        {
+            if (IsSolutionFilePath(path))
+                return path;
+
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+                return string.Empty;
+
+            return FindTopLevelBuildFile(path, "*.sln");
         }
 
         private static string FindProjectFileForPath(string path, string workspaceFolder)
@@ -3461,6 +3646,111 @@ namespace CIARE
             }
         }
 
+        private bool IsStartupProjectPath(string projectPath)
+        {
+            return IsProjectFilePath(projectPath) &&
+                IsProjectFilePath(_fileExplorerStartupProjectPath) &&
+                string.Equals(NormalizeCompletionPath(projectPath),
+                    NormalizeCompletionPath(_fileExplorerStartupProjectPath),
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool IsStartupProjectNode(TreeNode node)
+        {
+            string path = node?.Tag as string;
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            string projectPath = GetProjectPathFromExplorerPath(path);
+            return IsStartupProjectPath(projectPath);
+        }
+
+        private void ApplyStartupProjectNodeStyle(TreeNode node)
+        {
+            if (node == null)
+                return;
+
+            if (IsStartupProjectNode(node))
+            {
+                node.BackColor = GlobalVariables.darkColor
+                    ? Color.FromArgb(70, 72, 38)
+                    : Color.FromArgb(255, 245, 189);
+                node.ForeColor = GlobalVariables.darkColor
+                    ? Color.FromArgb(255, 235, 150)
+                    : Color.FromArgb(80, 63, 0);
+                if (!node.ToolTipText.EndsWith("Startup project", StringComparison.Ordinal))
+                    node.ToolTipText = node.ToolTipText + Environment.NewLine + "Startup project";
+            }
+            else
+            {
+                node.BackColor = Color.Empty;
+                node.ForeColor = Color.Empty;
+                string marker = Environment.NewLine + "Startup project";
+                if (!string.IsNullOrEmpty(node.ToolTipText) &&
+                    node.ToolTipText.EndsWith(marker, StringComparison.Ordinal))
+                {
+                    node.ToolTipText = node.ToolTipText.Substring(0, node.ToolTipText.Length - marker.Length);
+                }
+            }
+        }
+
+        private void UpdateFileExplorerStartupProjectHighlight()
+        {
+            if (_fileExplorerTree == null || _fileExplorerTree.IsDisposed)
+                return;
+
+            _fileExplorerTree.BeginUpdate();
+            try
+            {
+                foreach (TreeNode node in _fileExplorerTree.Nodes)
+                    ApplyStartupProjectNodeStyleRecursive(node);
+            }
+            finally
+            {
+                _fileExplorerTree.EndUpdate();
+            }
+        }
+
+        private void ApplyStartupProjectNodeStyleRecursive(TreeNode node)
+        {
+            ApplyStartupProjectNodeStyle(node);
+            foreach (TreeNode child in node.Nodes)
+                ApplyStartupProjectNodeStyleRecursive(child);
+        }
+
+        private void UpdateStartupProjectAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(_fileExplorerStartupProjectPath) ||
+                !string.Equals(Path.GetExtension(_fileExplorerStartupProjectPath), ".csproj",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            string renamedStartupProject = GetRenamedExplorerPath(_fileExplorerStartupProjectPath, oldPath, newPath,
+                renamedDirectory);
+            if (!string.IsNullOrEmpty(renamedStartupProject))
+                _fileExplorerStartupProjectPath = renamedStartupProject;
+        }
+
+        private void ClearStartupProjectAfterExplorerDelete(string deletedPath, bool deletedDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(_fileExplorerStartupProjectPath) ||
+                !string.Equals(Path.GetExtension(_fileExplorerStartupProjectPath), ".csproj",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            bool deletedStartupProject = deletedDirectory
+                ? IsSameOrChildDirectory(_fileExplorerStartupProjectPath, deletedPath)
+                : string.Equals(NormalizeCompletionPath(_fileExplorerStartupProjectPath),
+                    NormalizeCompletionPath(deletedPath), StringComparison.OrdinalIgnoreCase);
+
+            if (deletedStartupProject)
+                _fileExplorerStartupProjectPath = string.Empty;
+        }
+
         private void ApplyFileExplorerTheme(string highlight = null)
         {
             if (_fileExplorerPanel == null)
@@ -3497,6 +3787,7 @@ namespace CIARE
             ApplyFileExplorerButtonTheme(_fileExplorerOpenFolderButton, buttonBackColor, foreColor, borderColor);
             ApplyFileExplorerButtonTheme(_fileExplorerHideButton, buttonBackColor, foreColor, borderColor);
             ApplyFileExplorerButtonTheme(_fileExplorerShowButton, buttonBackColor, foreColor, borderColor);
+            UpdateFileExplorerStartupProjectHighlight();
         }
 
         private static void ApplyFileExplorerButtonTheme(Button button, Color backColor, Color foreColor, Color borderColor)
@@ -7664,6 +7955,18 @@ namespace CIARE
             try
             {
                 return Directory.EnumerateFiles(folder, "*.csproj", SearchOption.TopDirectoryOnly).Any();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool DirectoryContainsSolutionFile(string folder)
+        {
+            try
+            {
+                return Directory.EnumerateFiles(folder, "*.sln", SearchOption.TopDirectoryOnly).Any();
             }
             catch
             {

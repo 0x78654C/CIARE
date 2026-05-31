@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Utils;
@@ -37,6 +38,7 @@ namespace CIARE
         private readonly Button _createButton = new Button();
         private readonly Button _cancelButton = new Button();
         private readonly Button _browseButton = new Button();
+        private readonly string _existingSolutionPath;
         private bool _syncingSolutionName;
         private bool _syncingTargetFramework;
         private string _lastProjectName = "NewApp";
@@ -46,6 +48,12 @@ namespace CIARE
 
         public NewProject()
         {
+            InitializeDialog();
+        }
+
+        public NewProject(string existingSolutionPath)
+        {
+            _existingSolutionPath = existingSolutionPath;
             InitializeDialog();
         }
 
@@ -203,7 +211,26 @@ namespace CIARE
             CancelButton = _cancelButton;
 
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
+            ConfigureExistingSolutionMode();
             UpdateTemplateSelection();
+        }
+
+        private void ConfigureExistingSolutionMode()
+        {
+            if (!IsAddingToExistingSolution)
+                return;
+
+            string solutionDirectory = Path.GetDirectoryName(_existingSolutionPath);
+            Text = "Add New Project";
+            _createButton.Text = "Add";
+            _locationText.Text = solutionDirectory ?? string.Empty;
+            _locationText.ReadOnly = true;
+            _browseButton.Enabled = false;
+            _solutionNameText.Text = Path.GetFileNameWithoutExtension(_existingSolutionPath);
+            _solutionNameText.ReadOnly = true;
+            _createSolutionCheckBox.Checked = true;
+            _createSolutionCheckBox.Enabled = false;
+            _createSolutionCheckBox.Text = "Add to existing solution (.sln)";
         }
 
         private static void AddOptionRow(TableLayoutPanel layout, int row, string labelText, Control control)
@@ -298,6 +325,11 @@ namespace CIARE
         private ProjectTemplate SelectedTemplate =>
             _templateList.SelectedItem as ProjectTemplate ?? ProjectTemplate.All[0];
 
+        private bool IsAddingToExistingSolution =>
+            !string.IsNullOrWhiteSpace(_existingSolutionPath) &&
+            File.Exists(_existingSolutionPath) &&
+            string.Equals(Path.GetExtension(_existingSolutionPath), ".sln", StringComparison.OrdinalIgnoreCase);
+
         private void CreateButton_Click(object sender, EventArgs e)
         {
             try
@@ -315,7 +347,9 @@ namespace CIARE
         private NewProjectResult CreateProject()
         {
             string projectName = ValidateFileName(_projectNameText.Text, "project name");
-            string solutionName = _createSolutionCheckBox.Checked
+            bool addToExistingSolution = IsAddingToExistingSolution;
+            bool createNewSolution = !addToExistingSolution && _createSolutionCheckBox.Checked;
+            string solutionName = createNewSolution
                 ? ValidateFileName(
                     string.IsNullOrWhiteSpace(_solutionNameText.Text) ? projectName : _solutionNameText.Text,
                     "solution name")
@@ -325,12 +359,32 @@ namespace CIARE
                 throw new InvalidOperationException("Select a project location.");
 
             location = Path.GetFullPath(location);
-            string projectDirectory = Path.Combine(location, projectName);
+            string solutionDirectory = addToExistingSolution
+                ? Path.GetDirectoryName(Path.GetFullPath(_existingSolutionPath))
+                : createNewSolution
+                    ? Path.Combine(location, solutionName)
+                    : string.Empty;
+            if ((addToExistingSolution || createNewSolution) && string.IsNullOrWhiteSpace(solutionDirectory))
+                throw new InvalidOperationException("The solution directory was not found.");
+
+            string projectParentDirectory = addToExistingSolution || createNewSolution
+                ? solutionDirectory
+                : location;
+            string projectDirectory = Path.Combine(projectParentDirectory, projectName);
             string projectPath = Path.Combine(projectDirectory, projectName + ".csproj");
             string starterPath = Path.Combine(projectDirectory, SelectedTemplate.StarterFileName);
-            string solutionPath = _createSolutionCheckBox.Checked
-                ? Path.Combine(projectDirectory, solutionName + ".sln")
-                : string.Empty;
+            string solutionPath = addToExistingSolution
+                ? Path.GetFullPath(_existingSolutionPath)
+                : createNewSolution
+                    ? Path.Combine(solutionDirectory, solutionName + ".sln")
+                    : string.Empty;
+
+            if (createNewSolution &&
+                Directory.Exists(solutionDirectory) &&
+                Directory.EnumerateFileSystemEntries(solutionDirectory).Any())
+            {
+                throw new InvalidOperationException("The solution folder already exists and is not empty.");
+            }
 
             if (Directory.Exists(projectDirectory) &&
                 Directory.EnumerateFileSystemEntries(projectDirectory).Any())
@@ -338,7 +392,7 @@ namespace CIARE
                 throw new InvalidOperationException("The project folder already exists and is not empty.");
             }
 
-            if (!string.IsNullOrEmpty(solutionPath) && File.Exists(solutionPath))
+            if (createNewSolution && File.Exists(solutionPath))
                 throw new InvalidOperationException("A solution file with that name already exists.");
 
             Directory.CreateDirectory(projectDirectory);
@@ -353,13 +407,15 @@ namespace CIARE
             File.WriteAllText(projectPath, SelectedTemplate.BuildProjectFile(targetFramework), Encoding.UTF8);
             File.WriteAllText(starterPath, SelectedTemplate.BuildStarterFile(projectName, rootNamespace), Encoding.UTF8);
 
-            if (!string.IsNullOrEmpty(solutionPath))
-                File.WriteAllText(solutionPath, BuildSolutionFile(projectName, projectPath, projectDirectory),
+            if (addToExistingSolution)
+                AddProjectToSolution(solutionPath, projectName, projectPath);
+            else if (createNewSolution)
+                File.WriteAllText(solutionPath, BuildSolutionFile(projectName, projectPath, solutionDirectory),
                     Encoding.UTF8);
 
             return new NewProjectResult
             {
-                WorkspacePath = projectDirectory,
+                WorkspacePath = addToExistingSolution || createNewSolution ? solutionDirectory : projectDirectory,
                 ProjectFilePath = projectPath,
                 SolutionFilePath = solutionPath,
                 StarterFilePath = starterPath
@@ -527,6 +583,240 @@ namespace CIARE
             return builder.ToString();
         }
 
+        public static void AddProjectToSolution(string solutionPath, string projectName, string projectPath)
+        {
+            if (string.IsNullOrWhiteSpace(solutionPath) || !File.Exists(solutionPath))
+                throw new InvalidOperationException("The solution file was not found.");
+            if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
+                throw new InvalidOperationException("The project file was not found.");
+
+            string solutionDirectory = Path.GetDirectoryName(solutionPath);
+            if (string.IsNullOrWhiteSpace(solutionDirectory))
+                throw new InvalidOperationException("The solution directory was not found.");
+
+            string solutionContent = File.ReadAllText(solutionPath);
+            string newLine = solutionContent.Contains("\r\n") ? "\r\n" : Environment.NewLine;
+            var lines = solutionContent
+                .Replace("\r\n", "\n")
+                .Replace('\r', '\n')
+                .Split('\n')
+                .ToList();
+
+            while (lines.Count > 0 && lines[lines.Count - 1].Length == 0)
+                lines.RemoveAt(lines.Count - 1);
+
+            if (SolutionContainsProject(lines, solutionDirectory, projectPath))
+                throw new InvalidOperationException("The project is already included in the solution.");
+
+            int globalIndex = FindGlobalLineIndex(lines);
+            if (globalIndex < 0)
+            {
+                lines.Add("Global");
+                lines.Add("EndGlobal");
+                globalIndex = lines.Count - 2;
+            }
+
+            string projectGuid = "{" + Guid.NewGuid().ToString().ToUpperInvariant() + "}";
+            string relativeProjectPath = Path.GetRelativePath(solutionDirectory, projectPath)
+                .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+
+            lines.InsertRange(globalIndex, new[]
+            {
+                $"Project(\"{CSharpProjectTypeGuid}\") = \"{projectName}\", \"{relativeProjectPath}\", \"{projectGuid}\"",
+                "EndProject"
+            });
+
+            var configurationPlatforms = ReadSolutionConfigurationPlatforms(lines).ToList();
+            if (configurationPlatforms.Count == 0)
+            {
+                configurationPlatforms = GetDefaultSolutionConfigurationPlatforms().ToList();
+                InsertSolutionConfigurationPlatforms(lines, configurationPlatforms);
+            }
+
+            InsertProjectConfigurationPlatforms(lines, projectGuid, configurationPlatforms);
+            File.WriteAllText(solutionPath, string.Join(newLine, lines) + newLine, Encoding.UTF8);
+        }
+
+        private static bool SolutionContainsProject(IEnumerable<string> lines, string solutionDirectory,
+            string projectPath)
+        {
+            string normalizedProjectPath = NormalizeSolutionPath(projectPath);
+            foreach (string line in lines)
+            {
+                Match match = Regex.Match(line,
+                    @"Project\(""\{[^}]+\}""\)\s*=\s*""[^""]+"",\s*""([^""]+\.csproj)""",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                if (!match.Success)
+                    continue;
+
+                string existingProjectPath = match.Groups[1].Value;
+                if (!Path.IsPathRooted(existingProjectPath))
+                    existingProjectPath = Path.GetFullPath(Path.Combine(solutionDirectory, existingProjectPath));
+
+                if (string.Equals(NormalizeSolutionPath(existingProjectPath), normalizedProjectPath,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static IEnumerable<string> GetDefaultSolutionConfigurationPlatforms()
+        {
+            foreach (string configuration in SolutionConfigurations)
+            {
+                foreach (string platform in SolutionPlatforms)
+                    yield return $"{configuration}|{platform}";
+            }
+        }
+
+        private static IEnumerable<string> ReadSolutionConfigurationPlatforms(List<string> lines)
+        {
+            int sectionIndex = FindGlobalSectionIndex(lines, "SolutionConfigurationPlatforms");
+            if (sectionIndex < 0)
+                yield break;
+
+            int endIndex = FindEndGlobalSectionIndex(lines, sectionIndex);
+            if (endIndex < 0)
+                yield break;
+
+            for (int i = sectionIndex + 1; i < endIndex; i++)
+            {
+                string line = lines[i].Trim();
+                int equalsIndex = line.IndexOf('=');
+                string configurationPlatform = (equalsIndex >= 0 ? line.Substring(0, equalsIndex) : line).Trim();
+                if (configurationPlatform.Contains("|"))
+                    yield return configurationPlatform;
+            }
+        }
+
+        private static void InsertSolutionConfigurationPlatforms(List<string> lines,
+            IEnumerable<string> configurationPlatforms)
+        {
+            int globalIndex = FindGlobalLineIndex(lines);
+            int insertIndex = globalIndex >= 0 ? globalIndex + 1 : lines.Count;
+            var sectionLines = new List<string> { "\tGlobalSection(SolutionConfigurationPlatforms) = preSolution" };
+            foreach (string configurationPlatform in configurationPlatforms)
+                sectionLines.Add($"\t\t{configurationPlatform} = {configurationPlatform}");
+            sectionLines.Add("\tEndGlobalSection");
+            lines.InsertRange(insertIndex, sectionLines);
+        }
+
+        private static void InsertProjectConfigurationPlatforms(List<string> lines, string projectGuid,
+            IEnumerable<string> configurationPlatforms)
+        {
+            var entries = new List<string>();
+            foreach (string configurationPlatform in configurationPlatforms.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                string projectConfigurationPlatform = GetProjectConfigurationPlatform(configurationPlatform);
+                entries.Add($"\t\t{projectGuid}.{configurationPlatform}.ActiveCfg = {projectConfigurationPlatform}");
+                entries.Add($"\t\t{projectGuid}.{configurationPlatform}.Build.0 = {projectConfigurationPlatform}");
+            }
+
+            int sectionIndex = FindGlobalSectionIndex(lines, "ProjectConfigurationPlatforms");
+            if (sectionIndex >= 0)
+            {
+                int endIndex = FindEndGlobalSectionIndex(lines, sectionIndex);
+                if (endIndex >= 0)
+                {
+                    lines.InsertRange(endIndex, entries);
+                    return;
+                }
+            }
+
+            int solutionConfigurationIndex = FindGlobalSectionIndex(lines, "SolutionConfigurationPlatforms");
+            int insertIndex = FindEndGlobalLineIndex(lines);
+            if (solutionConfigurationIndex >= 0)
+            {
+                int solutionConfigurationEndIndex = FindEndGlobalSectionIndex(lines, solutionConfigurationIndex);
+                if (solutionConfigurationEndIndex >= 0)
+                    insertIndex = solutionConfigurationEndIndex + 1;
+            }
+
+            var sectionLines = new List<string> { "\tGlobalSection(ProjectConfigurationPlatforms) = postSolution" };
+            sectionLines.AddRange(entries);
+            sectionLines.Add("\tEndGlobalSection");
+            lines.InsertRange(insertIndex, sectionLines);
+        }
+
+        private static string GetProjectConfigurationPlatform(string solutionConfigurationPlatform)
+        {
+            int separatorIndex = solutionConfigurationPlatform.IndexOf('|');
+            if (separatorIndex <= 0 || separatorIndex >= solutionConfigurationPlatform.Length - 1)
+                return solutionConfigurationPlatform;
+
+            string configuration = solutionConfigurationPlatform.Substring(0, separatorIndex).Trim();
+            string platform = solutionConfigurationPlatform.Substring(separatorIndex + 1).Trim();
+            if (string.Equals(platform, "Any CPU", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(platform, "x64", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(platform, "x86", StringComparison.OrdinalIgnoreCase))
+            {
+                return configuration + "|" + platform;
+            }
+
+            return configuration + "|Any CPU";
+        }
+
+        private static int FindGlobalLineIndex(List<string> lines)
+        {
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (string.Equals(lines[i].Trim(), "Global", StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private static int FindEndGlobalLineIndex(List<string> lines)
+        {
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (string.Equals(lines[i].Trim(), "EndGlobal", StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+
+            return lines.Count;
+        }
+
+        private static int FindGlobalSectionIndex(List<string> lines, string sectionName)
+        {
+            string prefix = "GlobalSection(" + sectionName + ")";
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (lines[i].TrimStart().StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private static int FindEndGlobalSectionIndex(List<string> lines, int sectionIndex)
+        {
+            for (int i = sectionIndex + 1; i < lines.Count; i++)
+            {
+                if (string.Equals(lines[i].Trim(), "EndGlobalSection", StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private static string NormalizeSolutionPath(string path)
+        {
+            try
+            {
+                return Path.GetFullPath(path)
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            catch
+            {
+                return path ?? string.Empty;
+            }
+        }
+
         private static string BuildSdkProjectFile(string targetFramework, string outputType = null, bool useWindowsForms = false)
         {
             var builder = new StringBuilder();
@@ -539,6 +829,7 @@ namespace CIARE
                 builder.AppendLine("    <UseWindowsForms>true</UseWindowsForms>");
             builder.AppendLine("    <ImplicitUsings>enable</ImplicitUsings>");
             builder.AppendLine("    <Nullable>enable</Nullable>");
+            builder.AppendLine("    <DefaultItemExcludes>$(DefaultItemExcludes);**\\bin\\**;**\\obj\\**</DefaultItemExcludes>");
             builder.AppendLine("    <Platforms>Any CPU;x64;x86</Platforms>");
             builder.AppendLine("  </PropertyGroup>");
             builder.AppendLine("  <PropertyGroup Condition=\"'$(Platform)' == 'x64'\">");
