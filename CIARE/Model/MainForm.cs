@@ -150,6 +150,8 @@ namespace CIARE
         private bool _fileExplorerWidthDragInProgress;
         private bool _fileExplorerNuGetHeightDragInProgress;
         private bool _refreshingEditorLayoutBounds;
+        private bool _pendingEditorLayoutRefresh;
+        private System.Windows.Forms.Timer _editorLayoutRefreshTimer;
         private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const int WorkspaceCompletionMethodLimit = 300;
         private const int RoslynCompletionSourceFileLimit = 300;
@@ -180,6 +182,7 @@ namespace CIARE
         private static List<MetadataReference> _usagePlatformReferences;
         private static List<MetadataReference> _usageCustomReferences = new List<MetadataReference>();
         private static string _usageCustomReferenceKey = string.Empty;
+        private bool _completionRegistryInitialized;
         private static readonly PropertyInfo DoubleBufferedProperty =
             typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -275,7 +278,7 @@ namespace CIARE
             _editorExplorerSplitContainer.Panel2.Padding = Padding.Empty;
             _editorExplorerSplitContainer.Panel1.BackColor = GetEditorSurfaceBackColor();
             _editorExplorerSplitContainer.Panel2.BackColor = GetEditorSurfaceBackColor();
-            _editorExplorerSplitContainer.Panel1.Resize += (sender, args) => RefreshEditorLayoutBounds();
+            _editorExplorerSplitContainer.Panel1.Resize += (sender, args) => QueueEditorLayoutRefresh();
             _editorExplorerSplitContainer.SizeChanged += (sender, args) =>
             {
                 OnFileExplorerLayoutContainerSizeChanged();
@@ -293,7 +296,7 @@ namespace CIARE
                     QueueFileExplorerWidthSave();
                 }
 
-                RefreshEditorLayoutBounds();
+                QueueEditorLayoutRefresh();
             };
             _editorExplorerSplitContainer.MouseUp += (sender, args) =>
             {
@@ -476,7 +479,7 @@ namespace CIARE
             _fileExplorerPanel.Controls.Add(_fileExplorerContentSplitContainer);
             _fileExplorerPanel.Controls.Add(_fileExplorerHeader);
 
-            ConfigureEditorTabControlLayout();
+            ConfigureEditorTabControlLayout(configureAllTabs: true);
 
             _editorExplorerSplitContainer.Panel1.Controls.Add(EditorTabControl);
             _editorExplorerSplitContainer.Panel2.Controls.Add(_fileExplorerPanel);
@@ -520,7 +523,7 @@ namespace CIARE
                 ApplyEditorExplorerMinimumWidths();
                 QueueFileExplorerLayoutApply();
                 PositionFileExplorerShowButton();
-                RefreshEditorLayoutBounds();
+                QueueEditorLayoutRefresh();
             }));
 
             ApplyFileExplorerTheme();
@@ -616,16 +619,16 @@ namespace CIARE
                     SelectedEditor.GetSelectedEditor()?.Focus();
                 }
 
-                RefreshEditorLayoutBounds();
-                EditorTabControl.Invalidate();
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerVisibleKey, show.ToString());
             }
             finally
             {
-                EditorTabControl.ResumeLayout(true);
-                _editorExplorerSplitContainer.ResumeLayout(true);
-                _editorWorkspacePanel?.ResumeLayout(true);
+                EditorTabControl.ResumeLayout(false);
+                _editorExplorerSplitContainer.ResumeLayout(false);
+                _editorWorkspacePanel?.ResumeLayout(false);
             }
+
+            QueueEditorLayoutRefresh();
         }
 
         private void ToggleFileExplorer()
@@ -647,7 +650,7 @@ namespace CIARE
             int availableWidth = splitWidth - _editorExplorerSplitContainer.SplitterWidth;
             if (availableWidth <= 0)
             {
-                RefreshEditorLayoutBounds();
+                QueueEditorLayoutRefresh();
                 return;
             }
 
@@ -659,7 +662,7 @@ namespace CIARE
             if (!_editorExplorerSplitContainer.Panel2Collapsed)
                 _editorExplorerSplitContainer.SplitterDistance = dist;
 
-            RefreshEditorLayoutBounds();
+            QueueEditorLayoutRefresh();
         }
 
         private void SetFileExplorerNuGetHeight(int height)
@@ -843,7 +846,7 @@ namespace CIARE
             ApplyEditorExplorerMinimumWidths();
             ApplyFileExplorerLayoutValues();
             PositionFileExplorerShowButton();
-            RefreshEditorLayoutBounds();
+            QueueEditorLayoutRefresh();
 
             _fileExplorerLayoutApplyAttempts++;
             if (_fileExplorerLayoutApplyAttempts < FileExplorerLayoutApplyStabilizeAttempts ||
@@ -1134,29 +1137,41 @@ namespace CIARE
             _fileExplorerShowButton.BringToFront();
         }
 
-        private void ConfigureEditorTabControlLayout()
+        private void ConfigureEditorTabControlLayout(bool configureAllTabs = false)
         {
             if (EditorTabControl == null)
                 return;
 
             EditorTabControl.SuspendLayout();
-            if (EditorTabControl.Anchor != AnchorStyles.None)
-                EditorTabControl.Anchor = AnchorStyles.None;
-            if (EditorTabControl.Dock != DockStyle.Fill)
-                EditorTabControl.Dock = DockStyle.Fill;
-            if (EditorTabControl.Location != Point.Empty)
-                EditorTabControl.Location = Point.Empty;
-            if (EditorTabControl.Margin != Padding.Empty)
-                EditorTabControl.Margin = Padding.Empty;
+            try
+            {
+                if (EditorTabControl.Anchor != AnchorStyles.None)
+                    EditorTabControl.Anchor = AnchorStyles.None;
+                if (EditorTabControl.Dock != DockStyle.Fill)
+                    EditorTabControl.Dock = DockStyle.Fill;
+                if (EditorTabControl.Location != Point.Empty)
+                    EditorTabControl.Location = Point.Empty;
+                if (EditorTabControl.Margin != Padding.Empty)
+                    EditorTabControl.Margin = Padding.Empty;
 
-            Color editorSurfaceBackColor = GetEditorSurfaceBackColor();
-            if (EditorTabControl.BackColor != editorSurfaceBackColor)
-                EditorTabControl.BackColor = editorSurfaceBackColor;
+                Color editorSurfaceBackColor = GetEditorSurfaceBackColor();
+                if (EditorTabControl.BackColor != editorSurfaceBackColor)
+                    EditorTabControl.BackColor = editorSurfaceBackColor;
 
-            foreach (TabPage tabPage in EditorTabControl.TabPages)
-                ConfigureEditorTabPageLayout(tabPage, editorSurfaceBackColor);
-
-            EditorTabControl.ResumeLayout(true);
+                if (configureAllTabs)
+                {
+                    foreach (TabPage tabPage in EditorTabControl.TabPages)
+                        ConfigureEditorTabPageLayout(tabPage, editorSurfaceBackColor);
+                }
+                else if (EditorTabControl.SelectedTab != null)
+                {
+                    ConfigureEditorTabPageLayout(EditorTabControl.SelectedTab, editorSurfaceBackColor);
+                }
+            }
+            finally
+            {
+                EditorTabControl.ResumeLayout(false);
+            }
         }
 
         private void ConfigureEditorTabPageLayout(TabPage tabPage)
@@ -1217,8 +1232,44 @@ namespace CIARE
                 textAreaControl.VScrollBar.Visible = true;
             if (!textAreaControl.HScrollBar.Visible)
                 textAreaControl.HScrollBar.Visible = true;
-            textAreaControl.ResizeTextArea();
-            textAreaControl.AdjustScrollBars();
+            if (editor.Visible && textAreaControl.Width > 0 && textAreaControl.Height > 0)
+            {
+                textAreaControl.ResizeTextArea();
+                textAreaControl.AdjustScrollBars();
+            }
+        }
+
+        private void QueueEditorLayoutRefresh()
+        {
+            if (EditorTabControl == null || EditorTabControl.IsDisposed || IsDisposed)
+                return;
+
+            _pendingEditorLayoutRefresh = true;
+            EnsureEditorLayoutRefreshTimer();
+            _editorLayoutRefreshTimer.Stop();
+            _editorLayoutRefreshTimer.Start();
+        }
+
+        private void EnsureEditorLayoutRefreshTimer()
+        {
+            if (_editorLayoutRefreshTimer != null)
+                return;
+
+            _editorLayoutRefreshTimer = new System.Windows.Forms.Timer(components)
+            {
+                Interval = 50
+            };
+            _editorLayoutRefreshTimer.Tick += OnEditorLayoutRefreshTimer;
+        }
+
+        private void OnEditorLayoutRefreshTimer(object sender, EventArgs e)
+        {
+            _editorLayoutRefreshTimer?.Stop();
+            if (!_pendingEditorLayoutRefresh)
+                return;
+
+            _pendingEditorLayoutRefresh = false;
+            RefreshEditorLayoutBounds();
         }
 
         private void RefreshEditorLayoutBounds()
@@ -1235,8 +1286,7 @@ namespace CIARE
                 ConfigureEditorTabControlLayout();
                 EditorTabControl.PerformLayout();
 
-                foreach (TabPage tabPage in EditorTabControl.TabPages)
-                    tabPage.PerformLayout();
+                EditorTabControl.SelectedTab?.PerformLayout();
             }
             finally
             {
@@ -2680,7 +2730,7 @@ namespace CIARE
             // Run initial type check so errors are underlined from the first load.
             RestoreFileExplorerState();
             QueueFileExplorerLayoutApply();
-            RefreshEditorLayoutBounds();
+            QueueEditorLayoutRefresh();
             var startEditor = SelectedEditor.GetSelectedEditor();
             if (startEditor != null && !string.IsNullOrWhiteSpace(startEditor.Text))
                 ScheduleCurrentTypeCheck(startEditor);
@@ -2694,13 +2744,23 @@ namespace CIARE
                 CodeCompletionKeyHandler.Attach(this, SelectedEditor.GetSelectedEditor(index));
                 ToolTipProvider.Attach(this, SelectedEditor.GetSelectedEditor(index));
 
-                pcRegistry = new Dom.ProjectContentRegistry();
-                if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
-                    Directory.CreateDirectory((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion")));
-
-                pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"));
+                EnsureCompletionRegistry();
                 SelectedEditor.GetSelectedEditor(index).ActiveTextAreaControl.Refresh();
             }
+        }
+
+        private void EnsureCompletionRegistry()
+        {
+            if (_completionRegistryInitialized && pcRegistry != null)
+                return;
+
+            pcRegistry = new Dom.ProjectContentRegistry();
+            string completionCachePath = Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion");
+            if (!Directory.Exists(completionCachePath))
+                Directory.CreateDirectory(completionCachePath);
+
+            pcRegistry.ActivatePersistence(completionCachePath);
+            _completionRegistryInitialized = true;
         }
 
         /// <summary>
@@ -3341,6 +3401,15 @@ namespace CIARE
             else
                 e.Cancel = false;
 
+            if (_editorLayoutRefreshTimer != null)
+            {
+                _editorLayoutRefreshTimer.Stop();
+                _editorLayoutRefreshTimer.Tick -= OnEditorLayoutRefreshTimer;
+                _editorLayoutRefreshTimer.Dispose();
+                _editorLayoutRefreshTimer = null;
+            }
+            _pendingEditorLayoutRefresh = false;
+
             // Delete temp mark file.
             if (GetCiareProcesses() == 1)
             {
@@ -3507,7 +3576,10 @@ namespace CIARE
         {
             if (GlobalVariables.OCodeCompletion)
             {
-                var parserThread = new Thread(ParserThread);
+                if (parserThread != null && parserThread.IsAlive)
+                    return;
+
+                parserThread = new Thread(ParserThread);
                 parserThread.IsBackground = true;
                 parserThread.Start();
             }
@@ -6475,7 +6547,7 @@ namespace CIARE
             {
                 InitializeEditor.SetMaximizedWindowState(GlobalVariables.registryPath, true);
             }
-            RefreshEditorLayoutBounds();
+            QueueEditorLayoutRefresh();
         }
 
 
@@ -6500,8 +6572,11 @@ namespace CIARE
         private void textEditorControl1_Resize(object sender, EventArgs e)
         {
             if (sender is TextEditorControl editor)
+            {
                 ConfigureEditorScrollBars(editor);
-            SplitEditorWindow.SetSplitWindowSize(SelectedEditor.GetSelectedEditor(), GlobalVariables.splitWindowPosition);
+                if (editor.secondaryTextArea != null)
+                    SplitEditorWindow.SetSplitWindowSize(editor, GlobalVariables.splitWindowPosition);
+            }
         }
 
         /// <summary>
@@ -6625,7 +6700,7 @@ namespace CIARE
                 ConfigureEditorTabPageLayout(tabPage);
                 SetDesignEditor(ref dynamicTextEdtior);
                 tabPage.Controls.Add(dynamicTextEdtior);
-                RefreshEditorLayoutBounds();
+                QueueEditorLayoutRefresh();
                 Initiliaze(EditorTabControl.SelectedIndex);
             }
 
@@ -6726,7 +6801,21 @@ namespace CIARE
             _filesDrag = files;
             worker = new BackgroundWorker();
             worker.DoWork += AddTabOnDop;
+            worker.RunWorkerCompleted += DragDropWorkerCompleted;
             worker.RunWorkerAsync();
+        }
+
+        private void DragDropWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (sender is BackgroundWorker completedWorker)
+            {
+                completedWorker.DoWork -= AddTabOnDop;
+                completedWorker.RunWorkerCompleted -= DragDropWorkerCompleted;
+                completedWorker.Dispose();
+
+                if (ReferenceEquals(worker, completedWorker))
+                    worker = null;
+            }
         }
 
         /// <summary>

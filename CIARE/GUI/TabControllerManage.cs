@@ -16,6 +16,16 @@ namespace CIARE.GUI
     {
         private static int s_hoverIndex = -1;
 
+        private static void RemoveTabPageAt(TabControl tabControl, int index)
+        {
+            if (tabControl == null || index < 0 || index >= tabControl.TabPages.Count)
+                return;
+
+            TabPage tabPage = tabControl.TabPages[index];
+            tabControl.TabPages.RemoveAt(index);
+            tabPage.Dispose();
+        }
+
         /// <summary>
         /// Check if tab contains the file you want to open and select if exist in tabs.
         /// </summary>
@@ -119,7 +129,7 @@ namespace CIARE.GUI
                     {
                         tabControl.SelectTab(count);
                         var pathFile = tabControl.SelectedTab.ToolTipText;
-                        tabControl.TabPages.RemoveAt(tabCount--);
+                        RemoveTabPageAt(tabControl, tabCount--);
                         tabControl.SelectTab(count);
                         GlobalVariables.noClear = false;
                     }
@@ -131,7 +141,7 @@ namespace CIARE.GUI
                 ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
             }
             AddNewTab(tabControl);
-            MainForm.Instance.EditorTabControl.TabPages.RemoveAt(1);
+            RemoveTabPageAt(MainForm.Instance.EditorTabControl, 1);
         }
 
         /// <summary>
@@ -162,8 +172,8 @@ namespace CIARE.GUI
                     if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
                     {
                         tabControl.SelectTab(count);
-                        var removeAt = tabCount--;
-                        tabControl.TabPages.RemoveAt(count);
+                        tabCount--;
+                        RemoveTabPageAt(tabControl, count);
                         GlobalVariables.noClear = false;
                     }
                 }
@@ -243,7 +253,7 @@ namespace CIARE.GUI
                 GlobalVariables.noClear = false;
                 return;
             }
-            tabControl.TabPages.RemoveAt(index);
+            RemoveTabPageAt(tabControl, index);
             if (tabControl.TabCount == 1)
                 AddNewTab(tabControl);
 
@@ -451,7 +461,7 @@ namespace CIARE.GUI
 
                 // Close New Page tab if list counts more than 1 tab.
                 if (list.Count >= 1)
-                    MainForm.Instance.EditorTabControl.TabPages.RemoveAt(1);
+                    RemoveTabPageAt(MainForm.Instance.EditorTabControl, 1);
 
                 foreach (var item in list)
                 {
@@ -530,16 +540,18 @@ namespace CIARE.GUI
                 if (dark && color == Color.LightGray)
                     color = GlobalVariables.TabSelectedColor;
 
-                StringFormat StrFormat = new StringFormat();
-                StrFormat.LineAlignment = StringAlignment.Center;
-                StrFormat.Alignment = StringAlignment.Center;
                 Font fntTab = e.Font;
                 Rectangle recBounds = tabControl.GetTabRect(index);
                 RectangleF tabTextArea = (RectangleF)tabControl.GetTabRect(index);
+                using (StringFormat StrFormat = new StringFormat())
                 using (Brush bshBack = new SolidBrush(color))
-                    e.Graphics.FillRectangle(bshBack, recBounds);
                 using (SolidBrush fontColor = dark ? new SolidBrush(Color.FromArgb(192, 215, 207)) : new SolidBrush(Color.Black))
+                {
+                    StrFormat.LineAlignment = StringAlignment.Center;
+                    StrFormat.Alignment = StringAlignment.Center;
+                    e.Graphics.FillRectangle(bshBack, recBounds);
                     e.Graphics.DrawString(tabControl.TabPages[index].Text, fntTab, fontColor, tabTextArea, StrFormat);
+                }
 
                 var g = e.Graphics;
                 var tp = tabControl.TabPages[e.Index];
@@ -647,12 +659,12 @@ namespace CIARE.GUI
             {
                 bool dark = GlobalVariables.darkColor;
                 Color BackGroundColorForm = dark ? Color.FromArgb(red, green, blue) : SystemColors.Window;
-                SolidBrush fillbrush = new SolidBrush(BackGroundColorForm);
                 Rectangle lasttabrect = tabControl.GetTabRect(tabControl.TabPages.Count - 1);
                 Rectangle background = new Rectangle();
                 background.Location = new Point(lasttabrect.Right, 0);
                 background.Size = new Size(tabControl.Right - background.Left, lasttabrect.Height + 1);
-                e.Graphics.FillRectangle(fillbrush, background);
+                using (SolidBrush fillbrush = new SolidBrush(BackGroundColorForm))
+                    e.Graphics.FillRectangle(fillbrush, background);
             }
             catch
             {

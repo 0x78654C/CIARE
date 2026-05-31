@@ -23,8 +23,12 @@ namespace CIARE.GUI
             int height = toolStripSeparator.Height;
             Color foreColor = Color.FromArgb(192, 215, 207);
             Color backColor = GlobalVariables.formBgColor;
-            e.Graphics.FillRectangle(new SolidBrush(backColor), 0, 0, width, height);
-            e.Graphics.DrawLine(new Pen(foreColor), 4, height / 2, width - 4, height / 2);
+            using (SolidBrush backBrush = new SolidBrush(backColor))
+            using (Pen forePen = new Pen(foreColor))
+            {
+                e.Graphics.FillRectangle(backBrush, 0, 0, width, height);
+                e.Graphics.DrawLine(forePen, 4, height / 2, width - 4, height / 2);
+            }
         }
 
         /// <summary>
@@ -39,8 +43,12 @@ namespace CIARE.GUI
             int height = toolStripSeparator.Height;
             Color foreColor = Color.FromArgb(192, 215, 207);
             Color backColor = GlobalVariables.controlBgColor;
-            e.Graphics.FillRectangle(new SolidBrush(backColor), 0, 0, width, height);
-            e.Graphics.DrawLine(new Pen(foreColor), 4, height / 2, width - 4, height / 2);
+            using (SolidBrush backBrush = new SolidBrush(backColor))
+            using (Pen forePen = new Pen(foreColor))
+            {
+                e.Graphics.FillRectangle(backBrush, 0, 0, width, height);
+                e.Graphics.DrawLine(forePen, 4, height / 2, width - 4, height / 2);
+            }
         }
 
         /// <summary>
@@ -55,8 +63,12 @@ namespace CIARE.GUI
             int height = toolStripSeparator.Height;
             Color foreColor = SystemColors.ControlDark;
             Color backColor = SystemColors.Window;
-            e.Graphics.FillRectangle(new SolidBrush(backColor), 0, 0, width, height);
-            e.Graphics.DrawLine(new Pen(foreColor), 4, height / 2, width - 4, height / 2);
+            using (SolidBrush backBrush = new SolidBrush(backColor))
+            using (Pen forePen = new Pen(foreColor))
+            {
+                e.Graphics.FillRectangle(backBrush, 0, 0, width, height);
+                e.Graphics.DrawLine(forePen, 4, height / 2, width - 4, height / 2);
+            }
         }
     }
 }

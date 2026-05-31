@@ -869,6 +869,11 @@ namespace ICSharpCode.TextEditor
 						if (margin is IDisposable)
 							(margin as IDisposable).Dispose();
 					}
+					if (toolTip != null && !toolTip.IsDisposed) {
+						toolTip.Dispose();
+						toolTip = null;
+						oldToolTip = null;
+					}
 					textView.Dispose();
 				}
 			}

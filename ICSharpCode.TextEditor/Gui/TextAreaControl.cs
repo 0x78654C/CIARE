@@ -138,6 +138,10 @@ namespace ICSharpCode.TextEditor
 					Document.TextContentChanged -= DocumentTextContentChanged;
 					Document.DocumentChanged -= AdjustScrollBarsOnDocumentChange;
 					Document.UpdateCommited  -= DocumentUpdateCommitted;
+					if (ContextMenuStrip != null) {
+						ContextMenuStrip.Dispose();
+						ContextMenuStrip = null;
+					}
 					motherTextEditorControl = null;
 					if (vScrollBar != null) {
 						vScrollBar.Dispose();
