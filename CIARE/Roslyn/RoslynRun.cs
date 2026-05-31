@@ -498,7 +498,7 @@ namespace CIARE.Roslyn
         {
             string quotedProjectPath = QuoteProcessArgument(projectPath);
             string configuration = ExistingProjectConfiguration();
-            string platform = ExistingProjectPlatformDotnetArgument();
+            string platform = ExistingProjectPlatformDotnetArgument(projectPath);
 
             if (publish)
                 return $"publish {quotedProjectPath} --configuration {configuration} {platform}".Trim();
@@ -510,7 +510,7 @@ namespace CIARE.Roslyn
         {
             string quotedProjectPath = QuoteProcessArgument(projectPath);
             string configuration = ExistingProjectConfiguration();
-            string platform = ExistingProjectPlatformMsBuildArgument();
+            string platform = ExistingProjectPlatformMsBuildArgument(projectPath);
             string target = publish ? "Publish" : "Build";
 
             return $"{quotedProjectPath} /restore /t:{target} /p:Configuration={configuration} {platform}".Trim();
@@ -519,19 +519,35 @@ namespace CIARE.Roslyn
         private static string ExistingProjectConfiguration() =>
             GlobalVariables.configParam.Contains("Release") ? "Release" : "Debug";
 
-        private static string ExistingProjectPlatformDotnetArgument()
+        private static string ExistingProjectPlatformDotnetArgument(string buildTargetPath)
         {
-            string platform = ExistingProjectPlatform();
+            string platform = ExistingProjectPlatform(buildTargetPath);
             return string.IsNullOrEmpty(platform) ? string.Empty : $"--property:Platform={QuoteProcessArgument(platform)}";
         }
 
-        private static string ExistingProjectPlatformMsBuildArgument()
+        private static string ExistingProjectPlatformMsBuildArgument(string buildTargetPath)
         {
-            string platform = ExistingProjectPlatform();
+            string platform = ExistingProjectPlatform(buildTargetPath);
             return string.IsNullOrEmpty(platform) ? string.Empty : $"/p:Platform={QuoteProcessArgument(platform)}";
         }
 
-        private static string ExistingProjectPlatform()
+        private static string ExistingProjectPlatform(string buildTargetPath)
+        {
+            string platform = ExistingProjectRequestedPlatform();
+            if (string.IsNullOrEmpty(platform))
+                return string.Empty;
+
+            if (string.Equals(Path.GetExtension(buildTargetPath), ".sln", StringComparison.OrdinalIgnoreCase))
+            {
+                string configuration = ExistingProjectConfiguration();
+                if (!SolutionHasConfigurationPlatform(buildTargetPath, configuration, platform))
+                    return FindFallbackSolutionPlatform(buildTargetPath, configuration) ?? string.Empty;
+            }
+
+            return platform;
+        }
+
+        private static string ExistingProjectRequestedPlatform()
         {
             if (string.IsNullOrWhiteSpace(GlobalVariables.platformParam))
                 return string.Empty;
@@ -545,6 +561,73 @@ namespace CIARE.Roslyn
                 .Substring(platformIndex + platformKey.Length)
                 .Trim()
                 .Trim('"');
+        }
+
+        private static bool SolutionHasConfigurationPlatform(string solutionPath, string configuration, string platform)
+        {
+            return ReadSolutionPlatforms(solutionPath, configuration)
+                .Contains(platform, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string FindFallbackSolutionPlatform(string solutionPath, string configuration)
+        {
+            List<string> platforms = ReadSolutionPlatforms(solutionPath, configuration).ToList();
+            foreach (string preferredPlatform in new[] { "Any CPU", "x64", "x86" })
+            {
+                string platform = platforms.FirstOrDefault(item =>
+                    string.Equals(item, preferredPlatform, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(platform))
+                    return platform;
+            }
+
+            return platforms.FirstOrDefault();
+        }
+
+        private static IEnumerable<string> ReadSolutionPlatforms(string solutionPath, string configuration)
+        {
+            var platforms = new List<string>();
+            if (string.IsNullOrWhiteSpace(solutionPath) || !File.Exists(solutionPath))
+                return platforms;
+
+            bool inSolutionConfigurationSection = false;
+            foreach (string rawLine in File.ReadLines(solutionPath))
+            {
+                string line = rawLine.Trim();
+                if (line.StartsWith("GlobalSection(SolutionConfigurationPlatforms)",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    inSolutionConfigurationSection = true;
+                    continue;
+                }
+
+                if (inSolutionConfigurationSection &&
+                    line.StartsWith("EndGlobalSection", StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+
+                if (!inSolutionConfigurationSection)
+                    continue;
+
+                int equalsIndex = line.IndexOf('=');
+                if (equalsIndex <= 0)
+                    continue;
+
+                string configurationPlatform = line.Substring(0, equalsIndex).Trim();
+                int separatorIndex = configurationPlatform.IndexOf('|');
+                if (separatorIndex <= 0 || separatorIndex >= configurationPlatform.Length - 1)
+                    continue;
+
+                string configurationName = configurationPlatform.Substring(0, separatorIndex).Trim();
+                string platformName = configurationPlatform.Substring(separatorIndex + 1).Trim();
+                if (string.Equals(configurationName, configuration, StringComparison.OrdinalIgnoreCase) &&
+                    !platforms.Any(item => string.Equals(item, platformName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    platforms.Add(platformName);
+                }
+            }
+
+            return platforms;
         }
 
         private static string QuoteProcessArgument(string argument) =>

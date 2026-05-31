@@ -25,6 +25,8 @@ namespace CIARE
     public partial class NewProject : Form
     {
         private const string CSharpProjectTypeGuid = "{9A19103F-16F7-4668-BE54-9A1E7A4F7556}";
+        private static readonly string[] SolutionConfigurations = { "Debug", "Release" };
+        private static readonly string[] SolutionPlatforms = { "Any CPU", "x64", "x86" };
 
         private readonly ListBox _templateList = new ListBox();
         private readonly TextBox _projectNameText = new TextBox();
@@ -491,28 +493,62 @@ namespace CIARE
             string projectGuid = "{" + Guid.NewGuid().ToString().ToUpperInvariant() + "}";
             string relativeProjectPath = Path.GetRelativePath(solutionDirectory, projectPath);
 
-            return
-                "Microsoft Visual Studio Solution File, Format Version 12.00\r\n" +
-                "# Visual Studio Version 17\r\n" +
-                "VisualStudioVersion = 17.0.31903.59\r\n" +
-                "MinimumVisualStudioVersion = 10.0.40219.1\r\n" +
-                $"Project(\"{CSharpProjectTypeGuid}\") = \"{projectName}\", \"{relativeProjectPath}\", \"{projectGuid}\"\r\n" +
-                "EndProject\r\n" +
-                "Global\r\n" +
-                "\tGlobalSection(SolutionConfigurationPlatforms) = preSolution\r\n" +
-                "\t\tDebug|Any CPU = Debug|Any CPU\r\n" +
-                "\t\tRelease|Any CPU = Release|Any CPU\r\n" +
-                "\tEndGlobalSection\r\n" +
-                "\tGlobalSection(ProjectConfigurationPlatforms) = postSolution\r\n" +
-                $"\t\t{projectGuid}.Debug|Any CPU.ActiveCfg = Debug|Any CPU\r\n" +
-                $"\t\t{projectGuid}.Debug|Any CPU.Build.0 = Debug|Any CPU\r\n" +
-                $"\t\t{projectGuid}.Release|Any CPU.ActiveCfg = Release|Any CPU\r\n" +
-                $"\t\t{projectGuid}.Release|Any CPU.Build.0 = Release|Any CPU\r\n" +
-                "\tEndGlobalSection\r\n" +
-                "\tGlobalSection(SolutionProperties) = preSolution\r\n" +
-                "\t\tHideSolutionNode = FALSE\r\n" +
-                "\tEndGlobalSection\r\n" +
-                "EndGlobal\r\n";
+            var builder = new StringBuilder();
+            builder.AppendLine("Microsoft Visual Studio Solution File, Format Version 12.00");
+            builder.AppendLine("# Visual Studio Version 17");
+            builder.AppendLine("VisualStudioVersion = 17.0.31903.59");
+            builder.AppendLine("MinimumVisualStudioVersion = 10.0.40219.1");
+            builder.AppendLine($"Project(\"{CSharpProjectTypeGuid}\") = \"{projectName}\", \"{relativeProjectPath}\", \"{projectGuid}\"");
+            builder.AppendLine("EndProject");
+            builder.AppendLine("Global");
+            builder.AppendLine("\tGlobalSection(SolutionConfigurationPlatforms) = preSolution");
+            foreach (string configuration in SolutionConfigurations)
+            {
+                foreach (string platform in SolutionPlatforms)
+                    builder.AppendLine($"\t\t{configuration}|{platform} = {configuration}|{platform}");
+            }
+
+            builder.AppendLine("\tEndGlobalSection");
+            builder.AppendLine("\tGlobalSection(ProjectConfigurationPlatforms) = postSolution");
+            foreach (string configuration in SolutionConfigurations)
+            {
+                foreach (string platform in SolutionPlatforms)
+                {
+                    builder.AppendLine($"\t\t{projectGuid}.{configuration}|{platform}.ActiveCfg = {configuration}|{platform}");
+                    builder.AppendLine($"\t\t{projectGuid}.{configuration}|{platform}.Build.0 = {configuration}|{platform}");
+                }
+            }
+
+            builder.AppendLine("\tEndGlobalSection");
+            builder.AppendLine("\tGlobalSection(SolutionProperties) = preSolution");
+            builder.AppendLine("\t\tHideSolutionNode = FALSE");
+            builder.AppendLine("\tEndGlobalSection");
+            builder.AppendLine("EndGlobal");
+            return builder.ToString();
+        }
+
+        private static string BuildSdkProjectFile(string targetFramework, string outputType = null, bool useWindowsForms = false)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
+            builder.AppendLine("  <PropertyGroup>");
+            if (!string.IsNullOrWhiteSpace(outputType))
+                builder.AppendLine($"    <OutputType>{outputType}</OutputType>");
+            builder.AppendLine($"    <TargetFramework>{targetFramework}</TargetFramework>");
+            if (useWindowsForms)
+                builder.AppendLine("    <UseWindowsForms>true</UseWindowsForms>");
+            builder.AppendLine("    <ImplicitUsings>enable</ImplicitUsings>");
+            builder.AppendLine("    <Nullable>enable</Nullable>");
+            builder.AppendLine("    <Platforms>Any CPU;x64;x86</Platforms>");
+            builder.AppendLine("  </PropertyGroup>");
+            builder.AppendLine("  <PropertyGroup Condition=\"'$(Platform)' == 'x64'\">");
+            builder.AppendLine("    <PlatformTarget>x64</PlatformTarget>");
+            builder.AppendLine("  </PropertyGroup>");
+            builder.AppendLine("  <PropertyGroup Condition=\"'$(Platform)' == 'x86'\">");
+            builder.AppendLine("    <PlatformTarget>x86</PlatformTarget>");
+            builder.AppendLine("  </PropertyGroup>");
+            builder.AppendLine("</Project>");
+            return builder.ToString();
         }
 
         private sealed class ProjectTemplate
@@ -523,15 +559,7 @@ namespace CIARE
                     "Console App",
                     "Program.cs",
                     false,
-                    targetFramework =>
-                        "<Project Sdk=\"Microsoft.NET.Sdk\">\r\n" +
-                        "  <PropertyGroup>\r\n" +
-                        "    <OutputType>Exe</OutputType>\r\n" +
-                        $"    <TargetFramework>{targetFramework}</TargetFramework>\r\n" +
-                        "    <ImplicitUsings>enable</ImplicitUsings>\r\n" +
-                        "    <Nullable>enable</Nullable>\r\n" +
-                        "  </PropertyGroup>\r\n" +
-                        "</Project>\r\n",
+                    targetFramework => BuildSdkProjectFile(targetFramework, "Exe"),
                     (projectName, rootNamespace) =>
                         "Console.WriteLine(\"Hello, World!\");\r\n"),
 
@@ -539,14 +567,7 @@ namespace CIARE
                     "Class Library",
                     "Class1.cs",
                     false,
-                    targetFramework =>
-                        "<Project Sdk=\"Microsoft.NET.Sdk\">\r\n" +
-                        "  <PropertyGroup>\r\n" +
-                        $"    <TargetFramework>{targetFramework}</TargetFramework>\r\n" +
-                        "    <ImplicitUsings>enable</ImplicitUsings>\r\n" +
-                        "    <Nullable>enable</Nullable>\r\n" +
-                        "  </PropertyGroup>\r\n" +
-                        "</Project>\r\n",
+                    targetFramework => BuildSdkProjectFile(targetFramework),
                     (projectName, rootNamespace) =>
                         $"namespace {rootNamespace};\r\n\r\n" +
                         "public class Class1\r\n" +
@@ -557,16 +578,7 @@ namespace CIARE
                     "Windows Forms App",
                     "Program.cs",
                     true,
-                    targetFramework =>
-                        "<Project Sdk=\"Microsoft.NET.Sdk\">\r\n" +
-                        "  <PropertyGroup>\r\n" +
-                        "    <OutputType>WinExe</OutputType>\r\n" +
-                        $"    <TargetFramework>{targetFramework}</TargetFramework>\r\n" +
-                        "    <UseWindowsForms>true</UseWindowsForms>\r\n" +
-                        "    <ImplicitUsings>enable</ImplicitUsings>\r\n" +
-                        "    <Nullable>enable</Nullable>\r\n" +
-                        "  </PropertyGroup>\r\n" +
-                        "</Project>\r\n",
+                    targetFramework => BuildSdkProjectFile(targetFramework, "WinExe", useWindowsForms: true),
                     (projectName, rootNamespace) =>
                         "using System;\r\n" +
                         "using System.Drawing;\r\n" +
