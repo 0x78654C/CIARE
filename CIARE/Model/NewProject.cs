@@ -37,7 +37,7 @@ namespace CIARE
         private readonly Button _browseButton = new Button();
         private bool _syncingSolutionName;
         private bool _syncingTargetFramework;
-        private string _lastProjectName = "CiareApp";
+        private string _lastProjectName = "NewApp";
         private string _lastInstalledTargetFramework = "net8.0";
 
         public NewProjectResult CreatedProject { get; private set; }
@@ -109,7 +109,7 @@ namespace CIARE
             optionsLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
 
             _projectNameText.Dock = DockStyle.Fill;
-            _projectNameText.Text = "CiareApp";
+            _projectNameText.Text = "NewApp";
             _projectNameText.TextChanged += ProjectNameText_TextChanged;
 
             _locationText.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
