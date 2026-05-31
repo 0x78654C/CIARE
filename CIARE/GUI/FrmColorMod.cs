@@ -28,7 +28,7 @@ namespace CIARE.GUI
         /// <param name="dark"></param>
         public static void ToogleColorMode(this Form form, bool dark)
         {
-            EnableDarkTitleBar(form.Handle);
+            SetDarkTitleBar(form.Handle, dark);
             ForeColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
             BackGroundColor = dark ? GlobalVariables.controlBgColor : SystemColors.Window;
             ForeColorForm = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
@@ -44,7 +44,29 @@ namespace CIARE.GUI
         /// <param name="handle"></param>
         public static void EnableDarkTitleBar(IntPtr handle)
         {
-            int value = 1;
+            SetDarkTitleBar(handle, true);
+        }
+
+        /// <summary>
+        /// Disable dark title bar on windows 10 and 11.
+        /// </summary>
+        /// <param name="handle"></param>
+        public static void DisableDarkTitleBar(IntPtr handle)
+        {
+            SetDarkTitleBar(handle, false);
+        }
+
+        /// <summary>
+        /// Set title bar dark mode on windows 10 and 11.
+        /// </summary>
+        /// <param name="handle"></param>
+        /// <param name="dark"></param>
+        public static void SetDarkTitleBar(IntPtr handle, bool dark)
+        {
+            if (handle == IntPtr.Zero)
+                return;
+
+            int value = dark ? 1 : 0;
             DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE, ref value, sizeof(int));
         }
 

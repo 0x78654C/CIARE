@@ -27,6 +27,7 @@ namespace CIARE.GUI
         public static void SetLightModeMain(Form form, RichTextBox richTextBox, GroupBox groupBox, MenuStrip menuStrip,
            List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList)
         {
+            FrmColorMod.DisableDarkTitleBar(form.Handle);
             form.BackColor = SystemColors.Window;
             form.ForeColor = Color.Black;
             richTextBox.BackColor = SystemColors.Window;

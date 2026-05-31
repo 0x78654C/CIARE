@@ -221,17 +221,21 @@ namespace CIARE.GUI
         {
             if (!Directory.Exists(tempDir))
                 return;
+
+            if (!File.Exists(fileTabStore))
+                File.WriteAllText(fileTabStore, "");
+
             var fileTabData = File.ReadAllText(fileTabStore);
             if (isSize)
             {
-                if (File.Exists(fileTabStore) && !fileTabData.Contains(filePath))
+                if (File.Exists(filePath) && !fileTabData.Contains(filePath))
                 {
                     FileInfo fileInfo = new(filePath);
                     File.WriteAllText(fileTabStore, $"{filePath}|{fileInfo.Length}|2");
                 }
             }
             else
-                if (File.Exists(fileTabStore) && !fileTabData.Contains(filePath))
+                if (!fileTabData.Contains(filePath))
                 File.WriteAllText(fileTabStore, $"{filePath}|2");
         }
 
@@ -347,16 +351,10 @@ namespace CIARE.GUI
             if (!File.Exists(fileTabStore))
                 File.WriteAllText(fileTabStore, "");
 
-            FileInfo fileInfo = new FileInfo(filePath);
-            var fileSize = fileInfo.Length;
-            var line = $"{filePath}|{fileSize}";
             List<string> lines = File.ReadAllLines(fileTabStore).ToList();
-
-            for (int i = 1; i < lines.Count(); i++)
-            {
-                if (lines[i].StartsWith(filePath) && lines[i].EndsWith(index))
-                    lines.Remove(lines[i]);
-            }
+            lines.RemoveAll(line =>
+                line.StartsWith($"{filePath}|", StringComparison.InvariantCultureIgnoreCase) &&
+                line.EndsWith($"|{index}", StringComparison.InvariantCultureIgnoreCase));
 
             File.WriteAllText(fileTabStore, string.Join("\n", lines));
         }

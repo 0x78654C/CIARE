@@ -18,6 +18,7 @@ using CIARE.GUI;
 using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using System;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Windows.Forms;
@@ -49,6 +50,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using CIARE.Properties;
+using VBFileSystem = Microsoft.VisualBasic.FileIO.FileSystem;
+using VBRecycleOption = Microsoft.VisualBasic.FileIO.RecycleOption;
+using VBUIOption = Microsoft.VisualBasic.FileIO.UIOption;
 
 
 namespace CIARE
@@ -125,9 +129,15 @@ namespace CIARE
         private ColumnHeader _fileExplorerNuGetVersionColumn;
         private ColumnHeader _fileExplorerNuGetUpdateColumn;
         private ColumnHeader _fileExplorerNuGetStatusColumn;
+        private ContextMenuStrip _fileExplorerContextMenu;
+        private ToolStripMenuItem _fileExplorerNewFileMenuItem;
+        private ToolStripMenuItem _fileExplorerNewFolderMenuItem;
+        private ToolStripSeparator _fileExplorerContextSeparator;
+        private ToolStripMenuItem _fileExplorerDeleteMenuItem;
         private ContextMenuStrip _fileExplorerNuGetContextMenu;
         private ToolStripMenuItem _fileExplorerNuGetUpdateMenuItem;
         private ToolStripMenuItem _fileExplorerNuGetRemoveMenuItem;
+        private TreeNode _fileExplorerContextNode;
         private ImageList _fileExplorerImageList;
         private string _fileExplorerRootPath = string.Empty;
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
@@ -412,8 +422,36 @@ namespace CIARE
             _fileExplorerTree.AfterExpand += fileExplorerTree_AfterExpand;
             _fileExplorerTree.AfterCollapse += fileExplorerTree_AfterCollapse;
             _fileExplorerTree.AfterSelect += fileExplorerTree_AfterSelect;
+            _fileExplorerTree.MouseDown += fileExplorerTree_MouseDown;
             _fileExplorerTree.NodeMouseDoubleClick += fileExplorerTree_NodeMouseDoubleClick;
             _fileExplorerTree.KeyDown += fileExplorerTree_KeyDown;
+
+            _fileExplorerNewFileMenuItem = new ToolStripMenuItem
+            {
+                Text = "New C# File..."
+            };
+            _fileExplorerNewFileMenuItem.Click += fileExplorerNewFileMenuItem_Click;
+
+            _fileExplorerNewFolderMenuItem = new ToolStripMenuItem
+            {
+                Text = "New Folder..."
+            };
+            _fileExplorerNewFolderMenuItem.Click += fileExplorerNewFolderMenuItem_Click;
+
+            _fileExplorerDeleteMenuItem = new ToolStripMenuItem
+            {
+                Text = "Delete"
+            };
+            _fileExplorerDeleteMenuItem.Click += fileExplorerDeleteMenuItem_Click;
+
+            _fileExplorerContextMenu = new ContextMenuStrip(components);
+            _fileExplorerContextMenu.Opening += fileExplorerContextMenu_Opening;
+            _fileExplorerContextMenu.Items.Add(_fileExplorerNewFileMenuItem);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerNewFolderMenuItem);
+            _fileExplorerContextSeparator = new ToolStripSeparator();
+            _fileExplorerContextMenu.Items.Add(_fileExplorerContextSeparator);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerDeleteMenuItem);
+            _fileExplorerTree.ContextMenuStrip = _fileExplorerContextMenu;
 
             _fileExplorerNuGetPackageColumn = new ColumnHeader { Text = "Package", Width = 130 };
             _fileExplorerNuGetVersionColumn = new ColumnHeader { Text = "Version", Width = 80 };
@@ -548,6 +586,8 @@ namespace CIARE
             _fileExplorerImageList.Images.Add("folder-open", DrawFolderIcon(true));
             _fileExplorerImageList.Images.Add("file", DrawFileIcon(Color.FromArgb(128, 128, 128), false));
             _fileExplorerImageList.Images.Add("cs", DrawFileIcon(Color.FromArgb(72, 133, 237), true));
+            _fileExplorerImageList.Images.Add("project", DrawFileIcon(Color.FromArgb(110, 89, 191), false));
+            _fileExplorerImageList.Images.Add("solution", DrawFileIcon(Color.FromArgb(45, 136, 199), false));
             _fileExplorerImageList.Images.Add("text", DrawFileIcon(Color.FromArgb(96, 166, 106), false));
             return _fileExplorerImageList;
         }
@@ -1588,6 +1628,10 @@ namespace CIARE
             {
                 case ".cs":
                     return "cs";
+                case ".csproj":
+                    return "project";
+                case ".sln":
+                    return "solution";
                 case ".txt":
                 case ".md":
                 case ".json":
@@ -2227,6 +2271,332 @@ namespace CIARE
                    (attributes & FileAttributes.System) == FileAttributes.System;
         }
 
+        private void fileExplorerTree_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right)
+                return;
+
+            TreeNode node = _fileExplorerTree.GetNodeAt(e.Location);
+            if (node == null)
+            {
+                _fileExplorerContextNode = null;
+                return;
+            }
+
+            _fileExplorerTree.SelectedNode = node;
+            _fileExplorerContextNode = node;
+        }
+
+        private void fileExplorerContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            TreeNode node = _fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode;
+            string path = node?.Tag as string;
+            if (string.IsNullOrWhiteSpace(path) || Equals(path, FileExplorerLoadingTag))
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            bool isDirectory = Directory.Exists(path);
+            bool isFile = File.Exists(path);
+            if (!isDirectory && !isFile)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            _fileExplorerNewFileMenuItem.Visible = isDirectory;
+            _fileExplorerNewFolderMenuItem.Visible = isDirectory;
+            _fileExplorerContextSeparator.Visible = isDirectory;
+            _fileExplorerDeleteMenuItem.Visible = isDirectory || isFile;
+            _fileExplorerDeleteMenuItem.Enabled = !IsExplorerRootPath(path);
+        }
+
+        private void fileExplorerNewFileMenuItem_Click(object sender, EventArgs e)
+        {
+            string folderPath = GetExplorerContextFolderPath();
+            if (string.IsNullOrEmpty(folderPath))
+                return;
+
+            string fileName = PromptForExplorerName("New C# File", "File name:", GetUniqueExplorerName(folderPath, "Class1.cs"));
+            if (string.IsNullOrWhiteSpace(fileName))
+                return;
+
+            if (!TryNormalizeExplorerFileName(fileName, ".cs", out fileName))
+                return;
+
+            string filePath = Path.Combine(folderPath, fileName);
+            if (File.Exists(filePath) || Directory.Exists(filePath))
+            {
+                MessageBox.Show("An item with that name already exists.", "Explorer",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                File.WriteAllText(filePath, BuildNewCSharpFileContent(fileName));
+                RefreshAndExpandExplorerFolder(folderPath);
+                SelectExplorerPath(filePath);
+                OpenFileFromExplorer(filePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "New C# File", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void fileExplorerNewFolderMenuItem_Click(object sender, EventArgs e)
+        {
+            string folderPath = GetExplorerContextFolderPath();
+            if (string.IsNullOrEmpty(folderPath))
+                return;
+
+            string folderName = PromptForExplorerName("New Folder", "Folder name:", GetUniqueExplorerName(folderPath, "New Folder"));
+            if (string.IsNullOrWhiteSpace(folderName))
+                return;
+
+            if (!TryValidateExplorerItemName(folderName, out folderName))
+                return;
+
+            string newFolderPath = Path.Combine(folderPath, folderName);
+            if (Directory.Exists(newFolderPath) || File.Exists(newFolderPath))
+            {
+                MessageBox.Show("An item with that name already exists.", "Explorer",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(newFolderPath);
+                RefreshAndExpandExplorerFolder(folderPath);
+                SelectExplorerPath(newFolderPath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "New Folder", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void fileExplorerDeleteMenuItem_Click(object sender, EventArgs e)
+        {
+            TreeNode node = _fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode;
+            string path = node?.Tag as string;
+            if (string.IsNullOrWhiteSpace(path) || IsExplorerRootPath(path))
+                return;
+
+            bool isDirectory = Directory.Exists(path);
+            bool isFile = File.Exists(path);
+            if (!isDirectory && !isFile)
+                return;
+
+            if (!IsPathInsideExplorerRoot(path))
+            {
+                MessageBox.Show("This item is outside the opened explorer folder.", "Delete",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string itemType = isDirectory ? "folder" : "file";
+            DialogResult dialog = MessageBox.Show(
+                $"Delete {itemType} '{Path.GetFileName(path)}'?",
+                "Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (dialog != DialogResult.Yes)
+                return;
+
+            string parentPath = Path.GetDirectoryName(path);
+            try
+            {
+                if (isDirectory)
+                {
+                    VBFileSystem.DeleteDirectory(path, VBUIOption.OnlyErrorDialogs,
+                        VBRecycleOption.SendToRecycleBin);
+                }
+                else
+                {
+                    VBFileSystem.DeleteFile(path, VBUIOption.OnlyErrorDialogs,
+                        VBRecycleOption.SendToRecycleBin);
+                }
+
+                if (!string.IsNullOrEmpty(parentPath))
+                    RefreshExplorerNodeForPath(parentPath);
+                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                    showRestoreFailure: false);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Delete", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private string GetExplorerContextFolderPath()
+        {
+            string path = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
+            return Directory.Exists(path) && IsPathInsideExplorerRoot(path) ? path : string.Empty;
+        }
+
+        private bool IsExplorerRootPath(string path)
+        {
+            return !string.IsNullOrWhiteSpace(path) &&
+                Directory.Exists(_fileExplorerRootPath) &&
+                string.Equals(NormalizeCompletionPath(path), NormalizeCompletionPath(_fileExplorerRootPath),
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool IsPathInsideExplorerRoot(string path)
+        {
+            return !string.IsNullOrWhiteSpace(path) &&
+                Directory.Exists(_fileExplorerRootPath) &&
+                IsSameOrChildDirectory(path, _fileExplorerRootPath);
+        }
+
+        private void SelectExplorerPath(string path)
+        {
+            if (_fileExplorerTree == null || _fileExplorerTree.Nodes.Count == 0 || string.IsNullOrWhiteSpace(path))
+                return;
+
+            TreeNode node = FindTreeNodeByPath(_fileExplorerTree.Nodes[0], path);
+            if (node != null)
+            {
+                _fileExplorerTree.SelectedNode = node;
+                node.EnsureVisible();
+            }
+        }
+
+        private void RefreshAndExpandExplorerFolder(string folderPath)
+        {
+            if (_fileExplorerTree == null || _fileExplorerTree.Nodes.Count == 0)
+                return;
+
+            TreeNode node = FindTreeNodeByPath(_fileExplorerTree.Nodes[0], folderPath);
+            if (node == null)
+                return;
+
+            PopulateDirectoryNode(node);
+            if (!node.IsExpanded)
+                node.Expand();
+        }
+
+        private static bool TryNormalizeExplorerFileName(string value, string extension, out string fileName)
+        {
+            if (!TryValidateExplorerItemName(value, out fileName))
+                return false;
+
+            if (!string.Equals(Path.GetExtension(fileName), extension, StringComparison.OrdinalIgnoreCase))
+                fileName = Path.ChangeExtension(fileName, extension);
+
+            return true;
+        }
+
+        private static bool TryValidateExplorerItemName(string value, out string itemName)
+        {
+            itemName = (value ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(itemName))
+                return false;
+
+            if (itemName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                MessageBox.Show("The name contains characters that cannot be used in a file name.", "Explorer",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            return true;
+        }
+
+        private static string GetUniqueExplorerName(string folderPath, string preferredName)
+        {
+            string candidate = preferredName;
+            string nameWithoutExtension = Path.GetFileNameWithoutExtension(preferredName);
+            string extension = Path.GetExtension(preferredName);
+            int count = 1;
+
+            while (File.Exists(Path.Combine(folderPath, candidate)) ||
+                   Directory.Exists(Path.Combine(folderPath, candidate)))
+            {
+                count++;
+                candidate = string.IsNullOrEmpty(extension)
+                    ? $"{preferredName} {count}"
+                    : $"{nameWithoutExtension}{count}{extension}";
+            }
+
+            return candidate;
+        }
+
+        private static string BuildNewCSharpFileContent(string fileName)
+        {
+            string className = Path.GetFileNameWithoutExtension(fileName);
+            className = ToSafeCSharpIdentifier(className);
+
+            return "public class " + className + Environment.NewLine +
+                   "{" + Environment.NewLine +
+                   "}" + Environment.NewLine;
+        }
+
+        private static string ToSafeCSharpIdentifier(string value)
+        {
+            var builder = new StringBuilder();
+            foreach (char ch in value ?? string.Empty)
+                builder.Append(char.IsLetterOrDigit(ch) || ch == '_' ? ch : '_');
+
+            if (builder.Length == 0 || char.IsDigit(builder[0]))
+                builder.Insert(0, '_');
+
+            return builder.ToString();
+        }
+
+        private string PromptForExplorerName(string title, string labelText, string defaultValue)
+        {
+            using (var form = new Form())
+            using (var label = new Label())
+            using (var textBox = new TextBox())
+            using (var okButton = new Button())
+            using (var cancelButton = new Button())
+            {
+                form.Text = title;
+                form.StartPosition = FormStartPosition.CenterParent;
+                form.FormBorderStyle = FormBorderStyle.FixedDialog;
+                form.MinimizeBox = false;
+                form.MaximizeBox = false;
+                form.ShowInTaskbar = false;
+                form.ClientSize = new Size(360, 118);
+                form.Font = Font;
+
+                label.AutoSize = true;
+                label.Text = labelText;
+                label.Location = new Point(12, 14);
+
+                textBox.Text = defaultValue;
+                textBox.Location = new Point(12, 38);
+                textBox.Width = 336;
+                textBox.SelectAll();
+
+                okButton.Text = "OK";
+                okButton.DialogResult = DialogResult.OK;
+                okButton.Location = new Point(156, 78);
+                okButton.Width = 92;
+
+                cancelButton.Text = "Cancel";
+                cancelButton.DialogResult = DialogResult.Cancel;
+                cancelButton.Location = new Point(256, 78);
+                cancelButton.Width = 92;
+
+                form.Controls.Add(label);
+                form.Controls.Add(textBox);
+                form.Controls.Add(okButton);
+                form.Controls.Add(cancelButton);
+                form.AcceptButton = okButton;
+                form.CancelButton = cancelButton;
+
+                FrmColorMod.ToogleColorMode(form, GlobalVariables.darkColor);
+
+                return form.ShowDialog(this) == DialogResult.OK
+                    ? textBox.Text.Trim()
+                    : string.Empty;
+            }
+        }
+
         private void fileExplorerTree_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
             OpenFileExplorerNode(e.Node);
@@ -2349,11 +2719,14 @@ namespace CIARE
         {
             string filePath = GetActiveEditorFilePath();
 
-            if (Directory.Exists(_fileExplorerRootPath) &&
-                File.Exists(filePath) &&
-                IsPathInsideFolder(filePath, _fileExplorerRootPath))
+            if (Directory.Exists(_fileExplorerRootPath))
             {
-                string openFolderTarget = FindBuildTargetFile(_fileExplorerRootPath, filePath);
+                string activeFilePath = File.Exists(filePath) &&
+                    IsPathInsideFolder(filePath, _fileExplorerRootPath)
+                    ? filePath
+                    : null;
+
+                string openFolderTarget = FindBuildTargetFile(_fileExplorerRootPath, activeFilePath);
                 if (!string.IsNullOrEmpty(openFolderTarget))
                     return openFolderTarget;
             }
@@ -2833,6 +3206,117 @@ namespace CIARE
             FileManage.OpenFileTab(EditorTabControl, SelectedEditor.GetSelectedEditor(indexTab));
         }
 
+        private void newProjectStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (var dialog = new NewProject())
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return;
+
+                OpenCreatedProject(dialog.CreatedProject);
+            }
+        }
+
+        private void openProjectStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenProjectOrSolutionDialog();
+        }
+
+        private void OpenCreatedProject(NewProjectResult project)
+        {
+            if (project == null)
+                return;
+
+            string projectOrSolutionPath = !string.IsNullOrEmpty(project.SolutionFilePath)
+                ? project.SolutionFilePath
+                : project.ProjectFilePath;
+
+            if (!OpenProjectOrSolutionPath(projectOrSolutionPath, showMessage: false))
+                return;
+
+            if (File.Exists(project.StarterFilePath))
+                OpenFileFromExplorer(project.StarterFilePath);
+
+            ShowProjectStatus("Created project", project.ProjectFilePath, project.SolutionFilePath);
+        }
+
+        private void OpenProjectOrSolutionDialog()
+        {
+            using (var dialog = new OpenFileDialog())
+            {
+                dialog.Filter =
+                    "Solution or C# Project (*.sln;*.csproj)|*.sln;*.csproj|Solution Files (*.sln)|*.sln|C# Project Files (*.csproj)|*.csproj|All Files (*.*)|*.*";
+                dialog.Title = "Open Project or Solution";
+                dialog.CheckFileExists = true;
+                dialog.CheckPathExists = true;
+                dialog.InitialDirectory = GetInitialProjectDialogDirectory();
+
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                    OpenProjectOrSolutionPath(dialog.FileName, showMessage: true);
+            }
+        }
+
+        private string GetInitialProjectDialogDirectory()
+        {
+            if (Directory.Exists(_fileExplorerRootPath))
+                return _fileExplorerRootPath;
+
+            string filePath = GetActiveEditorFilePath();
+            if (File.Exists(filePath))
+                return Path.GetDirectoryName(filePath);
+
+            return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        }
+
+        private bool OpenProjectOrSolutionPath(string filePath, bool showMessage)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                return false;
+
+            string extension = Path.GetExtension(filePath);
+            if (!string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show("Select a .sln or .csproj file.", "Open Project/Solution",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            string folderPath = Path.GetDirectoryName(filePath);
+            if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+                return false;
+
+            LoadFileExplorerFolder(folderPath);
+            ToggleFileExplorer(true);
+
+            if (showMessage)
+            {
+                string projectPath = string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase)
+                    ? filePath
+                    : GetActivePackageProjectPath();
+                string solutionPath = string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase)
+                    ? filePath
+                    : string.Empty;
+                ShowProjectStatus("Opened project/solution", projectPath, solutionPath);
+            }
+
+            return true;
+        }
+
+        private void ShowProjectStatus(string action, string projectPath, string solutionPath)
+        {
+            if (outputTabControl.SelectedTab == errorsTabPage)
+                outputTabControl.SelectedTab = outputTabPage;
+
+            var lines = new List<string> { action + "." };
+            if (!string.IsNullOrEmpty(solutionPath))
+                lines.Add("Solution: " + solutionPath);
+            if (!string.IsNullOrEmpty(projectPath))
+                lines.Add("Project: " + projectPath);
+
+            outputRBT.Text = string.Join(Environment.NewLine, lines);
+        }
+
 
         /// <summary>
         /// Save data from text editor. (Save)
@@ -3058,6 +3542,9 @@ namespace CIARE
                 case Keys.N | Keys.Control:
                     FileManage.NewFile(SelectedEditor.GetSelectedEditor(), outputRBT);
                     return true;
+                case Keys.N | Keys.Control | Keys.Shift:
+                    newProjectStripMenuItem_Click(this, EventArgs.Empty);
+                    return true;
                 case Keys.H | Keys.Control:
                     GlobalVariables.findTabOpen = false;
                     FindAndReplace findAndReplace = new FindAndReplace();
@@ -3072,6 +3559,9 @@ namespace CIARE
                 case Keys.O | Keys.Control:
                     int indexTab = EditorTabControl.SelectedIndex;
                     FileManage.OpenFileTab(EditorTabControl, SelectedEditor.GetSelectedEditor(indexTab));
+                    return true;
+                case Keys.O | Keys.Control | Keys.Shift:
+                    OpenProjectOrSolutionDialog();
                     return true;
                 case Keys.F | Keys.Control:
                     GlobalVariables.findTabOpen = true;

@@ -40,7 +40,9 @@ namespace CIARE
             menuStrip1 = new MenuStrip();
             fIleToolStripMenuItem = new ToolStripMenuItem();
             newFileStripMenuItem = new ToolStripMenuItem();
+            newProjectStripMenuItem = new ToolStripMenuItem();
             openToolStripMenuItem = new ToolStripMenuItem();
+            openProjectStripMenuItem = new ToolStripMenuItem();
             saveToolStripMenuItem = new ToolStripMenuItem();
             saveAsStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator1 = new ToolStripSeparator();
@@ -226,7 +228,7 @@ namespace CIARE
             // 
             // fIleToolStripMenuItem
             // 
-            fIleToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newFileStripMenuItem, openToolStripMenuItem, saveToolStripMenuItem, saveAsStripMenuItem, toolStripSeparator1, LoadCStripMenuItem, toolStripSeparator2, exitToolStripMenuItem });
+            fIleToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newFileStripMenuItem, newProjectStripMenuItem, openToolStripMenuItem, openProjectStripMenuItem, saveToolStripMenuItem, saveAsStripMenuItem, toolStripSeparator1, LoadCStripMenuItem, toolStripSeparator2, exitToolStripMenuItem });
             fIleToolStripMenuItem.Name = "fIleToolStripMenuItem";
             fIleToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             fIleToolStripMenuItem.Text = "File";
@@ -238,12 +240,26 @@ namespace CIARE
             newFileStripMenuItem.Text = "New         ( CTRL + N )";
             newFileStripMenuItem.Click += toolStripMenuItem1_Click;
             // 
+            // newProjectStripMenuItem
+            // 
+            newProjectStripMenuItem.Name = "newProjectStripMenuItem";
+            newProjectStripMenuItem.Size = new System.Drawing.Size(273, 22);
+            newProjectStripMenuItem.Text = "New Project...    ( Ctrl+Shift+N )";
+            newProjectStripMenuItem.Click += newProjectStripMenuItem_Click;
+            // 
             // openToolStripMenuItem
             // 
             openToolStripMenuItem.Name = "openToolStripMenuItem";
             openToolStripMenuItem.Size = new System.Drawing.Size(273, 22);
             openToolStripMenuItem.Text = "Open       ( CTRL + O )";
             openToolStripMenuItem.Click += openToolStripMenuItem_Click;
+            // 
+            // openProjectStripMenuItem
+            // 
+            openProjectStripMenuItem.Name = "openProjectStripMenuItem";
+            openProjectStripMenuItem.Size = new System.Drawing.Size(273, 22);
+            openProjectStripMenuItem.Text = "Open Project/Solution... ( Ctrl+Shift+O )";
+            openProjectStripMenuItem.Click += openProjectStripMenuItem_Click;
             // 
             // saveToolStripMenuItem
             // 
@@ -881,6 +897,8 @@ namespace CIARE
         private System.Windows.Forms.SplitContainer splitContainer1;
         public System.Windows.Forms.ToolStripMenuItem saveAsStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem newFileStripMenuItem;
+        public System.Windows.Forms.ToolStripMenuItem newProjectStripMenuItem;
+        public System.Windows.Forms.ToolStripMenuItem openProjectStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         public System.Windows.Forms.ToolStripMenuItem LoadCStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
