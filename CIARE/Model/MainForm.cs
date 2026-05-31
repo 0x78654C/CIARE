@@ -31,6 +31,7 @@ using System.Runtime.Versioning;
 using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Linq;
+using System.Xml.Linq;
 using CIARE.LiveShareManage;
 using System.Threading.Tasks;
 using CIARE.Utils.OpenAISettings;
@@ -133,6 +134,7 @@ namespace CIARE
         private ToolStripMenuItem _fileExplorerNewFileMenuItem;
         private ToolStripMenuItem _fileExplorerNewFolderMenuItem;
         private ToolStripSeparator _fileExplorerContextSeparator;
+        private ToolStripMenuItem _fileExplorerRenameMenuItem;
         private ToolStripMenuItem _fileExplorerDeleteMenuItem;
         private ContextMenuStrip _fileExplorerNuGetContextMenu;
         private ToolStripMenuItem _fileExplorerNuGetUpdateMenuItem;
@@ -485,6 +487,12 @@ namespace CIARE
             };
             _fileExplorerNewFolderMenuItem.Click += fileExplorerNewFolderMenuItem_Click;
 
+            _fileExplorerRenameMenuItem = new ToolStripMenuItem
+            {
+                Text = "Rename..."
+            };
+            _fileExplorerRenameMenuItem.Click += fileExplorerRenameMenuItem_Click;
+
             _fileExplorerDeleteMenuItem = new ToolStripMenuItem
             {
                 Text = "Delete"
@@ -497,6 +505,7 @@ namespace CIARE
             _fileExplorerContextMenu.Items.Add(_fileExplorerNewFolderMenuItem);
             _fileExplorerContextSeparator = new ToolStripSeparator();
             _fileExplorerContextMenu.Items.Add(_fileExplorerContextSeparator);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerRenameMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerDeleteMenuItem);
             _fileExplorerTree.ContextMenuStrip = _fileExplorerContextMenu;
 
@@ -2355,6 +2364,8 @@ namespace CIARE
             _fileExplorerNewFileMenuItem.Visible = isDirectory;
             _fileExplorerNewFolderMenuItem.Visible = isDirectory;
             _fileExplorerContextSeparator.Visible = isDirectory;
+            _fileExplorerRenameMenuItem.Visible = isDirectory || isFile;
+            _fileExplorerRenameMenuItem.Enabled = !IsExplorerRootPath(path);
             _fileExplorerDeleteMenuItem.Visible = isDirectory || isFile;
             _fileExplorerDeleteMenuItem.Enabled = !IsExplorerRootPath(path);
         }
@@ -2426,6 +2437,74 @@ namespace CIARE
             }
         }
 
+        private void fileExplorerRenameMenuItem_Click(object sender, EventArgs e)
+        {
+            TreeNode node = _fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode;
+            string path = node?.Tag as string;
+            if (string.IsNullOrWhiteSpace(path) || IsExplorerRootPath(path))
+                return;
+
+            bool isDirectory = Directory.Exists(path);
+            bool isFile = File.Exists(path);
+            if (!isDirectory && !isFile)
+                return;
+
+            if (!IsPathInsideExplorerRoot(path))
+            {
+                MessageBox.Show("This item is outside the opened explorer folder.", "Rename",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string sourcePath = isDirectory
+                ? path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                : path;
+            string currentName = Path.GetFileName(sourcePath);
+            string newName = PromptForExplorerName("Rename", "Name:", currentName);
+            if (string.IsNullOrWhiteSpace(newName))
+                return;
+
+            if (!TryValidateExplorerItemName(newName, out newName))
+                return;
+
+            if (string.Equals(currentName, newName, StringComparison.Ordinal))
+                return;
+
+            string parentPath = Path.GetDirectoryName(sourcePath);
+            if (string.IsNullOrWhiteSpace(parentPath))
+                return;
+
+            string newPath = Path.Combine(parentPath, newName);
+            bool samePathIgnoreCase = string.Equals(NormalizeCompletionPath(path),
+                NormalizeCompletionPath(newPath), StringComparison.OrdinalIgnoreCase);
+            if (!samePathIgnoreCase && (File.Exists(newPath) || Directory.Exists(newPath)))
+            {
+                MessageBox.Show("An item with that name already exists.", "Rename",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                MoveExplorerItem(path, newPath, isDirectory);
+                UpdateProjectReferencesAfterExplorerRename(path, newPath, isDirectory);
+                UpdateOpenTabsAfterExplorerRename(path, newPath, isDirectory);
+
+                RefreshAndExpandExplorerFolder(parentPath);
+                SelectExplorerPath(newPath);
+
+                InvalidateCompletionWorkspace();
+                RealTimeChecker.InvalidateReferenceCache();
+                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                    showRestoreFailure: false);
+                ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Rename", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void fileExplorerDeleteMenuItem_Click(object sender, EventArgs e)
         {
             TreeNode node = _fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode;
@@ -2474,6 +2553,350 @@ namespace CIARE
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Delete", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void MoveExplorerItem(string path, string newPath, bool isDirectory)
+        {
+            string normalizedPath = NormalizeCompletionPath(path);
+            string normalizedNewPath = NormalizeCompletionPath(newPath);
+            bool isCaseOnlyRename = string.Equals(normalizedPath, normalizedNewPath, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(normalizedPath, normalizedNewPath, StringComparison.Ordinal);
+
+            if (!isCaseOnlyRename)
+            {
+                if (isDirectory)
+                    Directory.Move(path, newPath);
+                else
+                    File.Move(path, newPath);
+                return;
+            }
+
+            string parentPath = Path.GetDirectoryName(normalizedPath);
+            if (string.IsNullOrEmpty(parentPath))
+                return;
+
+            string tempPath;
+            do
+            {
+                tempPath = Path.Combine(parentPath, ".ciare-rename-" + Guid.NewGuid().ToString("N"));
+            }
+            while (File.Exists(tempPath) || Directory.Exists(tempPath));
+
+            if (isDirectory)
+            {
+                Directory.Move(path, tempPath);
+                Directory.Move(tempPath, newPath);
+            }
+            else
+            {
+                File.Move(path, tempPath);
+                File.Move(tempPath, newPath);
+            }
+        }
+
+        private void UpdateOpenTabsAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        {
+            if (EditorTabControl == null)
+                return;
+
+            bool selectedTabChanged = false;
+            for (int i = 0; i < EditorTabControl.TabPages.Count; i++)
+            {
+                TabPage tabPage = EditorTabControl.TabPages[i];
+                string tabPath = tabPage.ToolTipText?.Trim();
+                string renamedPath = GetRenamedExplorerPath(tabPath, oldPath, newPath, renamedDirectory);
+                if (string.IsNullOrEmpty(renamedPath))
+                    continue;
+
+                tabPage.ToolTipText = renamedPath;
+                tabPage.Text = $"{Path.GetFileName(renamedPath)}               ";
+
+                if (GlobalVariables.OStartUp)
+                {
+                    TabControllerManage.DeleteFileSize(EditorTabControl, tabPath, GlobalVariables.userProfileDirectory,
+                        GlobalVariables.tabsFilePath, i.ToString());
+                    TabControllerManage.StoreFileMD5(renamedPath, GlobalVariables.userProfileDirectory,
+                        GlobalVariables.tabsFilePath, i);
+                    TabControllerManage.StoreDeleteTabs(tabPath, renamedPath, GlobalVariables.userProfileDirectory,
+                        GlobalVariables.tabsFilePathAll, i);
+                }
+
+                if (ReferenceEquals(tabPage, EditorTabControl.SelectedTab))
+                    selectedTabChanged = true;
+            }
+
+            if (selectedTabChanged)
+                UpdateActiveEditorPathFromSelectedTab();
+        }
+
+        private void UpdateActiveEditorPathFromSelectedTab()
+        {
+            try
+            {
+                string filePath = EditorTabControl.SelectedTab?.ToolTipText?.Trim();
+                if (string.IsNullOrWhiteSpace(filePath))
+                    return;
+
+                GlobalVariables.openedFilePath = filePath;
+                GlobalVariables.openedFileName = Path.GetFileName(filePath);
+                if (File.Exists(filePath))
+                    FileManage.SetFileMD5(filePath);
+
+                if (!string.IsNullOrEmpty(GlobalVariables.openedFileName))
+                    Text = $"{GlobalVariables.openedFileName} : {FileManage.GetFilePath(filePath)} - CIARE {GlobalVariables.versionName}";
+            }
+            catch
+            {
+            }
+        }
+
+        private void UpdateProjectReferencesAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        {
+            if (!Directory.Exists(_fileExplorerRootPath))
+                return;
+
+            try
+            {
+                foreach (string projectPath in EnumerateBuildFiles(_fileExplorerRootPath, "*.csproj"))
+                    UpdateProjectFileItemReferences(projectPath, oldPath, newPath, renamedDirectory);
+
+                var projectPathPairs = GetRenamedProjectPathPairs(oldPath, newPath, renamedDirectory).ToList();
+                if (projectPathPairs.Count == 0)
+                    return;
+
+                foreach (string solutionPath in EnumerateBuildFiles(_fileExplorerRootPath, "*.sln"))
+                    UpdateSolutionProjectReferences(solutionPath, projectPathPairs);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void UpdateProjectFileItemReferences(string projectPath, string oldPath, string newPath,
+            bool renamedDirectory)
+        {
+            try
+            {
+                string projectDirectory = Path.GetDirectoryName(projectPath);
+                if (string.IsNullOrEmpty(projectDirectory))
+                    return;
+
+                XDocument document = XDocument.Load(projectPath, LoadOptions.PreserveWhitespace);
+                bool changed = false;
+                foreach (XAttribute attribute in document.Descendants()
+                    .SelectMany(element => element.Attributes())
+                    .Where(IsProjectItemPathAttribute)
+                    .ToList())
+                {
+                    string value = attribute.Value;
+                    if (!TryGetRenamedProjectItemReference(projectDirectory, value, oldPath, newPath,
+                            renamedDirectory, out string updatedValue))
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(value, updatedValue, StringComparison.Ordinal))
+                        continue;
+
+                    attribute.Value = updatedValue;
+                    changed = true;
+                }
+
+                if (changed)
+                    document.Save(projectPath, SaveOptions.DisableFormatting);
+            }
+            catch
+            {
+            }
+        }
+
+        private static bool IsProjectItemPathAttribute(XAttribute attribute)
+        {
+            string attributeName = attribute.Name.LocalName;
+            if (!string.Equals(attributeName, "Include", StringComparison.Ordinal) &&
+                !string.Equals(attributeName, "Update", StringComparison.Ordinal) &&
+                !string.Equals(attributeName, "Remove", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            switch (attribute.Parent?.Name.LocalName)
+            {
+                case "AdditionalFiles":
+                case "Analyzer":
+                case "ApplicationDefinition":
+                case "Compile":
+                case "Content":
+                case "EmbeddedResource":
+                case "None":
+                case "Page":
+                case "ProjectReference":
+                case "Resource":
+                case "SplashScreen":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool TryGetRenamedProjectItemReference(string projectDirectory, string value, string oldPath,
+            string newPath, bool renamedDirectory, out string updatedValue)
+        {
+            updatedValue = string.Empty;
+            string candidate = (value ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(candidate) ||
+                candidate.Contains("$(") ||
+                candidate.IndexOfAny(new[] { '*', '?', ';' }) >= 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                string fullPath = Path.IsPathRooted(candidate)
+                    ? Path.GetFullPath(candidate)
+                    : Path.GetFullPath(Path.Combine(projectDirectory, candidate));
+                string renamedPath = GetRenamedExplorerPath(fullPath, oldPath, newPath, renamedDirectory);
+                if (string.IsNullOrEmpty(renamedPath))
+                    return false;
+
+                string projectPath = Path.IsPathRooted(candidate)
+                    ? renamedPath
+                    : Path.GetRelativePath(projectDirectory, renamedPath);
+                updatedValue = PreserveProjectPathSeparators(value, projectPath);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string PreserveProjectPathSeparators(string originalValue, string path)
+        {
+            if ((originalValue ?? string.Empty).Contains("/") && !(originalValue ?? string.Empty).Contains("\\"))
+                return path.Replace(Path.DirectorySeparatorChar, '/').Replace(Path.AltDirectorySeparatorChar, '/');
+
+            return path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        }
+
+        private static IEnumerable<KeyValuePair<string, string>> GetRenamedProjectPathPairs(string oldPath,
+            string newPath, bool renamedDirectory)
+        {
+            if (!renamedDirectory)
+            {
+                if (string.Equals(Path.GetExtension(oldPath), ".csproj", StringComparison.OrdinalIgnoreCase))
+                    yield return new KeyValuePair<string, string>(oldPath, newPath);
+                yield break;
+            }
+
+            if (!Directory.Exists(newPath))
+                yield break;
+
+            foreach (string newProjectPath in EnumerateBuildFiles(newPath, "*.csproj"))
+            {
+                string relativePath;
+                try
+                {
+                    relativePath = Path.GetRelativePath(newPath, newProjectPath);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                yield return new KeyValuePair<string, string>(
+                    Path.Combine(oldPath, relativePath),
+                    newProjectPath);
+            }
+        }
+
+        private static void UpdateSolutionProjectReferences(string solutionPath,
+            IEnumerable<KeyValuePair<string, string>> projectPathPairs)
+        {
+            try
+            {
+                string solutionDirectory = Path.GetDirectoryName(solutionPath);
+                if (string.IsNullOrEmpty(solutionDirectory))
+                    return;
+
+                string content = File.ReadAllText(solutionPath);
+                string updatedContent = content;
+                foreach (var projectPathPair in projectPathPairs)
+                {
+                    string oldRelativePath = Path.GetRelativePath(solutionDirectory, projectPathPair.Key)
+                        .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                    string newRelativePath = Path.GetRelativePath(solutionDirectory, projectPathPair.Value)
+                        .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+
+                    updatedContent = ReplaceOrdinalIgnoreCase(updatedContent, oldRelativePath, newRelativePath);
+                    updatedContent = ReplaceOrdinalIgnoreCase(updatedContent, oldRelativePath.Replace('\\', '/'),
+                        newRelativePath.Replace('\\', '/'));
+                }
+
+                if (!string.Equals(content, updatedContent, StringComparison.Ordinal))
+                    File.WriteAllText(solutionPath, updatedContent);
+            }
+            catch
+            {
+            }
+        }
+
+        private static string ReplaceOrdinalIgnoreCase(string value, string oldValue, string newValue)
+        {
+            if (string.IsNullOrEmpty(value) || string.IsNullOrEmpty(oldValue))
+                return value;
+
+            var builder = new StringBuilder(value.Length);
+            int startIndex = 0;
+            while (true)
+            {
+                int matchIndex = value.IndexOf(oldValue, startIndex, StringComparison.OrdinalIgnoreCase);
+                if (matchIndex < 0)
+                {
+                    builder.Append(value, startIndex, value.Length - startIndex);
+                    break;
+                }
+
+                builder.Append(value, startIndex, matchIndex - startIndex);
+                builder.Append(newValue);
+                startIndex = matchIndex + oldValue.Length;
+            }
+
+            return builder.ToString();
+        }
+
+        private static string GetRenamedExplorerPath(string path, string oldPath, string newPath, bool renamedDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path))
+                return string.Empty;
+
+            try
+            {
+                string normalizedPath = NormalizeCompletionPath(path);
+                string normalizedOldPath = NormalizeCompletionPath(oldPath);
+
+                if (!renamedDirectory)
+                    return string.Equals(normalizedPath, normalizedOldPath, StringComparison.OrdinalIgnoreCase)
+                        ? newPath
+                        : string.Empty;
+
+                if (!IsSameOrChildDirectory(normalizedPath, normalizedOldPath))
+                    return string.Empty;
+
+                string relativePath = normalizedPath.Length == normalizedOldPath.Length
+                    ? string.Empty
+                    : normalizedPath.Substring(normalizedOldPath.Length)
+                        .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+                return string.IsNullOrEmpty(relativePath)
+                    ? newPath
+                    : Path.Combine(newPath, relativePath);
+            }
+            catch
+            {
+                return string.Empty;
             }
         }
 
