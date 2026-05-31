@@ -217,9 +217,56 @@ namespace CIARE
             autoStartFile.CheckSetAtiveFormState();
             autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
+            ConfigureErrorsListView();
             DoubleBuffered = true;
             SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             UpdateStyles();
+        }
+
+        private void ConfigureErrorsListView()
+        {
+            if (errorsLV == null)
+                return;
+
+            if (errorsLV.Columns.Count == 0)
+            {
+                errorsLV.Columns.Add(string.Empty, 34, HorizontalAlignment.Center);
+                errorsLV.Columns.Add("Line", 64, HorizontalAlignment.Right);
+                errorsLV.Columns.Add("Code", 84, HorizontalAlignment.Left);
+                errorsLV.Columns.Add("Message", 320, HorizontalAlignment.Left);
+            }
+
+            errorsLV.HeaderStyle = ColumnHeaderStyle.Nonclickable;
+            errorsLV.ShowItemToolTips = true;
+            if (errorsLV.ListViewItemSorter == null)
+                errorsLV.ListViewItemSorter = new CIARE.GUI.ListViewColumnSorter();
+            errorsLV.Resize += errorsLV_Resize;
+            ResizeErrorsListViewColumns();
+        }
+
+        private void errorsLV_Resize(object sender, EventArgs e)
+        {
+            ResizeErrorsListViewColumns();
+        }
+
+        private void ResizeErrorsListViewColumns()
+        {
+            if (errorsLV == null || errorsLV.IsDisposed || errorsLV.Columns.Count < 4)
+                return;
+
+            int availableWidth = errorsLV.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6;
+            if (availableWidth <= 0)
+                return;
+
+            int iconWidth = 34;
+            int lineWidth = 64;
+            int codeWidth = 84;
+            int messageWidth = Math.Max(180, availableWidth - iconWidth - lineWidth - codeWidth);
+
+            errorsLV.Columns[0].Width = iconWidth;
+            errorsLV.Columns[1].Width = lineWidth;
+            errorsLV.Columns[2].Width = codeWidth;
+            errorsLV.Columns[3].Width = messageWidth;
         }
 
         /// <summary>

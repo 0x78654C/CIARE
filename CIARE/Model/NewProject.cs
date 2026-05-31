@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Utils;
+using CIARE.Utils.Options;
 
 namespace CIARE
 {
@@ -35,7 +36,9 @@ namespace CIARE
         private readonly Button _cancelButton = new Button();
         private readonly Button _browseButton = new Button();
         private bool _syncingSolutionName;
+        private bool _syncingTargetFramework;
         private string _lastProjectName = "CiareApp";
+        private string _lastInstalledTargetFramework = "net8.0";
 
         public NewProjectResult CreatedProject { get; private set; }
 
@@ -109,12 +112,29 @@ namespace CIARE
             _projectNameText.Text = "CiareApp";
             _projectNameText.TextChanged += ProjectNameText_TextChanged;
 
-            _locationText.Dock = DockStyle.Fill;
+            _locationText.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
+            _locationText.Margin = new Padding(2, 4, 6, 0);
             _locationText.Text = GetDefaultProjectLocation();
 
-            _browseButton.Dock = DockStyle.Fill;
+            _browseButton.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
+            _browseButton.Height = _locationText.PreferredHeight;
+            _browseButton.Margin = new Padding(0, 3, 0, 0);
             _browseButton.Text = "Browse";
             _browseButton.Click += BrowseButton_Click;
+
+            var locationPanel = new TableLayoutPanel
+            {
+                ColumnCount = 2,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(1, 0, 0, 0),
+                Padding = Padding.Empty,
+                RowCount = 1
+            };
+            locationPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            locationPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 92));
+            locationPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            locationPanel.Controls.Add(_locationText, 0, 0);
+            locationPanel.Controls.Add(_browseButton, 1, 0);
 
             _solutionNameText.Dock = DockStyle.Fill;
             _solutionNameText.Text = _projectNameText.Text;
@@ -135,7 +155,9 @@ namespace CIARE
                 "net10.0-windows"
             });
             SelectTargetFramework(GlobalVariables.Framework);
-            _targetFrameworkCombo.SelectedIndexChanged += (_, _) => UpdateTemplateSelection();
+            _lastInstalledTargetFramework = _targetFrameworkCombo.Text;
+            ValidateSelectedTargetFrameworkInstalled(showMessage: false);
+            _targetFrameworkCombo.SelectedIndexChanged += TargetFrameworkCombo_SelectedIndexChanged;
 
             _createSolutionCheckBox.AutoSize = true;
             _createSolutionCheckBox.Checked = true;
@@ -154,8 +176,7 @@ namespace CIARE
             _cancelButton.DialogResult = DialogResult.Cancel;
 
             AddOptionRow(optionsLayout, 0, "Name:", _projectNameText);
-            AddOptionRow(optionsLayout, 1, "Location:", _locationText);
-            optionsLayout.Controls.Add(_browseButton, 2, 1);
+            AddOptionRow(optionsLayout, 1, "Location:", locationPanel);
             AddOptionRow(optionsLayout, 2, "Solution:", _solutionNameText);
             AddOptionRow(optionsLayout, 3, "Framework:", _targetFrameworkCombo);
             optionsLayout.Controls.Add(_createSolutionCheckBox, 1, 4);
@@ -194,7 +215,7 @@ namespace CIARE
             }, 0, row);
 
             layout.Controls.Add(control, 1, row);
-            layout.SetColumnSpan(control, row == 1 ? 1 : 2);
+            layout.SetColumnSpan(control, 2);
         }
 
         private void BrowseButton_Click(object sender, EventArgs e)
@@ -237,22 +258,39 @@ namespace CIARE
             }
         }
 
+        private void TargetFrameworkCombo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_syncingTargetFramework)
+                return;
+
+            UpdateTemplateSelection();
+            ValidateSelectedTargetFrameworkInstalled(showMessage: true);
+        }
+
         private void SelectTargetFramework(string targetFramework)
         {
             if (string.IsNullOrWhiteSpace(targetFramework))
                 targetFramework = "net8.0";
 
-            for (int i = 0; i < _targetFrameworkCombo.Items.Count; i++)
+            _syncingTargetFramework = true;
+            try
             {
-                if (string.Equals(_targetFrameworkCombo.Items[i].ToString(), targetFramework,
-                    StringComparison.OrdinalIgnoreCase))
+                for (int i = 0; i < _targetFrameworkCombo.Items.Count; i++)
                 {
-                    _targetFrameworkCombo.SelectedIndex = i;
-                    return;
+                    if (string.Equals(_targetFrameworkCombo.Items[i].ToString(), targetFramework,
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        _targetFrameworkCombo.SelectedIndex = i;
+                        return;
+                    }
                 }
-            }
 
-            _targetFrameworkCombo.SelectedIndex = 4;
+                _targetFrameworkCombo.SelectedIndex = 4;
+            }
+            finally
+            {
+                _syncingTargetFramework = false;
+            }
         }
 
         private ProjectTemplate SelectedTemplate =>
@@ -304,6 +342,10 @@ namespace CIARE
             Directory.CreateDirectory(projectDirectory);
 
             string targetFramework = NormalizeTargetFramework(_targetFrameworkCombo.Text, SelectedTemplate);
+            if (!IsTargetFrameworkInstalled(targetFramework))
+                throw new InvalidOperationException(
+                    $"The targeted framework ({GetTargetFrameworkDisplayName(targetFramework)}) is not installed.");
+
             string rootNamespace = ToSafeNamespace(projectName);
 
             File.WriteAllText(projectPath, SelectedTemplate.BuildProjectFile(targetFramework), Encoding.UTF8);
@@ -344,6 +386,83 @@ namespace CIARE
             }
 
             return targetFramework;
+        }
+
+        private bool ValidateSelectedTargetFrameworkInstalled(bool showMessage)
+        {
+            string targetFramework = NormalizeTargetFramework(_targetFrameworkCombo.Text, SelectedTemplate);
+            if (IsTargetFrameworkInstalled(targetFramework))
+            {
+                _lastInstalledTargetFramework = targetFramework;
+                return true;
+            }
+
+            if (showMessage)
+            {
+                MessageBox.Show(
+                    $"The targeted framework ({GetTargetFrameworkDisplayName(targetFramework)}) is not installed!",
+                    "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            string fallback = NormalizeTargetFramework(_lastInstalledTargetFramework, SelectedTemplate);
+            if (!IsTargetFrameworkInstalled(fallback))
+                fallback = GetFirstInstalledTargetFramework(SelectedTemplate) ?? "net8.0";
+
+            SelectTargetFramework(fallback);
+            if (IsTargetFrameworkInstalled(fallback))
+                _lastInstalledTargetFramework = fallback;
+
+            return false;
+        }
+
+        private static string GetFirstInstalledTargetFramework(ProjectTemplate template)
+        {
+            foreach (string targetFramework in new[]
+            {
+                "net10.0",
+                "net9.0",
+                "net8.0",
+                "net7.0",
+                "net6.0"
+            })
+            {
+                string normalizedTargetFramework = NormalizeTargetFramework(targetFramework, template);
+                if (IsTargetFrameworkInstalled(normalizedTargetFramework))
+                    return normalizedTargetFramework;
+            }
+
+            return null;
+        }
+
+        private static bool IsTargetFrameworkInstalled(string targetFramework)
+        {
+            string sdkVersion = GetTargetFrameworkSdkVersion(targetFramework);
+            return !string.IsNullOrEmpty(sdkVersion) && SdkVersion.CheckSdk(sdkVersion);
+        }
+
+        private static string GetTargetFrameworkSdkVersion(string targetFramework)
+        {
+            if (string.IsNullOrWhiteSpace(targetFramework) ||
+                !targetFramework.StartsWith("net", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            string version = targetFramework.Substring(3);
+            int separatorIndex = version.IndexOf('.');
+            return separatorIndex > 0 ? version.Substring(0, separatorIndex) : version;
+        }
+
+        private static string GetTargetFrameworkDisplayName(string targetFramework)
+        {
+            string sdkVersion = GetTargetFrameworkSdkVersion(targetFramework);
+            string windowsSuffix = targetFramework.EndsWith("-windows", StringComparison.OrdinalIgnoreCase)
+                ? " Windows"
+                : string.Empty;
+
+            return string.IsNullOrEmpty(sdkVersion)
+                ? targetFramework
+                : $".NET {sdkVersion}{windowsSuffix}";
         }
 
         private static string GetDefaultProjectLocation()
