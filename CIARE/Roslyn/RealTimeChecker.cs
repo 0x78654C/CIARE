@@ -210,7 +210,8 @@ namespace CIARE.Roslyn
                     syntaxTrees.Add(BuildImplicitUsingsSyntaxTree(parseOptions, ct,
                         hasAspNetCoreContext, projectFile));
 
-                syntaxTrees.AddRange(BuildWorkspaceSyntaxTrees(workspaceFolder, currentFilePath, parseOptions, ct));
+                syntaxTrees.AddRange(BuildWorkspaceSyntaxTrees(workspaceFolder, currentFilePath, projectFile,
+                    parseOptions, ct));
             }
 
             var outputKind = syntaxTrees.Any(tree => HasTopLevelStatements(tree, ct))
@@ -347,14 +348,15 @@ namespace CIARE.Roslyn
         }
 
         private static List<SyntaxTree> BuildWorkspaceSyntaxTrees(string workspaceFolder, string currentFilePath,
-            CSharpParseOptions parseOptions, CancellationToken ct)
+            string projectFile, CSharpParseOptions parseOptions, CancellationToken ct)
         {
             var trees = new List<SyntaxTree>();
-            if (string.IsNullOrWhiteSpace(workspaceFolder) || !Directory.Exists(workspaceFolder))
+            string sourceFolder = GetProjectSourceFolder(workspaceFolder, projectFile);
+            if (string.IsNullOrWhiteSpace(sourceFolder) || !Directory.Exists(sourceFolder))
                 return trees;
 
             string normalizedCurrentFile = NormalizePath(currentFilePath);
-            foreach (var filePath in EnumerateWorkspaceCsFiles(workspaceFolder, ct))
+            foreach (var filePath in EnumerateWorkspaceCsFiles(sourceFolder, ct, true))
             {
                 ct.ThrowIfCancellationRequested();
                 if (!string.IsNullOrEmpty(normalizedCurrentFile) &&
@@ -377,7 +379,20 @@ namespace CIARE.Roslyn
             return trees;
         }
 
-        private static IEnumerable<string> EnumerateWorkspaceCsFiles(string workspaceFolder, CancellationToken ct)
+        private static string GetProjectSourceFolder(string workspaceFolder, string projectFile)
+        {
+            if (!string.IsNullOrWhiteSpace(projectFile) && File.Exists(projectFile))
+            {
+                string projectDirectory = Path.GetDirectoryName(projectFile);
+                if (!string.IsNullOrEmpty(projectDirectory))
+                    return projectDirectory;
+            }
+
+            return workspaceFolder;
+        }
+
+        private static IEnumerable<string> EnumerateWorkspaceCsFiles(string workspaceFolder, CancellationToken ct,
+            bool skipNestedProjectDirectories = false)
         {
             var pending = new Stack<string>();
             pending.Push(workspaceFolder);
@@ -399,8 +414,11 @@ namespace CIARE.Roslyn
 
                 foreach (var directory in directories)
                 {
-                    if (!ShouldSkipWorkspaceDirectory(directory))
+                    if (!ShouldSkipWorkspaceDirectory(directory) &&
+                        !(skipNestedProjectDirectories && DirectoryContainsProjectFile(directory)))
+                    {
                         pending.Push(directory);
+                    }
                 }
 
                 List<string> files;
@@ -415,6 +433,18 @@ namespace CIARE.Roslyn
 
                 foreach (var file in files.OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
                     yield return file;
+            }
+        }
+
+        private static bool DirectoryContainsProjectFile(string folder)
+        {
+            try
+            {
+                return Directory.EnumerateFiles(folder, "*.csproj", SearchOption.TopDirectoryOnly).Any();
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -534,13 +564,25 @@ namespace CIARE.Roslyn
                 var references = new List<MetadataReference>();
                 var referencePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var assemblyIndexes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                var sourceAssemblyNames = ResolveWorkspaceProjectAssemblyNames(workspaceFolder, currentFilePath,
+                var sourceAssemblyNames = ResolveActiveProjectAssemblyNames(workspaceFolder, currentFilePath,
                     hasProjectContext);
 
                 AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames, _platformRefs, false);
                 if (hasProjectContext)
                     AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames,
                         _frameworkRefs, true);
+                if (hasProjectContext)
+                {
+                    var projectReferenceRefs = new List<MetadataReference>();
+                    foreach (var lib in ResolveProjectReferenceOutputPaths(workspaceFolder, currentFilePath,
+                        hasProjectContext))
+                    {
+                        if (TryCreateMetadataReference(lib, out var reference))
+                            projectReferenceRefs.Add(reference);
+                    }
+                    AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames,
+                        projectReferenceRefs, true);
+                }
                 AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames, _customRefs, true);
                 if (hasProjectContext)
                     AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames, _nuGetRefs, true);
@@ -799,19 +841,17 @@ namespace CIARE.Roslyn
             }
         }
 
-        private static HashSet<string> ResolveWorkspaceProjectAssemblyNames(string workspaceFolder,
+        private static HashSet<string> ResolveActiveProjectAssemblyNames(string workspaceFolder,
             string currentFilePath, bool hasProjectContext)
         {
             var assemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (!hasProjectContext)
                 return assemblyNames;
 
-            foreach (var projectFile in EnumerateProjectFiles(workspaceFolder))
-            {
-                string assemblyName = ReadProjectAssemblyName(projectFile);
-                if (!string.IsNullOrWhiteSpace(assemblyName))
-                    assemblyNames.Add(assemblyName);
-            }
+            string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
+            string assemblyName = ReadProjectAssemblyName(projectFile);
+            if (!string.IsNullOrWhiteSpace(assemblyName))
+                assemblyNames.Add(assemblyName);
 
             return assemblyNames;
         }
@@ -1269,6 +1309,240 @@ namespace CIARE.Roslyn
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+        }
+
+        private static List<string> ResolveProjectReferenceOutputPaths(string workspaceFolder,
+            string currentFilePath, bool hasProjectContext)
+        {
+            var paths = new List<string>();
+            if (!hasProjectContext)
+                return paths;
+
+            string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
+            if (string.IsNullOrWhiteSpace(projectFile) || !File.Exists(projectFile))
+                return paths;
+
+            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                NormalizePath(projectFile)
+            };
+            var projectReferences = new List<string>();
+            AddProjectReferenceFiles(projectFile, visited, projectReferences);
+
+            foreach (string referencedProject in projectReferences)
+            {
+                string outputPath = ResolveProjectOutputAssemblyPath(referencedProject);
+                if (!string.IsNullOrWhiteSpace(outputPath) && File.Exists(outputPath))
+                    paths.Add(outputPath);
+            }
+
+            return paths
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static void AddProjectReferenceFiles(string projectFile, HashSet<string> visited,
+            List<string> projectReferences)
+        {
+            foreach (string referencedProject in ReadProjectReferenceFiles(projectFile))
+            {
+                string normalized = NormalizePath(referencedProject);
+                if (string.IsNullOrEmpty(normalized) || !visited.Add(normalized))
+                    continue;
+
+                projectReferences.Add(referencedProject);
+                AddProjectReferenceFiles(referencedProject, visited, projectReferences);
+            }
+        }
+
+        private static IEnumerable<string> ReadProjectReferenceFiles(string projectFile)
+        {
+            if (string.IsNullOrWhiteSpace(projectFile) || !File.Exists(projectFile))
+                yield break;
+
+            string projectDirectory = Path.GetDirectoryName(projectFile);
+            if (string.IsNullOrEmpty(projectDirectory))
+                yield break;
+
+            XDocument document;
+            try
+            {
+                document = XDocument.Load(projectFile);
+            }
+            catch
+            {
+                yield break;
+            }
+
+            foreach (var projectReference in document.Descendants()
+                .Where(element => string.Equals(element.Name.LocalName, "ProjectReference",
+                    StringComparison.Ordinal)))
+            {
+                string include = projectReference.Attribute("Include")?.Value;
+                if (string.IsNullOrWhiteSpace(include) || include.Contains("$"))
+                    continue;
+
+                string referencedProject;
+                try
+                {
+                    referencedProject = Path.GetFullPath(Path.Combine(projectDirectory, include));
+                }
+                catch
+                {
+                    continue;
+                }
+
+                if (File.Exists(referencedProject))
+                    yield return referencedProject;
+            }
+        }
+
+        private static string ResolveProjectOutputAssemblyPath(string projectFile)
+        {
+            if (string.IsNullOrWhiteSpace(projectFile) || !File.Exists(projectFile))
+                return string.Empty;
+
+            string projectDirectory = Path.GetDirectoryName(projectFile);
+            if (string.IsNullOrEmpty(projectDirectory))
+                return string.Empty;
+
+            string assemblyName = ReadProjectAssemblyName(projectFile);
+            if (string.IsNullOrWhiteSpace(assemblyName))
+                return string.Empty;
+
+            string configuration = GetActiveBuildConfiguration();
+            string targetFramework = ReadProjectTargetFramework(projectFile);
+            string assemblyFile = assemblyName + ".dll";
+
+            var candidates = new List<string>();
+            string configuredOutputPath = ReadProjectOutputPath(projectFile, configuration);
+            string configuredOutputDirectory = string.Empty;
+            if (!string.IsNullOrWhiteSpace(configuredOutputPath))
+            {
+                try
+                {
+                    configuredOutputDirectory = Path.GetFullPath(Path.Combine(projectDirectory,
+                        configuredOutputPath));
+                }
+                catch
+                {
+                    configuredOutputDirectory = string.Empty;
+                }
+
+                if (!string.IsNullOrEmpty(configuredOutputDirectory))
+                {
+                    if (!string.IsNullOrWhiteSpace(targetFramework))
+                        candidates.Add(Path.Combine(configuredOutputDirectory, targetFramework, assemblyFile));
+                    candidates.Add(Path.Combine(configuredOutputDirectory, assemblyFile));
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(targetFramework))
+                candidates.Add(Path.Combine(projectDirectory, "bin", configuration, targetFramework, assemblyFile));
+            candidates.Add(Path.Combine(projectDirectory, "bin", configuration, assemblyFile));
+
+            foreach (string candidate in candidates)
+            {
+                if (File.Exists(candidate))
+                    return candidate;
+            }
+
+            if (!string.IsNullOrEmpty(configuredOutputDirectory) &&
+                TryFindProjectOutputAssembly(configuredOutputDirectory, assemblyFile, targetFramework,
+                    out string configuredOutputAssembly))
+            {
+                return configuredOutputAssembly;
+            }
+
+            string configurationDirectory = Path.Combine(projectDirectory, "bin", configuration);
+            if (!Directory.Exists(configurationDirectory))
+                return string.Empty;
+
+            return TryFindProjectOutputAssembly(configurationDirectory, assemblyFile, targetFramework,
+                out string outputAssembly)
+                ? outputAssembly
+                : string.Empty;
+        }
+
+        private static bool TryFindProjectOutputAssembly(string outputDirectory, string assemblyFile,
+            string targetFramework, out string outputAssembly)
+        {
+            outputAssembly = string.Empty;
+            if (string.IsNullOrWhiteSpace(outputDirectory) || !Directory.Exists(outputDirectory))
+                return false;
+
+            try
+            {
+                outputAssembly = Directory.EnumerateFiles(outputDirectory, assemblyFile, SearchOption.AllDirectories)
+                    .OrderByDescending(path => IsPreferredProjectOutputPath(path, targetFramework))
+                    .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .FirstOrDefault() ?? string.Empty;
+                return !string.IsNullOrEmpty(outputAssembly);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string ReadProjectOutputPath(string projectFile, string configuration)
+        {
+            if (string.IsNullOrWhiteSpace(projectFile) || !File.Exists(projectFile))
+                return string.Empty;
+
+            try
+            {
+                var document = XDocument.Load(projectFile);
+                string fallback = string.Empty;
+
+                foreach (var propertyGroup in document.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "PropertyGroup",
+                        StringComparison.Ordinal)))
+                {
+                    string outputPath = propertyGroup.Elements()
+                        .FirstOrDefault(element => string.Equals(element.Name.LocalName, "OutputPath",
+                            StringComparison.Ordinal))
+                        ?.Value
+                        ?.Trim();
+                    if (string.IsNullOrWhiteSpace(outputPath))
+                        continue;
+
+                    string condition = propertyGroup.Attribute("Condition")?.Value ?? string.Empty;
+                    if (ConditionMatchesConfiguration(condition, configuration))
+                        return outputPath;
+
+                    if (string.IsNullOrWhiteSpace(condition) && string.IsNullOrWhiteSpace(fallback))
+                        fallback = outputPath;
+                }
+
+                return fallback;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static bool ConditionMatchesConfiguration(string condition, string configuration)
+        {
+            return !string.IsNullOrWhiteSpace(condition) &&
+                !string.IsNullOrWhiteSpace(configuration) &&
+                condition.IndexOf(configuration, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsPreferredProjectOutputPath(string path, string targetFramework)
+        {
+            return !string.IsNullOrWhiteSpace(targetFramework) &&
+                path.IndexOf(Path.DirectorySeparatorChar + targetFramework + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string GetActiveBuildConfiguration()
+        {
+            return !string.IsNullOrWhiteSpace(GlobalVariables.configParam) &&
+                GlobalVariables.configParam.IndexOf("Release", StringComparison.OrdinalIgnoreCase) >= 0
+                ? "Release"
+                : "Debug";
         }
 
         private static IEnumerable<string> ResolveProjectAssetsFiles(string workspaceFolder, string currentFilePath,
