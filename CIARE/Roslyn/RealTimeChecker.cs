@@ -73,6 +73,25 @@ namespace CIARE.Roslyn
             "Microsoft.Extensions.Hosting",
             "Microsoft.Extensions.Logging"
         };
+        private static readonly HashSet<string> WindowsDesktopAssemblyNames =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Accessibility",
+                "DirectWriteForwarder",
+                "PresentationCore",
+                "PresentationFramework",
+                "ReachFramework",
+                "System.Windows.Forms",
+                "System.Windows.Forms.Design",
+                "System.Windows.Forms.Design.Editors",
+                "System.Windows.Forms.Primitives",
+                "System.Xaml",
+                "UIAutomationClient",
+                "UIAutomationProvider",
+                "UIAutomationTypes",
+                "WindowsBase",
+                "WindowsFormsIntegration"
+            };
 
         /// <summary>
         /// Schedule a real-time type check after a short debounce delay.
@@ -199,20 +218,29 @@ namespace CIARE.Roslyn
             string projectFile = hasProjectContext
                 ? FindNearestProjectFile(currentFilePath, workspaceFolder)
                 : string.Empty;
+            var projectFiles = hasProjectContext
+                ? GetProjectGraphFiles(projectFile)
+                : new List<string>();
             bool hasAspNetCoreContext = hasProjectContext &&
                 ProjectUsesAspNetCore(workspaceFolder, currentFilePath, hasProjectContext);
             if (hasProjectContext)
             {
-                var generatedGlobalUsings = BuildProjectGlobalUsingsSyntaxTrees(workspaceFolder,
-                    currentFilePath, parseOptions, ct);
-                if (generatedGlobalUsings.Count > 0)
-                    syntaxTrees.AddRange(generatedGlobalUsings);
-                else
-                    syntaxTrees.Add(BuildImplicitUsingsSyntaxTree(parseOptions, ct,
-                        hasAspNetCoreContext, projectFile));
+                foreach (string graphProjectFile in projectFiles)
+                {
+                    var generatedGlobalUsings = BuildProjectGlobalUsingsSyntaxTrees(graphProjectFile,
+                        parseOptions, ct);
+                    if (generatedGlobalUsings.Count > 0)
+                        syntaxTrees.AddRange(generatedGlobalUsings);
+                    else
+                        syntaxTrees.Add(BuildImplicitUsingsSyntaxTree(parseOptions, ct,
+                            hasAspNetCoreContext || ProjectFileUsesAspNetCore(graphProjectFile),
+                            graphProjectFile));
 
-                syntaxTrees.AddRange(BuildProjectGeneratedXamlSyntaxTrees(projectFile, parseOptions, ct));
-                syntaxTrees.AddRange(BuildWorkspaceSyntaxTrees(workspaceFolder, currentFilePath, projectFile,
+                    syntaxTrees.AddRange(BuildProjectGeneratedXamlSyntaxTrees(graphProjectFile,
+                        parseOptions, ct));
+                }
+
+                syntaxTrees.AddRange(BuildWorkspaceSyntaxTrees(currentFilePath, projectFiles,
                     parseOptions, ct));
             }
 
@@ -275,15 +303,25 @@ namespace CIARE.Roslyn
             string code = string.Join(Environment.NewLine,
                 namespaces.Distinct(StringComparer.Ordinal).Select(ns => $"global using {ns};"));
 
-            return CSharpSyntaxTree.ParseText(code, parseOptions, path: "__CIARE_ImplicitUsings.g.cs",
+            string path = "__CIARE_ImplicitUsings_" + GetProjectGeneratedFileName(projectFile) + ".g.cs";
+            return CSharpSyntaxTree.ParseText(code, parseOptions, path: path,
                 cancellationToken: ct);
         }
 
-        private static List<SyntaxTree> BuildProjectGlobalUsingsSyntaxTrees(string workspaceFolder,
-            string currentFilePath, CSharpParseOptions parseOptions, CancellationToken ct)
+        private static string GetProjectGeneratedFileName(string projectFile)
+        {
+            string name = string.IsNullOrWhiteSpace(projectFile)
+                ? "Project"
+                : Path.GetFileNameWithoutExtension(projectFile);
+
+            return string.IsNullOrWhiteSpace(name) ? "Project" : name;
+        }
+
+        private static List<SyntaxTree> BuildProjectGlobalUsingsSyntaxTrees(string projectFile,
+            CSharpParseOptions parseOptions, CancellationToken ct)
         {
             var trees = new List<SyntaxTree>();
-            foreach (string filePath in FindProjectGlobalUsingsFiles(workspaceFolder, currentFilePath))
+            foreach (string filePath in FindProjectGlobalUsingsFiles(projectFile))
             {
                 ct.ThrowIfCancellationRequested();
                 try
@@ -300,9 +338,8 @@ namespace CIARE.Roslyn
             return trees;
         }
 
-        private static List<string> FindProjectGlobalUsingsFiles(string workspaceFolder, string currentFilePath)
+        private static List<string> FindProjectGlobalUsingsFiles(string projectFile)
         {
-            string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
             if (string.IsNullOrWhiteSpace(projectFile))
                 return new List<string>();
 
@@ -349,32 +386,41 @@ namespace CIARE.Roslyn
                 .Any(segment => segment.StartsWith(framework, StringComparison.OrdinalIgnoreCase));
         }
 
-        private static List<SyntaxTree> BuildWorkspaceSyntaxTrees(string workspaceFolder, string currentFilePath,
-            string projectFile, CSharpParseOptions parseOptions, CancellationToken ct)
+        private static List<SyntaxTree> BuildWorkspaceSyntaxTrees(string currentFilePath,
+            IList<string> projectFiles, CSharpParseOptions parseOptions, CancellationToken ct)
         {
             var trees = new List<SyntaxTree>();
-            string sourceFolder = GetProjectSourceFolder(workspaceFolder, projectFile);
-            if (string.IsNullOrWhiteSpace(sourceFolder) || !Directory.Exists(sourceFolder))
+            if (projectFiles == null || projectFiles.Count == 0)
                 return trees;
 
             string normalizedCurrentFile = NormalizePath(currentFilePath);
-            foreach (var filePath in EnumerateWorkspaceCsFiles(sourceFolder, ct, true))
-            {
-                ct.ThrowIfCancellationRequested();
-                if (!string.IsNullOrEmpty(normalizedCurrentFile) &&
-                    string.Equals(NormalizePath(filePath), normalizedCurrentFile, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
+            var seenFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(normalizedCurrentFile))
+                seenFiles.Add(normalizedCurrentFile);
 
-                try
+            foreach (string projectFile in projectFiles)
+            {
+                string sourceFolder = GetProjectSourceFolder(null, projectFile);
+                if (string.IsNullOrWhiteSpace(sourceFolder) || !Directory.Exists(sourceFolder))
+                    continue;
+
+                foreach (var filePath in EnumerateWorkspaceCsFiles(sourceFolder, ct, true))
                 {
-                    var code = File.ReadAllText(filePath);
-                    trees.Add(CSharpSyntaxTree.ParseText(code, parseOptions, path: filePath, cancellationToken: ct));
-                }
-                catch
-                {
-                    // Ignore unreadable workspace files; the active editor should still be checked.
+                    ct.ThrowIfCancellationRequested();
+                    string normalizedFile = NormalizePath(filePath);
+                    if (string.IsNullOrEmpty(normalizedFile) || !seenFiles.Add(normalizedFile))
+                        continue;
+
+                    try
+                    {
+                        var code = File.ReadAllText(filePath);
+                        trees.Add(CSharpSyntaxTree.ParseText(code, parseOptions, path: filePath,
+                            cancellationToken: ct));
+                    }
+                    catch
+                    {
+                        // Ignore unreadable workspace files; the active editor should still be checked.
+                    }
                 }
             }
 
@@ -871,7 +917,8 @@ namespace CIARE.Roslyn
                 var sourceAssemblyNames = ResolveActiveProjectAssemblyNames(workspaceFolder, currentFilePath,
                     hasProjectContext);
 
-                AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames, _platformRefs, false);
+                var platformRefs = ResolvePlatformReferences(workspaceFolder, currentFilePath, hasProjectContext);
+                AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames, platformRefs, false);
                 if (hasProjectContext)
                     AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames,
                         _frameworkRefs, true);
@@ -938,6 +985,44 @@ namespace CIARE.Roslyn
             }
 
             _platformRefs = references.ToImmutableArray();
+        }
+
+        private static IEnumerable<MetadataReference> ResolvePlatformReferences(string workspaceFolder,
+            string currentFilePath, bool hasProjectContext)
+        {
+            if (!hasProjectContext || ProjectContextUsesWindowsDesktop(workspaceFolder, currentFilePath))
+                return _platformRefs;
+
+            return _platformRefs
+                .Where(reference => !IsWindowsDesktopReferencePath(GetReferenceFilePath(reference)))
+                .ToList();
+        }
+
+        private static bool ProjectContextUsesWindowsDesktop(string workspaceFolder, string currentFilePath)
+        {
+            string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
+            if (string.IsNullOrWhiteSpace(projectFile) || !File.Exists(projectFile))
+                return false;
+
+            string targetFramework = ReadProjectTargetFramework(projectFile);
+            if (string.IsNullOrWhiteSpace(targetFramework))
+                targetFramework = ReadTargetFrameworkFromAssets(GetProjectAssetsPath(projectFile));
+
+            if (!TargetFrameworkTargetsWindows(targetFramework))
+                return false;
+
+            return FrameworkReferencesContainWindowsDesktop(ReadFrameworkReferencesFromProjectFile(projectFile));
+        }
+
+        private static bool IsWindowsDesktopReferencePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            if (path.IndexOf("Microsoft.WindowsDesktop.App", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            return WindowsDesktopAssemblyNames.Contains(Path.GetFileNameWithoutExtension(path));
         }
 
         private static List<string> ResolveCustomReferencePaths(bool includeStandaloneNuGetReferences)
@@ -1153,9 +1238,12 @@ namespace CIARE.Roslyn
                 return assemblyNames;
 
             string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
-            string assemblyName = ReadProjectAssemblyName(projectFile);
-            if (!string.IsNullOrWhiteSpace(assemblyName))
-                assemblyNames.Add(assemblyName);
+            foreach (string graphProjectFile in GetProjectGraphFiles(projectFile))
+            {
+                string assemblyName = ReadProjectAssemblyName(graphProjectFile);
+                if (!string.IsNullOrWhiteSpace(assemblyName))
+                    assemblyNames.Add(assemblyName);
+            }
 
             return assemblyNames;
         }
@@ -1233,28 +1321,29 @@ namespace CIARE.Roslyn
                 return new List<string>();
 
             string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
+            var referencePaths = new List<string>();
+            foreach (string graphProjectFile in GetProjectGraphFiles(projectFile))
+                referencePaths.AddRange(ResolveFrameworkReferencePathsForProject(graphProjectFile));
+
+            return referencePaths
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static List<string> ResolveFrameworkReferencePathsForProject(string projectFile)
+        {
             var projectFrameworkReferencePaths = ProjectNuGetManager.GetFrameworkReferencePaths(projectFile);
             if (projectFrameworkReferencePaths.Count > 0)
                 return projectFrameworkReferencePaths;
 
             var frameworkReferences = ReadFrameworkReferencesFromProjectFile(projectFile);
-            foreach (string assetsPath in ResolveProjectAssetsFiles(workspaceFolder, currentFilePath,
-                hasProjectContext))
-            {
-                frameworkReferences.UnionWith(ReadFrameworkReferencesFromAssets(assetsPath));
-            }
-
+            string projectAssetsPath = GetProjectAssetsPath(projectFile);
+            frameworkReferences.UnionWith(ReadFrameworkReferencesFromAssets(projectAssetsPath));
             string targetFramework = ReadProjectTargetFramework(projectFile);
             if (string.IsNullOrWhiteSpace(targetFramework))
-            {
-                foreach (string assetsPath in ResolveProjectAssetsFiles(workspaceFolder, currentFilePath,
-                    hasProjectContext))
-                {
-                    targetFramework = ReadTargetFrameworkFromAssets(assetsPath);
-                    if (!string.IsNullOrWhiteSpace(targetFramework))
-                        break;
-                }
-            }
+                targetFramework = ReadTargetFrameworkFromAssets(projectAssetsPath);
 
             if (string.IsNullOrWhiteSpace(targetFramework))
                 targetFramework = GlobalVariables.Framework;
@@ -1263,8 +1352,9 @@ namespace CIARE.Roslyn
             if (frameworkReferences.Contains("Microsoft.AspNetCore.App"))
                 referencePaths.AddRange(ResolveAspNetCoreReferencePaths(targetFramework));
 
-            if (FrameworkReferencesContainWindowsDesktop(frameworkReferences) ||
-                ProjectFileUsesWindowsDesktop(projectFile))
+            if (TargetFrameworkTargetsWindows(targetFramework) &&
+                (FrameworkReferencesContainWindowsDesktop(frameworkReferences) ||
+                ProjectFileUsesWindowsDesktop(projectFile)))
             {
                 referencePaths.AddRange(ResolveWindowsDesktopReferencePaths(targetFramework));
             }
@@ -1395,6 +1485,36 @@ namespace CIARE.Roslyn
             return frameworkReferences != null &&
                 frameworkReferences.Any(reference => reference.StartsWith("Microsoft.WindowsDesktop.App",
                     StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool TargetFrameworkTargetsWindows(string targetFramework)
+        {
+            if (string.IsNullOrWhiteSpace(targetFramework))
+                return false;
+
+            string normalized = NormalizeTargetFramework(targetFramework);
+            if (string.IsNullOrEmpty(normalized))
+                normalized = targetFramework.Trim();
+
+            if (normalized.IndexOf("-windows", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            if (!normalized.StartsWith("net", StringComparison.OrdinalIgnoreCase) ||
+                normalized.StartsWith("netstandard", StringComparison.OrdinalIgnoreCase) ||
+                normalized.StartsWith("netcoreapp", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            string version = normalized.Substring(3);
+            int digitCount = 0;
+            while (digitCount < version.Length && char.IsDigit(version[digitCount]))
+                digitCount++;
+
+            if (digitCount == 0)
+                return false;
+
+            return int.TryParse(version.Substring(0, digitCount), out int major) && major <= 4;
         }
 
         private static HashSet<string> ReadFrameworkReferencesFromAssets(string assetsPath)
@@ -1749,14 +1869,7 @@ namespace CIARE.Roslyn
             if (string.IsNullOrWhiteSpace(projectFile) || !File.Exists(projectFile))
                 return paths;
 
-            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                NormalizePath(projectFile)
-            };
-            var projectReferences = new List<string>();
-            AddProjectReferenceFiles(projectFile, visited, projectReferences);
-
-            foreach (string referencedProject in projectReferences)
+            foreach (string referencedProject in GetProjectGraphFiles(projectFile).Skip(1))
             {
                 string outputPath = ResolveProjectOutputAssemblyPath(referencedProject);
                 if (!string.IsNullOrWhiteSpace(outputPath) && File.Exists(outputPath))
@@ -1769,6 +1882,25 @@ namespace CIARE.Roslyn
                 .ToList();
         }
 
+        private static List<string> GetProjectGraphFiles(string projectFile)
+        {
+            var projectFiles = new List<string>();
+            AddProjectGraphFile(projectFile, new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                projectFiles);
+            return projectFiles;
+        }
+
+        private static void AddProjectGraphFile(string projectFile, HashSet<string> visited,
+            List<string> projectFiles)
+        {
+            string normalized = NormalizePath(projectFile);
+            if (string.IsNullOrEmpty(normalized) || !File.Exists(normalized) || !visited.Add(normalized))
+                return;
+
+            projectFiles.Add(normalized);
+            AddProjectReferenceFiles(normalized, visited, projectFiles);
+        }
+
         private static void AddProjectReferenceFiles(string projectFile, HashSet<string> visited,
             List<string> projectReferences)
         {
@@ -1778,8 +1910,8 @@ namespace CIARE.Roslyn
                 if (string.IsNullOrEmpty(normalized) || !visited.Add(normalized))
                     continue;
 
-                projectReferences.Add(referencedProject);
-                AddProjectReferenceFiles(referencedProject, visited, projectReferences);
+                projectReferences.Add(normalized);
+                AddProjectReferenceFiles(normalized, visited, projectReferences);
             }
         }
 
@@ -1980,7 +2112,8 @@ namespace CIARE.Roslyn
                 return assetsPaths;
 
             string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
-            AddProjectAssetsPath(assetsPaths, projectFile);
+            foreach (string graphProjectFile in GetProjectGraphFiles(projectFile))
+                AddProjectAssetsPath(assetsPaths, graphProjectFile);
 
             if (assetsPaths.Count == 0 && Directory.Exists(workspaceFolder))
             {
@@ -2015,16 +2148,21 @@ namespace CIARE.Roslyn
 
         private static void AddProjectAssetsPath(List<string> assetsPaths, string projectFile)
         {
+            string assetsPath = GetProjectAssetsPath(projectFile);
+            if (File.Exists(assetsPath))
+                assetsPaths.Add(assetsPath);
+        }
+
+        private static string GetProjectAssetsPath(string projectFile)
+        {
             if (string.IsNullOrEmpty(projectFile) || !File.Exists(projectFile))
-                return;
+                return string.Empty;
 
             string projectDirectory = Path.GetDirectoryName(projectFile);
             if (string.IsNullOrEmpty(projectDirectory))
-                return;
+                return string.Empty;
 
-            string assetsPath = Path.Combine(projectDirectory, "obj", "project.assets.json");
-            if (File.Exists(assetsPath))
-                assetsPaths.Add(assetsPath);
+            return Path.Combine(projectDirectory, "obj", "project.assets.json");
         }
 
         private static string FindNearestProjectFile(string currentFilePath, string workspaceFolder)

@@ -390,7 +390,9 @@ namespace CIARE.Utils.NuGetManage
             if (!IsProjectFile(projectPath))
                 return new List<string>();
 
-            var frameworkReferences = ReadFrameworkReferencesFromProjectFile(projectPath);
+            var projectFrameworkReferences = ReadFrameworkReferencesFromProjectFile(projectPath);
+            var frameworkReferences = new HashSet<string>(projectFrameworkReferences,
+                StringComparer.OrdinalIgnoreCase);
             string assetsPath = GetProjectAssetsPath(projectPath);
             frameworkReferences.UnionWith(ReadFrameworkReferencesFromAssets(assetsPath));
 
@@ -401,9 +403,18 @@ namespace CIARE.Utils.NuGetManage
             if (string.IsNullOrWhiteSpace(targetFramework))
                 targetFramework = ReadTargetFrameworkFromAssets(assetsPath);
 
+            bool projectUsesWindowsDesktop = projectFrameworkReferences.Any(IsWindowsDesktopFrameworkReference);
             var paths = new List<string>();
             foreach (string frameworkReference in frameworkReferences)
+            {
+                if (IsWindowsDesktopFrameworkReference(frameworkReference) &&
+                    (!TargetFrameworkTargetsWindows(targetFramework) || !projectUsesWindowsDesktop))
+                {
+                    continue;
+                }
+
                 paths.AddRange(ResolveFrameworkReferencePaths(frameworkReference, targetFramework));
+            }
 
             return paths
                 .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
@@ -420,7 +431,9 @@ namespace CIARE.Utils.NuGetManage
             var namespaces = new List<string>();
             namespaces.AddRange(SdkImplicitUsingNamespaces);
 
-            var frameworkReferences = ReadFrameworkReferencesFromProjectFile(projectPath);
+            var projectFrameworkReferences = ReadFrameworkReferencesFromProjectFile(projectPath);
+            var frameworkReferences = new HashSet<string>(projectFrameworkReferences,
+                StringComparer.OrdinalIgnoreCase);
             string assetsPath = GetProjectAssetsPath(projectPath);
             frameworkReferences.UnionWith(ReadFrameworkReferencesFromAssets(assetsPath));
 
@@ -430,16 +443,21 @@ namespace CIARE.Utils.NuGetManage
                 namespaces.AddRange(AspNetCoreImplicitUsingNamespaces);
             }
 
-            if (ProjectUsesWindowsForms(projectPath) ||
-                frameworkReferences.Any(reference =>
-                    reference.StartsWith("Microsoft.WindowsDesktop.App", StringComparison.OrdinalIgnoreCase)))
+            string targetFramework = GetProjectTargetFramework(projectPath);
+            if (string.IsNullOrWhiteSpace(targetFramework))
+                targetFramework = ReadTargetFrameworkFromAssets(assetsPath);
+            bool targetsWindows = TargetFrameworkTargetsWindows(targetFramework);
+
+            if (targetsWindows &&
+                (ProjectUsesWindowsForms(projectPath) ||
+                projectFrameworkReferences.Any(IsWindowsFormsFrameworkReference)))
             {
                 namespaces.AddRange(WindowsFormsImplicitUsingNamespaces);
             }
 
-            if (ProjectUsesWpf(projectPath) ||
-                frameworkReferences.Any(reference =>
-                    reference.IndexOf("WPF", StringComparison.OrdinalIgnoreCase) >= 0))
+            if (targetsWindows &&
+                (ProjectUsesWpf(projectPath) ||
+                projectFrameworkReferences.Any(IsWpfFrameworkReference)))
             {
                 namespaces.AddRange(WpfImplicitUsingNamespaces);
             }
@@ -690,6 +708,55 @@ namespace CIARE.Utils.NuGetManage
             return !string.IsNullOrWhiteSpace(frameworkReference) &&
                 frameworkReference.StartsWith("Microsoft.AspNetCore.App",
                     StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsWindowsDesktopFrameworkReference(string frameworkReference)
+        {
+            return !string.IsNullOrWhiteSpace(frameworkReference) &&
+                frameworkReference.StartsWith("Microsoft.WindowsDesktop.App",
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsWindowsFormsFrameworkReference(string frameworkReference)
+        {
+            return !string.IsNullOrWhiteSpace(frameworkReference) &&
+                frameworkReference.IndexOf("WindowsForms", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsWpfFrameworkReference(string frameworkReference)
+        {
+            return !string.IsNullOrWhiteSpace(frameworkReference) &&
+                frameworkReference.IndexOf("WPF", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool TargetFrameworkTargetsWindows(string targetFramework)
+        {
+            if (string.IsNullOrWhiteSpace(targetFramework))
+                return false;
+
+            string normalized = NormalizeTargetFramework(targetFramework);
+            if (string.IsNullOrEmpty(normalized))
+                normalized = targetFramework.Trim();
+
+            if (normalized.IndexOf("-windows", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            if (!normalized.StartsWith("net", StringComparison.OrdinalIgnoreCase) ||
+                normalized.StartsWith("netstandard", StringComparison.OrdinalIgnoreCase) ||
+                normalized.StartsWith("netcoreapp", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            string version = normalized.Substring(3);
+            int digitCount = 0;
+            while (digitCount < version.Length && char.IsDigit(version[digitCount]))
+                digitCount++;
+
+            if (digitCount == 0)
+                return false;
+
+            return int.TryParse(version.Substring(0, digitCount), out int major) && major <= 4;
         }
 
         private static string ReadTargetFrameworkFromAssets(string assetsPath)

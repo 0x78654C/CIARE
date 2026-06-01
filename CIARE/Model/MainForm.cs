@@ -1,4 +1,4 @@
-﻿/*
+/*
        Description: Simple text editor for Windows with C# runtime compiler and code execution using Roslyn. 
        Useful to run code on the fly and get instant result.
 
@@ -133,6 +133,7 @@ namespace CIARE
         private ContextMenuStrip _fileExplorerContextMenu;
         private ToolStripMenuItem _fileExplorerAddProjectMenuItem;
         private ToolStripMenuItem _fileExplorerAddProjectReferenceMenuItem;
+        private ToolStripMenuItem _fileExplorerRemoveProjectReferenceMenuItem;
         private ToolStripMenuItem _fileExplorerSetStartupProjectMenuItem;
         private ToolStripMenuItem _fileExplorerNewFileMenuItem;
         private ToolStripMenuItem _fileExplorerNewFolderMenuItem;
@@ -492,6 +493,12 @@ namespace CIARE
             };
             _fileExplorerAddProjectReferenceMenuItem.Click += fileExplorerAddProjectReferenceMenuItem_Click;
 
+            _fileExplorerRemoveProjectReferenceMenuItem = new ToolStripMenuItem
+            {
+                Text = "Remove Project Reference..."
+            };
+            _fileExplorerRemoveProjectReferenceMenuItem.Click += fileExplorerRemoveProjectReferenceMenuItem_Click;
+
             _fileExplorerSetStartupProjectMenuItem = new ToolStripMenuItem
             {
                 Text = "Set as Startup Project"
@@ -526,6 +533,7 @@ namespace CIARE
             _fileExplorerContextMenu.Opening += fileExplorerContextMenu_Opening;
             _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectReferenceMenuItem);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerRemoveProjectReferenceMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerSetStartupProjectMenuItem);
             _fileExplorerProjectSeparator = new ToolStripSeparator();
             _fileExplorerContextMenu.Items.Add(_fileExplorerProjectSeparator);
@@ -1987,7 +1995,7 @@ namespace CIARE
             if (!GlobalVariables.OCodeCompletion || pcRegistry == null || myProjectContent == null)
                 return;
 
-            var referencePaths = ProjectNuGetManager.GetCompileReferencePaths(projectPath);
+            var referencePaths = GetCompletionCompileReferencePaths(projectPath);
             var activeReferences = new HashSet<string>(referencePaths, StringComparer.OrdinalIgnoreCase);
 
             lock (_completionDataLock)
@@ -2432,14 +2440,21 @@ namespace CIARE
             string solutionPath = GetSolutionPathFromExplorerPath(path);
             string projectPath = GetProjectPathFromExplorerPath(path);
             bool hasSolutionContext = !string.IsNullOrEmpty(solutionPath);
+            bool canAddProjectToSolution = hasSolutionContext &&
+                IsAddProjectToSolutionContext(path, solutionPath);
             bool hasProjectContext = !string.IsNullOrEmpty(projectPath);
             bool hasProjectReferenceCandidates = hasProjectContext &&
                 ProjectReferenceManager.GetReferenceableProjects(projectPath, solutionPath,
                     _fileExplorerRootPath).Count > 0;
+            bool hasProjectReferences = hasProjectContext &&
+                ProjectReferenceManager.GetProjectReferences(projectPath).Count > 0;
 
             _fileExplorerAddProjectMenuItem.Visible = hasSolutionContext;
+            _fileExplorerAddProjectMenuItem.Enabled = canAddProjectToSolution;
             _fileExplorerAddProjectReferenceMenuItem.Visible = hasProjectContext;
             _fileExplorerAddProjectReferenceMenuItem.Enabled = hasProjectReferenceCandidates;
+            _fileExplorerRemoveProjectReferenceMenuItem.Visible = hasProjectContext;
+            _fileExplorerRemoveProjectReferenceMenuItem.Enabled = hasProjectReferences;
             _fileExplorerSetStartupProjectMenuItem.Visible = hasProjectContext;
             _fileExplorerSetStartupProjectMenuItem.Enabled = hasProjectContext;
             _fileExplorerSetStartupProjectMenuItem.Checked = hasProjectContext &&
@@ -2456,9 +2471,12 @@ namespace CIARE
 
         private void fileExplorerAddProjectMenuItem_Click(object sender, EventArgs e)
         {
-            string solutionPath = GetSolutionPathFromExplorerPath(
-                (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string);
+            string contextPath = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
+            string solutionPath = GetSolutionPathFromExplorerPath(contextPath);
             if (string.IsNullOrEmpty(solutionPath))
+                return;
+
+            if (!IsAddProjectToSolutionContext(contextPath, solutionPath))
                 return;
 
             using (var dialog = new NewProject(solutionPath))
@@ -2526,11 +2544,55 @@ namespace CIARE
             ShowProjectStatus("Added project reference", projectPath, solutionPath, referencedProjectPath);
         }
 
-        private string ShowProjectReferencePicker(string projectPath, IList<string> candidateProjects)
+        private void fileExplorerRemoveProjectReferenceMenuItem_Click(object sender, EventArgs e)
+        {
+            string contextPath = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
+            string projectPath = GetProjectPathFromExplorerPath(contextPath);
+            if (!IsProjectFilePath(projectPath))
+                return;
+
+            var references = ProjectReferenceManager.GetProjectReferences(projectPath);
+            if (references.Count == 0)
+            {
+                MessageBox.Show("No project references were found in this project.",
+                    "Remove Project Reference", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string referencedProjectPath = ShowProjectReferencePicker(projectPath, references,
+                "Remove Project Reference", "Remove");
+            if (string.IsNullOrEmpty(referencedProjectPath))
+                return;
+
+            DialogResult dialog = MessageBox.Show(
+                $"Remove project reference {Path.GetFileNameWithoutExtension(referencedProjectPath)} from {Path.GetFileName(projectPath)}?",
+                "Remove Project Reference", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (dialog != DialogResult.Yes)
+                return;
+
+            if (!ProjectReferenceManager.RemoveProjectReference(projectPath, referencedProjectPath, out string message))
+            {
+                MessageBox.Show(message, "Remove Project Reference", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string projectDirectory = Path.GetDirectoryName(projectPath);
+            if (!string.IsNullOrEmpty(projectDirectory))
+                RefreshAndExpandExplorerFolder(projectDirectory);
+
+            InvalidateCompletionWorkspace();
+            RealTimeChecker.InvalidateReferenceCache();
+            RefreshProjectPackageContext(projectPath, restoreProject: false, showRestoreFailure: false);
+            ShowProjectStatus("Removed project reference", projectPath, GetSolutionPathFromExplorerPath(contextPath),
+                referencedProjectPath);
+        }
+
+        private string ShowProjectReferencePicker(string projectPath, IList<string> candidateProjects,
+            string title = "Add Project Reference", string actionText = "Add")
         {
             using (var dialog = new Form())
             {
-                dialog.Text = "Add Project Reference";
+                dialog.Text = title;
                 dialog.StartPosition = FormStartPosition.CenterParent;
                 dialog.ClientSize = new Size(560, 340);
                 dialog.MinimumSize = new Size(460, 280);
@@ -2577,7 +2639,7 @@ namespace CIARE
                 };
                 var addButton = new Button
                 {
-                    Text = "Add",
+                    Text = actionText,
                     Width = 92,
                     Height = 28,
                     DialogResult = DialogResult.OK
@@ -2819,6 +2881,7 @@ namespace CIARE
                 return;
 
             string parentPath = Path.GetDirectoryName(path);
+            List<string> deletedProjectPaths = GetExplorerDeletedProjectPaths(path, isDirectory);
             try
             {
                 if (isDirectory)
@@ -2832,6 +2895,7 @@ namespace CIARE
                         VBRecycleOption.SendToRecycleBin);
                 }
 
+                RemoveProjectsFromWorkspaceSolutions(deletedProjectPaths, _fileExplorerRootPath);
                 ClearStartupProjectAfterExplorerDelete(path, isDirectory);
                 if (!string.IsNullOrEmpty(parentPath))
                     RefreshExplorerNodeForPath(parentPath);
@@ -3130,6 +3194,134 @@ namespace CIARE
             catch
             {
             }
+        }
+
+        private static List<string> GetExplorerDeletedProjectPaths(string path, bool isDirectory)
+        {
+            if (isDirectory)
+                return EnumerateBuildFiles(path, "*.csproj")
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            return IsProjectFilePath(path)
+                ? new List<string> { path }
+                : new List<string>();
+        }
+
+        private static void RemoveProjectsFromWorkspaceSolutions(IList<string> projectPaths, string workspaceFolder)
+        {
+            if (projectPaths == null || projectPaths.Count == 0 ||
+                string.IsNullOrWhiteSpace(workspaceFolder) ||
+                !Directory.Exists(workspaceFolder))
+            {
+                return;
+            }
+
+            foreach (string solutionPath in EnumerateBuildFiles(workspaceFolder, "*.sln"))
+                RemoveProjectsFromSolution(solutionPath, projectPaths);
+        }
+
+        private static void RemoveProjectsFromSolution(string solutionPath, IList<string> projectPaths)
+        {
+            if (!IsSolutionFilePath(solutionPath) || projectPaths == null || projectPaths.Count == 0)
+                return;
+
+            try
+            {
+                string solutionDirectory = Path.GetDirectoryName(solutionPath);
+                if (string.IsNullOrEmpty(solutionDirectory))
+                    return;
+
+                var deletedProjects = new HashSet<string>(
+                    projectPaths.Select(NormalizeCompletionPath).Where(path => !string.IsNullOrEmpty(path)),
+                    StringComparer.OrdinalIgnoreCase);
+                if (deletedProjects.Count == 0)
+                    return;
+
+                var lines = File.ReadAllLines(solutionPath).ToList();
+                var updatedLines = new List<string>(lines.Count);
+                var removedProjectGuids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    if (TryGetRemovedSolutionProjectGuid(lines[i], solutionDirectory, deletedProjects,
+                        out string projectGuid))
+                    {
+                        if (!string.IsNullOrWhiteSpace(projectGuid))
+                            removedProjectGuids.Add(projectGuid);
+
+                        while (i + 1 < lines.Count &&
+                            !lines[i].Trim().Equals("EndProject", StringComparison.OrdinalIgnoreCase))
+                        {
+                            i++;
+                        }
+
+                        continue;
+                    }
+
+                    updatedLines.Add(lines[i]);
+                }
+
+                if (removedProjectGuids.Count == 0)
+                    return;
+
+                updatedLines = updatedLines
+                    .Where(line => !IsRemovedSolutionProjectConfigurationLine(line, removedProjectGuids))
+                    .ToList();
+
+                File.WriteAllLines(solutionPath, updatedLines);
+            }
+            catch
+            {
+            }
+        }
+
+        private static bool TryGetRemovedSolutionProjectGuid(string line, string solutionDirectory,
+            HashSet<string> deletedProjects, out string projectGuid)
+        {
+            projectGuid = string.Empty;
+            if (string.IsNullOrWhiteSpace(line) ||
+                string.IsNullOrWhiteSpace(solutionDirectory) ||
+                deletedProjects == null ||
+                deletedProjects.Count == 0)
+            {
+                return false;
+            }
+
+            Match match = Regex.Match(line,
+                @"Project\(""\{[^}]+\}""\)\s*=\s*""[^""]+"",\s*""([^""]+\.csproj)"",\s*""(\{[^}]+\})""",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            if (!match.Success)
+                return false;
+
+            string projectPath = match.Groups[1].Value;
+            try
+            {
+                if (!Path.IsPathRooted(projectPath))
+                    projectPath = Path.GetFullPath(Path.Combine(solutionDirectory, projectPath));
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (!deletedProjects.Contains(NormalizeCompletionPath(projectPath)))
+                return false;
+
+            projectGuid = match.Groups[2].Value;
+            return true;
+        }
+
+        private static bool IsRemovedSolutionProjectConfigurationLine(string line,
+            HashSet<string> removedProjectGuids)
+        {
+            if (string.IsNullOrWhiteSpace(line) || removedProjectGuids == null || removedProjectGuids.Count == 0)
+                return false;
+
+            string trimmed = line.TrimStart();
+            return removedProjectGuids.Any(guid =>
+                trimmed.StartsWith(guid + ".", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.StartsWith(guid + " =", StringComparison.OrdinalIgnoreCase));
         }
 
         private static string ReplaceOrdinalIgnoreCase(string value, string oldValue, string newValue)
@@ -3478,6 +3670,9 @@ namespace CIARE
         {
             string filePath = GetActiveEditorFilePath();
 
+            if (IsCSharpFilePath(filePath))
+                return GetBuildTargetForActiveCSharpFile(filePath);
+
             if (Directory.Exists(_fileExplorerRootPath))
             {
                 if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
@@ -3510,6 +3705,16 @@ namespace CIARE
                 return _fileExplorerStartupProjectPath;
             }
 
+            string filePath = GetActiveEditorFilePath();
+            if (IsCSharpFilePath(filePath))
+            {
+                string sourceProject = FindProjectContainingSourceFile(filePath);
+                if (string.IsNullOrEmpty(sourceProject))
+                    return string.Empty;
+
+                return sourceProject;
+            }
+
             string activeProject = FindProjectFileForPath(GetActiveEditorFilePath(), _fileExplorerRootPath);
             if (!string.IsNullOrEmpty(activeProject))
                 return activeProject;
@@ -3524,6 +3729,76 @@ namespace CIARE
                 return rootProject;
 
             return FindSingleRecursiveBuildFile(_fileExplorerRootPath, "*.csproj");
+        }
+
+        private string GetBuildTargetForActiveCSharpFile(string filePath)
+        {
+            if (!Directory.Exists(_fileExplorerRootPath) ||
+                !File.Exists(filePath) ||
+                !IsPathInsideFolder(filePath, _fileExplorerRootPath))
+            {
+                return string.Empty;
+            }
+
+            string activeProject = FindProjectContainingSourceFile(filePath);
+            if (string.IsNullOrEmpty(activeProject))
+                return string.Empty;
+
+            if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
+                IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath) &&
+                ProjectContainsSourceFile(_fileExplorerStartupProjectPath, filePath))
+            {
+                return _fileExplorerStartupProjectPath;
+            }
+
+            string activeSolution = FindContainingSolutionForProjectInWorkspace(activeProject);
+            return !string.IsNullOrEmpty(activeSolution) ? activeSolution : activeProject;
+        }
+
+        private string FindProjectContainingSourceFile(string filePath)
+        {
+            if (!IsCSharpFilePath(filePath) ||
+                !Directory.Exists(_fileExplorerRootPath) ||
+                !IsPathInsideFolder(filePath, _fileExplorerRootPath))
+            {
+                return string.Empty;
+            }
+
+            foreach (string projectPath in GetProjectCandidatesForSourceFile(filePath))
+            {
+                if (ProjectContainsSourceFile(projectPath, filePath))
+                    return projectPath;
+            }
+
+            return string.Empty;
+        }
+
+        private IEnumerable<string> GetProjectCandidatesForSourceFile(string filePath)
+        {
+            var candidates = new List<string>();
+            string activeFolder = Path.GetDirectoryName(filePath);
+
+            string activeSolution = FindNearestBuildFile(activeFolder, _fileExplorerRootPath, "*.sln");
+            if (!string.IsNullOrEmpty(activeSolution))
+                candidates.AddRange(ReadSolutionProjectFiles(activeSolution));
+
+            candidates.AddRange(EnumerateBuildFiles(_fileExplorerRootPath, "*.csproj"));
+
+            return candidates
+                .Where(IsProjectFilePath)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderByDescending(projectPath => GetCommonPathLength(filePath, Path.GetDirectoryName(projectPath)))
+                .ThenBy(projectPath => projectPath, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private string FindContainingSolutionForProjectInWorkspace(string projectPath)
+        {
+            if (!IsProjectFilePath(projectPath) || !Directory.Exists(_fileExplorerRootPath))
+                return string.Empty;
+
+            string projectFolder = Path.GetDirectoryName(projectPath);
+            string solutionPath = FindNearestBuildFile(projectFolder, _fileExplorerRootPath, "*.sln");
+            return SolutionFileContainsProject(solutionPath, projectPath) ? solutionPath : string.Empty;
         }
 
         public string GetActivePackageProjectPath()
@@ -3585,6 +3860,323 @@ namespace CIARE
                 string.Equals(Path.GetExtension(filePath), ".sln", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static bool ProjectContainsSourceFile(string projectPath, string sourceFilePath)
+        {
+            if (!IsProjectFilePath(projectPath) || !IsCSharpFilePath(sourceFilePath) || !File.Exists(sourceFilePath))
+                return false;
+
+            string projectDirectory = Path.GetDirectoryName(projectPath);
+            if (string.IsNullOrEmpty(projectDirectory) ||
+                !IsSameOrChildDirectory(Path.GetDirectoryName(sourceFilePath), projectDirectory))
+            {
+                return false;
+            }
+
+            XDocument document;
+            try
+            {
+                document = XDocument.Load(projectPath);
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (ProjectItemMatchesSourceFile(document, projectDirectory, sourceFilePath, "Compile", "Remove"))
+                return false;
+
+            if (ProjectCompileIncludeMatchesSourceFile(document, projectDirectory, sourceFilePath))
+                return true;
+
+            if (!ProjectUsesSdkStyle(document) || !DefaultCompileItemsEnabled(document))
+                return false;
+
+            return IsDefaultCompileCandidate(projectDirectory, sourceFilePath);
+        }
+
+        private static bool ProjectUsesSdkStyle(XDocument document)
+        {
+            if (document?.Root == null)
+                return false;
+
+            return document.Root.Attribute("Sdk") != null ||
+                document.Root.Elements()
+                    .Any(element => string.Equals(element.Name.LocalName, "Import", StringComparison.Ordinal) &&
+                        element.Attribute("Sdk") != null);
+        }
+
+        private static bool DefaultCompileItemsEnabled(XDocument document)
+        {
+            return !ProjectPropertyIsFalse(document, "EnableDefaultItems") &&
+                !ProjectPropertyIsFalse(document, "EnableDefaultCompileItems");
+        }
+
+        private static bool ProjectPropertyIsFalse(XDocument document, string propertyName)
+        {
+            return document?.Root?
+                .Descendants()
+                .Where(element => string.Equals(element.Name.LocalName, propertyName, StringComparison.Ordinal))
+                .Any(element => string.Equals((element.Value ?? string.Empty).Trim(), "false",
+                    StringComparison.OrdinalIgnoreCase)) == true;
+        }
+
+        private static bool IsDefaultCompileCandidate(string projectDirectory, string sourceFilePath)
+        {
+            if (!IsSameOrChildDirectory(sourceFilePath, projectDirectory))
+                return false;
+
+            string relativePath;
+            try
+            {
+                relativePath = Path.GetRelativePath(projectDirectory, sourceFilePath);
+            }
+            catch
+            {
+                return false;
+            }
+
+            string normalizedRelativePath = relativePath
+                .Replace(Path.DirectorySeparatorChar, '/')
+                .Replace(Path.AltDirectorySeparatorChar, '/');
+
+            if (string.IsNullOrWhiteSpace(normalizedRelativePath) ||
+                normalizedRelativePath == ".." ||
+                normalizedRelativePath.StartsWith("../"))
+            {
+                return false;
+            }
+
+            string[] segments = relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return !segments.Any(segment =>
+                string.Equals(segment, "bin", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(segment, "obj", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool ProjectCompileIncludeMatchesSourceFile(XDocument document, string projectDirectory,
+            string sourceFilePath)
+        {
+            if (document?.Root == null)
+                return false;
+
+            foreach (XElement item in document.Root
+                .Descendants()
+                .Where(element => string.Equals(element.Name.LocalName, "Compile", StringComparison.Ordinal)))
+            {
+                string include = item.Attribute("Include")?.Value;
+                if (string.IsNullOrWhiteSpace(include) ||
+                    !ProjectItemSpecMatchesSourceFile(projectDirectory, include, sourceFilePath))
+                {
+                    continue;
+                }
+
+                string exclude = item.Attribute("Exclude")?.Value;
+                if (!string.IsNullOrWhiteSpace(exclude) &&
+                    ProjectItemSpecMatchesSourceFile(projectDirectory, exclude, sourceFilePath))
+                {
+                    continue;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool ProjectItemMatchesSourceFile(XDocument document, string projectDirectory,
+            string sourceFilePath, string itemName, string attributeName)
+        {
+            if (document?.Root == null)
+                return false;
+
+            foreach (XElement item in document.Root
+                .Descendants()
+                .Where(element => string.Equals(element.Name.LocalName, itemName, StringComparison.Ordinal)))
+            {
+                string itemSpec = item.Attribute(attributeName)?.Value;
+                if (string.IsNullOrWhiteSpace(itemSpec))
+                    continue;
+
+                if (ProjectItemSpecMatchesSourceFile(projectDirectory, itemSpec, sourceFilePath))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool ProjectItemSpecMatchesSourceFile(string projectDirectory, string itemSpec,
+            string sourceFilePath)
+        {
+            foreach (string spec in SplitProjectItemSpec(itemSpec))
+            {
+                if (spec.Contains("$"))
+                    continue;
+
+                bool hasWildcards = spec.IndexOfAny(new[] { '*', '?' }) >= 0;
+                if (!hasWildcards)
+                {
+                    string itemPath = ResolveProjectItemPath(projectDirectory, spec);
+                    if (string.Equals(NormalizeCompletionPath(itemPath), NormalizeCompletionPath(sourceFilePath),
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+
+                    continue;
+                }
+
+                string pattern = NormalizeProjectItemPattern(spec);
+                string candidate = Path.IsPathRooted(spec)
+                    ? NormalizeCompletionPath(sourceFilePath).Replace(Path.DirectorySeparatorChar, '/')
+                    : GetProjectRelativePath(projectDirectory, sourceFilePath);
+
+                if (!string.IsNullOrEmpty(candidate) && GlobMatches(pattern, candidate))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static IEnumerable<string> SplitProjectItemSpec(string itemSpec)
+        {
+            return (itemSpec ?? string.Empty)
+                .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(spec => spec.Trim())
+                .Where(spec => !string.IsNullOrWhiteSpace(spec));
+        }
+
+        private static string ResolveProjectItemPath(string projectDirectory, string itemSpec)
+        {
+            try
+            {
+                return Path.IsPathRooted(itemSpec)
+                    ? Path.GetFullPath(itemSpec)
+                    : Path.GetFullPath(Path.Combine(projectDirectory, itemSpec));
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string GetProjectRelativePath(string projectDirectory, string sourceFilePath)
+        {
+            try
+            {
+                return Path.GetRelativePath(projectDirectory, sourceFilePath)
+                    .Replace(Path.DirectorySeparatorChar, '/')
+                    .Replace(Path.AltDirectorySeparatorChar, '/');
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string NormalizeProjectItemPattern(string itemSpec)
+        {
+            string pattern = (itemSpec ?? string.Empty)
+                .Replace(Path.DirectorySeparatorChar, '/')
+                .Replace(Path.AltDirectorySeparatorChar, '/');
+
+            while (pattern.StartsWith("./", StringComparison.Ordinal))
+                pattern = pattern.Substring(2);
+
+            return pattern;
+        }
+
+        private static bool GlobMatches(string pattern, string candidate)
+        {
+            if (string.IsNullOrWhiteSpace(pattern) || string.IsNullOrWhiteSpace(candidate))
+                return false;
+
+            var regex = new StringBuilder("^");
+            for (int i = 0; i < pattern.Length; i++)
+            {
+                char ch = pattern[i];
+                if (ch == '*')
+                {
+                    bool recursive = i + 1 < pattern.Length && pattern[i + 1] == '*';
+                    if (recursive && i + 2 < pattern.Length && pattern[i + 2] == '/')
+                    {
+                        regex.Append("(?:.*/)?");
+                        i += 2;
+                    }
+                    else
+                    {
+                        regex.Append(recursive ? ".*" : "[^/]*");
+                        if (recursive)
+                            i++;
+                    }
+                }
+                else if (ch == '?')
+                {
+                    regex.Append("[^/]");
+                }
+                else
+                {
+                    regex.Append(Regex.Escape(ch.ToString()));
+                }
+            }
+
+            regex.Append("$");
+            return Regex.IsMatch(candidate, regex.ToString(),
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        }
+
+        private static IEnumerable<string> ReadSolutionProjectFiles(string solutionPath)
+        {
+            if (!IsSolutionFilePath(solutionPath))
+                yield break;
+
+            string solutionDirectory = Path.GetDirectoryName(solutionPath);
+            if (string.IsNullOrEmpty(solutionDirectory))
+                yield break;
+
+            IEnumerable<string> lines;
+            try
+            {
+                lines = File.ReadLines(solutionPath);
+            }
+            catch
+            {
+                yield break;
+            }
+
+            foreach (string line in lines)
+            {
+                Match match = Regex.Match(line,
+                    @"Project\(""\{[^}]+\}""\)\s*=\s*""[^""]+"",\s*""([^""]+\.csproj)""",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                if (!match.Success)
+                    continue;
+
+                string projectPath = match.Groups[1].Value;
+                if (!Path.IsPathRooted(projectPath))
+                    projectPath = Path.GetFullPath(Path.Combine(solutionDirectory, projectPath));
+
+                if (IsProjectFilePath(projectPath))
+                    yield return projectPath;
+            }
+        }
+
+        private static int GetCommonPathLength(string filePath, string folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || string.IsNullOrWhiteSpace(folderPath))
+                return 0;
+
+            string normalizedFile = NormalizeCompletionPath(filePath);
+            string normalizedFolder = NormalizeCompletionPath(folderPath);
+            if (string.IsNullOrEmpty(normalizedFile) || string.IsNullOrEmpty(normalizedFolder))
+                return 0;
+
+            return normalizedFile.StartsWith(normalizedFolder + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase) ||
+                normalizedFile.StartsWith(normalizedFolder + Path.AltDirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase)
+                ? normalizedFolder.Length
+                : 0;
+        }
+
         private string GetProjectPathFromExplorerPath(string path)
         {
             if (IsProjectFilePath(path))
@@ -3631,6 +4223,24 @@ namespace CIARE
                 return FindNearestBuildFile(folder, _fileExplorerRootPath, "*.sln");
 
             return FindTopLevelBuildFile(folder, "*.sln");
+        }
+
+        private static bool IsAddProjectToSolutionContext(string path, string solutionPath)
+        {
+            if (!IsSolutionFilePath(solutionPath) || string.IsNullOrWhiteSpace(path))
+                return false;
+
+            if (IsSolutionFilePath(path))
+                return string.Equals(NormalizeCompletionPath(path),
+                    NormalizeCompletionPath(solutionPath), StringComparison.OrdinalIgnoreCase);
+
+            if (!Directory.Exists(path))
+                return false;
+
+            string solutionDirectory = Path.GetDirectoryName(solutionPath);
+            return !string.IsNullOrEmpty(solutionDirectory) &&
+                string.Equals(NormalizeCompletionPath(path), NormalizeCompletionPath(solutionDirectory),
+                    StringComparison.OrdinalIgnoreCase);
         }
 
         private static string FindProjectFileForPath(string path, string workspaceFolder)
@@ -3850,11 +4460,14 @@ namespace CIARE
         private bool IsStartupProjectNode(TreeNode node)
         {
             string path = node?.Tag as string;
-            if (string.IsNullOrWhiteSpace(path))
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path) ||
+                !IsProjectFilePath(_fileExplorerStartupProjectPath))
                 return false;
 
-            string projectPath = GetProjectPathFromExplorerPath(path);
-            return IsStartupProjectPath(projectPath);
+            string startupDirectory = Path.GetDirectoryName(_fileExplorerStartupProjectPath);
+            return !string.IsNullOrEmpty(startupDirectory) &&
+                string.Equals(NormalizeCompletionPath(path), NormalizeCompletionPath(startupDirectory),
+                    StringComparison.OrdinalIgnoreCase);
         }
 
         private void ApplyStartupProjectNodeStyle(TreeNode node)
@@ -5231,6 +5844,7 @@ namespace CIARE
         {
             public string CurrentFilePath;
             public string WorkspaceFolder;
+            public List<string> SourceFolders;
             public string WorkspaceKey;
             public string FileKey;
             public int Version;
@@ -5238,8 +5852,13 @@ namespace CIARE
 
         private CompletionScopeSnapshot RefreshCompletionScope(string currentFilePath)
         {
+            string projectPath = GetCompletionProjectPath(currentFilePath);
             string workspaceFolder = GetCompletionWorkspaceFolder(currentFilePath);
-            string workspaceKey = NormalizeCompletionPath(workspaceFolder);
+            var projectPaths = GetCompletionProjectPaths(projectPath);
+            var sourceFolders = GetCompletionSourceFolders(projectPaths);
+            string workspaceKey = BuildCompletionWorkspaceKey(projectPaths);
+            if (string.IsNullOrEmpty(workspaceKey))
+                workspaceKey = NormalizeCompletionPath(workspaceFolder);
             string fileKey = NormalizeCompletionPath(currentFilePath);
             bool workspaceChanged = !string.Equals(workspaceKey, _completionWorkspaceKey,
                 StringComparison.OrdinalIgnoreCase);
@@ -5260,6 +5879,7 @@ namespace CIARE
             {
                 CurrentFilePath = currentFilePath,
                 WorkspaceFolder = workspaceFolder,
+                SourceFolders = sourceFolders,
                 WorkspaceKey = workspaceKey,
                 FileKey = fileKey,
                 Version = Volatile.Read(ref _completionWorkspaceVersion)
@@ -5283,12 +5903,12 @@ namespace CIARE
 
         private void ParseWorkspaceFilesForCompletion(CompletionScopeSnapshot scope, List<WorkspaceCompletionClass> workspaceCompletionClasses)
         {
-            string workspaceFolder = scope.WorkspaceFolder;
+            List<string> sourceFolders = scope.SourceFolders ?? new List<string>();
             string currentFilePath = scope.CurrentFilePath;
             if (!IsCompletionScopeCurrent(scope))
                 return;
 
-            if (string.IsNullOrEmpty(workspaceFolder) || !Directory.Exists(workspaceFolder))
+            if (sourceFolders.Count == 0)
             {
                 ClearWorkspaceCompletionData();
                 return;
@@ -5297,43 +5917,51 @@ namespace CIARE
             string normalizedCurrent = NormalizeCompletionPath(currentFilePath);
             var visitedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var filePath in GetWorkspaceCsFiles(workspaceFolder))
+            foreach (string sourceFolder in sourceFolders)
             {
-                if (!IsCompletionScopeCurrent(scope))
-                    return;
-
-                if (!string.IsNullOrEmpty(normalizedCurrent) &&
-                    string.Equals(NormalizeCompletionPath(filePath), normalizedCurrent, StringComparison.OrdinalIgnoreCase))
+                if (string.IsNullOrEmpty(sourceFolder) || !Directory.Exists(sourceFolder))
                     continue;
 
-                visitedPaths.Add(filePath);
-                try
+                foreach (var filePath in GetWorkspaceCsFiles(sourceFolder))
                 {
-                    string originalFileCode = File.ReadAllText(filePath);
-                    AddRoslynCompletionClasses(workspaceCompletionClasses, originalFileCode, filePath);
-                    string fileCode = PrepareCodeForNRefactoryCompletion(originalFileCode, filePath,
-                        out _, out _, out _);
-                    Dom.ICompilationUnit newCU;
-                    using (var reader = new StringReader(fileCode))
-                    using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(NRefactory.SupportedLanguage.CSharp, reader))
-                    {
-                        p.ParseMethodBodies = false;
-                        p.Parse();
-                        newCU = ConvertCompilationUnit(p.CompilationUnit);
-                    }
-                    if (newCU is Dom.DefaultCompilationUnit dcuW)
-                        dcuW.FileName = filePath;
-                    lock (_completionDataLock)
-                    {
-                        if (!IsCompletionScopeCurrent(scope))
-                            return;
+                    if (!IsCompletionScopeCurrent(scope))
+                        return;
 
-                        _workspaceCompilationUnits.TryGetValue(filePath, out var oldCU);
-                        myProjectContent.UpdateCompilationUnit(oldCU, newCU, filePath);
-                        _workspaceCompilationUnits[filePath] = newCU;
+                    if (!string.IsNullOrEmpty(normalizedCurrent) &&
+                        string.Equals(NormalizeCompletionPath(filePath), normalizedCurrent, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    if (!visitedPaths.Add(filePath))
+                        continue;
+
+                    try
+                    {
+                        string originalFileCode = File.ReadAllText(filePath);
+                        AddRoslynCompletionClasses(workspaceCompletionClasses, originalFileCode, filePath);
+                        string fileCode = PrepareCodeForNRefactoryCompletion(originalFileCode, filePath,
+                            out _, out _, out _);
+                        Dom.ICompilationUnit newCU;
+                        using (var reader = new StringReader(fileCode))
+                        using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(NRefactory.SupportedLanguage.CSharp, reader))
+                        {
+                            p.ParseMethodBodies = false;
+                            p.Parse();
+                            newCU = ConvertCompilationUnit(p.CompilationUnit);
+                        }
+                        if (newCU is Dom.DefaultCompilationUnit dcuW)
+                            dcuW.FileName = filePath;
+                        lock (_completionDataLock)
+                        {
+                            if (!IsCompletionScopeCurrent(scope))
+                                return;
+
+                            _workspaceCompilationUnits.TryGetValue(filePath, out var oldCU);
+                            myProjectContent.UpdateCompilationUnit(oldCU, newCU, filePath);
+                            _workspaceCompilationUnits[filePath] = newCU;
+                        }
                     }
+                    catch { }
                 }
-                catch { }
             }
 
             lock (_completionDataLock)
@@ -5554,34 +6182,63 @@ namespace CIARE
             activeTree = CSharpSyntaxTree.ParseText(code ?? string.Empty, parseOptions, path: activePath);
             var syntaxTrees = new List<SyntaxTree> { activeTree };
 
-            string globalUsingsPath = FindProjectGlobalUsingsFile(projectPath);
-            if (!string.IsNullOrEmpty(globalUsingsPath))
-                AddRoslynCompletionSyntaxTree(syntaxTrees, globalUsingsPath, parseOptions);
-            else if (!string.IsNullOrEmpty(projectPath))
-                syntaxTrees.Add(CSharpSyntaxTree.ParseText(BuildCompletionImplicitUsingsCode(projectPath),
-                    parseOptions, path: "__CIARE_ImplicitUsings.g.cs"));
+            var projectPaths = GetCompletionProjectPaths(projectPath);
+            AddRoslynCompletionGlobalUsings(syntaxTrees, projectPaths, parseOptions);
 
-            string sourceRoot = GetCompletionSourceRoot(currentFilePath, projectPath);
-            if (string.IsNullOrEmpty(sourceRoot) || !Directory.Exists(sourceRoot))
+            var sourceFolders = GetCompletionSourceFolders(projectPaths);
+            if (sourceFolders.Count == 0)
                 return syntaxTrees;
 
             string normalizedCurrent = NormalizeCompletionPath(currentFilePath);
+            var seenSourceFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(normalizedCurrent))
+                seenSourceFiles.Add(normalizedCurrent);
+
             int sourceFileCount = 0;
-            foreach (string filePath in GetWorkspaceCsFiles(sourceRoot))
+            foreach (string sourceFolder in sourceFolders)
             {
-                if (!string.IsNullOrEmpty(normalizedCurrent) &&
-                    string.Equals(NormalizeCompletionPath(filePath), normalizedCurrent, StringComparison.OrdinalIgnoreCase))
+                foreach (string filePath in GetWorkspaceCsFiles(sourceFolder))
                 {
-                    continue;
+                    string normalizedFile = NormalizeCompletionPath(filePath);
+                    if (string.IsNullOrEmpty(normalizedFile) || !seenSourceFiles.Add(normalizedFile))
+                        continue;
+
+                    if (++sourceFileCount > RoslynCompletionSourceFileLimit)
+                        return syntaxTrees;
+
+                    AddRoslynCompletionSyntaxTree(syntaxTrees, filePath, parseOptions);
                 }
-
-                if (++sourceFileCount > RoslynCompletionSourceFileLimit)
-                    break;
-
-                AddRoslynCompletionSyntaxTree(syntaxTrees, filePath, parseOptions);
             }
 
             return syntaxTrees;
+        }
+
+        private static void AddRoslynCompletionGlobalUsings(List<SyntaxTree> syntaxTrees,
+            IList<string> projectPaths, CSharpParseOptions parseOptions)
+        {
+            var addedGeneratedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string projectPath in projectPaths)
+            {
+                string globalUsingsPath = FindProjectGlobalUsingsFile(projectPath);
+                if (!string.IsNullOrEmpty(globalUsingsPath) &&
+                    addedGeneratedFiles.Add(NormalizeCompletionPath(globalUsingsPath)))
+                {
+                    AddRoslynCompletionSyntaxTree(syntaxTrees, globalUsingsPath, parseOptions);
+                    continue;
+                }
+
+                syntaxTrees.Add(CSharpSyntaxTree.ParseText(BuildCompletionImplicitUsingsCode(projectPath),
+                    parseOptions, path: GetCompletionImplicitUsingsTreePath(projectPath)));
+            }
+        }
+
+        private static string GetCompletionImplicitUsingsTreePath(string projectPath)
+        {
+            string normalizedProject = NormalizeCompletionPath(projectPath);
+            string fileName = string.IsNullOrEmpty(normalizedProject)
+                ? "Project"
+                : Path.GetFileNameWithoutExtension(normalizedProject);
+            return "__CIARE_ImplicitUsings_" + fileName + ".g.cs";
         }
 
         private static void AddRoslynCompletionSyntaxTree(List<SyntaxTree> syntaxTrees,
@@ -5600,12 +6257,79 @@ namespace CIARE
             }
         }
 
-        private string GetCompletionSourceRoot(string currentFilePath, string projectPath)
+        private static List<string> GetCompletionProjectPaths(string projectPath)
         {
-            if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
-                return Path.GetDirectoryName(projectPath);
+            var projectPaths = new List<string>();
+            AddCompletionProjectPath(projectPath, projectPaths,
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            return projectPaths;
+        }
 
-            return string.Empty;
+        private static void AddCompletionProjectPath(string projectPath, List<string> projectPaths,
+            HashSet<string> visited)
+        {
+            if (!IsProjectFilePath(projectPath))
+                return;
+
+            string normalizedProject = NormalizeCompletionPath(projectPath);
+            if (string.IsNullOrEmpty(normalizedProject) || !visited.Add(normalizedProject))
+                return;
+
+            projectPaths.Add(projectPath);
+            foreach (string referencedProjectPath in ProjectReferenceManager.GetProjectReferences(projectPath))
+                AddCompletionProjectPath(referencedProjectPath, projectPaths, visited);
+        }
+
+        private static List<string> GetCompletionSourceFolders(IList<string> projectPaths)
+        {
+            return projectPaths
+                .Select(GetProjectDirectory)
+                .Where(path => !string.IsNullOrEmpty(path) && Directory.Exists(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static string GetProjectDirectory(string projectPath)
+        {
+            try
+            {
+                return string.IsNullOrWhiteSpace(projectPath) ? string.Empty : Path.GetDirectoryName(projectPath);
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string BuildCompletionWorkspaceKey(IList<string> projectPaths)
+        {
+            if (projectPaths == null || projectPaths.Count == 0)
+                return string.Empty;
+
+            return string.Join("|", projectPaths
+                .Select(NormalizeCompletionPath)
+                .Where(path => !string.IsNullOrEmpty(path))
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase));
+        }
+
+        private static List<string> GetCompletionFrameworkReferencePaths(string projectPath)
+        {
+            return GetCompletionProjectPaths(projectPath)
+                .SelectMany(path => ProjectNuGetManager.GetFrameworkReferencePaths(path))
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static List<string> GetCompletionCompileReferencePaths(string projectPath)
+        {
+            return GetCompletionProjectPaths(projectPath)
+                .SelectMany(path => ProjectNuGetManager.GetCompileReferencePaths(path))
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         private string GetCompletionWorkspaceFolder(string currentFilePath)
@@ -5622,7 +6346,8 @@ namespace CIARE
 
         private bool ShouldUseWorkspaceCompletionData()
         {
-            return !string.IsNullOrEmpty(GetCompletionWorkspaceFolder(GetActiveEditorFilePath()));
+            string projectPath = GetCompletionProjectPath(GetActiveEditorFilePath());
+            return GetCompletionSourceFolders(GetCompletionProjectPaths(projectPath)).Count > 0;
         }
 
         internal void ResetCompletionWorkspaceIfInactive()
@@ -5657,19 +6382,20 @@ namespace CIARE
                 return completionData;
 
             string activeFilePath = GetActiveEditorFilePath();
-            string workspaceFolder = GetCompletionWorkspaceFolder(activeFilePath);
+            var sourceFolders = GetCompletionSourceFolders(
+                GetCompletionProjectPaths(GetCompletionProjectPath(activeFilePath)));
             var filtered = new ArrayList(completionData.Count);
 
             foreach (object item in completionData)
             {
-                if (ShouldKeepCompletionDataItem(item, activeFilePath, workspaceFolder))
+                if (ShouldKeepCompletionDataItem(item, activeFilePath, sourceFolders))
                     filtered.Add(item);
             }
 
             return filtered;
         }
 
-        private bool ShouldKeepCompletionDataItem(object item, string activeFilePath, string workspaceFolder)
+        private bool ShouldKeepCompletionDataItem(object item, string activeFilePath, IList<string> sourceFolders)
         {
             string sourcePath = GetCompletionDataSourcePath(item);
             if (string.IsNullOrWhiteSpace(sourcePath))
@@ -5689,9 +6415,17 @@ namespace CIARE
                 return true;
             }
 
-            return !string.IsNullOrEmpty(workspaceFolder) &&
-                Directory.Exists(workspaceFolder) &&
-                IsPathInsideFolder(sourcePath, workspaceFolder);
+            foreach (string sourceFolder in sourceFolders ?? Array.Empty<string>())
+            {
+                if (!string.IsNullOrEmpty(sourceFolder) &&
+                    Directory.Exists(sourceFolder) &&
+                    IsPathInsideFolder(sourcePath, sourceFolder))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string GetCompletionDataSourcePath(object item)
@@ -5717,11 +6451,8 @@ namespace CIARE
             var referencePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var referenceAssemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
-            {
-                foreach (var referencePath in ProjectNuGetManager.GetFrameworkReferencePaths(projectPath))
-                    AddCompletionReference(references, referencePaths, referenceAssemblyNames, referencePath);
-            }
+            foreach (var referencePath in GetCompletionFrameworkReferencePaths(projectPath))
+                AddCompletionReference(references, referencePaths, referenceAssemblyNames, referencePath);
 
             AddCompletionReferencePaths(references, referencePaths, referenceAssemblyNames,
                 GlobalVariables.customRefList);
@@ -5730,11 +6461,8 @@ namespace CIARE
             AddCompletionReferencePaths(references, referencePaths, referenceAssemblyNames,
                 GlobalVariables.customRefAsm);
 
-            if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
-            {
-                foreach (var referencePath in ProjectNuGetManager.GetCompileReferencePaths(projectPath))
-                    AddCompletionReference(references, referencePaths, referenceAssemblyNames, referencePath);
-            }
+            foreach (var referencePath in GetCompletionCompileReferencePaths(projectPath))
+                AddCompletionReference(references, referencePaths, referenceAssemblyNames, referencePath);
 
             string trusted = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
             if (!string.IsNullOrEmpty(trusted))

@@ -233,7 +233,7 @@ namespace CIARE.Model
         /// </summary>
         private void LoadNugetSearch()
         {
-            NuGetSearch nuGetSearch = new NuGetSearch(MainForm.Instance?.GetActivePackageInstallProjectPath());
+            NuGetSearch nuGetSearch = new NuGetSearch(MainForm.Instance?.GetActivePackageProjectPath());
             nuGetSearch.ShowDialog();
         }
 

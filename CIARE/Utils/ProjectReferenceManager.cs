@@ -108,6 +108,83 @@ namespace CIARE.Utils
             }
         }
 
+        public static List<string> GetProjectReferences(string projectPath)
+        {
+            if (!IsProjectFile(projectPath))
+                return new List<string>();
+
+            return ReadProjectReferenceFiles(projectPath)
+                .Where(IsProjectFile)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(path => Path.GetFileNameWithoutExtension(path), StringComparer.OrdinalIgnoreCase)
+                .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        public static bool RemoveProjectReference(string projectPath, string referencedProjectPath,
+            out string message)
+        {
+            message = string.Empty;
+            if (!IsProjectFile(projectPath))
+            {
+                message = "No valid target .csproj file was found.";
+                return false;
+            }
+
+            if (!IsProjectFile(referencedProjectPath))
+            {
+                message = "No valid referenced .csproj file was found.";
+                return false;
+            }
+
+            try
+            {
+                var document = XDocument.Load(projectPath, LoadOptions.PreserveWhitespace);
+                if (document.Root == null)
+                {
+                    message = "The project file is empty.";
+                    return false;
+                }
+
+                string projectDirectory = Path.GetDirectoryName(projectPath);
+                if (string.IsNullOrEmpty(projectDirectory))
+                {
+                    message = "The target project directory was not found.";
+                    return false;
+                }
+
+                string normalizedReference = NormalizePath(referencedProjectPath);
+                XElement projectReference = FindProjectReferenceElements(document)
+                    .FirstOrDefault(element =>
+                    {
+                        string include = element.Attribute("Include")?.Value;
+                        string referencePath = ResolveProjectReferencePath(projectDirectory, include);
+                        return string.Equals(NormalizePath(referencePath), normalizedReference,
+                            StringComparison.OrdinalIgnoreCase);
+                    });
+
+                if (projectReference == null)
+                {
+                    message = $"{Path.GetFileNameWithoutExtension(projectPath)} does not reference " +
+                        $"{Path.GetFileNameWithoutExtension(referencedProjectPath)}.";
+                    return false;
+                }
+
+                XElement itemGroup = projectReference.Parent;
+                RemoveElementWithLeadingWhitespace(projectReference);
+                RemoveItemGroupIfEmpty(itemGroup);
+                document.Save(projectPath, SaveOptions.DisableFormatting);
+
+                message = $"{Path.GetFileNameWithoutExtension(referencedProjectPath)} was removed from project references.";
+                return true;
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+                return false;
+            }
+        }
+
         public static bool HasProjectReference(string projectPath, string referencedProjectPath)
         {
             string normalizedReference = NormalizePath(referencedProjectPath);
@@ -267,15 +344,9 @@ namespace CIARE.Utils
                 if (string.IsNullOrWhiteSpace(include) || include.Contains("$"))
                     continue;
 
-                string referencedProject;
-                try
-                {
-                    referencedProject = Path.GetFullPath(Path.Combine(projectDirectory, include));
-                }
-                catch
-                {
+                string referencedProject = ResolveProjectReferencePath(projectDirectory, include);
+                if (string.IsNullOrEmpty(referencedProject))
                     continue;
-                }
 
                 if (IsProjectFile(referencedProject))
                     yield return referencedProject;
@@ -327,6 +398,62 @@ namespace CIARE.Utils
             var projectReference = new XElement(ns + "ProjectReference",
                 new XAttribute("Include", includePath));
             itemGroup.Add(new XText(elementIndent), projectReference, new XText(closingIndent));
+        }
+
+        private static void RemoveElementWithLeadingWhitespace(XElement element)
+        {
+            XNode leadingWhitespace = element.PreviousNode;
+            if (leadingWhitespace is XText text &&
+                string.IsNullOrWhiteSpace(text.Value) &&
+                text.Value.Contains("\n"))
+            {
+                leadingWhitespace.Remove();
+            }
+
+            element.Remove();
+        }
+
+        private static void RemoveItemGroupIfEmpty(XElement itemGroup)
+        {
+            if (itemGroup == null || itemGroup.Elements().Any())
+                return;
+
+            bool hasContent = itemGroup.Nodes()
+                .OfType<XText>()
+                .Any(text => !string.IsNullOrWhiteSpace(text.Value));
+            if (hasContent)
+                return;
+
+            XNode leadingWhitespace = itemGroup.PreviousNode;
+            if (leadingWhitespace is XText text &&
+                string.IsNullOrWhiteSpace(text.Value) &&
+                text.Value.Contains("\n"))
+            {
+                leadingWhitespace.Remove();
+            }
+
+            itemGroup.Remove();
+        }
+
+        private static string ResolveProjectReferencePath(string projectDirectory, string includePath)
+        {
+            if (string.IsNullOrWhiteSpace(projectDirectory) ||
+                string.IsNullOrWhiteSpace(includePath) ||
+                includePath.Contains("$"))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return Path.IsPathRooted(includePath)
+                    ? Path.GetFullPath(includePath)
+                    : Path.GetFullPath(Path.Combine(projectDirectory, includePath));
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         private static string DetectElementIndent(XElement itemGroup)
