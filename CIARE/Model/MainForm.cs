@@ -109,6 +109,7 @@ namespace CIARE
         private const string FileExplorerVisibleKey = "fileExplorerVisible";
         private const string FileExplorerWidthKey = "fileExplorerWidth";
         private const string FileExplorerNuGetHeightKey = "fileExplorerNuGetHeight";
+        private const string FileExplorerStartupProjectKey = "fileExplorerStartupProject";
         private static readonly string FileExplorerExpandedPathsFilePath =
             Path.Combine(GlobalVariables.userProfileDirectory, "fileExplorerExpandedPaths.cDat");
         private static readonly string FileExplorerLayoutFilePath =
@@ -1475,6 +1476,7 @@ namespace CIARE
         {
             InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerPathKey, string.Empty);
             InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerVisibleKey, "True");
+            InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerStartupProjectKey, string.Empty);
             LoadFileExplorerLayoutValues();
 
             string savedPath = RegistryManagement.RegKey_Read(
@@ -1497,11 +1499,7 @@ namespace CIARE
                 return;
 
             _fileExplorerRootPath = folderPath;
-            if (!IsProjectFilePath(_fileExplorerStartupProjectPath) ||
-                !IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
-            {
-                _fileExplorerStartupProjectPath = string.Empty;
-            }
+            RestoreStartupProjectForLoadedFolder();
 
             InvalidateCompletionWorkspace();
             Interlocked.Increment(ref _projectPackageRefreshVersion);
@@ -2712,6 +2710,7 @@ namespace CIARE
                 return;
 
             _fileExplorerStartupProjectPath = projectPath;
+            SaveStartupProjectPath();
             UpdateFileExplorerStartupProjectHighlight();
             ShowProjectStatus("Startup project set", projectPath, FindNearestBuildFile(
                 Path.GetDirectoryName(projectPath), _fileExplorerRootPath, "*.sln"));
@@ -4448,6 +4447,28 @@ namespace CIARE
             }
         }
 
+        private void RestoreStartupProjectForLoadedFolder()
+        {
+            string startupProjectPath = _fileExplorerStartupProjectPath;
+            if (!IsProjectFilePath(startupProjectPath) ||
+                !IsPathInsideFolder(startupProjectPath, _fileExplorerRootPath))
+            {
+                startupProjectPath = RegistryManagement.RegKey_Read(
+                    $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", FileExplorerStartupProjectKey);
+            }
+
+            _fileExplorerStartupProjectPath = IsProjectFilePath(startupProjectPath) &&
+                IsPathInsideFolder(startupProjectPath, _fileExplorerRootPath)
+                    ? startupProjectPath
+                    : string.Empty;
+        }
+
+        private void SaveStartupProjectPath()
+        {
+            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath,
+                FileExplorerStartupProjectKey, _fileExplorerStartupProjectPath ?? string.Empty);
+        }
+
         private bool IsStartupProjectPath(string projectPath)
         {
             return IsProjectFilePath(projectPath) &&
@@ -4535,7 +4556,10 @@ namespace CIARE
             string renamedStartupProject = GetRenamedExplorerPath(_fileExplorerStartupProjectPath, oldPath, newPath,
                 renamedDirectory);
             if (!string.IsNullOrEmpty(renamedStartupProject))
+            {
                 _fileExplorerStartupProjectPath = renamedStartupProject;
+                SaveStartupProjectPath();
+            }
         }
 
         private void ClearStartupProjectAfterExplorerDelete(string deletedPath, bool deletedDirectory)
@@ -4553,7 +4577,10 @@ namespace CIARE
                     NormalizeCompletionPath(deletedPath), StringComparison.OrdinalIgnoreCase);
 
             if (deletedStartupProject)
+            {
                 _fileExplorerStartupProjectPath = string.Empty;
+                SaveStartupProjectPath();
+            }
         }
 
         private void ApplyFileExplorerTheme(string highlight = null)
@@ -6812,6 +6839,10 @@ namespace CIARE
             if (hit.FilePath != null)
                 return hit;
 
+            hit = FindDefinitionInWorkspaceSemantic(name, offset);
+            if (hit.FilePath != null)
+                return hit;
+
             hit = FindDefinitionInWorkspaceMembers(name, qualifier);
             return hit.FilePath != null ? hit : FindDefinition(name);
         }
@@ -6864,7 +6895,13 @@ namespace CIARE
 
                 qualifier = GetMemberAccessQualifier(token);
 
-                var compilation = CSharpCompilation.Create("__CiareGoToDefinition", new[] { tree });
+                var compilation = CSharpCompilation.Create(
+                    "__CiareGoToDefinition",
+                    syntaxTrees: new[] { tree },
+                    references: BuildUsageReferences(),
+                    options: new CSharpCompilationOptions(
+                        OutputKind.DynamicallyLinkedLibrary,
+                        allowUnsafe: GlobalVariables.OUnsafeCode));
                 var semanticModel = compilation.GetSemanticModel(tree, true);
 
                 ISymbol symbol = GetDeclaredSymbolForIdentifier(semanticModel, token);
@@ -6881,6 +6918,10 @@ namespace CIARE
                     if (hit.FilePath != null)
                         return hit;
                 }
+
+                hit = FindLocalDefinitionBySyntax(root, token, name, filePath);
+                if (hit.FilePath != null)
+                    return hit;
             }
             catch
             {
@@ -6888,6 +6929,48 @@ namespace CIARE
             }
 
             return (null, 0);
+        }
+
+        private (string FilePath, int Line) FindDefinitionInWorkspaceSemantic(string name, int offset)
+        {
+            if (IsVisualBasic || string.IsNullOrEmpty(name) || offset < 0)
+                return (null, 0);
+
+            try
+            {
+                var openTabs = CollectOpenTabInfo(name);
+                var workspaceFolders = GetUsageWorkspaceFolders(GetActiveEditorFilePath()).ToList();
+                List<string> compilationUnitKeys;
+                lock (_completionDataLock)
+                    compilationUnitKeys = _workspaceCompilationUnits.Keys.ToList();
+
+                var documents = BuildUsageDocuments(name, openTabs, workspaceFolders, compilationUnitKeys);
+                var activeDocument = documents.FirstOrDefault(document => document.IsActive);
+                if (activeDocument == null)
+                    return (null, 0);
+
+                var compilation = CSharpCompilation.Create(
+                    "__CiareGoToDefinitionWorkspace",
+                    syntaxTrees: documents.Select(document => document.SyntaxTree),
+                    references: BuildUsageReferences(),
+                    options: new CSharpCompilationOptions(
+                        OutputKind.DynamicallyLinkedLibrary,
+                        allowUnsafe: GlobalVariables.OUnsafeCode));
+
+                var semanticModel = compilation.GetSemanticModel(activeDocument.SyntaxTree, true);
+                ISymbol symbol = GetIdentifierSymbolAtOffset(semanticModel, activeDocument.Root, offset, name);
+                var hit = GetDefinitionLocation(symbol, activeDocument.FilePath);
+                if (hit.FilePath != null)
+                    return hit;
+
+                SyntaxToken token = activeDocument.Root.FindToken(
+                    Math.Max(0, Math.Min(offset, Math.Max(0, activeDocument.Root.FullSpan.End - 1))));
+                return FindLocalDefinitionBySyntax(activeDocument.Root, token, name, activeDocument.FilePath);
+            }
+            catch
+            {
+                return (null, 0);
+            }
         }
 
         private static string GetMemberAccessQualifier(SyntaxToken token)
@@ -6948,6 +7031,146 @@ namespace CIARE
             }
 
             return (null, 0);
+        }
+
+        private static (string FilePath, int Line) FindLocalDefinitionBySyntax(
+            CompilationUnitSyntax root, SyntaxToken targetToken, string name, string filePath)
+        {
+            if (root == null ||
+                !targetToken.IsKind(SyntaxKind.IdentifierToken) ||
+                string.IsNullOrEmpty(name))
+            {
+                return (null, 0);
+            }
+
+            if (!TryFindLocalDefinitionToken(root, targetToken, name, out SyntaxToken definitionToken))
+                return (null, 0);
+
+            return GetDefinitionLocation(definitionToken.GetLocation(), filePath);
+        }
+
+        private static bool TryFindLocalDefinitionToken(
+            CompilationUnitSyntax root, SyntaxToken targetToken, string name, out SyntaxToken definitionToken)
+        {
+            definitionToken = default;
+            int bestStart = -1;
+
+            foreach (var variable in root.DescendantNodes().OfType<VariableDeclaratorSyntax>())
+            {
+                if (IsFieldVariableDeclarator(variable))
+                    continue;
+
+                TryUseDefinitionToken(variable, variable.Identifier, targetToken, name,
+                    ref definitionToken, ref bestStart);
+            }
+
+            foreach (var parameter in root.DescendantNodes().OfType<ParameterSyntax>())
+                TryUseDefinitionToken(parameter, parameter.Identifier, targetToken, name,
+                    ref definitionToken, ref bestStart);
+
+            foreach (var forEach in root.DescendantNodes().OfType<ForEachStatementSyntax>())
+                TryUseDefinitionToken(forEach, forEach.Identifier, targetToken, name,
+                    ref definitionToken, ref bestStart);
+
+            foreach (var catchDeclaration in root.DescendantNodes().OfType<CatchDeclarationSyntax>())
+                TryUseDefinitionToken(catchDeclaration, catchDeclaration.Identifier, targetToken, name,
+                    ref definitionToken, ref bestStart);
+
+            foreach (var designation in root.DescendantNodes().OfType<SingleVariableDesignationSyntax>())
+                TryUseDefinitionToken(designation, designation.Identifier, targetToken, name,
+                    ref definitionToken, ref bestStart);
+
+            return bestStart >= 0;
+        }
+
+        private static void TryUseDefinitionToken(SyntaxNode declarationNode, SyntaxToken candidateToken,
+            SyntaxToken targetToken, string name, ref SyntaxToken definitionToken, ref int bestStart)
+        {
+            if (!candidateToken.IsKind(SyntaxKind.IdentifierToken) ||
+                !string.Equals(candidateToken.ValueText, name, StringComparison.Ordinal) ||
+                candidateToken.SpanStart > targetToken.SpanStart ||
+                candidateToken.SpanStart < bestStart ||
+                !IsDeclarationVisibleAtToken(declarationNode, targetToken))
+            {
+                return;
+            }
+
+            definitionToken = candidateToken;
+            bestStart = candidateToken.SpanStart;
+        }
+
+        private static bool IsFieldVariableDeclarator(VariableDeclaratorSyntax variable)
+        {
+            return variable?.Ancestors().Any(node =>
+                node is FieldDeclarationSyntax || node is EventFieldDeclarationSyntax) == true;
+        }
+
+        private static bool IsDeclarationVisibleAtToken(SyntaxNode declarationNode, SyntaxToken targetToken)
+        {
+            if (declarationNode == null || targetToken.Parent == null ||
+                declarationNode.SpanStart > targetToken.SpanStart)
+            {
+                return false;
+            }
+
+            SyntaxNode scope = GetDeclarationScopeNode(declarationNode);
+            return scope == null || IsAncestorOrSelf(scope, targetToken.Parent);
+        }
+
+        private static SyntaxNode GetDeclarationScopeNode(SyntaxNode declarationNode)
+        {
+            if (declarationNode == null)
+                return null;
+
+            if (declarationNode is ParameterSyntax || declarationNode is TypeParameterSyntax)
+            {
+                return declarationNode.Ancestors().FirstOrDefault(node =>
+                    node is BaseMethodDeclarationSyntax ||
+                    node is LocalFunctionStatementSyntax ||
+                    node is ParenthesizedLambdaExpressionSyntax ||
+                    node is SimpleLambdaExpressionSyntax ||
+                    node is AnonymousMethodExpressionSyntax ||
+                    node is TypeDeclarationSyntax);
+            }
+
+            if (declarationNode is ForEachStatementSyntax)
+                return declarationNode;
+
+            if (declarationNode is CatchDeclarationSyntax)
+                return declarationNode.Parent;
+
+            SyntaxNode localDeclaration = declarationNode.AncestorsAndSelf()
+                .FirstOrDefault(node => node is LocalDeclarationStatementSyntax);
+            if (localDeclaration != null)
+            {
+                if (localDeclaration.Parent is GlobalStatementSyntax globalStatement)
+                    return globalStatement.Parent;
+
+                return localDeclaration.Parent;
+            }
+
+            return declarationNode.AncestorsAndSelf().FirstOrDefault(node =>
+                node is ForStatementSyntax ||
+                node is UsingStatementSyntax ||
+                node is FixedStatementSyntax ||
+                node is BlockSyntax ||
+                node is SwitchSectionSyntax ||
+                node is GlobalStatementSyntax ||
+                node is StatementSyntax ||
+                node is BaseMethodDeclarationSyntax ||
+                node is LocalFunctionStatementSyntax ||
+                node is AnonymousFunctionExpressionSyntax);
+        }
+
+        private static bool IsAncestorOrSelf(SyntaxNode ancestor, SyntaxNode node)
+        {
+            for (SyntaxNode current = node; current != null; current = current.Parent)
+            {
+                if (current == ancestor)
+                    return true;
+            }
+
+            return false;
         }
 
         private static ISymbol GetDeclaredSymbolForIdentifier(SemanticModel semanticModel, SyntaxToken token)
