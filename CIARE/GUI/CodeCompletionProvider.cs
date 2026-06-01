@@ -16,7 +16,6 @@ namespace CIARE.GUI
 	{
 		MainForm mainForm;
 		readonly string preSelection;
-		const int RoslynMemberFallbackThreshold = 40;
 		static readonly string[] DirectTypingKeywords = {
 			"abstract", "as", "async", "await", "base", "bool", "break", "byte",
 			"case", "catch", "char", "checked", "class", "const", "continue",
@@ -202,9 +201,6 @@ namespace CIARE.GUI
 
 			if (completionData == null || completionData.Count == 0)
 				return true;
-
-			if (completionData.Count >= RoslynMemberFallbackThreshold)
-				return false;
 
 			return !ContainsNamespaceCompletionData(completionData);
 		}

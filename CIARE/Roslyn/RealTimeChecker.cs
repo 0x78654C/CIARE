@@ -1349,6 +1349,9 @@ namespace CIARE.Roslyn
                 targetFramework = GlobalVariables.Framework;
 
             var referencePaths = new List<string>();
+            if (IsNetFrameworkTargetFramework(targetFramework))
+                referencePaths.AddRange(ResolveNetFrameworkReferencePaths(targetFramework));
+
             if (frameworkReferences.Contains("Microsoft.AspNetCore.App"))
                 referencePaths.AddRange(ResolveAspNetCoreReferencePaths(targetFramework));
 
@@ -1453,12 +1456,40 @@ namespace CIARE.Roslyn
                 return true;
             }
 
+            if (ProjectReferencesWindowsDesktopAssemblies(document))
+                return true;
+
             return document.Descendants()
                 .Where(element => string.Equals(element.Name.LocalName, "FrameworkReference",
                     StringComparison.Ordinal))
                 .Select(element => element.Attribute("Include")?.Value ?? element.Attribute("Update")?.Value)
                 .Any(reference => !string.IsNullOrWhiteSpace(reference) &&
                     reference.StartsWith("Microsoft.WindowsDesktop.App", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool ProjectReferencesWindowsDesktopAssemblies(XDocument document)
+        {
+            return document?.Root != null &&
+                document.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "Reference",
+                        StringComparison.Ordinal))
+                    .Select(element => element.Attribute("Include")?.Value)
+                    .Any(IsWindowsDesktopAssemblyReference);
+        }
+
+        private static bool IsWindowsDesktopAssemblyReference(string reference)
+        {
+            if (string.IsNullOrWhiteSpace(reference))
+                return false;
+
+            string assemblyName = reference.Split(',')[0].Trim();
+            return string.Equals(assemblyName, "PresentationCore", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(assemblyName, "PresentationFramework", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(assemblyName, "PresentationUI", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(assemblyName, "ReachFramework", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(assemblyName, "System.Xaml", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(assemblyName, "System.Windows.Forms", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(assemblyName, "WindowsBase", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool ProjectPropertyIsTrue(XDocument document, string propertyName)
@@ -1514,7 +1545,32 @@ namespace CIARE.Roslyn
             if (digitCount == 0)
                 return false;
 
-            return int.TryParse(version.Substring(0, digitCount), out int major) && major <= 4;
+            return IsNetFrameworkTargetFramework(normalized);
+        }
+
+        private static bool IsNetFrameworkTargetFramework(string targetFramework)
+        {
+            string normalized = NormalizeTargetFramework(targetFramework);
+            if (string.IsNullOrEmpty(normalized))
+                normalized = targetFramework?.Trim() ?? string.Empty;
+
+            if (!normalized.StartsWith("net", StringComparison.OrdinalIgnoreCase) ||
+                normalized.StartsWith("netstandard", StringComparison.OrdinalIgnoreCase) ||
+                normalized.StartsWith("netcoreapp", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            string version = normalized.Substring(3);
+            if (version.Length == 0)
+                return false;
+
+            return version[0] >= '1' && version[0] <= '4' &&
+                (version.IndexOf('.') < 0 ||
+                version.StartsWith("1.", StringComparison.Ordinal) ||
+                version.StartsWith("2.", StringComparison.Ordinal) ||
+                version.StartsWith("3.", StringComparison.Ordinal) ||
+                version.StartsWith("4.", StringComparison.Ordinal));
         }
 
         private static HashSet<string> ReadFrameworkReferencesFromAssets(string assetsPath)
@@ -1569,7 +1625,14 @@ namespace CIARE.Roslyn
                 string targetFrameworks = document.Descendants()
                     .FirstOrDefault(element => string.Equals(element.Name.LocalName, "TargetFrameworks",
                         StringComparison.Ordinal))?.Value;
-                return SplitTargetFrameworks(targetFrameworks).FirstOrDefault() ?? string.Empty;
+                targetFramework = SplitTargetFrameworks(targetFrameworks).FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(targetFramework))
+                    return targetFramework;
+
+                string targetFrameworkVersion = document.Descendants()
+                    .FirstOrDefault(element => string.Equals(element.Name.LocalName, "TargetFrameworkVersion",
+                        StringComparison.Ordinal))?.Value;
+                return NormalizeNetFrameworkVersion(targetFrameworkVersion);
             }
             catch
             {
@@ -1642,7 +1705,25 @@ namespace CIARE.Roslyn
             if (name.StartsWith(netCoreAppPrefix, StringComparison.OrdinalIgnoreCase))
                 return "net" + name.Substring(netCoreAppPrefix.Length);
 
+            const string netFrameworkPrefix = ".NETFramework,Version=v";
+            if (name.StartsWith(netFrameworkPrefix, StringComparison.OrdinalIgnoreCase))
+                return NormalizeNetFrameworkVersion(name.Substring(netFrameworkPrefix.Length));
+
             return string.Empty;
+        }
+
+        private static string NormalizeNetFrameworkVersion(string targetFrameworkVersion)
+        {
+            if (string.IsNullOrWhiteSpace(targetFrameworkVersion))
+                return string.Empty;
+
+            string version = targetFrameworkVersion.Trim();
+            if (version.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+                version = version.Substring(1);
+
+            return string.IsNullOrWhiteSpace(version)
+                ? string.Empty
+                : "net" + version.Replace(".", string.Empty);
         }
 
         private static IEnumerable<string> ResolveAspNetCoreReferencePaths(string targetFramework)
@@ -1694,11 +1775,74 @@ namespace CIARE.Roslyn
             return Enumerable.Empty<string>();
         }
 
+        private static IEnumerable<string> ResolveNetFrameworkReferencePaths(string targetFramework)
+        {
+            string frameworkFolderName = GetNetFrameworkReferenceFolderName(targetFramework);
+            if (string.IsNullOrEmpty(frameworkFolderName))
+                return Enumerable.Empty<string>();
+
+            var roots = new[]
+            {
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+            };
+
+            foreach (string root in roots.Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                string referenceDirectory = Path.Combine(root, "Reference Assemblies", "Microsoft",
+                    "Framework", ".NETFramework", frameworkFolderName);
+                if (!Directory.Exists(referenceDirectory))
+                    continue;
+
+                try
+                {
+                    return Directory.EnumerateFiles(referenceDirectory, "*.dll").ToList();
+                }
+                catch
+                {
+                }
+            }
+
+            return Enumerable.Empty<string>();
+        }
+
+        private static string GetNetFrameworkReferenceFolderName(string targetFramework)
+        {
+            string normalized = NormalizeTargetFramework(targetFramework);
+            if (string.IsNullOrEmpty(normalized))
+                normalized = targetFramework?.Trim() ?? string.Empty;
+
+            if (!normalized.StartsWith("net", StringComparison.OrdinalIgnoreCase))
+                return string.Empty;
+
+            string version = normalized.Substring(3);
+            if (version.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+                version = version.Substring(1);
+
+            if (version.Length == 0)
+                return string.Empty;
+
+            if (version.IndexOf('.') >= 0)
+                return "v" + version;
+
+            if (version.Length == 2)
+                return "v" + version[0] + "." + version[1];
+
+            if (version.Length == 3)
+                return "v" + version[0] + "." + version[1] + "." + version[2];
+
+            return "v" + version;
+        }
+
         private static IEnumerable<string> ResolveWindowsDesktopReferencePaths(string targetFramework)
         {
             string refTargetFramework = GetReferenceTargetFramework(targetFramework);
             if (string.IsNullOrEmpty(refTargetFramework))
                 return Enumerable.Empty<string>();
+
+            if (IsNetFrameworkTargetFramework(refTargetFramework))
+                return ResolveNetFrameworkReferencePaths(refTargetFramework);
 
             string versionPrefix = GetVersionPrefixFromTargetFramework(refTargetFramework);
             if (string.IsNullOrEmpty(versionPrefix))
