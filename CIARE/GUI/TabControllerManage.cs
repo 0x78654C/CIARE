@@ -151,48 +151,46 @@ namespace CIARE.GUI
         /// <param name="textEditorControl"></param>
         public static void CloseAllTabsOne(TabControl tabControl, TextEditorControl textEditorControl, int selectedIndex)
         {
-            // Do nothing if there is only 1 tab
-            if (tabControl.TabCount == 2)
+            if (tabControl == null || selectedIndex <= 0 || selectedIndex >= tabControl.TabCount)
                 return;
 
-            var tabPages = tabControl.TabPages;
-            int tabCount = tabControl.TabCount - 1;
-            int count;
+            // Do nothing if there is only the add tab and one editor tab.
+            if (tabControl.TabCount <= 2)
+                return;
+
+            if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
+                return;
+
+            TabPage selectedTab = tabControl.TabPages[selectedIndex];
             FileManage.ManageUnsavedData(textEditorControl, 0, true);
             if (GlobalVariables.noClear)
             {
                 GlobalVariables.noClear = false;
                 return;
             }
-            foreach (TabPage tabPage in tabPages)
+
+            for (int index = tabControl.TabPages.Count - 1; index >= 1; index--)
             {
-                count = tabCount - 1;
-                if (count > 0)
-                {
-                    if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
-                    {
-                        tabControl.SelectTab(count);
-                        tabCount--;
-                        RemoveTabPageAt(tabControl, count);
-                        GlobalVariables.noClear = false;
-                    }
-                }
+                if (ReferenceEquals(tabControl.TabPages[index], selectedTab))
+                    continue;
+
+                RemoveTabPageAt(tabControl, index);
             }
 
-            if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
+            tabControl.SelectTab(selectedTab);
+            GlobalVariables.noClear = false;
+
+            if (GlobalVariables.OStartUp)
             {
-                tabControl.SelectTab(1);
-                if (GlobalVariables.OStartUp)
+                ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+                ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
+
+                string toolTip = selectedTab.ToolTipText;
+                bool isNewPage = selectedTab.Text.TrimStart('*').Trim().StartsWith("New Page", StringComparison.InvariantCultureIgnoreCase);
+                if (!isNewPage && !string.IsNullOrWhiteSpace(toolTip))
                 {
-                    var toolTip = tabControl.SelectedTab.ToolTipText;
-                    var tabName = tabControl.SelectedTab.Name;
-                    if (!tabName.StartsWith("New Page"))
-                    {
-                        ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
-                        ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
-                        StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, toolTip, false);
-                        StoreFileMD5(toolTip, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
-                    }
+                    StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, toolTip, false);
+                    StoreFileMD5(toolTip, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
                 }
             }
         }
