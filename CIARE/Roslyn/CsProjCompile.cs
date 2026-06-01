@@ -26,9 +26,11 @@ namespace CIARE.Roslyn
     <OutputType>"+GlobalVariables.WinExe+@"</OutputType>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
 	  <UseWindowsForms>"+GlobalVariables.winForms.ToString() + @"</UseWindowsForms>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**\bin\**;**\obj\**</DefaultItemExcludes>
 <AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() +@"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
@@ -42,9 +44,11 @@ namespace CIARE.Roslyn
     <OutputType>Library</OutputType>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
 	  <UseWindowsForms>"+GlobalVariables.winForms.ToString() + @"</UseWindowsForms>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>
     <Nullable>enable</Nullable>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**\bin\**;**\obj\**</DefaultItemExcludes>
 <AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() + @"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile+@"|AnyCPU'"">
@@ -59,9 +63,11 @@ namespace CIARE.Roslyn
     <OutputType>"+GlobalVariables.binarytypeTemplate + @"</OutputType>
     <UseWindowsForms>"+GlobalVariables.winForms.ToString() + @"</UseWindowsForms>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningLevel>0</WarningLevel>"+GlobalVariables.publishAot+@"
     <Nullable>enable</Nullable>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**\bin\**;**\obj\**</DefaultItemExcludes>
 <AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() + @"</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='" + StateCompile + @"|AnyCPU'"">

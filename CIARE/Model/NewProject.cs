@@ -827,6 +827,7 @@ namespace CIARE
             builder.AppendLine($"    <TargetFramework>{targetFramework}</TargetFramework>");
             if (useWindowsForms)
                 builder.AppendLine("    <UseWindowsForms>true</UseWindowsForms>");
+            builder.AppendLine("    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>");
             builder.AppendLine("    <ImplicitUsings>enable</ImplicitUsings>");
             builder.AppendLine("    <Nullable>enable</Nullable>");
             builder.AppendLine("    <DefaultItemExcludes>$(DefaultItemExcludes);**\\bin\\**;**\\obj\\**</DefaultItemExcludes>");

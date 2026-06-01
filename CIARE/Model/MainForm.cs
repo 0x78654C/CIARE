@@ -132,6 +132,7 @@ namespace CIARE
         private ColumnHeader _fileExplorerNuGetStatusColumn;
         private ContextMenuStrip _fileExplorerContextMenu;
         private ToolStripMenuItem _fileExplorerAddProjectMenuItem;
+        private ToolStripMenuItem _fileExplorerAddProjectReferenceMenuItem;
         private ToolStripMenuItem _fileExplorerSetStartupProjectMenuItem;
         private ToolStripMenuItem _fileExplorerNewFileMenuItem;
         private ToolStripMenuItem _fileExplorerNewFolderMenuItem;
@@ -485,6 +486,12 @@ namespace CIARE
             };
             _fileExplorerAddProjectMenuItem.Click += fileExplorerAddProjectMenuItem_Click;
 
+            _fileExplorerAddProjectReferenceMenuItem = new ToolStripMenuItem
+            {
+                Text = "Add Project Reference..."
+            };
+            _fileExplorerAddProjectReferenceMenuItem.Click += fileExplorerAddProjectReferenceMenuItem_Click;
+
             _fileExplorerSetStartupProjectMenuItem = new ToolStripMenuItem
             {
                 Text = "Set as Startup Project"
@@ -518,6 +525,7 @@ namespace CIARE
             _fileExplorerContextMenu = new ContextMenuStrip(components);
             _fileExplorerContextMenu.Opening += fileExplorerContextMenu_Opening;
             _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectMenuItem);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectReferenceMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerSetStartupProjectMenuItem);
             _fileExplorerProjectSeparator = new ToolStripSeparator();
             _fileExplorerContextMenu.Items.Add(_fileExplorerProjectSeparator);
@@ -2425,8 +2433,13 @@ namespace CIARE
             string projectPath = GetProjectPathFromExplorerPath(path);
             bool hasSolutionContext = !string.IsNullOrEmpty(solutionPath);
             bool hasProjectContext = !string.IsNullOrEmpty(projectPath);
+            bool hasProjectReferenceCandidates = hasProjectContext &&
+                ProjectReferenceManager.GetReferenceableProjects(projectPath, solutionPath,
+                    _fileExplorerRootPath).Count > 0;
 
             _fileExplorerAddProjectMenuItem.Visible = hasSolutionContext;
+            _fileExplorerAddProjectReferenceMenuItem.Visible = hasProjectContext;
+            _fileExplorerAddProjectReferenceMenuItem.Enabled = hasProjectReferenceCandidates;
             _fileExplorerSetStartupProjectMenuItem.Visible = hasProjectContext;
             _fileExplorerSetStartupProjectMenuItem.Enabled = hasProjectContext;
             _fileExplorerSetStartupProjectMenuItem.Checked = hasProjectContext &&
@@ -2473,6 +2486,159 @@ namespace CIARE
                 RefreshProjectPackageContext(project.ProjectFilePath, restoreProject: true,
                     showRestoreFailure: false);
                 ShowProjectStatus("Added project to solution", project.ProjectFilePath, solutionPath);
+            }
+        }
+
+        private void fileExplorerAddProjectReferenceMenuItem_Click(object sender, EventArgs e)
+        {
+            string contextPath = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
+            string projectPath = GetProjectPathFromExplorerPath(contextPath);
+            if (!IsProjectFilePath(projectPath))
+                return;
+
+            string solutionPath = GetSolutionPathFromExplorerPath(contextPath);
+            var candidates = ProjectReferenceManager.GetReferenceableProjects(projectPath, solutionPath,
+                _fileExplorerRootPath);
+            if (candidates.Count == 0)
+            {
+                MessageBox.Show("No available project references were found in this solution.",
+                    "Add Project Reference", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string referencedProjectPath = ShowProjectReferencePicker(projectPath, candidates);
+            if (string.IsNullOrEmpty(referencedProjectPath))
+                return;
+
+            if (!ProjectReferenceManager.AddProjectReference(projectPath, referencedProjectPath, out string message))
+            {
+                MessageBox.Show(message, "Add Project Reference", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string projectDirectory = Path.GetDirectoryName(projectPath);
+            if (!string.IsNullOrEmpty(projectDirectory))
+                RefreshAndExpandExplorerFolder(projectDirectory);
+
+            InvalidateCompletionWorkspace();
+            RealTimeChecker.InvalidateReferenceCache();
+            RefreshProjectPackageContext(projectPath, restoreProject: false, showRestoreFailure: false);
+            ShowProjectStatus("Added project reference", projectPath, solutionPath, referencedProjectPath);
+        }
+
+        private string ShowProjectReferencePicker(string projectPath, IList<string> candidateProjects)
+        {
+            using (var dialog = new Form())
+            {
+                dialog.Text = "Add Project Reference";
+                dialog.StartPosition = FormStartPosition.CenterParent;
+                dialog.ClientSize = new Size(560, 340);
+                dialog.MinimumSize = new Size(460, 280);
+                dialog.MinimizeBox = false;
+                dialog.MaximizeBox = false;
+                dialog.ShowInTaskbar = false;
+                dialog.Font = SystemFonts.MessageBoxFont;
+
+                var layout = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    ColumnCount = 1,
+                    RowCount = 3,
+                    Padding = new Padding(10)
+                };
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+                layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+
+                var targetLabel = new Label
+                {
+                    AutoEllipsis = true,
+                    Dock = DockStyle.Fill,
+                    Text = "Target: " + Path.GetFileNameWithoutExtension(projectPath),
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+
+                var projectList = new ListBox
+                {
+                    Dock = DockStyle.Fill,
+                    IntegralHeight = false,
+                    HorizontalScrollbar = true
+                };
+                foreach (string candidate in candidateProjects)
+                    projectList.Items.Add(new ProjectReferenceListItem(candidate, _fileExplorerRootPath));
+                if (projectList.Items.Count > 0)
+                    projectList.SelectedIndex = 0;
+
+                var buttons = new FlowLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    FlowDirection = FlowDirection.RightToLeft,
+                    Padding = new Padding(0, 8, 0, 0)
+                };
+                var addButton = new Button
+                {
+                    Text = "Add",
+                    Width = 92,
+                    Height = 28,
+                    DialogResult = DialogResult.OK
+                };
+                var cancelButton = new Button
+                {
+                    Text = "Cancel",
+                    Width = 92,
+                    Height = 28,
+                    DialogResult = DialogResult.Cancel
+                };
+                buttons.Controls.Add(addButton);
+                buttons.Controls.Add(cancelButton);
+
+                layout.Controls.Add(targetLabel, 0, 0);
+                layout.Controls.Add(projectList, 0, 1);
+                layout.Controls.Add(buttons, 0, 2);
+                dialog.Controls.Add(layout);
+                dialog.AcceptButton = addButton;
+                dialog.CancelButton = cancelButton;
+                projectList.DoubleClick += (_, _) =>
+                {
+                    if (projectList.SelectedItem != null)
+                        dialog.DialogResult = DialogResult.OK;
+                };
+
+                FrmColorMod.ToogleColorMode(dialog, GlobalVariables.darkColor);
+
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return string.Empty;
+
+                return (projectList.SelectedItem as ProjectReferenceListItem)?.ProjectPath ?? string.Empty;
+            }
+        }
+
+        private sealed class ProjectReferenceListItem
+        {
+            private readonly string _workspaceFolder;
+
+            public ProjectReferenceListItem(string projectPath, string workspaceFolder)
+            {
+                ProjectPath = projectPath;
+                _workspaceFolder = workspaceFolder;
+            }
+
+            public string ProjectPath { get; }
+
+            public override string ToString()
+            {
+                string name = Path.GetFileNameWithoutExtension(ProjectPath);
+                string displayPath = ProjectPath;
+                try
+                {
+                    if (Directory.Exists(_workspaceFolder))
+                        displayPath = Path.GetRelativePath(_workspaceFolder, ProjectPath);
+                }
+                catch
+                {
+                }
+
+                return $"{name} ({displayPath})";
             }
         }
 
@@ -3419,26 +3585,52 @@ namespace CIARE
                 string.Equals(Path.GetExtension(filePath), ".sln", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string GetProjectPathFromExplorerPath(string path)
+        private string GetProjectPathFromExplorerPath(string path)
         {
             if (IsProjectFilePath(path))
                 return path;
 
-            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            if (string.IsNullOrWhiteSpace(path))
                 return string.Empty;
 
-            return FindTopLevelBuildFile(path, "*.csproj");
+            if (File.Exists(path))
+                return Directory.Exists(_fileExplorerRootPath)
+                    ? FindProjectFileForPath(path, _fileExplorerRootPath)
+                    : string.Empty;
+
+            if (!Directory.Exists(path))
+                return string.Empty;
+
+            string childProject = FindTopLevelBuildFile(path, "*.csproj");
+            if (!string.IsNullOrEmpty(childProject))
+                return childProject;
+
+            return Directory.Exists(_fileExplorerRootPath)
+                ? FindNearestBuildFile(path, _fileExplorerRootPath, "*.csproj")
+                : string.Empty;
         }
 
-        private static string GetSolutionPathFromExplorerPath(string path)
+        private string GetSolutionPathFromExplorerPath(string path)
         {
             if (IsSolutionFilePath(path))
                 return path;
 
-            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            if (string.IsNullOrWhiteSpace(path))
                 return string.Empty;
 
-            return FindTopLevelBuildFile(path, "*.sln");
+            string folder = Directory.Exists(path)
+                ? path
+                : File.Exists(path)
+                    ? Path.GetDirectoryName(path)
+                    : string.Empty;
+
+            if (string.IsNullOrEmpty(folder))
+                return string.Empty;
+
+            if (Directory.Exists(_fileExplorerRootPath))
+                return FindNearestBuildFile(folder, _fileExplorerRootPath, "*.sln");
+
+            return FindTopLevelBuildFile(folder, "*.sln");
         }
 
         private static string FindProjectFileForPath(string path, string workspaceFolder)
@@ -4047,6 +4239,15 @@ namespace CIARE
             if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
                 return false;
 
+            string containingSolutionPath = string.Empty;
+            if (string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase))
+            {
+                containingSolutionPath = FindContainingSolutionForProject(filePath);
+                string solutionDirectory = Path.GetDirectoryName(containingSolutionPath);
+                if (!string.IsNullOrEmpty(solutionDirectory) && Directory.Exists(solutionDirectory))
+                    folderPath = solutionDirectory;
+            }
+
             LoadFileExplorerFolder(folderPath);
             ToggleFileExplorer(true);
 
@@ -4057,14 +4258,84 @@ namespace CIARE
                     : GetActivePackageProjectPath();
                 string solutionPath = string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase)
                     ? filePath
-                    : string.Empty;
+                    : containingSolutionPath;
                 ShowProjectStatus("Opened project/solution", projectPath, solutionPath);
             }
 
             return true;
         }
 
-        private void ShowProjectStatus(string action, string projectPath, string solutionPath)
+        private static string FindContainingSolutionForProject(string projectPath)
+        {
+            if (!IsProjectFilePath(projectPath))
+                return string.Empty;
+
+            string folder = Path.GetDirectoryName(projectPath);
+            while (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
+            {
+                try
+                {
+                    foreach (string solutionPath in Directory.GetFiles(folder, "*.sln", SearchOption.TopDirectoryOnly)
+                        .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+                    {
+                        if (SolutionFileContainsProject(solutionPath, projectPath))
+                            return solutionPath;
+                    }
+                }
+                catch
+                {
+                }
+
+                string parent = Path.GetDirectoryName(folder);
+                if (string.IsNullOrEmpty(parent) || string.Equals(parent, folder, StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                folder = parent;
+            }
+
+            return string.Empty;
+        }
+
+        private static bool SolutionFileContainsProject(string solutionPath, string projectPath)
+        {
+            if (!IsSolutionFilePath(solutionPath) || !IsProjectFilePath(projectPath))
+                return false;
+
+            string solutionDirectory = Path.GetDirectoryName(solutionPath);
+            if (string.IsNullOrEmpty(solutionDirectory))
+                return false;
+
+            string normalizedProject = NormalizeCompletionPath(projectPath);
+            try
+            {
+                foreach (string line in File.ReadLines(solutionPath))
+                {
+                    Match match = Regex.Match(line,
+                        @"Project\(""\{[^}]+\}""\)\s*=\s*""[^""]+"",\s*""([^""]+\.csproj)""",
+                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                    if (!match.Success)
+                        continue;
+
+                    string referencedProject = match.Groups[1].Value;
+                    if (!Path.IsPathRooted(referencedProject))
+                        referencedProject = Path.GetFullPath(Path.Combine(solutionDirectory, referencedProject));
+
+                    if (string.Equals(NormalizeCompletionPath(referencedProject), normalizedProject,
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private void ShowProjectStatus(string action, string projectPath, string solutionPath,
+            string referencePath = null)
         {
             if (outputTabControl.SelectedTab == errorsTabPage)
                 outputTabControl.SelectedTab = outputTabPage;
@@ -4074,6 +4345,8 @@ namespace CIARE
                 lines.Add("Solution: " + solutionPath);
             if (!string.IsNullOrEmpty(projectPath))
                 lines.Add("Project: " + projectPath);
+            if (!string.IsNullOrEmpty(referencePath))
+                lines.Add("Reference: " + referencePath);
 
             outputRBT.Text = string.Join(Environment.NewLine, lines);
         }
