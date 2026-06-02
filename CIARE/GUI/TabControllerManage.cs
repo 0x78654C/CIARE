@@ -111,6 +111,8 @@ namespace CIARE.GUI
         /// <param name="textEditorControl"></param>
         public static void CloseAllTabs(TabControl tabControl, TextEditorControl textEditorControl)
         {
+            if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
+                return;
             var tabPages = tabControl.TabPages;
             int tabCount = tabControl.TabCount - 1;
             int count = 0;
@@ -140,6 +142,7 @@ namespace CIARE.GUI
                 ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
                 ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
             }
+
             AddNewTab(tabControl);
             RemoveTabPageAt(MainForm.Instance.EditorTabControl, 1);
         }
