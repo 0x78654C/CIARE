@@ -48,6 +48,8 @@ namespace CIARE.Roslyn
         private static List<MetadataReference> _customRefs = new List<MetadataReference>();
         private static List<string> _lastNuGetRefSnapshot;
         private static List<MetadataReference> _nuGetRefs = new List<MetadataReference>();
+        private static List<string> _lastAssemblyRefSnapshot;
+        private static List<MetadataReference> _assemblyRefs = new List<MetadataReference>();
         private static List<string> _lastFrameworkRefSnapshot;
         private static List<MetadataReference> _frameworkRefs = new List<MetadataReference>();
 
@@ -149,6 +151,8 @@ namespace CIARE.Roslyn
                 _customRefs = new List<MetadataReference>();
                 _lastNuGetRefSnapshot = null;
                 _nuGetRefs = new List<MetadataReference>();
+                _lastAssemblyRefSnapshot = null;
+                _assemblyRefs = new List<MetadataReference>();
                 _lastFrameworkRefSnapshot = null;
                 _frameworkRefs = new List<MetadataReference>();
             }
@@ -902,6 +906,20 @@ namespace CIARE.Roslyn
                                 _nuGetRefs.Add(reference);
                         }
                     }
+
+                    var currentAssemblyRefs = ResolveAssemblyReferencePaths(workspaceFolder, currentFilePath,
+                        hasProjectContext);
+                    if (_lastAssemblyRefSnapshot == null ||
+                        !_lastAssemblyRefSnapshot.SequenceEqual(currentAssemblyRefs))
+                    {
+                        _lastAssemblyRefSnapshot = currentAssemblyRefs.ToList();
+                        _assemblyRefs = new List<MetadataReference>();
+                        foreach (var lib in currentAssemblyRefs)
+                        {
+                            if (TryCreateMetadataReference(lib, out var reference))
+                                _assemblyRefs.Add(reference);
+                        }
+                    }
                 }
                 else
                 {
@@ -909,6 +927,8 @@ namespace CIARE.Roslyn
                     _frameworkRefs = new List<MetadataReference>();
                     _lastNuGetRefSnapshot = new List<string>();
                     _nuGetRefs = new List<MetadataReference>();
+                    _lastAssemblyRefSnapshot = new List<string>();
+                    _assemblyRefs = new List<MetadataReference>();
                 }
 
                 var references = new List<MetadataReference>();
@@ -937,6 +957,9 @@ namespace CIARE.Roslyn
                 AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames, _customRefs, true);
                 if (hasProjectContext)
                     AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames, _nuGetRefs, true);
+                if (hasProjectContext)
+                    AddReferences(references, referencePaths, assemblyIndexes, sourceAssemblyNames,
+                        _assemblyRefs, true);
                 return references;
             }
         }
@@ -1994,6 +2017,24 @@ namespace CIARE.Roslyn
             foreach (var assetsPath in ResolveProjectAssetsFiles(workspaceFolder, currentFilePath,
                 hasProjectContext))
                 paths.AddRange(ReadCompileReferencesFromAssets(assetsPath));
+
+            return paths
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static List<string> ResolveAssemblyReferencePaths(string workspaceFolder,
+            string currentFilePath, bool hasProjectContext)
+        {
+            var paths = new List<string>();
+            if (!hasProjectContext)
+                return paths;
+
+            string projectFile = FindNearestProjectFile(currentFilePath, workspaceFolder);
+            foreach (string graphProjectFile in GetProjectGraphFiles(projectFile))
+                paths.AddRange(ProjectNuGetManager.GetAssemblyReferencePaths(graphProjectFile));
 
             return paths
                 .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))

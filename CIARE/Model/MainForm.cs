@@ -2072,20 +2072,39 @@ namespace CIARE
         private void ScheduleExplorerNuGetPackageMetadataRefresh(string projectPath,
             List<ProjectNuGetPackageReference> packages, int refreshVersion)
         {
-            var packageSnapshot = packages
-                .Select(package => new ProjectNuGetPackageReference
-                {
-                    Name = package.Name,
-                    Version = package.Version,
-                    ProjectPath = package.ProjectPath
-                })
-                .ToList();
-
+            var usageSnapshot = CreateExplorerNuGetPackageSnapshot(packages);
             Task.Run(() =>
             {
-                ProjectNuGetManager.PopulateLatestPackageVersions(packageSnapshot);
-                ProjectNuGetManager.PopulateUnusedPackageStatus(projectPath, packageSnapshot);
-                return packageSnapshot;
+                try
+                {
+                    ProjectNuGetManager.PopulateUnusedPackageStatus(projectPath, usageSnapshot);
+                }
+                catch
+                {
+                    foreach (var package in usageSnapshot)
+                        package.UnusedCheckCompleted = true;
+                }
+
+                return usageSnapshot;
+            }).ContinueWith(task =>
+            {
+                if (IsDisposed ||
+                    !IsHandleCreated ||
+                    refreshVersion != _fileExplorerNuGetListRefreshVersion)
+                {
+                    return;
+                }
+
+                var result = task.Status == TaskStatus.RanToCompletion ? task.Result : usageSnapshot;
+                TryBeginInvoke(() => ApplyExplorerNuGetPackageMetadata(projectPath, result,
+                    refreshVersion));
+            });
+
+            var updateSnapshot = CreateExplorerNuGetPackageSnapshot(packages);
+            Task.Run(() =>
+            {
+                ProjectNuGetManager.PopulateLatestPackageVersions(updateSnapshot);
+                return updateSnapshot;
             }).ContinueWith(task =>
             {
                 if (task.Status != TaskStatus.RanToCompletion ||
@@ -2096,9 +2115,22 @@ namespace CIARE
                     return;
                 }
 
-                TryBeginInvoke(() => ApplyExplorerNuGetPackageMetadata(projectPath, task.Result,
+                TryBeginInvoke(() => ApplyExplorerNuGetPackageUpdateMetadata(projectPath, task.Result,
                     refreshVersion));
             });
+        }
+
+        private static List<ProjectNuGetPackageReference> CreateExplorerNuGetPackageSnapshot(
+            IEnumerable<ProjectNuGetPackageReference> packages)
+        {
+            return packages
+                .Select(package => new ProjectNuGetPackageReference
+                {
+                    Name = package.Name,
+                    Version = package.Version,
+                    ProjectPath = package.ProjectPath
+                })
+                .ToList();
         }
 
         private void ApplyExplorerNuGetPackageMetadata(string projectPath,
@@ -2125,8 +2157,6 @@ namespace CIARE
                         continue;
                     }
 
-                    package.LatestVersion = metadata.LatestVersion;
-                    package.HasUpdate = metadata.HasUpdate;
                     package.UnusedCheckCompleted = metadata.UnusedCheckCompleted;
                     package.IsUnused = metadata.IsUnused;
 
@@ -2137,6 +2167,45 @@ namespace CIARE
                     item.ForeColor = package.UnusedCheckCompleted && package.IsUnused
                         ? (GlobalVariables.darkColor ? Color.FromArgb(245, 174, 96) : Color.DarkOrange)
                         : _fileExplorerNuGetList.ForeColor;
+                }
+            }
+            finally
+            {
+                _fileExplorerNuGetList.EndUpdate();
+                ResizeFileExplorerNuGetColumns();
+            }
+        }
+
+        private void ApplyExplorerNuGetPackageUpdateMetadata(string projectPath,
+            List<ProjectNuGetPackageReference> packages, int refreshVersion)
+        {
+            if (refreshVersion != _fileExplorerNuGetListRefreshVersion ||
+                !string.Equals(GetActivePackageProjectPath(), projectPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var metadataByName = packages
+                .GroupBy(package => package.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+            _fileExplorerNuGetList.BeginUpdate();
+            try
+            {
+                foreach (ListViewItem item in _fileExplorerNuGetList.Items)
+                {
+                    if (!(item.Tag is ProjectNuGetPackageReference package) ||
+                        !metadataByName.TryGetValue(package.Name, out var metadata))
+                    {
+                        continue;
+                    }
+
+                    package.LatestVersion = metadata.LatestVersion;
+                    package.HasUpdate = metadata.HasUpdate;
+
+                    EnsureExplorerNuGetSubItemCount(item);
+                    item.SubItems[2].Text = FormatExplorerNuGetUpdateText(package);
+                    item.ToolTipText = FormatExplorerNuGetToolTip(package);
                 }
             }
             finally
@@ -6351,11 +6420,16 @@ namespace CIARE
 
         private static List<string> GetCompletionCompileReferencePaths(string projectPath)
         {
-            return GetCompletionProjectPaths(projectPath)
-                .SelectMany(path => ProjectNuGetManager.GetCompileReferencePaths(path))
+            var paths = new List<string>();
+            foreach (string path in GetCompletionProjectPaths(projectPath))
+            {
+                paths.AddRange(ProjectNuGetManager.GetAssemblyReferencePaths(path));
+                paths.AddRange(ProjectNuGetManager.GetCompileReferencePaths(path));
+            }
+
+            return paths
                 .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
 

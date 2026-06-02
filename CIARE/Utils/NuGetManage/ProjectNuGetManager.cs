@@ -385,6 +385,33 @@ namespace CIARE.Utils.NuGetManage
                 .ToList();
         }
 
+        public static List<string> GetAssemblyReferencePaths(string projectPath)
+        {
+            if (!IsProjectFile(projectPath))
+                return new List<string>();
+
+            string projectDirectory = Path.GetDirectoryName(projectPath);
+            if (string.IsNullOrEmpty(projectDirectory))
+                return new List<string>();
+
+            try
+            {
+                var document = XDocument.Load(projectPath);
+                return document.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "Reference",
+                        StringComparison.Ordinal))
+                    .SelectMany(reference => ResolveAssemblyReferencePaths(reference, projectDirectory))
+                    .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+            catch
+            {
+                return new List<string>();
+            }
+        }
+
         public static List<string> GetFrameworkReferencePaths(string projectPath)
         {
             if (!IsProjectFile(projectPath))
@@ -540,6 +567,77 @@ namespace CIARE.Utils.NuGetManage
             return !string.IsNullOrWhiteSpace(projectPath) &&
                 File.Exists(projectPath) &&
                 string.Equals(Path.GetExtension(projectPath), ".csproj", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static IEnumerable<string> ResolveAssemblyReferencePaths(XElement reference,
+            string projectDirectory)
+        {
+            foreach (string hintPath in reference.Elements()
+                .Where(element => string.Equals(element.Name.LocalName, "HintPath",
+                    StringComparison.Ordinal))
+                .Select(element => element.Value))
+            {
+                string resolvedPath = ResolveProjectReferencePath(hintPath, projectDirectory);
+                if (!string.IsNullOrWhiteSpace(resolvedPath))
+                    yield return resolvedPath;
+            }
+
+            string include = reference.Attribute("Include")?.Value;
+            if (LooksLikeAssemblyPath(include))
+            {
+                string resolvedPath = ResolveProjectReferencePath(include, projectDirectory);
+                if (!string.IsNullOrWhiteSpace(resolvedPath))
+                    yield return resolvedPath;
+            }
+        }
+
+        private static bool LooksLikeAssemblyPath(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            return value.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
+                value.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ResolveProjectReferencePath(string path, string projectDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(projectDirectory))
+                return string.Empty;
+
+            try
+            {
+                string resolvedPath = path.Trim().Trim('"');
+                resolvedPath = resolvedPath.Replace("$(MSBuildProjectDirectory)", projectDirectory);
+                resolvedPath = resolvedPath.Replace("$(MSBuildThisFileDirectory)",
+                    EnsureTrailingDirectorySeparator(projectDirectory));
+                resolvedPath = resolvedPath.Replace("$(ProjectDir)",
+                    EnsureTrailingDirectorySeparator(projectDirectory));
+                resolvedPath = Environment.ExpandEnvironmentVariables(resolvedPath);
+
+                if (resolvedPath.Contains("$("))
+                    return string.Empty;
+
+                return Path.IsPathRooted(resolvedPath)
+                    ? Path.GetFullPath(resolvedPath)
+                    : Path.GetFullPath(Path.Combine(projectDirectory, resolvedPath));
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string EnsureTrailingDirectorySeparator(string path)
+        {
+            if (string.IsNullOrEmpty(path) ||
+                path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal) ||
+                path.EndsWith(Path.AltDirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+            {
+                return path;
+            }
+
+            return path + Path.DirectorySeparatorChar;
         }
 
         private static HashSet<string> ReadFrameworkReferencesFromProjectFile(string projectPath)

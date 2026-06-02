@@ -160,10 +160,11 @@ namespace CIARE.GUI
 																  resolverCode,
 																  expression.Context);
 					if (completionData != null)
-					{
 						completionData = mainForm.FilterCompletionDataForActiveProject(completionData);
+					completionData = MergeCompletionData(completionData,
+						mainForm.GetRoslynCtrlSpaceCompletionData(rawCode, textArea.Caret.Offset, preSelection));
+					if (completionData != null)
 						AddCompletionData(resultList, completionData);
-					}
 					AddCompletionData(resultList, mainForm.GetWorkspaceMethodCompletionData(preSelection));
 					AddDirectTypingKeywords(resultList);
 				}
