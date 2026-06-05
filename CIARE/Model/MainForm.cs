@@ -3721,6 +3721,28 @@ namespace CIARE
             }
         }
 
+        private bool IsActiveUntitledEditorPage()
+        {
+            try
+            {
+                TabPage selectedTab = EditorTabControl?.SelectedTab;
+                if (selectedTab == null)
+                    return false;
+
+                string path = selectedTab.ToolTipText?.Trim();
+                if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    return false;
+
+                string title = (selectedTab.Text ?? string.Empty).TrimStart('*').Trim();
+                return string.IsNullOrWhiteSpace(path) &&
+                    title.StartsWith("New Page", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private string GetActiveWorkspaceFolder()
         {
             string filePath = GetActiveEditorFilePath();
@@ -3737,6 +3759,9 @@ namespace CIARE
         public string GetActiveCompileProjectPath()
         {
             string filePath = GetActiveEditorFilePath();
+
+            if (IsActiveUntitledEditorPage())
+                return string.Empty;
 
             if (IsCSharpFilePath(filePath))
                 return GetBuildTargetForActiveCSharpFile(filePath);
@@ -3765,6 +3790,9 @@ namespace CIARE
         public string GetActiveRunProjectPath()
         {
             if (!Directory.Exists(_fileExplorerRootPath))
+                return string.Empty;
+
+            if (IsActiveUntitledEditorPage())
                 return string.Empty;
 
             if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
