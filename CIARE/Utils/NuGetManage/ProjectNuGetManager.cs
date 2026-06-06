@@ -323,8 +323,12 @@ namespace CIARE.Utils.NuGetManage
                 return;
 
             var referencesByPackage = ReadCompileReferencesByPackage(assetsPath);
+            var packagesRequiredByOtherPackages = ReadPackagesRequiredByOtherPackages(assetsPath);
             foreach (var package in packages)
             {
+                if (packagesRequiredByOtherPackages.Contains(package.Name))
+                    continue;
+
                 if (!referencesByPackage.TryGetValue(package.Name, out var referencePaths) ||
                     referencePaths.Count == 0)
                 {
@@ -1590,6 +1594,48 @@ namespace CIARE.Utils.NuGetManage
             }
 
             return referencesByPackage;
+        }
+
+        private static HashSet<string> ReadPackagesRequiredByOtherPackages(string assetsPath)
+        {
+            var packageDependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(assetsPath));
+                if (!document.RootElement.TryGetProperty("targets", out var targets))
+                    return packageDependencies;
+
+                foreach (var target in targets.EnumerateObject())
+                {
+                    foreach (var library in target.Value.EnumerateObject())
+                    {
+                        string[] libraryParts = library.Name.Split('/');
+                        if (libraryParts.Length != 2 ||
+                            !library.Value.TryGetProperty("type", out var libraryType) ||
+                            libraryType.ValueKind != JsonValueKind.String ||
+                            !string.Equals(libraryType.GetString(), "package", StringComparison.OrdinalIgnoreCase) ||
+                            !library.Value.TryGetProperty("dependencies", out var dependencies) ||
+                            dependencies.ValueKind != JsonValueKind.Object)
+                        {
+                            continue;
+                        }
+
+                        foreach (var dependency in dependencies.EnumerateObject())
+                        {
+                            if (!string.Equals(libraryParts[0], dependency.Name,
+                                StringComparison.OrdinalIgnoreCase))
+                            {
+                                packageDependencies.Add(dependency.Name);
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return packageDependencies;
         }
 
         private static List<string> ReadProjectSourceTexts(string projectDirectory)
