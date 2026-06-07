@@ -42,7 +42,7 @@
 - Compile code to binary files (`.exe` or `.dll`)
 - Publish code to binary files (`.exe` or `.dll`)
 - Native AOT publish option
-- Build options: Debug / Release — Any CPU / x64
+- Build options: Debug / Release — AnyCPU / x64
 - Target desired framework (.NET 6, .NET 7, .NET 8, .NET 9, .NET 10)
 - Smart Build Target Detection — auto-detects the nearest `.sln` or `.csproj` relative to the active file; no manual project configuration needed
 - Set command line parameters

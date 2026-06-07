@@ -592,7 +592,9 @@ namespace CIARE.GUI
 			pendingDefinitionWord = null;
 			pendingDefinitionOffset = -1;
 
-			if (e.Button != MouseButtons.Left || (Control.ModifierKeys & Keys.Control) == 0)
+			Keys modifiers = Control.ModifierKeys;
+			if (e.Button != MouseButtons.Left ||
+				((modifiers & Keys.Control) == 0 && (modifiers & Keys.Shift) == 0))
 				return;
 
 			TextArea textArea = editor.ActiveTextAreaControl.TextArea;
@@ -603,9 +605,16 @@ namespace CIARE.GUI
 				e.X - textArea.TextView.DrawingPosition.X,
 				e.Y - textArea.TextView.DrawingPosition.Y);
 			int offset = textArea.Document.PositionToOffset(clickPos);
+			int lookupOffset = Math.Max(0, Math.Min(offset, Math.Max(0, textArea.Document.TextLength - 1)));
 
-			int wordStart = ICSharpCode.TextEditor.Document.TextUtilities.FindWordStart(textArea.Document, offset);
-			int wordEnd   = ICSharpCode.TextEditor.Document.TextUtilities.FindWordEnd(textArea.Document, offset);
+			int wordStart = ICSharpCode.TextEditor.Document.TextUtilities.FindWordStart(textArea.Document, lookupOffset);
+			int wordEnd   = ICSharpCode.TextEditor.Document.TextUtilities.FindWordEnd(textArea.Document, lookupOffset);
+			if (wordEnd <= wordStart && lookupOffset > 0)
+			{
+				lookupOffset--;
+				wordStart = ICSharpCode.TextEditor.Document.TextUtilities.FindWordStart(textArea.Document, lookupOffset);
+				wordEnd = ICSharpCode.TextEditor.Document.TextUtilities.FindWordEnd(textArea.Document, lookupOffset);
+			}
 			if (wordEnd <= wordStart) return;
 
 			string word = textArea.Document.GetText(wordStart, wordEnd - wordStart);

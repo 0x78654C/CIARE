@@ -10,6 +10,8 @@ namespace CIARE.GUI
     [SupportedOSPlatform("windows")]
     public class OutputWindowManage
     {
+        private const int OutputWindowHeight = 240;
+
         /// <summary>
         /// Pop up the output pane on compile or code run.
         /// </summary>
@@ -33,6 +35,7 @@ namespace CIARE.GUI
         public static void ShowOutputWindow(SplitContainer splitContainer, RichTextBox outLogRtb)
         {
             SplitContainerHideShow.ShowSplitContainer(splitContainer);
+            SetOutputWindowHeight(splitContainer, OutputWindowHeight);
             MainForm.Instance.visibleSplitContainer = false;
             GlobalVariables.outPutDisplay = false;
             outLogRtb.Focus();
@@ -49,6 +52,7 @@ namespace CIARE.GUI
             if (MainForm.Instance.visibleSplitContainer)
             {
                 SplitContainerHideShow.ShowSplitContainer(splitContainer);
+                SetOutputWindowHeight(splitContainer, OutputWindowHeight);
                 MainForm.Instance.visibleSplitContainer = false;
                 MainForm.Instance.visibleSplitContainerAutoHide = true;
                 outputRtb.Focus();
@@ -62,6 +66,23 @@ namespace CIARE.GUI
                 MainForm.Instance.visibleSplitContainerAutoHide = false;
                 RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "OutWState", "True");
             }
+        }
+
+        private static void SetOutputWindowHeight(SplitContainer splitContainer, int height)
+        {
+            if (splitContainer == null || splitContainer.IsDisposed || splitContainer.Orientation != Orientation.Horizontal)
+                return;
+
+            int availableHeight = splitContainer.ClientSize.Height - splitContainer.SplitterWidth;
+            if (availableHeight <= 0)
+                return;
+
+            if (availableHeight <= splitContainer.Panel1MinSize + splitContainer.Panel2MinSize)
+                return;
+
+            int outputHeight = System.Math.Max(splitContainer.Panel2MinSize,
+                System.Math.Min(height, availableHeight - splitContainer.Panel1MinSize));
+            splitContainer.SplitterDistance = System.Math.Max(0, availableHeight - outputHeight);
         }
     }
 }

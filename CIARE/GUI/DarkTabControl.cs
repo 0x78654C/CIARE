@@ -12,15 +12,23 @@ namespace CIARE.GUI
         private const int WM_PAINT = 0x000F;
         private const int WM_ERASEBKGND = 0x0014;
 
+        public DarkTabControl()
+        {
+            SetStyle(ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.OptimizedDoubleBuffer |
+                     ControlStyles.ResizeRedraw, true);
+            DoubleBuffered = true;
+            UpdateStyles();
+        }
+
         protected override void WndProc(ref Message m)
         {
-            // In dark mode, fill the tab strip background ourselves so the
-            // OS default light erase does not show through gaps between tabs.
-            if (m.Msg == WM_ERASEBKGND && GlobalVariables.darkColor)
+            if (m.Msg == WM_ERASEBKGND)
             {
                 using (Graphics g = Graphics.FromHdc(m.WParam))
                 {
-                    using (SolidBrush brush = new SolidBrush(GlobalVariables.formBgColor))
+                    Color background = GlobalVariables.darkColor ? GlobalVariables.formBgColor : BackColor;
+                    using (SolidBrush brush = new SolidBrush(background))
                         g.FillRectangle(brush, ClientRectangle);
                 }
                 m.Result = (IntPtr)1;

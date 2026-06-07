@@ -20,6 +20,7 @@ using System.Drawing.Text;
 using CIARE.Utils.OpenAISettings;
 using CIARE.Utils.Options;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace CIARE.Roslyn
 {
@@ -192,7 +193,14 @@ namespace CIARE.Roslyn
 
                 if (!Directory.Exists(pathOutput))
                     Directory.CreateDirectory(pathOutput);
-                if (exeFile)
+                if (GlobalVariables.OPublishNative && !exeFile)
+                {
+                    richTextBox.Text = "ERROR: Native AOT publish requires an executable output.";
+                    return;
+                }
+                if (GlobalVariables.OPublishNative)
+                    richTextBox.Text = "Publish Native AOT EXE binary file ...";
+                else if (exeFile)
                     richTextBox.Text = "Compile EXE binary file ...";
                 else
                     richTextBox.Text = "Compile DLL binary file ...";
@@ -246,7 +254,9 @@ namespace CIARE.Roslyn
                     else
                     {
                         richTextBox.Clear();
-                        CsProjCompile projCompile = new CsProjCompile(outPut, pathOutput, code, !exeFile, GlobalVariables.binaryPublish);
+                        bool nativeAot = GlobalVariables.OPublishNative;
+                        bool publish = GlobalVariables.binaryPublish || nativeAot;
+                        CsProjCompile projCompile = new CsProjCompile(outPut, pathOutput, code, !exeFile, publish, nativeAot);
                         projCompile.Build(richTextBox);
                         s_stopWatch.Stop();
                         s_timeSpan = s_stopWatch.Elapsed;
@@ -359,11 +369,18 @@ namespace CIARE.Roslyn
             OutputWindowManage.ShowOutputOnCompileRun(runner, splitContainer, outLogRtb);
             runCodePb.Image = Properties.Resources.runButton_gray;
             runCodePb.Enabled = false;
-            CompileAndRun(textEditor.Text, outLogRtb, GlobalVariables.OUnsafeCode);
-            RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
-            runCodePb.Image = Properties.Resources.runButton21;
-            runCodePb.Enabled = true;
-            GC.Collect();
+            try
+            {
+                if (!TryRunActiveProject(outLogRtb))
+                    CompileAndRun(textEditor.Text, outLogRtb, GlobalVariables.OUnsafeCode);
+            }
+            finally
+            {
+                RtbZoom.RichTextBoxZoom(outLogRtb, GlobalVariables.zoomFactor);
+                runCodePb.Image = Properties.Resources.runButton21;
+                runCodePb.Enabled = true;
+                GC.Collect();
+            }
         }
 
         /// <summary>
@@ -409,6 +426,8 @@ namespace CIARE.Roslyn
             if (string.IsNullOrEmpty(projectPath))
                 return false;
 
+            projectPath = PreferActiveNativeAotProject(projectPath);
+
             if (GlobalVariables.darkColor)
                 outLogRtb.ForeColor = Color.FromArgb(192, 215, 207);
             else
@@ -421,6 +440,79 @@ namespace CIARE.Roslyn
             return true;
         }
 
+        private static bool TryRunActiveProject(RichTextBox outLogRtb)
+        {
+            string projectPath = string.Empty;
+
+            try
+            {
+                projectPath = MainForm.Instance?.GetActiveRunProjectPath() ?? string.Empty;
+            }
+            catch
+            {
+                projectPath = string.Empty;
+            }
+
+            if (string.IsNullOrEmpty(projectPath))
+                return false;
+
+            FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
+            RunExistingProject(projectPath, outLogRtb);
+            return true;
+        }
+
+        private static string PreferActiveNativeAotProject(string buildTargetPath)
+        {
+            if (!GlobalVariables.OPublishNative ||
+                !string.Equals(Path.GetExtension(buildTargetPath), ".sln", StringComparison.OrdinalIgnoreCase))
+            {
+                return buildTargetPath;
+            }
+
+            try
+            {
+                string activeProject = MainForm.Instance?.GetActivePackageInstallProjectPath() ?? string.Empty;
+                return ProjectHasPublishAotEnabled(activeProject) ? activeProject : buildTargetPath;
+            }
+            catch
+            {
+                return buildTargetPath;
+            }
+        }
+
+        private static void RunExistingProject(string projectPath, RichTextBox logOutput)
+        {
+            try
+            {
+                if (!File.Exists(projectPath))
+                {
+                    RichExtColor.ErrorDisplay(logOutput, $"ERROR: Project file does not exist -> {projectPath}");
+                    return;
+                }
+
+                string workingDirectory = Path.GetDirectoryName(projectPath);
+                string configuration = ExistingProjectConfiguration();
+                string platform = ExistingProjectPlatformDotnetArgument(projectPath);
+                string arguments = $"run --project {QuoteProcessArgument(projectPath)} --configuration {configuration} {platform}".Trim();
+
+                logOutput.Text = $"Run project ...\n{projectPath}";
+                ProcessRunResult run = RunBuildCommand(
+                    new ProjectBuildCommand("dotnet", arguments, ".NET SDK", false), workingDirectory);
+                string runOutput = FormatBuildOutput(run);
+                if (!run.Success || BuildHasErrors(runOutput))
+                    logOutput.Text = runOutput + $"\nRun completed with errors! (exit code {run.ExitCode})";
+                else
+                    logOutput.Text = runOutput + "\nDone!";
+
+                logOutput.SelectionStart = logOutput.Text.Length;
+                logOutput.ScrollToCaret();
+            }
+            catch (Exception e)
+            {
+                RichExtColor.ErrorDisplay(logOutput, $"ERROR: {e.Message}");
+            }
+        }
+
         private static void BuildExistingProject(string projectPath, RichTextBox logOutput, bool publish)
         {
             try
@@ -431,16 +523,30 @@ namespace CIARE.Roslyn
                     return;
                 }
 
-                string action = publish ? "Publish" : "Build";
+                bool nativeAot = GlobalVariables.OPublishNative &&
+                    BuildTargetHasPublishAotEnabled(projectPath);
+                bool effectivePublish = publish || nativeAot;
+                string nativeAotRuntimeIdentifier = nativeAot
+                    ? ExistingProjectNativeAotRuntimeIdentifier()
+                    : string.Empty;
+                if (nativeAot && string.IsNullOrEmpty(nativeAotRuntimeIdentifier))
+                {
+                    RichExtColor.ErrorDisplay(logOutput, "ERROR: Native AOT publish works only with x64 architecture!");
+                    return;
+                }
+
+                string action = nativeAot ? "Publish Native AOT" : effectivePublish ? "Publish" : "Build";
                 logOutput.Text = $"{action} project ...\n{projectPath}";
 
                 string workingDirectory = Path.GetDirectoryName(projectPath);
-                ProjectBuildCommand command = CreateBuildCommand(projectPath, publish, BuildTargetPrefersFullFrameworkMsBuild(projectPath));
+                ProjectBuildCommand command = CreateBuildCommand(projectPath, effectivePublish,
+                    BuildTargetPrefersFullFrameworkMsBuild(projectPath), nativeAotRuntimeIdentifier);
                 ProcessRunResult build = RunBuildCommand(command, workingDirectory);
 
                 if (!command.UsesFullFrameworkMsBuild && RequiresFullFrameworkMsBuild(build.Output))
                 {
-                    ProjectBuildCommand msBuildCommand = CreateBuildCommand(projectPath, publish, true);
+                    ProjectBuildCommand msBuildCommand = CreateBuildCommand(projectPath, effectivePublish, true,
+                        nativeAotRuntimeIdentifier);
                     if (msBuildCommand.UsesFullFrameworkMsBuild)
                     {
                         command = msBuildCommand;
@@ -476,15 +582,18 @@ namespace CIARE.Roslyn
             }
         }
 
-        private static ProjectBuildCommand CreateBuildCommand(string projectPath, bool publish, bool preferFullFrameworkMsBuild)
+        private static ProjectBuildCommand CreateBuildCommand(string projectPath, bool publish,
+            bool preferFullFrameworkMsBuild, string nativeAotRuntimeIdentifier)
         {
             if (preferFullFrameworkMsBuild && TryFindFullFrameworkMsBuild(out string msBuildPath))
             {
-                return new ProjectBuildCommand(msBuildPath, BuildExistingProjectMsBuildArguments(projectPath, publish),
+                return new ProjectBuildCommand(msBuildPath,
+                    BuildExistingProjectMsBuildArguments(projectPath, publish, nativeAotRuntimeIdentifier),
                     "Visual Studio MSBuild", true);
             }
 
-            return new ProjectBuildCommand("dotnet", BuildExistingProjectDotnetArguments(projectPath, publish),
+            return new ProjectBuildCommand("dotnet",
+                BuildExistingProjectDotnetArguments(projectPath, publish, nativeAotRuntimeIdentifier),
                 ".NET SDK MSBuild", false);
         }
 
@@ -494,44 +603,84 @@ namespace CIARE.Roslyn
             return processRun.RunWithResult();
         }
 
-        private static string BuildExistingProjectDotnetArguments(string projectPath, bool publish)
+        private static string BuildExistingProjectDotnetArguments(string projectPath, bool publish,
+            string nativeAotRuntimeIdentifier)
         {
             string quotedProjectPath = QuoteProcessArgument(projectPath);
             string configuration = ExistingProjectConfiguration();
-            string platform = ExistingProjectPlatformDotnetArgument();
+            string platform = ExistingProjectPlatformDotnetArgument(projectPath);
+            string runtime = string.IsNullOrEmpty(nativeAotRuntimeIdentifier)
+                ? string.Empty
+                : $"--runtime {nativeAotRuntimeIdentifier}";
+            string publishAotOverride = publish
+                ? $"--property:PublishAot={(string.IsNullOrEmpty(nativeAotRuntimeIdentifier) ? "false" : "true")}"
+                : string.Empty;
 
             if (publish)
-                return $"publish {quotedProjectPath} --configuration {configuration} {platform}".Trim();
+                return $"publish {quotedProjectPath} --configuration {configuration} {platform} {publishAotOverride} {runtime}".Trim();
 
             return $"build {quotedProjectPath} --configuration {configuration} {platform}".Trim();
         }
 
-        private static string BuildExistingProjectMsBuildArguments(string projectPath, bool publish)
+        private static string BuildExistingProjectMsBuildArguments(string projectPath, bool publish,
+            string nativeAotRuntimeIdentifier)
         {
             string quotedProjectPath = QuoteProcessArgument(projectPath);
             string configuration = ExistingProjectConfiguration();
-            string platform = ExistingProjectPlatformMsBuildArgument();
+            string platform = ExistingProjectPlatformMsBuildArgument(projectPath);
             string target = publish ? "Publish" : "Build";
+            string runtime = string.IsNullOrEmpty(nativeAotRuntimeIdentifier)
+                ? string.Empty
+                : $"/p:RuntimeIdentifier={nativeAotRuntimeIdentifier}";
+            string publishAotOverride = publish
+                ? $"/p:PublishAot={(string.IsNullOrEmpty(nativeAotRuntimeIdentifier) ? "false" : "true")}"
+                : string.Empty;
 
-            return $"{quotedProjectPath} /restore /t:{target} /p:Configuration={configuration} {platform}".Trim();
+            return $"{quotedProjectPath} /restore /t:{target} /p:Configuration={configuration} {platform} {publishAotOverride} {runtime}".Trim();
         }
 
         private static string ExistingProjectConfiguration() =>
             GlobalVariables.configParam.Contains("Release") ? "Release" : "Debug";
 
-        private static string ExistingProjectPlatformDotnetArgument()
+        private static string ExistingProjectPlatformDotnetArgument(string buildTargetPath)
         {
-            string platform = ExistingProjectPlatform();
+            string platform = ExistingProjectPlatform(buildTargetPath);
             return string.IsNullOrEmpty(platform) ? string.Empty : $"--property:Platform={QuoteProcessArgument(platform)}";
         }
 
-        private static string ExistingProjectPlatformMsBuildArgument()
+        private static string ExistingProjectPlatformMsBuildArgument(string buildTargetPath)
         {
-            string platform = ExistingProjectPlatform();
+            string platform = ExistingProjectPlatform(buildTargetPath);
             return string.IsNullOrEmpty(platform) ? string.Empty : $"/p:Platform={QuoteProcessArgument(platform)}";
         }
 
-        private static string ExistingProjectPlatform()
+        private static string ExistingProjectPlatform(string buildTargetPath)
+        {
+            string platform = ExistingProjectRequestedPlatform();
+            if (string.IsNullOrEmpty(platform))
+                return string.Empty;
+
+            string extension = Path.GetExtension(buildTargetPath);
+            if (string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase))
+            {
+                string configuration = ExistingProjectConfiguration();
+                return FindMatchingSolutionPlatform(buildTargetPath, configuration, platform) ??
+                    FindFallbackSolutionPlatform(buildTargetPath, configuration) ??
+                    string.Empty;
+            }
+
+            if (string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase))
+            {
+                string configuration = ExistingProjectConfiguration();
+                return FindMatchingProjectOutputPlatform(buildTargetPath, configuration, platform) ??
+                    FindFallbackProjectOutputPlatform(buildTargetPath, configuration) ??
+                    platform;
+            }
+
+            return platform;
+        }
+
+        private static string ExistingProjectRequestedPlatform()
         {
             if (string.IsNullOrWhiteSpace(GlobalVariables.platformParam))
                 return string.Empty;
@@ -545,6 +694,216 @@ namespace CIARE.Roslyn
                 .Substring(platformIndex + platformKey.Length)
                 .Trim()
                 .Trim('"');
+        }
+
+        private static string ExistingProjectNativeAotRuntimeIdentifier()
+        {
+            return string.Equals(ExistingProjectRequestedPlatform(), "x64", StringComparison.OrdinalIgnoreCase)
+                ? "win-x64"
+                : string.Empty;
+        }
+
+        private static bool BuildTargetHasPublishAotEnabled(string buildTargetPath)
+        {
+            return string.Equals(Path.GetExtension(buildTargetPath), ".csproj",
+                    StringComparison.OrdinalIgnoreCase) &&
+                ProjectHasPublishAotEnabled(buildTargetPath);
+        }
+
+        private static bool ProjectHasPublishAotEnabled(string projectPath)
+        {
+            if (!File.Exists(projectPath))
+                return false;
+
+            try
+            {
+                XDocument project = XDocument.Load(projectPath);
+                return project.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "PublishAot",
+                        StringComparison.OrdinalIgnoreCase))
+                    .Any(element => string.Equals(element.Value.Trim(), "true",
+                        StringComparison.OrdinalIgnoreCase));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string FindMatchingSolutionPlatform(string solutionPath, string configuration, string platform)
+        {
+            return ReadSolutionPlatforms(solutionPath, configuration)
+                .FirstOrDefault(item => string.Equals(NormalizePlatformName(item), NormalizePlatformName(platform),
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string FindFallbackSolutionPlatform(string solutionPath, string configuration)
+        {
+            List<string> platforms = ReadSolutionPlatforms(solutionPath, configuration).ToList();
+            foreach (string preferredPlatform in new[] { "AnyCPU", "x64", "x86" })
+            {
+                string platform = platforms.FirstOrDefault(item =>
+                    string.Equals(NormalizePlatformName(item), preferredPlatform, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(platform))
+                    return platform;
+            }
+
+            return platforms.FirstOrDefault();
+        }
+
+        private static string FindMatchingProjectOutputPlatform(string projectPath, string configuration,
+            string platform)
+        {
+            return ReadProjectOutputPlatforms(projectPath, configuration)
+                .FirstOrDefault(item => string.Equals(NormalizePlatformName(item), NormalizePlatformName(platform),
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string FindFallbackProjectOutputPlatform(string projectPath, string configuration)
+        {
+            List<string> platforms = ReadProjectOutputPlatforms(projectPath, configuration).ToList();
+            foreach (string preferredPlatform in new[] { "AnyCPU", "x64", "x86" })
+            {
+                string platform = platforms.FirstOrDefault(item =>
+                    string.Equals(NormalizePlatformName(item), preferredPlatform, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(platform))
+                    return platform;
+            }
+
+            return platforms.FirstOrDefault();
+        }
+
+        private static IEnumerable<string> ReadProjectOutputPlatforms(string projectPath, string configuration)
+        {
+            var platforms = new List<string>();
+            if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
+                return platforms;
+
+            try
+            {
+                XDocument project = XDocument.Load(projectPath);
+                foreach (XElement outputPath in project.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "OutputPath",
+                        StringComparison.OrdinalIgnoreCase)))
+                {
+                    XElement propertyGroup = outputPath.Parent;
+                    if (propertyGroup == null ||
+                        !string.Equals(propertyGroup.Name.LocalName, "PropertyGroup",
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    foreach (string condition in new[]
+                    {
+                        propertyGroup.Attribute("Condition")?.Value,
+                        outputPath.Attribute("Condition")?.Value
+                    })
+                    {
+                        if (!TryReadConfigurationPlatformCondition(condition, out string conditionConfiguration,
+                                out string conditionPlatform) ||
+                            !string.Equals(conditionConfiguration, configuration, StringComparison.OrdinalIgnoreCase) ||
+                            platforms.Any(item => string.Equals(NormalizePlatformName(item),
+                                NormalizePlatformName(conditionPlatform), StringComparison.OrdinalIgnoreCase)))
+                        {
+                            continue;
+                        }
+
+                        platforms.Add(conditionPlatform);
+                    }
+                }
+            }
+            catch
+            {
+                return Array.Empty<string>();
+            }
+
+            return platforms;
+        }
+
+        private static bool TryReadConfigurationPlatformCondition(string condition, out string configuration,
+            out string platform)
+        {
+            configuration = string.Empty;
+            platform = string.Empty;
+            if (string.IsNullOrWhiteSpace(condition) ||
+                condition.IndexOf("$(Configuration)", StringComparison.OrdinalIgnoreCase) < 0 ||
+                condition.IndexOf("$(Platform)", StringComparison.OrdinalIgnoreCase) < 0 ||
+                condition.IndexOf("==", StringComparison.Ordinal) < 0)
+            {
+                return false;
+            }
+
+            foreach (Match match in Regex.Matches(condition,
+                @"['""](?<configuration>[^'""|]+)\|(?<platform>[^'""]+)['""]",
+                RegexOptions.CultureInvariant))
+            {
+                string matchedConfiguration = match.Groups["configuration"].Value.Trim();
+                string matchedPlatform = match.Groups["platform"].Value.Trim();
+                if (matchedConfiguration.IndexOf("$(", StringComparison.Ordinal) >= 0 ||
+                    matchedPlatform.IndexOf("$(", StringComparison.Ordinal) >= 0)
+                {
+                    continue;
+                }
+
+                configuration = matchedConfiguration;
+                platform = matchedPlatform;
+                return !string.IsNullOrEmpty(configuration) && !string.IsNullOrEmpty(platform);
+            }
+
+            return false;
+        }
+
+        private static IEnumerable<string> ReadSolutionPlatforms(string solutionPath, string configuration)
+        {
+            var platforms = new List<string>();
+            if (string.IsNullOrWhiteSpace(solutionPath) || !File.Exists(solutionPath))
+                return platforms;
+
+            bool inSolutionConfigurationSection = false;
+            foreach (string rawLine in File.ReadLines(solutionPath))
+            {
+                string line = rawLine.Trim();
+                if (line.StartsWith("GlobalSection(SolutionConfigurationPlatforms)",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    inSolutionConfigurationSection = true;
+                    continue;
+                }
+
+                if (inSolutionConfigurationSection &&
+                    line.StartsWith("EndGlobalSection", StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+
+                if (!inSolutionConfigurationSection)
+                    continue;
+
+                int equalsIndex = line.IndexOf('=');
+                if (equalsIndex <= 0)
+                    continue;
+
+                string configurationPlatform = line.Substring(0, equalsIndex).Trim();
+                int separatorIndex = configurationPlatform.IndexOf('|');
+                if (separatorIndex <= 0 || separatorIndex >= configurationPlatform.Length - 1)
+                    continue;
+
+                string configurationName = configurationPlatform.Substring(0, separatorIndex).Trim();
+                string platformName = configurationPlatform.Substring(separatorIndex + 1).Trim();
+                if (string.Equals(configurationName, configuration, StringComparison.OrdinalIgnoreCase) &&
+                    !platforms.Any(item => string.Equals(item, platformName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    platforms.Add(platformName);
+                }
+            }
+
+            return platforms;
+        }
+
+        private static string NormalizePlatformName(string platform)
+        {
+            return (platform ?? string.Empty).Replace(" ", string.Empty);
         }
 
         private static string QuoteProcessArgument(string argument) =>

@@ -187,10 +187,10 @@ namespace ICSharpCode.TextEditor
 			
 			ResizeRedraw = true;
 			
-			SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
-//			SetStyle(ControlStyles.AllPaintingInWmPaint, true);
-//			SetStyle(ControlStyles.UserPaint, true);
-			SetStyle(ControlStyles.Opaque, false);
+			SetStyle(ControlStyles.OptimizedDoubleBuffer |
+			         ControlStyles.AllPaintingInWmPaint |
+			         ControlStyles.UserPaint, true);
+			SetStyle(ControlStyles.Opaque, true);
 			SetStyle(ControlStyles.ResizeRedraw, true);
 			SetStyle(ControlStyles.Selectable, true);
 			
@@ -868,6 +868,11 @@ namespace ICSharpCode.TextEditor
 					foreach (AbstractMargin margin in leftMargins) {
 						if (margin is IDisposable)
 							(margin as IDisposable).Dispose();
+					}
+					if (toolTip != null && !toolTip.IsDisposed) {
+						toolTip.Dispose();
+						toolTip = null;
+						oldToolTip = null;
 					}
 					textView.Dispose();
 				}

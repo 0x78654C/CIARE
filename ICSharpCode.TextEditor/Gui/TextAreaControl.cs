@@ -29,7 +29,7 @@ namespace ICSharpCode.TextEditor
 		TextArea   textArea;
 		bool       doHandleMousewheel = true;
 		bool       disposed;
-        bool autoHideScrollbars = true;
+        bool autoHideScrollbars;
 		private readonly string _editFontSizeName = "editorFontSizeZoom";
 
 		public TextArea TextArea {
@@ -84,6 +84,9 @@ namespace ICSharpCode.TextEditor
                 return autoHideScrollbars;
             }
             set {
+                if (autoHideScrollbars == value)
+                    return;
+
                 autoHideScrollbars = value;
                 AdjustScrollBars();
             }
@@ -101,6 +104,9 @@ namespace ICSharpCode.TextEditor
 		public TextAreaControl(TextEditorControl motherTextEditorControl)
 		{
 			this.motherTextEditorControl = motherTextEditorControl;
+			SetStyle(ControlStyles.OptimizedDoubleBuffer |
+			         ControlStyles.AllPaintingInWmPaint |
+			         ControlStyles.ResizeRedraw, true);
 			
 			this.textArea                = new TextArea(motherTextEditorControl, this);
 			Controls.Add(textArea);
@@ -132,6 +138,10 @@ namespace ICSharpCode.TextEditor
 					Document.TextContentChanged -= DocumentTextContentChanged;
 					Document.DocumentChanged -= AdjustScrollBarsOnDocumentChange;
 					Document.UpdateCommited  -= DocumentUpdateCommitted;
+					if (ContextMenuStrip != null) {
+						ContextMenuStrip.Dispose();
+						ContextMenuStrip = null;
+					}
 					motherTextEditorControl = null;
 					if (vScrollBar != null) {
 						vScrollBar.Dispose();

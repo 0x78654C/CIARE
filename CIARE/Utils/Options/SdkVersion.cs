@@ -25,8 +25,7 @@ namespace CIARE.Utils.Options
                 {
                     if (!string.IsNullOrWhiteSpace(line))
                     {
-                        int len = line.Length - 1;
-                        outList.Add(line[..^len]);
+                        outList.Add(line.Split(' ')[0]);
                     }
                 }
             }
@@ -38,6 +37,15 @@ namespace CIARE.Utils.Options
         /// </summary>
         /// <param name="comboBox"></param>
         /// <param name="sdkVersionStart"></param>
-        public static bool CheckSdk(string selectedVersion) => Versions().Any(f => f.StartsWith(selectedVersion));
+        public static bool CheckSdk(string selectedVersion)
+        {
+            selectedVersion = (selectedVersion ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(selectedVersion))
+                return false;
+
+            return Versions().Any(f =>
+                f.StartsWith(selectedVersion + ".", System.StringComparison.OrdinalIgnoreCase) ||
+                f.StartsWith(selectedVersion, System.StringComparison.OrdinalIgnoreCase));
+        }
     }
 }

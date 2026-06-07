@@ -90,15 +90,22 @@ namespace CIARE.GUI
 
 		public ICompletionData[] GenerateCompletionData(string fileName, TextArea textArea, char charTyped)
 		{
+			string rawCode = textArea.MotherTextEditorControl.Text;
+			bool usingDirectiveDotCompletion = charTyped == '.' && IsUsingDirectiveDotCompletion(textArea);
+			if (!usingDirectiveDotCompletion)
+			{
+				mainForm.RefreshActiveCompletionUnit(rawCode);
+			}
+			mainForm.ResetCompletionWorkspaceIfInactive();
 			NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
 			List<ICompletionData> resultList = new List<ICompletionData>();
 
 				// For top-level statement files the code has no class/method context, so the
 				// NRefactory resolver cannot find a scope.  Wrap the code before passing it to
 				// the resolver and adjust the caret line accordingly.
-				string rawCode = textArea.MotherTextEditorControl.Text;
-				string resolverCode = MainForm.WrapTopLevelStatementsForNRefactory(rawCode, out int wrapLineOffset, out int bodyStartLine);
-				int caretLine = textArea.Caret.Line + 1;
+				string resolverCode = mainForm.PrepareCodeForNRefactoryCompletion(rawCode,
+					out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine);
+				int caretLine = textArea.Caret.Line + 1 + prefixLineOffset;
 				int caretCol  = textArea.Caret.Column + 1;
 				if (wrapLineOffset > 0 && caretLine >= bodyStartLine)
 					caretLine += wrapLineOffset;
@@ -106,13 +113,24 @@ namespace CIARE.GUI
 				if (charTyped == '.')
 				{
 					Dom.ExpressionResult expression = FindExpression(textArea);
-					if (wrapLineOffset > 0 && !expression.Region.IsEmpty && expression.Region.BeginLine >= bodyStartLine)
+					int expressionBeginLine = expression.Region.IsEmpty
+						? 0
+						: expression.Region.BeginLine + prefixLineOffset;
+					if (wrapLineOffset > 0 && !expression.Region.IsEmpty && expressionBeginLine >= bodyStartLine)
 					{
-						int adjustedBegin = expression.Region.BeginLine + wrapLineOffset;
+						int adjustedBegin = expressionBeginLine + wrapLineOffset;
 						expression.Region = expression.Region.EndLine == -1
 							? new Dom.DomRegion(adjustedBegin, expression.Region.BeginColumn)
 							: new Dom.DomRegion(adjustedBegin, expression.Region.BeginColumn,
-								expression.Region.EndLine + wrapLineOffset, expression.Region.EndColumn);
+								expression.Region.EndLine + prefixLineOffset + wrapLineOffset, expression.Region.EndColumn);
+					}
+					else if (prefixLineOffset > 0 && !expression.Region.IsEmpty)
+					{
+						int adjustedBegin = expressionBeginLine;
+						expression.Region = expression.Region.EndLine == -1
+							? new Dom.DomRegion(adjustedBegin, expression.Region.BeginColumn)
+							: new Dom.DomRegion(adjustedBegin, expression.Region.BeginColumn,
+								expression.Region.EndLine + prefixLineOffset, expression.Region.EndColumn);
 					}
 					Dom.ResolveResult rr = resolver.Resolve(expression,
 															MainForm.parseInformation,
@@ -123,7 +141,13 @@ namespace CIARE.GUI
 						completionData = rr.GetCompletionData(MainForm.myProjectContent);
 					}
 
+					completionData = mainForm.FilterCompletionDataForActiveProject(completionData);
 					completionData = MergeCompletionData(completionData, mainForm.GetWorkspaceMemberCompletionData(expression.Expression));
+					if (ShouldUseRoslynMemberFallback(completionData, usingDirectiveDotCompletion))
+					{
+						completionData = MergeCompletionData(completionData,
+							mainForm.GetRoslynMemberCompletionData(rawCode, textArea.Caret.Offset, expression.Expression));
+					}
 					if (completionData != null)
 						AddCompletionData(resultList, completionData);
 				}
@@ -136,14 +160,62 @@ namespace CIARE.GUI
 																  resolverCode,
 																  expression.Context);
 					if (completionData != null)
-					{
+						completionData = mainForm.FilterCompletionDataForActiveProject(completionData);
+					completionData = MergeCompletionData(completionData,
+						mainForm.GetRoslynCtrlSpaceCompletionData(rawCode, textArea.Caret.Offset, preSelection));
+					if (completionData != null)
 						AddCompletionData(resultList, completionData);
-					}
 					AddCompletionData(resultList, mainForm.GetWorkspaceMethodCompletionData(preSelection));
 					AddDirectTypingKeywords(resultList);
 				}
 				return resultList.ToArray();
 			}
+
+		static bool IsUsingDirectiveDotCompletion(TextArea textArea)
+		{
+			if (textArea == null || textArea.Document == null)
+				return false;
+
+			try
+			{
+				var line = textArea.Document.GetLineSegment(textArea.Caret.Line);
+				int column = Math.Max(0, Math.Min(textArea.Caret.Column, line.Length));
+				string textBeforeCaret = textArea.Document.GetText(line.Offset, column).TrimStart();
+				if (textBeforeCaret.StartsWith("global ", StringComparison.Ordinal))
+					textBeforeCaret = textBeforeCaret.Substring("global ".Length).TrimStart();
+
+				return (textBeforeCaret.StartsWith("using ", StringComparison.Ordinal) ||
+					textBeforeCaret.StartsWith("using static ", StringComparison.Ordinal)) &&
+					!textBeforeCaret.StartsWith("using (", StringComparison.Ordinal) &&
+					textBeforeCaret.IndexOf('=') < 0;
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
+		static bool ShouldUseRoslynMemberFallback(ArrayList completionData, bool usingDirectiveDotCompletion)
+		{
+			if (usingDirectiveDotCompletion)
+				return false;
+
+			if (completionData == null || completionData.Count == 0)
+				return true;
+
+			return !ContainsNamespaceCompletionData(completionData);
+		}
+
+		static bool ContainsNamespaceCompletionData(ArrayList completionData)
+		{
+			foreach (object item in completionData)
+			{
+				if (item is string)
+					return true;
+			}
+
+			return false;
+		}
 
 		/// <summary>
 		/// Find the expression the cursor is at.

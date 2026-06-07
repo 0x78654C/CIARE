@@ -40,7 +40,9 @@ namespace CIARE
             menuStrip1 = new MenuStrip();
             fIleToolStripMenuItem = new ToolStripMenuItem();
             newFileStripMenuItem = new ToolStripMenuItem();
+            newProjectStripMenuItem = new ToolStripMenuItem();
             openToolStripMenuItem = new ToolStripMenuItem();
+            openProjectStripMenuItem = new ToolStripMenuItem();
             saveToolStripMenuItem = new ToolStripMenuItem();
             saveAsStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator1 = new ToolStripSeparator();
@@ -86,6 +88,13 @@ namespace CIARE
             aboutToolStripMenuItem = new ToolStripMenuItem();
             hotKeyToolStripMenuItem = new ToolStripMenuItem();
             groupBox1 = new GroupBox();
+            outputTabControl = new CIARE.GUI.DarkTabControl();
+            outputTabPage = new TabPage();
+            errorsTabPage = new TabPage();
+            errorsLV = new ListView();
+            errorsContextMenu = new ContextMenuStrip(components);
+            copyErrorMenuItem = new ToolStripMenuItem();
+            askAiErrorMenuItem = new ToolStripMenuItem();
             splitContainer1 = new SplitContainer();
             EditorTabControl = new CIARE.GUI.DarkTabControl();
             tabPage1 = new TabPage();
@@ -103,13 +112,6 @@ namespace CIARE
             closeTab = new ToolStripMenuItem();
             closeAllTabs = new ToolStripMenuItem();
             closeAllTabsOne = new ToolStripMenuItem();
-            errorsContextMenu = new ContextMenuStrip(components);
-            copyErrorMenuItem = new ToolStripMenuItem();
-            askAiErrorMenuItem = new ToolStripMenuItem();
-            outputTabControl = new CIARE.GUI.DarkTabControl();
-            outputTabPage = new TabPage();
-            errorsTabPage = new TabPage();
-            errorsLV = new ListView();
             progressBar = new ProgressBar();
             ((System.ComponentModel.ISupportInitialize)runCodePb).BeginInit();
             menuStrip1.SuspendLayout();
@@ -117,6 +119,7 @@ namespace CIARE
             outputTabControl.SuspendLayout();
             outputTabPage.SuspendLayout();
             errorsTabPage.SuspendLayout();
+            errorsContextMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -124,16 +127,7 @@ namespace CIARE
             EditorTabControl.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).BeginInit();
             tabMenu.SuspendLayout();
-            errorsContextMenu.SuspendLayout();
             SuspendLayout();
-            // 
-            // outputTabPage
-            // 
-            outputTabPage.Controls.Add(outputRBT);
-            outputTabPage.Name = "outputTabPage";
-            outputTabPage.Text = "Output";
-            outputTabPage.Size = new System.Drawing.Size(88, 50);
-            outputTabPage.UseVisualStyleBackColor = true;
             // 
             // outputRBT
             // 
@@ -142,59 +136,15 @@ namespace CIARE
             outputRBT.Dock = DockStyle.Fill;
             outputRBT.Font = new System.Drawing.Font("Consolas", 11.25F);
             outputRBT.ForeColor = System.Drawing.SystemColors.MenuText;
+            outputRBT.Location = new System.Drawing.Point(0, 0);
             outputRBT.Margin = new Padding(4, 3, 4, 3);
             outputRBT.Name = "outputRBT";
             outputRBT.ReadOnly = true;
             outputRBT.ScrollBars = RichTextBoxScrollBars.Vertical;
+            outputRBT.Size = new System.Drawing.Size(1386, 132);
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
             outputRBT.MouseWheel += outputRBT_MouseWheel;
-            // 
-            // errorsTabPage
-            // 
-            errorsTabPage.Controls.Add(errorsLV);
-            errorsTabPage.Name = "errorsTabPage";
-            errorsTabPage.Text = "Errors";
-            errorsLV.Size = new System.Drawing.Size(88, 50);
-            errorsTabPage.UseVisualStyleBackColor = true;
-            // 
-            // errorsLV
-            // 
-            errorsLV.BackColor = System.Drawing.SystemColors.Window;
-            errorsLV.BorderStyle = BorderStyle.None;
-            errorsLV.Dock = DockStyle.Fill;
-            errorsLV.Font = new System.Drawing.Font("Consolas", 10.5F);
-            errorsLV.ForeColor = System.Drawing.SystemColors.MenuText;
-            errorsLV.FullRowSelect = true;
-            errorsLV.GridLines = false;
-            errorsLV.HeaderStyle = ColumnHeaderStyle.Clickable;
-            errorsLV.HideSelection = false;
-            errorsLV.MultiSelect = false;
-            errorsLV.Name = "errorsLV";
-            errorsLV.TabIndex = 0;
-            errorsLV.View = View.Details;
-            errorsLV.Columns.Add(string.Empty, 28, HorizontalAlignment.Center);
-            errorsLV.Columns.Add("Line", 60, HorizontalAlignment.Right);
-            errorsLV.Columns.Add("Code", 75, HorizontalAlignment.Left);
-            errorsLV.Columns.Add("Message", -2, HorizontalAlignment.Left);
-            errorsLV.ListViewItemSorter = new CIARE.GUI.ListViewColumnSorter();
-            errorsLV.ContextMenuStrip = errorsContextMenu;
-            errorsLV.MouseDown += errorsLV_MouseDown;
-            errorsLV.ItemActivate += errorsLV_ItemActivate;
-            errorsLV.ColumnClick += errorsLV_ColumnClick;
-            // 
-            // outputTabControl
-            // 
-            outputTabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            outputTabControl.Controls.Add(outputTabPage);
-            outputTabControl.Controls.Add(errorsTabPage);
-            outputTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
-            outputTabControl.ItemSize = new System.Drawing.Size(130, 22);
-            outputTabControl.Location = new System.Drawing.Point(4, 14);
-            outputTabControl.Name = "outputTabControl";
-            outputTabControl.Size = new System.Drawing.Size(1394, 163);
-            outputTabControl.TabIndex = 3;
-            outputTabControl.DrawItem += OutputTabControl_DrawItem;
             // 
             // toolTip1
             // 
@@ -225,7 +175,7 @@ namespace CIARE
             // 
             // fIleToolStripMenuItem
             // 
-            fIleToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newFileStripMenuItem, openToolStripMenuItem, saveToolStripMenuItem, saveAsStripMenuItem, toolStripSeparator1, LoadCStripMenuItem, toolStripSeparator2, exitToolStripMenuItem });
+            fIleToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newFileStripMenuItem, newProjectStripMenuItem, openToolStripMenuItem, openProjectStripMenuItem, saveToolStripMenuItem, saveAsStripMenuItem, toolStripSeparator1, LoadCStripMenuItem, toolStripSeparator2, exitToolStripMenuItem });
             fIleToolStripMenuItem.Name = "fIleToolStripMenuItem";
             fIleToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             fIleToolStripMenuItem.Text = "File";
@@ -233,53 +183,67 @@ namespace CIARE
             // newFileStripMenuItem
             // 
             newFileStripMenuItem.Name = "newFileStripMenuItem";
-            newFileStripMenuItem.Size = new System.Drawing.Size(273, 22);
-            newFileStripMenuItem.Text = "New         ( CTRL + N )";
+            newFileStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            newFileStripMenuItem.Text = "New                                    ( CTRL + N )";
             newFileStripMenuItem.Click += toolStripMenuItem1_Click;
+            // 
+            // newProjectStripMenuItem
+            // 
+            newProjectStripMenuItem.Name = "newProjectStripMenuItem";
+            newProjectStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            newProjectStripMenuItem.Text = "New Project...                   ( Ctrl+Shift+N )";
+            newProjectStripMenuItem.Click += newProjectStripMenuItem_Click;
             // 
             // openToolStripMenuItem
             // 
             openToolStripMenuItem.Name = "openToolStripMenuItem";
-            openToolStripMenuItem.Size = new System.Drawing.Size(273, 22);
-            openToolStripMenuItem.Text = "Open       ( CTRL + O )";
+            openToolStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            openToolStripMenuItem.Text = "Open                                  ( CTRL + O )";
             openToolStripMenuItem.Click += openToolStripMenuItem_Click;
+            // 
+            // openProjectStripMenuItem
+            // 
+            openProjectStripMenuItem.Name = "openProjectStripMenuItem";
+            openProjectStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            openProjectStripMenuItem.Text = "Open Project/Solution... ( Ctrl+Shift+O )";
+            openProjectStripMenuItem.Click += openProjectStripMenuItem_Click;
             // 
             // saveToolStripMenuItem
             // 
             saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            saveToolStripMenuItem.Size = new System.Drawing.Size(273, 22);
-            saveToolStripMenuItem.Text = "Save         ( CTRL + S ) ";
+            saveToolStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            saveToolStripMenuItem.Text = "Save                                    ( CTRL + S ) ";
             saveToolStripMenuItem.Click += saveToolStripMenuItem_Click;
             // 
             // saveAsStripMenuItem
             // 
             saveAsStripMenuItem.Name = "saveAsStripMenuItem";
-            saveAsStripMenuItem.Size = new System.Drawing.Size(273, 22);
-            saveAsStripMenuItem.Text = "Save As    ( CTRL+Shift+S )";
+            saveAsStripMenuItem.Size = new System.Drawing.Size(292, 22);
+            saveAsStripMenuItem.Text = "Save As                              ( CTRL+Shift+S )";
             saveAsStripMenuItem.Click += saveAsStripMenuItem_Click;
             // 
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new System.Drawing.Size(270, 6);
+            toolStripSeparator1.Size = new System.Drawing.Size(283, 6);
             // 
             // LoadCStripMenuItem
             // 
             LoadCStripMenuItem.Name = "LoadCStripMenuItem";
-            LoadCStripMenuItem.Size = new System.Drawing.Size(273, 22);
+            LoadCStripMenuItem.Size = new System.Drawing.Size(286, 22);
             LoadCStripMenuItem.Text = "Load C# Code Template    ( CTRL + T )";
             LoadCStripMenuItem.Click += LoadCStripMenuItem_Click;
             // 
             // toolStripSeparator2
             // 
             toolStripSeparator2.Name = "toolStripSeparator2";
-            toolStripSeparator2.Size = new System.Drawing.Size(270, 6);
+            toolStripSeparator2.Size = new System.Drawing.Size(283, 6);
             // 
             // exitToolStripMenuItem
             // 
             exitToolStripMenuItem.ForeColor = System.Drawing.Color.Red;
             exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            exitToolStripMenuItem.Size = new System.Drawing.Size(273, 22);
+            exitToolStripMenuItem.Size = new System.Drawing.Size(286, 22);
             exitToolStripMenuItem.Text = "Exit";
             exitToolStripMenuItem.Click += exitToolStripMenuItem_Click;
             // 
@@ -445,45 +409,45 @@ namespace CIARE
             // splitEditorToolStripMenuItem
             // 
             splitEditorToolStripMenuItem.Name = "splitEditorToolStripMenuItem";
-            splitEditorToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
+            splitEditorToolStripMenuItem.Size = new System.Drawing.Size(267, 22);
             splitEditorToolStripMenuItem.Text = "Split Editor  V                  ( CTRL + W )";
             splitEditorToolStripMenuItem.Click += splitEditorToolStripMenuItem_Click;
             // 
             // splitVEditorToolStripMenuItem
             // 
             splitVEditorToolStripMenuItem.Name = "splitVEditorToolStripMenuItem";
-            splitVEditorToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
+            splitVEditorToolStripMenuItem.Size = new System.Drawing.Size(267, 22);
             splitVEditorToolStripMenuItem.Text = "Split Editor  H     ( CTRL + Shfit + W )";
             splitVEditorToolStripMenuItem.Click += splitVEditorToolStripMenuItem_Click;
             // 
             // compileStripSeparator1
             // 
             compileStripSeparator1.Name = "compileStripSeparator1";
-            compileStripSeparator1.Size = new System.Drawing.Size(263, 6);
+            compileStripSeparator1.Size = new System.Drawing.Size(264, 6);
             // 
             // showHideHSCToolStripMenuItem
             // 
             showHideHSCToolStripMenuItem.Name = "showHideHSCToolStripMenuItem";
-            showHideHSCToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
+            showHideHSCToolStripMenuItem.Size = new System.Drawing.Size(267, 22);
             showHideHSCToolStripMenuItem.Text = "Show/Hide Output          ( CTRL + K )";
             showHideHSCToolStripMenuItem.Click += showHideSCToolStripMenuItem_Click;
             // 
             // showHideExplorerToolStripMenuItem
             // 
             showHideExplorerToolStripMenuItem.Name = "showHideExplorerToolStripMenuItem";
-            showHideExplorerToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
+            showHideExplorerToolStripMenuItem.Size = new System.Drawing.Size(267, 22);
             showHideExplorerToolStripMenuItem.Text = "Show/Hide Explorer        ( CTRL + E )";
             showHideExplorerToolStripMenuItem.Click += showHideExplorerToolStripMenuItem_Click;
             // 
             // viewSeparator1
             // 
             viewSeparator1.Name = "viewSeparator1";
-            viewSeparator1.Size = new System.Drawing.Size(263, 6);
+            viewSeparator1.Size = new System.Drawing.Size(264, 6);
             // 
             // fullScreenToolStripMenuItem
             // 
             fullScreenToolStripMenuItem.Name = "fullScreenToolStripMenuItem";
-            fullScreenToolStripMenuItem.Size = new System.Drawing.Size(266, 22);
+            fullScreenToolStripMenuItem.Size = new System.Drawing.Size(267, 22);
             fullScreenToolStripMenuItem.Text = "Full Screen                    ( F11 )";
             fullScreenToolStripMenuItem.Click += fullScreenToolStripMenuItem_Click;
             // 
@@ -497,7 +461,7 @@ namespace CIARE
             // liveShareToolStripMenuItem
             // 
             liveShareToolStripMenuItem.Name = "liveShareToolStripMenuItem";
-            liveShareToolStripMenuItem.Size = new System.Drawing.Size(240, 22);
+            liveShareToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
             liveShareToolStripMenuItem.Text = "Live Share Manage ( CTRL + Q )";
             liveShareToolStripMenuItem.Click += liveShareHostToolStripMenuItem_Click;
             // 
@@ -545,9 +509,84 @@ namespace CIARE
             groupBox1.Margin = new Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new Padding(4, 3, 4, 3);
-            groupBox1.Size = new System.Drawing.Size(1402, 181);
+            groupBox1.Size = new System.Drawing.Size(1402, 180);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
+            // 
+            // outputTabControl
+            // 
+            outputTabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            outputTabControl.Controls.Add(outputTabPage);
+            outputTabControl.Controls.Add(errorsTabPage);
+            outputTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
+            outputTabControl.ItemSize = new System.Drawing.Size(130, 22);
+            outputTabControl.Location = new System.Drawing.Point(4, 14);
+            outputTabControl.Name = "outputTabControl";
+            outputTabControl.SelectedIndex = 0;
+            outputTabControl.Size = new System.Drawing.Size(1394, 162);
+            outputTabControl.SizeMode = TabSizeMode.Fixed;
+            outputTabControl.TabIndex = 3;
+            outputTabControl.DrawItem += OutputTabControl_DrawItem;
+            // 
+            // outputTabPage
+            // 
+            outputTabPage.Controls.Add(outputRBT);
+            outputTabPage.Location = new System.Drawing.Point(4, 26);
+            outputTabPage.Name = "outputTabPage";
+            outputTabPage.Size = new System.Drawing.Size(1386, 132);
+            outputTabPage.TabIndex = 0;
+            outputTabPage.Text = "Output";
+            outputTabPage.UseVisualStyleBackColor = true;
+            // 
+            // errorsTabPage
+            // 
+            errorsTabPage.Controls.Add(errorsLV);
+            errorsTabPage.Location = new System.Drawing.Point(4, 26);
+            errorsTabPage.Name = "errorsTabPage";
+            errorsTabPage.Size = new System.Drawing.Size(1386, 132);
+            errorsTabPage.TabIndex = 1;
+            errorsTabPage.Text = "Errors";
+            errorsTabPage.UseVisualStyleBackColor = true;
+            // 
+            // errorsLV
+            // 
+            errorsLV.BackColor = System.Drawing.SystemColors.Window;
+            errorsLV.BorderStyle = BorderStyle.None;
+            errorsLV.ContextMenuStrip = errorsContextMenu;
+            errorsLV.Dock = DockStyle.Fill;
+            errorsLV.Font = new System.Drawing.Font("Consolas", 10.5F);
+            errorsLV.ForeColor = System.Drawing.SystemColors.MenuText;
+            errorsLV.FullRowSelect = true;
+            errorsLV.Location = new System.Drawing.Point(0, 0);
+            errorsLV.MultiSelect = false;
+            errorsLV.Name = "errorsLV";
+            errorsLV.Size = new System.Drawing.Size(1386, 132);
+            errorsLV.TabIndex = 0;
+            errorsLV.UseCompatibleStateImageBehavior = false;
+            errorsLV.View = View.Details;
+            errorsLV.ColumnClick += errorsLV_ColumnClick;
+            errorsLV.ItemActivate += errorsLV_ItemActivate;
+            errorsLV.MouseDown += errorsLV_MouseDown;
+            // 
+            // errorsContextMenu
+            // 
+            errorsContextMenu.Items.AddRange(new ToolStripItem[] { copyErrorMenuItem, askAiErrorMenuItem });
+            errorsContextMenu.Name = "errorsContextMenu";
+            errorsContextMenu.Size = new System.Drawing.Size(108, 48);
+            // 
+            // copyErrorMenuItem
+            // 
+            copyErrorMenuItem.Name = "copyErrorMenuItem";
+            copyErrorMenuItem.Size = new System.Drawing.Size(107, 22);
+            copyErrorMenuItem.Text = "Copy";
+            copyErrorMenuItem.Click += copyErrorMenuItem_Click;
+            // 
+            // askAiErrorMenuItem
+            // 
+            askAiErrorMenuItem.Name = "askAiErrorMenuItem";
+            askAiErrorMenuItem.Size = new System.Drawing.Size(107, 22);
+            askAiErrorMenuItem.Text = "Ask AI";
+            askAiErrorMenuItem.Click += askAiErrorMenuItem_Click;
             // 
             // splitContainer1
             // 
@@ -583,8 +622,8 @@ namespace CIARE
             EditorTabControl.Size = new System.Drawing.Size(1403, 640);
             EditorTabControl.TabIndex = 1;
             EditorTabControl.DrawItem += EditorTabControl_DrawItem;
-            EditorTabControl.Selecting += EditorTabControl_Selecting;
             EditorTabControl.SelectedIndexChanged += EditorTabControl_SelectedIndexChanged;
+            EditorTabControl.Selecting += EditorTabControl_Selecting;
             EditorTabControl.HandleCreated += EditorTabControl_HandleCreated;
             EditorTabControl.KeyDown += EditorTabControl_KeyDown;
             EditorTabControl.MouseClick += EditorTabControl_MouseClick;
@@ -664,7 +703,6 @@ namespace CIARE
             typeCheckLbl.Name = "typeCheckLbl";
             typeCheckLbl.Size = new System.Drawing.Size(0, 15);
             typeCheckLbl.TabIndex = 18;
-            typeCheckLbl.Text = "";
             // 
             // warningsCheckLbl
             // 
@@ -676,7 +714,6 @@ namespace CIARE
             warningsCheckLbl.Name = "warningsCheckLbl";
             warningsCheckLbl.Size = new System.Drawing.Size(0, 15);
             warningsCheckLbl.TabIndex = 19;
-            warningsCheckLbl.Text = "";
             // 
             // imageList1
             // 
@@ -761,48 +798,28 @@ namespace CIARE
             // 
             tabMenu.Items.AddRange(new ToolStripItem[] { closeTab, closeAllTabs, closeAllTabsOne });
             tabMenu.Name = "tabMenu";
-            tabMenu.Size = new System.Drawing.Size(169, 70);
+            tabMenu.Size = new System.Drawing.Size(171, 70);
             // 
             // closeTab
             // 
             closeTab.Name = "closeTab";
-            closeTab.Size = new System.Drawing.Size(168, 22);
+            closeTab.Size = new System.Drawing.Size(170, 22);
             closeTab.Text = "Close Tab";
             closeTab.Click += closeTab_Click;
             // 
             // closeAllTabs
             // 
             closeAllTabs.Name = "closeAllTabs";
-            closeAllTabs.Size = new System.Drawing.Size(168, 22);
+            closeAllTabs.Size = new System.Drawing.Size(170, 22);
             closeAllTabs.Text = "Close All Tabs";
             closeAllTabs.Click += closeAllTabs_Click;
             // 
             // closeAllTabsOne
             // 
             closeAllTabsOne.Name = "closeAllTabsOne";
-            closeAllTabsOne.Size = new System.Drawing.Size(168, 22);
+            closeAllTabsOne.Size = new System.Drawing.Size(170, 22);
             closeAllTabsOne.Text = "Close All BUT This";
             closeAllTabsOne.Click += closeAllTabsOne_Click;
-            // 
-            // errorsContextMenu
-            // 
-            errorsContextMenu.Items.AddRange(new ToolStripItem[] { copyErrorMenuItem, askAiErrorMenuItem });
-            errorsContextMenu.Name = "errorsContextMenu";
-            errorsContextMenu.Size = new System.Drawing.Size(128, 48);
-            // 
-            // copyErrorMenuItem
-            // 
-            copyErrorMenuItem.Name = "copyErrorMenuItem";
-            copyErrorMenuItem.Size = new System.Drawing.Size(127, 22);
-            copyErrorMenuItem.Text = "Copy";
-            copyErrorMenuItem.Click += copyErrorMenuItem_Click;
-            // 
-            // askAiErrorMenuItem
-            // 
-            askAiErrorMenuItem.Name = "askAiErrorMenuItem";
-            askAiErrorMenuItem.Size = new System.Drawing.Size(127, 22);
-            askAiErrorMenuItem.Text = "Ask AI";
-            askAiErrorMenuItem.Click += askAiErrorMenuItem_Click;
             // 
             // progressBar
             // 
@@ -851,6 +868,7 @@ namespace CIARE
             outputTabControl.ResumeLayout(false);
             outputTabPage.ResumeLayout(false);
             errorsTabPage.ResumeLayout(false);
+            errorsContextMenu.ResumeLayout(false);
             splitContainer1.Panel1.ResumeLayout(false);
             splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
@@ -858,7 +876,6 @@ namespace CIARE
             EditorTabControl.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)liveStatusPb).EndInit();
             tabMenu.ResumeLayout(false);
-            errorsContextMenu.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -880,6 +897,8 @@ namespace CIARE
         private System.Windows.Forms.SplitContainer splitContainer1;
         public System.Windows.Forms.ToolStripMenuItem saveAsStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem newFileStripMenuItem;
+        public System.Windows.Forms.ToolStripMenuItem newProjectStripMenuItem;
+        public System.Windows.Forms.ToolStripMenuItem openProjectStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         public System.Windows.Forms.ToolStripMenuItem LoadCStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator2;

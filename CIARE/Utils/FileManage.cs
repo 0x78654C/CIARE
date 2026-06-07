@@ -830,6 +830,12 @@ MessageBoxIcon.Information);
         /// <param name="filePath"></param>
         public static void SetFileMD5(string filePath)
         {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+            {
+                GlobalVariables.openedFileMD5 = string.Empty;
+                return;
+            }
+
             string fileData = File.ReadAllText(filePath);
             GlobalVariables.openedFileMD5 = FileHash.GetFileHash(fileData);
         }

@@ -16,6 +16,16 @@ namespace CIARE.GUI
     {
         private static int s_hoverIndex = -1;
 
+        private static void RemoveTabPageAt(TabControl tabControl, int index)
+        {
+            if (tabControl == null || index < 0 || index >= tabControl.TabPages.Count)
+                return;
+
+            TabPage tabPage = tabControl.TabPages[index];
+            tabControl.TabPages.RemoveAt(index);
+            tabPage.Dispose();
+        }
+
         /// <summary>
         /// Check if tab contains the file you want to open and select if exist in tabs.
         /// </summary>
@@ -101,6 +111,8 @@ namespace CIARE.GUI
         /// <param name="textEditorControl"></param>
         public static void CloseAllTabs(TabControl tabControl, TextEditorControl textEditorControl)
         {
+            if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
+                return;
             var tabPages = tabControl.TabPages;
             int tabCount = tabControl.TabCount - 1;
             int count = 0;
@@ -119,7 +131,7 @@ namespace CIARE.GUI
                     {
                         tabControl.SelectTab(count);
                         var pathFile = tabControl.SelectedTab.ToolTipText;
-                        tabControl.TabPages.RemoveAt(tabCount--);
+                        RemoveTabPageAt(tabControl, tabCount--);
                         tabControl.SelectTab(count);
                         GlobalVariables.noClear = false;
                     }
@@ -130,8 +142,9 @@ namespace CIARE.GUI
                 ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
                 ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
             }
+
             AddNewTab(tabControl);
-            MainForm.Instance.EditorTabControl.TabPages.RemoveAt(1);
+            RemoveTabPageAt(MainForm.Instance.EditorTabControl, 1);
         }
 
         /// <summary>
@@ -141,48 +154,46 @@ namespace CIARE.GUI
         /// <param name="textEditorControl"></param>
         public static void CloseAllTabsOne(TabControl tabControl, TextEditorControl textEditorControl, int selectedIndex)
         {
-            // Do nothing if there is only 1 tab
-            if (tabControl.TabCount == 2)
+            if (tabControl == null || selectedIndex <= 0 || selectedIndex >= tabControl.TabCount)
                 return;
 
-            var tabPages = tabControl.TabPages;
-            int tabCount = tabControl.TabCount - 1;
-            int count;
+            // Do nothing if there is only the add tab and one editor tab.
+            if (tabControl.TabCount <= 2)
+                return;
+
+            if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
+                return;
+
+            TabPage selectedTab = tabControl.TabPages[selectedIndex];
             FileManage.ManageUnsavedData(textEditorControl, 0, true);
             if (GlobalVariables.noClear)
             {
                 GlobalVariables.noClear = false;
                 return;
             }
-            foreach (TabPage tabPage in tabPages)
+
+            for (int index = tabControl.TabPages.Count - 1; index >= 1; index--)
             {
-                count = tabCount - 1;
-                if (count > 0)
-                {
-                    if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
-                    {
-                        tabControl.SelectTab(count);
-                        var removeAt = tabCount--;
-                        tabControl.TabPages.RemoveAt(count);
-                        GlobalVariables.noClear = false;
-                    }
-                }
+                if (ReferenceEquals(tabControl.TabPages[index], selectedTab))
+                    continue;
+
+                RemoveTabPageAt(tabControl, index);
             }
 
-            if (!GlobalVariables.apiConnected && !GlobalVariables.apiRemoteConnected)
+            tabControl.SelectTab(selectedTab);
+            GlobalVariables.noClear = false;
+
+            if (GlobalVariables.OStartUp)
             {
-                tabControl.SelectTab(1);
-                if (GlobalVariables.OStartUp)
+                ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+                ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
+
+                string toolTip = selectedTab.ToolTipText;
+                bool isNewPage = selectedTab.Text.TrimStart('*').Trim().StartsWith("New Page", StringComparison.InvariantCultureIgnoreCase);
+                if (!isNewPage && !string.IsNullOrWhiteSpace(toolTip))
                 {
-                    var toolTip = tabControl.SelectedTab.ToolTipText;
-                    var tabName = tabControl.SelectedTab.Name;
-                    if (!tabName.StartsWith("New Page"))
-                    {
-                        ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
-                        ClearTabsFile(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath);
-                        StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, toolTip, false);
-                        StoreFileMD5(toolTip, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
-                    }
+                    StoreSingleTab(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, toolTip, false);
+                    StoreFileMD5(toolTip, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.SelectedIndex);
                 }
             }
         }
@@ -211,17 +222,21 @@ namespace CIARE.GUI
         {
             if (!Directory.Exists(tempDir))
                 return;
+
+            if (!File.Exists(fileTabStore))
+                File.WriteAllText(fileTabStore, "");
+
             var fileTabData = File.ReadAllText(fileTabStore);
             if (isSize)
             {
-                if (File.Exists(fileTabStore) && !fileTabData.Contains(filePath))
+                if (File.Exists(filePath) && !fileTabData.Contains(filePath))
                 {
                     FileInfo fileInfo = new(filePath);
                     File.WriteAllText(fileTabStore, $"{filePath}|{fileInfo.Length}|2");
                 }
             }
             else
-                if (File.Exists(fileTabStore) && !fileTabData.Contains(filePath))
+                if (!fileTabData.Contains(filePath))
                 File.WriteAllText(fileTabStore, $"{filePath}|2");
         }
 
@@ -243,7 +258,7 @@ namespace CIARE.GUI
                 GlobalVariables.noClear = false;
                 return;
             }
-            tabControl.TabPages.RemoveAt(index);
+            RemoveTabPageAt(tabControl, index);
             if (tabControl.TabCount == 1)
                 AddNewTab(tabControl);
 
@@ -337,16 +352,10 @@ namespace CIARE.GUI
             if (!File.Exists(fileTabStore))
                 File.WriteAllText(fileTabStore, "");
 
-            FileInfo fileInfo = new FileInfo(filePath);
-            var fileSize = fileInfo.Length;
-            var line = $"{filePath}|{fileSize}";
             List<string> lines = File.ReadAllLines(fileTabStore).ToList();
-
-            for (int i = 1; i < lines.Count(); i++)
-            {
-                if (lines[i].StartsWith(filePath) && lines[i].EndsWith(index))
-                    lines.Remove(lines[i]);
-            }
+            lines.RemoveAll(line =>
+                line.StartsWith($"{filePath}|", StringComparison.InvariantCultureIgnoreCase) &&
+                line.EndsWith($"|{index}", StringComparison.InvariantCultureIgnoreCase));
 
             File.WriteAllText(fileTabStore, string.Join("\n", lines));
         }
@@ -451,7 +460,7 @@ namespace CIARE.GUI
 
                 // Close New Page tab if list counts more than 1 tab.
                 if (list.Count >= 1)
-                    MainForm.Instance.EditorTabControl.TabPages.RemoveAt(1);
+                    RemoveTabPageAt(MainForm.Instance.EditorTabControl, 1);
 
                 foreach (var item in list)
                 {
@@ -530,16 +539,18 @@ namespace CIARE.GUI
                 if (dark && color == Color.LightGray)
                     color = GlobalVariables.TabSelectedColor;
 
-                StringFormat StrFormat = new StringFormat();
-                StrFormat.LineAlignment = StringAlignment.Center;
-                StrFormat.Alignment = StringAlignment.Center;
                 Font fntTab = e.Font;
                 Rectangle recBounds = tabControl.GetTabRect(index);
                 RectangleF tabTextArea = (RectangleF)tabControl.GetTabRect(index);
+                using (StringFormat StrFormat = new StringFormat())
                 using (Brush bshBack = new SolidBrush(color))
-                    e.Graphics.FillRectangle(bshBack, recBounds);
                 using (SolidBrush fontColor = dark ? new SolidBrush(Color.FromArgb(192, 215, 207)) : new SolidBrush(Color.Black))
+                {
+                    StrFormat.LineAlignment = StringAlignment.Center;
+                    StrFormat.Alignment = StringAlignment.Center;
+                    e.Graphics.FillRectangle(bshBack, recBounds);
                     e.Graphics.DrawString(tabControl.TabPages[index].Text, fntTab, fontColor, tabTextArea, StrFormat);
+                }
 
                 var g = e.Graphics;
                 var tp = tabControl.TabPages[e.Index];
@@ -647,12 +658,12 @@ namespace CIARE.GUI
             {
                 bool dark = GlobalVariables.darkColor;
                 Color BackGroundColorForm = dark ? Color.FromArgb(red, green, blue) : SystemColors.Window;
-                SolidBrush fillbrush = new SolidBrush(BackGroundColorForm);
                 Rectangle lasttabrect = tabControl.GetTabRect(tabControl.TabPages.Count - 1);
                 Rectangle background = new Rectangle();
                 background.Location = new Point(lasttabrect.Right, 0);
                 background.Size = new Size(tabControl.Right - background.Left, lasttabrect.Height + 1);
-                e.Graphics.FillRectangle(fillbrush, background);
+                using (SolidBrush fillbrush = new SolidBrush(BackGroundColorForm))
+                    e.Graphics.FillRectangle(fillbrush, background);
             }
             catch
             {

@@ -106,7 +106,10 @@ namespace ICSharpCode.TextEditor
 
         public TextEditorControl()
         {
-            SetStyle(ControlStyles.ContainerControl, true);
+            SetStyle(ControlStyles.ContainerControl |
+                     ControlStyles.OptimizedDoubleBuffer |
+                     ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.ResizeRedraw, true);
 
             textAreaPanel.Dock = DockStyle.Fill;
 
@@ -172,39 +175,44 @@ namespace ICSharpCode.TextEditor
         /// <param name="horizontal"></param>
         public void SplitPosition(bool horizontal)
         {
-            if (secondaryTextArea != null)
+            if (secondaryTextArea == null)
+                return;
+
+            if (horizontal)
             {
-                if (horizontal)
-                {
+                if (secondaryTextArea.Dock != DockStyle.Right)
                     secondaryTextArea.Dock = DockStyle.Right;
-                    secondaryTextArea.Width = Width / 2;
-                }
-                else
+                int width = Math.Max(1, Width / 2);
+                if (secondaryTextArea.Width != width)
+                    secondaryTextArea.Width = width;
+
+                if (textAreaSplitter != null)
                 {
+                    if (textAreaSplitter.BorderStyle != BorderStyle.FixedSingle)
+                        textAreaSplitter.BorderStyle = BorderStyle.FixedSingle;
+                    if (textAreaSplitter.Width != 4)
+                        textAreaSplitter.Width = 4;
+                    if (textAreaSplitter.Dock != DockStyle.Right)
+                        textAreaSplitter.Dock = DockStyle.Right;
+                }
+            }
+            else
+            {
+                if (secondaryTextArea.Dock != DockStyle.Bottom)
                     secondaryTextArea.Dock = DockStyle.Bottom;
-                    secondaryTextArea.Height = Height / 2;
-                }
+                int height = Math.Max(1, Height / 2);
+                if (secondaryTextArea.Height != height)
+                    secondaryTextArea.Height = height;
 
-                secondaryTextArea.TextArea.GotFocus += delegate
+                if (textAreaSplitter != null)
                 {
-                    SetActiveTextAreaControl(secondaryTextArea);
-                };
-
-               
-                textAreaSplitter.BorderStyle = BorderStyle.FixedSingle;
-                if (horizontal)
-                {
-                    textAreaSplitter.Width = 4;
-                    textAreaSplitter.Dock = DockStyle.Right;
+                    if (textAreaSplitter.BorderStyle != BorderStyle.FixedSingle)
+                        textAreaSplitter.BorderStyle = BorderStyle.FixedSingle;
+                    if (textAreaSplitter.Width != 4)
+                        textAreaSplitter.Width = 4;
+                    if (textAreaSplitter.Dock != DockStyle.Bottom)
+                        textAreaSplitter.Dock = DockStyle.Bottom;
                 }
-                else
-                {
-                    textAreaSplitter.Width = 4;
-                    textAreaSplitter.Dock = DockStyle.Bottom;
-                }
-
-                InitializeTextAreaControl(secondaryTextArea);
-                secondaryTextArea.OptionsChanged();
             }
         }
 
@@ -333,6 +341,7 @@ namespace ICSharpCode.TextEditor
                 {
                     printDocument.BeginPrint -= new PrintEventHandler(this.BeginPrint);
                     printDocument.PrintPage -= new PrintPageEventHandler(this.PrintPage);
+                    printDocument.Dispose();
                     printDocument = null;
                 }
                 Document.UndoStack.ClearAll();
@@ -349,6 +358,7 @@ namespace ICSharpCode.TextEditor
                     if (primaryTextArea != null)
                     {
                         primaryTextArea.Dispose();
+                        primaryTextArea = null;
                     }
                     textAreaPanel.Dispose();
                     textAreaPanel = null;

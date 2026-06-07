@@ -21,6 +21,8 @@ namespace CIARE.GUI
                 MainForm.Instance.exitToolStripMenuItem,
                 MainForm.Instance.saveAsStripMenuItem,
                 MainForm.Instance.newFileStripMenuItem,
+                MainForm.Instance.newProjectStripMenuItem,
+                MainForm.Instance.openProjectStripMenuItem,
                 MainForm.Instance.LoadCStripMenuItem,
                 MainForm.Instance.helpToolStripMenuItem,
                 MainForm.Instance.aboutToolStripMenuItem,

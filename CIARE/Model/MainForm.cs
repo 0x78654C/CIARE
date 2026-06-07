@@ -1,4 +1,4 @@
-﻿/*
+/*
        Description: Simple text editor for Windows with C# runtime compiler and code execution using Roslyn. 
        Useful to run code on the fly and get instant result.
 
@@ -18,6 +18,7 @@ using CIARE.GUI;
 using CIARE.Utils.Options;
 using ICSharpCode.TextEditor;
 using System;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Windows.Forms;
@@ -30,15 +31,18 @@ using System.Runtime.Versioning;
 using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Linq;
+using System.Xml.Linq;
 using CIARE.LiveShareManage;
 using System.Threading.Tasks;
 using CIARE.Utils.OpenAISettings;
+using CIARE.Utils.NuGetManage;
 using Button = System.Windows.Forms.Button;
 using CIARE.Model;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.ComponentModel;
+using System.Reflection;
 using CIARE.Utils.Encryption;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -47,6 +51,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using CIARE.Properties;
+using VBFileSystem = Microsoft.VisualBasic.FileIO.FileSystem;
+using VBRecycleOption = Microsoft.VisualBasic.FileIO.RecycleOption;
+using VBUIOption = Microsoft.VisualBasic.FileIO.UIOption;
 
 
 namespace CIARE
@@ -54,6 +61,15 @@ namespace CIARE
     [SupportedOSPlatform("windows")]
     public partial class MainForm : Form
     {
+        //protected override CreateParams CreateParams
+        //{
+        //    get
+        //    {
+        //        CreateParams cp = base.CreateParams;
+        //        cp.ExStyle |= 0x02000000; // WS_EX_COMPOSITED reduces flicker on resize and redraws.
+        //        return cp;
+        //    }
+        //}
         public HubConnection hubConnection;
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
@@ -82,11 +98,22 @@ namespace CIARE
         private const int FileExplorerDefaultWidth = 280;
         private const int FileExplorerMinWidth = 220;
         private const int EditorPaneMinWidth = 180;
+        private const int FileExplorerDefaultNuGetHeight = 350;
+        private const int FileExplorerNuGetMinHeight = 90;
+        private const int FileExplorerTreeMinHeight = 120;
+        private const int FileExplorerLayoutApplyMaxAttempts = 20;
+        private const int FileExplorerLayoutApplyStabilizeAttempts = 4;
+        private const int FileExplorerLayoutApplyInterval = 50;
         private const string FileExplorerLoadingTag = "__loading__";
         private const string FileExplorerPathKey = "fileExplorerPath";
         private const string FileExplorerVisibleKey = "fileExplorerVisible";
+        private const string FileExplorerWidthKey = "fileExplorerWidth";
+        private const string FileExplorerNuGetHeightKey = "fileExplorerNuGetHeight";
+        private const string FileExplorerStartupProjectKey = "fileExplorerStartupProject";
         private static readonly string FileExplorerExpandedPathsFilePath =
             Path.Combine(GlobalVariables.userProfileDirectory, "fileExplorerExpandedPaths.cDat");
+        private static readonly string FileExplorerLayoutFilePath =
+            Path.Combine(GlobalVariables.userProfileDirectory, "fileExplorerLayout.cDat");
         private Panel _editorWorkspacePanel;
         private SplitContainer _editorExplorerSplitContainer;
         private Panel _fileExplorerPanel;
@@ -95,18 +122,77 @@ namespace CIARE
         private Button _fileExplorerOpenFolderButton;
         private Button _fileExplorerHideButton;
         private Button _fileExplorerShowButton;
+        private SplitContainer _fileExplorerContentSplitContainer;
         private TreeView _fileExplorerTree;
+        private Panel _fileExplorerNuGetPanel;
+        private Label _fileExplorerNuGetTitleLabel;
+        private ListView _fileExplorerNuGetList;
+        private ColumnHeader _fileExplorerNuGetPackageColumn;
+        private ColumnHeader _fileExplorerNuGetVersionColumn;
+        private ColumnHeader _fileExplorerNuGetUpdateColumn;
+        private ColumnHeader _fileExplorerNuGetStatusColumn;
+        private ContextMenuStrip _fileExplorerContextMenu;
+        private ToolStripMenuItem _fileExplorerAddProjectMenuItem;
+        private ToolStripMenuItem _fileExplorerAddProjectReferenceMenuItem;
+        private ToolStripMenuItem _fileExplorerRemoveProjectReferenceMenuItem;
+        private ToolStripMenuItem _fileExplorerSetStartupProjectMenuItem;
+        private ToolStripMenuItem _fileExplorerNewFileMenuItem;
+        private ToolStripMenuItem _fileExplorerNewFolderMenuItem;
+        private ToolStripSeparator _fileExplorerProjectSeparator;
+        private ToolStripSeparator _fileExplorerContextSeparator;
+        private ToolStripMenuItem _fileExplorerRenameMenuItem;
+        private ToolStripMenuItem _fileExplorerDeleteMenuItem;
+        private ContextMenuStrip _fileExplorerNuGetContextMenu;
+        private ToolStripMenuItem _fileExplorerNuGetUpdateMenuItem;
+        private ToolStripMenuItem _fileExplorerNuGetRemoveMenuItem;
+        private TreeNode _fileExplorerContextNode;
         private ImageList _fileExplorerImageList;
         private string _fileExplorerRootPath = string.Empty;
+        private string _fileExplorerSolutionPath = string.Empty;
+        private string _fileExplorerStartupProjectPath = string.Empty;
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
+        private int _fileExplorerNuGetHeight = FileExplorerDefaultNuGetHeight;
         private FileSystemWatcher _fileExplorerWatcher;
         private System.Windows.Forms.Timer _fileExplorerRefreshTimer;
+        private System.Windows.Forms.Timer _fileExplorerNuGetRefreshTimer;
+        private string _pendingProjectPackageRefreshPath = string.Empty;
+        private bool _pendingProjectPackageRestore;
+        private bool _pendingProjectPackageShowRestoreFailure;
+        private int _projectPackageRefreshVersion;
+        private int _fileExplorerNuGetListRefreshVersion;
         private bool _suppressFileExplorerExpandedStateSave;
+        private bool _suppressFileExplorerLayoutSave;
+        private bool _applyingFileExplorerLayout;
+        private bool _pendingFileExplorerLayoutApply;
+        private int _fileExplorerLayoutApplyAttempts;
+        private System.Windows.Forms.Timer _fileExplorerLayoutApplyTimer;
+        private bool _fileExplorerLayoutReadyForUserSave;
+        private bool _fileExplorerWidthDragInProgress;
+        private bool _fileExplorerNuGetHeightDragInProgress;
+        private bool _refreshingEditorLayoutBounds;
+        private bool _pendingEditorLayoutRefresh;
+        private System.Windows.Forms.Timer _editorLayoutRefreshTimer;
         private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const int WorkspaceCompletionMethodLimit = 300;
+        private const int RoslynCompletionSourceFileLimit = 300;
+        private static readonly string[] CompletionImplicitUsingNamespaces =
+        {
+            "System",
+            "System.Collections.Generic",
+            "System.IO",
+            "System.Linq",
+            "System.Net.Http",
+            "System.Threading",
+            "System.Threading.Tasks"
+        };
         private readonly object _completionDataLock = new object();
+        private int _completionWorkspaceVersion;
+        private string _completionWorkspaceKey = string.Empty;
+        private string _completionFileKey = string.Empty;
         private readonly Dictionary<string, Dom.ICompilationUnit> _workspaceCompilationUnits
             = new Dictionary<string, Dom.ICompilationUnit>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Dom.IProjectContent> _projectPackageCompletionContents
+            = new Dictionary<string, Dom.IProjectContent>(StringComparer.OrdinalIgnoreCase);
         private readonly List<WorkspaceCompletionClass> _workspaceCompletionClasses
             = new List<WorkspaceCompletionClass>();
         private readonly List<WorkspaceCompletionItem> _topLevelLocalFunctions
@@ -116,6 +202,15 @@ namespace CIARE
         private static List<MetadataReference> _usagePlatformReferences;
         private static List<MetadataReference> _usageCustomReferences = new List<MetadataReference>();
         private static string _usageCustomReferenceKey = string.Empty;
+        private static readonly object _usageDocumentCacheLock = new object();
+        private static readonly Dictionary<string, UsageDocumentCacheEntry> _usageDocumentCache
+            = new Dictionary<string, UsageDocumentCacheEntry>(StringComparer.OrdinalIgnoreCase);
+        private const int UsageDocumentCacheLimit = 128;
+        private const long UsageFastReadMaxFileBytes = 256L * 1024L;
+        private const long UsageDocumentCacheMaxFileBytes = 1024L * 1024L;
+        private bool _completionRegistryInitialized;
+        private static readonly PropertyInfo DoubleBufferedProperty =
+            typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
 
 
         // Used for tab's auto-resize
@@ -132,6 +227,56 @@ namespace CIARE
             autoStartFile.CheckSetAtiveFormState();
             autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
+            ConfigureErrorsListView();
+            DoubleBuffered = true;
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
+            UpdateStyles();
+        }
+
+        private void ConfigureErrorsListView()
+        {
+            if (errorsLV == null)
+                return;
+
+            if (errorsLV.Columns.Count == 0)
+            {
+                errorsLV.Columns.Add(string.Empty, 34, HorizontalAlignment.Center);
+                errorsLV.Columns.Add("Line", 64, HorizontalAlignment.Right);
+                errorsLV.Columns.Add("Code", 84, HorizontalAlignment.Left);
+                errorsLV.Columns.Add("Message", 320, HorizontalAlignment.Left);
+            }
+
+            errorsLV.HeaderStyle = ColumnHeaderStyle.Nonclickable;
+            errorsLV.ShowItemToolTips = true;
+            if (errorsLV.ListViewItemSorter == null)
+                errorsLV.ListViewItemSorter = new CIARE.GUI.ListViewColumnSorter();
+            errorsLV.Resize += errorsLV_Resize;
+            ResizeErrorsListViewColumns();
+        }
+
+        private void errorsLV_Resize(object sender, EventArgs e)
+        {
+            ResizeErrorsListViewColumns();
+        }
+
+        private void ResizeErrorsListViewColumns()
+        {
+            if (errorsLV == null || errorsLV.IsDisposed || errorsLV.Columns.Count < 4)
+                return;
+
+            int availableWidth = errorsLV.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6;
+            if (availableWidth <= 0)
+                return;
+
+            int iconWidth = 34;
+            int lineWidth = 64;
+            int codeWidth = 84;
+            int messageWidth = Math.Max(180, availableWidth - iconWidth - lineWidth - codeWidth);
+
+            errorsLV.Columns[0].Width = iconWidth;
+            errorsLV.Columns[1].Width = lineWidth;
+            errorsLV.Columns[2].Width = codeWidth;
+            errorsLV.Columns[3].Width = messageWidth;
         }
 
         /// <summary>
@@ -180,6 +325,8 @@ namespace CIARE
             if (_editorExplorerSplitContainer != null)
                 return;
 
+            LoadFileExplorerLayoutValues();
+
             splitContainer1.Panel1.SuspendLayout();
             EditorTabControl.SuspendLayout();
 
@@ -188,7 +335,8 @@ namespace CIARE
             _editorWorkspacePanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(0)
+                Padding = new Padding(0),
+                BackColor = GetEditorSurfaceBackColor()
             };
 
             _editorExplorerSplitContainer = new SplitContainer
@@ -196,18 +344,85 @@ namespace CIARE
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
                 FixedPanel = FixedPanel.Panel2,
-                SplitterWidth = 5
+                SplitterWidth = 5,
+                BackColor = GetEditorSurfaceBackColor()
             };
             _editorExplorerSplitContainer.Panel1.Padding = Padding.Empty;
             _editorExplorerSplitContainer.Panel2.Padding = Padding.Empty;
-            _editorExplorerSplitContainer.Panel1.Resize += (sender, args) => RefreshEditorLayoutBounds();
-            _editorExplorerSplitContainer.SplitterMoved += (sender, args) => RefreshEditorLayoutBounds();
+            _editorExplorerSplitContainer.Panel1.BackColor = GetEditorSurfaceBackColor();
+            _editorExplorerSplitContainer.Panel2.BackColor = GetEditorSurfaceBackColor();
+            _editorExplorerSplitContainer.Panel1.Resize += (sender, args) => QueueEditorLayoutRefresh();
+            _editorExplorerSplitContainer.SizeChanged += (sender, args) =>
+            {
+                OnFileExplorerLayoutContainerSizeChanged();
+            };
+            _editorExplorerSplitContainer.SplitterMoving += (sender, args) =>
+            {
+                _fileExplorerWidthDragInProgress = true;
+                CancelPendingFileExplorerLayoutApplyForUserResize();
+            };
+            _editorExplorerSplitContainer.SplitterMoved += (sender, args) =>
+            {
+                if (_fileExplorerWidthDragInProgress)
+                {
+                    _fileExplorerWidthDragInProgress = false;
+                    QueueFileExplorerWidthSave();
+                }
+
+                QueueEditorLayoutRefresh();
+            };
+            _editorExplorerSplitContainer.MouseUp += (sender, args) =>
+            {
+                if (_fileExplorerWidthDragInProgress)
+                {
+                    _fileExplorerWidthDragInProgress = false;
+                    QueueFileExplorerWidthSave();
+                }
+            };
 
             _fileExplorerPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(0)
+                Padding = new Padding(0),
+                BackColor = GetEditorSurfaceBackColor()
             };
+
+            _fileExplorerContentSplitContainer = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                Orientation = Orientation.Horizontal,
+                FixedPanel = FixedPanel.Panel2,
+                SplitterWidth = 4,
+                Panel2MinSize = FileExplorerNuGetMinHeight,
+                BackColor = GetEditorSurfaceBackColor()
+            };
+            _fileExplorerContentSplitContainer.Panel1.BackColor = GetEditorSurfaceBackColor();
+            _fileExplorerContentSplitContainer.Panel2.BackColor = GetEditorSurfaceBackColor();
+            _fileExplorerContentSplitContainer.SizeChanged += (sender, args) =>
+            {
+                OnFileExplorerLayoutContainerSizeChanged();
+            };
+            _fileExplorerContentSplitContainer.SplitterMoving +=
+                (sender, args) =>
+                {
+                    _fileExplorerNuGetHeightDragInProgress = true;
+                    CancelPendingFileExplorerLayoutApplyForUserResize();
+                };
+            _fileExplorerContentSplitContainer.SplitterMoved +=
+                (sender, args) =>
+                {
+                    if (_fileExplorerNuGetHeightDragInProgress)
+                        QueueFileExplorerNuGetHeightSave();
+                };
+            _fileExplorerContentSplitContainer.MouseUp +=
+                (sender, args) =>
+                {
+                    if (!_fileExplorerNuGetHeightDragInProgress)
+                        return;
+
+                    _fileExplorerNuGetHeightDragInProgress = false;
+                    QueueFileExplorerNuGetHeightSave();
+                };
 
             _fileExplorerHeader = new TableLayoutPanel
             {
@@ -263,16 +478,146 @@ namespace CIARE
             _fileExplorerTree.BeforeExpand += fileExplorerTree_BeforeExpand;
             _fileExplorerTree.AfterExpand += fileExplorerTree_AfterExpand;
             _fileExplorerTree.AfterCollapse += fileExplorerTree_AfterCollapse;
+            _fileExplorerTree.AfterSelect += fileExplorerTree_AfterSelect;
+            _fileExplorerTree.MouseDown += fileExplorerTree_MouseDown;
             _fileExplorerTree.NodeMouseDoubleClick += fileExplorerTree_NodeMouseDoubleClick;
             _fileExplorerTree.KeyDown += fileExplorerTree_KeyDown;
+
+            _fileExplorerAddProjectMenuItem = new ToolStripMenuItem
+            {
+                Text = "Add New Project..."
+            };
+            _fileExplorerAddProjectMenuItem.Click += fileExplorerAddProjectMenuItem_Click;
+
+            _fileExplorerAddProjectReferenceMenuItem = new ToolStripMenuItem
+            {
+                Text = "Add Project Reference..."
+            };
+            _fileExplorerAddProjectReferenceMenuItem.Click += fileExplorerAddProjectReferenceMenuItem_Click;
+
+            _fileExplorerRemoveProjectReferenceMenuItem = new ToolStripMenuItem
+            {
+                Text = "Remove Project Reference..."
+            };
+            _fileExplorerRemoveProjectReferenceMenuItem.Click += fileExplorerRemoveProjectReferenceMenuItem_Click;
+
+            _fileExplorerSetStartupProjectMenuItem = new ToolStripMenuItem
+            {
+                Text = "Set as Startup Project"
+            };
+            _fileExplorerSetStartupProjectMenuItem.Click += fileExplorerSetStartupProjectMenuItem_Click;
+
+            _fileExplorerNewFileMenuItem = new ToolStripMenuItem
+            {
+                Text = "New C# File..."
+            };
+            _fileExplorerNewFileMenuItem.Click += fileExplorerNewFileMenuItem_Click;
+
+            _fileExplorerNewFolderMenuItem = new ToolStripMenuItem
+            {
+                Text = "New Folder..."
+            };
+            _fileExplorerNewFolderMenuItem.Click += fileExplorerNewFolderMenuItem_Click;
+
+            _fileExplorerRenameMenuItem = new ToolStripMenuItem
+            {
+                Text = "Rename..."
+            };
+            _fileExplorerRenameMenuItem.Click += fileExplorerRenameMenuItem_Click;
+
+            _fileExplorerDeleteMenuItem = new ToolStripMenuItem
+            {
+                Text = "Delete"
+            };
+            _fileExplorerDeleteMenuItem.Click += fileExplorerDeleteMenuItem_Click;
+
+            _fileExplorerContextMenu = new ContextMenuStrip(components);
+            _fileExplorerContextMenu.Opening += fileExplorerContextMenu_Opening;
+            _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectMenuItem);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectReferenceMenuItem);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerRemoveProjectReferenceMenuItem);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerSetStartupProjectMenuItem);
+            _fileExplorerProjectSeparator = new ToolStripSeparator();
+            _fileExplorerContextMenu.Items.Add(_fileExplorerProjectSeparator);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerNewFileMenuItem);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerNewFolderMenuItem);
+            _fileExplorerContextSeparator = new ToolStripSeparator();
+            _fileExplorerContextMenu.Items.Add(_fileExplorerContextSeparator);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerRenameMenuItem);
+            _fileExplorerContextMenu.Items.Add(_fileExplorerDeleteMenuItem);
+            _fileExplorerTree.ContextMenuStrip = _fileExplorerContextMenu;
+
+            _fileExplorerNuGetPackageColumn = new ColumnHeader { Text = "Package", Width = 130 };
+            _fileExplorerNuGetVersionColumn = new ColumnHeader { Text = "Version", Width = 80 };
+            _fileExplorerNuGetUpdateColumn = new ColumnHeader { Text = "Update", Width = 80 };
+            _fileExplorerNuGetStatusColumn = new ColumnHeader { Text = "Status", Width = 70 };
+
+            _fileExplorerNuGetTitleLabel = new Label
+            {
+                AutoEllipsis = true,
+                Dock = DockStyle.Top,
+                Height = 24,
+                Padding = new Padding(6, 4, 4, 0),
+                Text = "NuGet packages",
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            _fileExplorerNuGetList = new ListView
+            {
+                BorderStyle = BorderStyle.None,
+                Columns =
+                {
+                    _fileExplorerNuGetPackageColumn,
+                    _fileExplorerNuGetVersionColumn,
+                    _fileExplorerNuGetUpdateColumn,
+                    _fileExplorerNuGetStatusColumn
+                },
+                Dock = DockStyle.Fill,
+                FullRowSelect = true,
+                GridLines = false,
+                HeaderStyle = ColumnHeaderStyle.Nonclickable,
+                HideSelection = false,
+                MultiSelect = false,
+                ShowItemToolTips = true,
+                View = View.Details
+            };
+            _fileExplorerNuGetList.Resize += (sender, args) => ResizeFileExplorerNuGetColumns();
+            _fileExplorerNuGetList.MouseClick += fileExplorerNuGetList_MouseClick;
+
+            _fileExplorerNuGetUpdateMenuItem = new ToolStripMenuItem
+            {
+                Text = "Update package"
+            };
+            _fileExplorerNuGetUpdateMenuItem.Click += fileExplorerNuGetUpdateMenuItem_Click;
+
+            _fileExplorerNuGetRemoveMenuItem = new ToolStripMenuItem
+            {
+                Text = "Remove from Project"
+            };
+            _fileExplorerNuGetRemoveMenuItem.Click += fileExplorerNuGetRemoveMenuItem_Click;
+
+            _fileExplorerNuGetContextMenu = new ContextMenuStrip(components);
+            _fileExplorerNuGetContextMenu.Items.Add(_fileExplorerNuGetUpdateMenuItem);
+            _fileExplorerNuGetContextMenu.Items.Add(new ToolStripSeparator());
+            _fileExplorerNuGetContextMenu.Items.Add(_fileExplorerNuGetRemoveMenuItem);
+
+            _fileExplorerNuGetPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(0)
+            };
+            _fileExplorerNuGetPanel.Controls.Add(_fileExplorerNuGetList);
+            _fileExplorerNuGetPanel.Controls.Add(_fileExplorerNuGetTitleLabel);
 
             _fileExplorerHeader.Controls.Add(_fileExplorerTitleLabel, 0, 0);
             _fileExplorerHeader.Controls.Add(_fileExplorerOpenFolderButton, 1, 0);
             _fileExplorerHeader.Controls.Add(_fileExplorerHideButton, 2, 0);
-            _fileExplorerPanel.Controls.Add(_fileExplorerTree);
+            _fileExplorerContentSplitContainer.Panel1.Controls.Add(_fileExplorerTree);
+            _fileExplorerContentSplitContainer.Panel2.Controls.Add(_fileExplorerNuGetPanel);
+            _fileExplorerPanel.Controls.Add(_fileExplorerContentSplitContainer);
             _fileExplorerPanel.Controls.Add(_fileExplorerHeader);
 
-            ConfigureEditorTabControlLayout();
+            ConfigureEditorTabControlLayout(configureAllTabs: true);
 
             _editorExplorerSplitContainer.Panel1.Controls.Add(EditorTabControl);
             _editorExplorerSplitContainer.Panel2.Controls.Add(_fileExplorerPanel);
@@ -291,6 +636,22 @@ namespace CIARE
             _fileExplorerShowButton.Click += (sender, args) => ToggleFileExplorer(true);
             _editorWorkspacePanel.Controls.Add(_fileExplorerShowButton);
             _editorWorkspacePanel.Resize += (sender, args) => PositionFileExplorerShowButton();
+            Shown += (sender, args) => QueueFileExplorerLayoutApply();
+
+            EnableBufferedPainting(
+                splitContainer1,
+                splitContainer1.Panel1,
+                _editorWorkspacePanel,
+                _editorExplorerSplitContainer,
+                _editorExplorerSplitContainer.Panel1,
+                _editorExplorerSplitContainer.Panel2,
+                _fileExplorerPanel,
+                _fileExplorerHeader,
+                _fileExplorerContentSplitContainer,
+                _fileExplorerContentSplitContainer.Panel1,
+                _fileExplorerContentSplitContainer.Panel2,
+                _fileExplorerNuGetPanel,
+                EditorTabControl);
 
             splitContainer1.Panel1.Controls.Add(_editorWorkspacePanel);
             splitContainer1.Panel1.ResumeLayout();
@@ -298,9 +659,9 @@ namespace CIARE
             BeginInvoke((Action)(() =>
             {
                 ApplyEditorExplorerMinimumWidths();
-                SetFileExplorerWidth(FileExplorerDefaultWidth);
+                QueueFileExplorerLayoutApply();
                 PositionFileExplorerShowButton();
-                RefreshEditorLayoutBounds();
+                QueueEditorLayoutRefresh();
             }));
 
             ApplyFileExplorerTheme();
@@ -308,7 +669,7 @@ namespace CIARE
 
         private ImageList CreateFileExplorerImageList()
         {
-            _fileExplorerImageList = new ImageList
+            _fileExplorerImageList = new ImageList(components)
             {
                 ColorDepth = ColorDepth.Depth32Bit,
                 ImageSize = new Size(16, 16),
@@ -317,8 +678,14 @@ namespace CIARE
 
             _fileExplorerImageList.Images.Add("folder", DrawFolderIcon(false));
             _fileExplorerImageList.Images.Add("folder-open", DrawFolderIcon(true));
+            _fileExplorerImageList.Images.Add("folder-project", DrawSpecialFolderIcon(false, Color.FromArgb(110, 89, 191), "P"));
+            _fileExplorerImageList.Images.Add("folder-project-open", DrawSpecialFolderIcon(true, Color.FromArgb(110, 89, 191), "P"));
+            _fileExplorerImageList.Images.Add("folder-solution", DrawSpecialFolderIcon(false, Color.FromArgb(45, 136, 199), "S"));
+            _fileExplorerImageList.Images.Add("folder-solution-open", DrawSpecialFolderIcon(true, Color.FromArgb(45, 136, 199), "S"));
             _fileExplorerImageList.Images.Add("file", DrawFileIcon(Color.FromArgb(128, 128, 128), false));
             _fileExplorerImageList.Images.Add("cs", DrawFileIcon(Color.FromArgb(72, 133, 237), true));
+            _fileExplorerImageList.Images.Add("project", DrawFileIcon(Color.FromArgb(110, 89, 191), false));
+            _fileExplorerImageList.Images.Add("solution", DrawFileIcon(Color.FromArgb(45, 136, 199), false));
             _fileExplorerImageList.Images.Add("text", DrawFileIcon(Color.FromArgb(96, 166, 106), false));
             return _fileExplorerImageList;
         }
@@ -336,6 +703,20 @@ namespace CIARE
                 g.FillRectangle(body, 1, 5, 14, 9);
                 g.DrawRectangle(outline, 1, 5, 13, 8);
             }
+            return bitmap;
+        }
+
+        private static Bitmap DrawSpecialFolderIcon(bool open, Color accent, string label)
+        {
+            Bitmap bitmap = DrawFolderIcon(open);
+            using (var g = Graphics.FromImage(bitmap))
+            using (var accentBrush = new SolidBrush(accent))
+            using (var font = new Font("Segoe UI", 5.5F, FontStyle.Bold, GraphicsUnit.Point))
+            {
+                g.FillRectangle(accentBrush, 8, 8, 7, 6);
+                g.DrawString(label, font, Brushes.White, new PointF(8.2F, 6.9F));
+            }
+
             return bitmap;
         }
 
@@ -373,26 +754,39 @@ namespace CIARE
             if (_editorExplorerSplitContainer == null)
                 return;
 
-            if (show)
+            _editorWorkspacePanel?.SuspendLayout();
+            _editorExplorerSplitContainer.SuspendLayout();
+            EditorTabControl.SuspendLayout();
+            try
             {
-                _editorExplorerSplitContainer.Panel2Collapsed = false;
-                ApplyEditorExplorerMinimumWidths();
-                SetFileExplorerWidth(_fileExplorerWidth);
-                _fileExplorerShowButton.Visible = false;
+                if (show)
+                {
+                    _editorExplorerSplitContainer.Panel2Collapsed = false;
+                    ApplyEditorExplorerMinimumWidths();
+                    ApplyFileExplorerLayoutValues();
+                    QueueFileExplorerLayoutApply();
+                    _fileExplorerShowButton.Visible = false;
+                }
+                else
+                {
+                    if (saveWidth)
+                        SaveFileExplorerWidth(force: true);
+                    _editorExplorerSplitContainer.Panel2Collapsed = true;
+                    _fileExplorerShowButton.Visible = true;
+                    PositionFileExplorerShowButton();
+                    SelectedEditor.GetSelectedEditor()?.Focus();
+                }
+
+                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerVisibleKey, show.ToString());
             }
-            else
+            finally
             {
-                if (saveWidth)
-                    _fileExplorerWidth = Math.Max(_editorExplorerSplitContainer.Panel2.Width, FileExplorerMinWidth);
-                _editorExplorerSplitContainer.Panel2Collapsed = true;
-                _fileExplorerShowButton.Visible = true;
-                PositionFileExplorerShowButton();
-                SelectedEditor.GetSelectedEditor()?.Focus();
+                EditorTabControl.ResumeLayout(false);
+                _editorExplorerSplitContainer.ResumeLayout(false);
+                _editorWorkspacePanel?.ResumeLayout(false);
             }
 
-            RefreshEditorLayoutBounds();
-            EditorTabControl.Invalidate();
-            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerVisibleKey, show.ToString());
+            QueueEditorLayoutRefresh();
         }
 
         private void ToggleFileExplorer()
@@ -414,20 +808,414 @@ namespace CIARE
             int availableWidth = splitWidth - _editorExplorerSplitContainer.SplitterWidth;
             if (availableWidth <= 0)
             {
-                RefreshEditorLayoutBounds();
+                QueueEditorLayoutRefresh();
                 return;
             }
 
             int minDist = _editorExplorerSplitContainer.Panel1MinSize;
             int maxDist = Math.Max(minDist, availableWidth - _editorExplorerSplitContainer.Panel2MinSize);
-            int explorerWidth = Math.Max(_editorExplorerSplitContainer.Panel2MinSize,
-                Math.Min(width, Math.Max(0, availableWidth - minDist)));
+            int explorerWidth = GetClampedFileExplorerWidth(width);
             int dist = Math.Max(minDist, Math.Min(maxDist, availableWidth - explorerWidth));
 
             if (!_editorExplorerSplitContainer.Panel2Collapsed)
                 _editorExplorerSplitContainer.SplitterDistance = dist;
 
-            RefreshEditorLayoutBounds();
+            QueueEditorLayoutRefresh();
+        }
+
+        private void SetFileExplorerNuGetHeight(int height)
+        {
+            if (_fileExplorerContentSplitContainer == null ||
+                _fileExplorerContentSplitContainer.IsDisposed ||
+                _fileExplorerContentSplitContainer.Panel2Collapsed)
+            {
+                return;
+            }
+
+            int splitHeight = _fileExplorerContentSplitContainer.ClientSize.Height;
+            int availableHeight = splitHeight - _fileExplorerContentSplitContainer.SplitterWidth;
+            if (availableHeight <= 0)
+                return;
+
+            int nuGetHeight = GetClampedFileExplorerNuGetHeight(height);
+            _fileExplorerContentSplitContainer.SplitterDistance = Math.Max(0, availableHeight - nuGetHeight);
+        }
+
+        private int GetClampedFileExplorerWidth(int width)
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+                return width;
+
+            int availableWidth = GetEditorExplorerSplitWidth() - _editorExplorerSplitContainer.SplitterWidth;
+            if (availableWidth <= 0)
+                return width;
+
+            int minExplorerWidth = Math.Max(0, _editorExplorerSplitContainer.Panel2MinSize);
+            int maxExplorerWidth = Math.Max(minExplorerWidth,
+                availableWidth - Math.Max(0, _editorExplorerSplitContainer.Panel1MinSize));
+            return Math.Max(minExplorerWidth, Math.Min(width, maxExplorerWidth));
+        }
+
+        private int GetClampedFileExplorerNuGetHeight(int height)
+        {
+            if (_fileExplorerContentSplitContainer == null ||
+                _fileExplorerContentSplitContainer.IsDisposed)
+            {
+                return height;
+            }
+
+            int availableHeight = _fileExplorerContentSplitContainer.ClientSize.Height -
+                _fileExplorerContentSplitContainer.SplitterWidth;
+            if (availableHeight <= 0)
+                return height;
+
+            int minNuGetHeight = Math.Max(0, _fileExplorerContentSplitContainer.Panel2MinSize);
+            int maxNuGetHeight = Math.Max(minNuGetHeight, availableHeight - FileExplorerTreeMinHeight);
+            return Math.Max(minNuGetHeight, Math.Min(height, maxNuGetHeight));
+        }
+
+        private void LoadFileExplorerLayoutValues()
+        {
+            _fileExplorerWidth = ReadFileExplorerLayoutValue(FileExplorerWidthKey,
+                FileExplorerDefaultWidth, FileExplorerMinWidth);
+            _fileExplorerNuGetHeight = ReadFileExplorerLayoutValue(FileExplorerNuGetHeightKey,
+                FileExplorerDefaultNuGetHeight, FileExplorerNuGetMinHeight);
+        }
+
+        private static int ReadFileExplorerLayoutValue(string key, int defaultValue, int minValue)
+        {
+            string savedFileValue = ReadFileExplorerLayoutFileValue(key);
+            if (int.TryParse(savedFileValue, out int fileValue) && fileValue >= minValue)
+                return fileValue;
+
+            string savedValue = RegistryManagement.RegKey_Read(
+                $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", key);
+            if (int.TryParse(savedValue, out int value) && value >= minValue)
+                return value;
+
+            return defaultValue;
+        }
+
+        private void ApplyFileExplorerLayoutValues()
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+                return;
+
+            _suppressFileExplorerLayoutSave = true;
+            _applyingFileExplorerLayout = true;
+            try
+            {
+                _editorExplorerSplitContainer.SuspendLayout();
+                _fileExplorerContentSplitContainer?.SuspendLayout();
+
+                if (!_editorExplorerSplitContainer.Panel2Collapsed)
+                    SetFileExplorerWidth(_fileExplorerWidth);
+                SetFileExplorerNuGetHeight(_fileExplorerNuGetHeight);
+            }
+            finally
+            {
+                _fileExplorerContentSplitContainer?.ResumeLayout(true);
+                _editorExplorerSplitContainer.ResumeLayout(true);
+                _applyingFileExplorerLayout = false;
+                _suppressFileExplorerLayoutSave = false;
+            }
+        }
+
+        private void QueueFileExplorerLayoutApply()
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed || IsDisposed)
+                return;
+
+            _pendingFileExplorerLayoutApply = true;
+            _fileExplorerLayoutApplyAttempts = 0;
+            _fileExplorerLayoutReadyForUserSave = false;
+            SchedulePendingFileExplorerLayoutApply();
+        }
+
+        private void OnFileExplorerLayoutContainerSizeChanged()
+        {
+            if (_fileExplorerWidthDragInProgress ||
+                _fileExplorerNuGetHeightDragInProgress ||
+                _applyingFileExplorerLayout ||
+                !_pendingFileExplorerLayoutApply ||
+                _fileExplorerLayoutReadyForUserSave)
+            {
+                return;
+            }
+
+            SchedulePendingFileExplorerLayoutApply();
+        }
+
+        private void CancelPendingFileExplorerLayoutApplyForUserResize()
+        {
+            _pendingFileExplorerLayoutApply = false;
+            _fileExplorerLayoutReadyForUserSave = true;
+            _fileExplorerLayoutApplyTimer?.Stop();
+        }
+
+        private void SchedulePendingFileExplorerLayoutApply()
+        {
+            if (IsDisposed || !IsHandleCreated)
+                return;
+
+            EnsureFileExplorerLayoutApplyTimer();
+            _fileExplorerLayoutApplyTimer.Interval =
+                _fileExplorerLayoutApplyAttempts < FileExplorerLayoutApplyMaxAttempts
+                    ? FileExplorerLayoutApplyInterval
+                    : Math.Max(FileExplorerLayoutApplyInterval, 250);
+            _fileExplorerLayoutApplyTimer.Stop();
+            _fileExplorerLayoutApplyTimer.Start();
+        }
+
+        private void EnsureFileExplorerLayoutApplyTimer()
+        {
+            if (_fileExplorerLayoutApplyTimer != null)
+                return;
+
+            _fileExplorerLayoutApplyTimer = new System.Windows.Forms.Timer(components)
+            {
+                Interval = FileExplorerLayoutApplyInterval
+            };
+            _fileExplorerLayoutApplyTimer.Tick += OnFileExplorerLayoutApplyTimer;
+        }
+
+        private void OnFileExplorerLayoutApplyTimer(object sender, EventArgs e)
+        {
+            _fileExplorerLayoutApplyTimer?.Stop();
+            ApplyPendingFileExplorerLayoutValues();
+        }
+
+        private void ApplyPendingFileExplorerLayoutValues()
+        {
+            if (!_pendingFileExplorerLayoutApply ||
+                _editorExplorerSplitContainer == null ||
+                _editorExplorerSplitContainer.IsDisposed)
+            {
+                return;
+            }
+
+            if (!CanApplyFileExplorerLayoutValues())
+            {
+                _fileExplorerLayoutApplyAttempts++;
+                SchedulePendingFileExplorerLayoutApply();
+                return;
+            }
+
+            ApplyEditorExplorerMinimumWidths();
+            ApplyFileExplorerLayoutValues();
+            PositionFileExplorerShowButton();
+            QueueEditorLayoutRefresh();
+
+            _fileExplorerLayoutApplyAttempts++;
+            if (_fileExplorerLayoutApplyAttempts < FileExplorerLayoutApplyStabilizeAttempts ||
+                !IsFileExplorerLayoutApplied())
+            {
+                if (_fileExplorerLayoutApplyAttempts < FileExplorerLayoutApplyMaxAttempts)
+                {
+                    SchedulePendingFileExplorerLayoutApply();
+                    return;
+                }
+            }
+
+            _pendingFileExplorerLayoutApply = false;
+            _fileExplorerLayoutReadyForUserSave = true;
+        }
+
+        private bool CanApplyFileExplorerLayoutValues()
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+                return false;
+
+            if (!Visible || WindowState == FormWindowState.Minimized)
+                return false;
+
+            int splitWidth = GetEditorExplorerSplitWidth();
+            if (splitWidth <= _editorExplorerSplitContainer.SplitterWidth)
+                return false;
+
+            if (_fileExplorerContentSplitContainer == null || _fileExplorerContentSplitContainer.IsDisposed)
+                return true;
+
+            int splitHeight = _fileExplorerContentSplitContainer.ClientSize.Height;
+            if (splitHeight <= _fileExplorerContentSplitContainer.SplitterWidth)
+                return false;
+
+            return true;
+        }
+
+        private bool IsFileExplorerLayoutApplied()
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+                return false;
+
+            if (!_editorExplorerSplitContainer.Panel2Collapsed)
+            {
+                int currentWidth = GetCurrentFileExplorerWidth();
+                int targetWidth = GetClampedFileExplorerWidth(_fileExplorerWidth);
+                if (currentWidth <= 0 || Math.Abs(currentWidth - targetWidth) > 1)
+                    return false;
+            }
+
+            if (_fileExplorerContentSplitContainer == null ||
+                _fileExplorerContentSplitContainer.IsDisposed ||
+                _fileExplorerContentSplitContainer.Panel2Collapsed)
+            {
+                return true;
+            }
+
+            int currentHeight = GetCurrentFileExplorerNuGetHeight();
+            int targetHeight = GetClampedFileExplorerNuGetHeight(_fileExplorerNuGetHeight);
+            return currentHeight > 0 && Math.Abs(currentHeight - targetHeight) <= 1;
+        }
+
+        private void QueueFileExplorerWidthSave()
+        {
+            if (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave)
+                return;
+
+            SaveFileExplorerWidth();
+        }
+
+        private void QueueFileExplorerNuGetHeightSave()
+        {
+            if (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave)
+                return;
+
+            SaveFileExplorerNuGetHeight();
+        }
+
+        private void SaveFileExplorerWidth(bool force = false)
+        {
+            if (!force && (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave))
+                return;
+
+            if (_editorExplorerSplitContainer == null ||
+                _editorExplorerSplitContainer.IsDisposed ||
+                _editorExplorerSplitContainer.Panel2Collapsed)
+            {
+                return;
+            }
+
+            int splitterWidth = GetCurrentFileExplorerWidth();
+            if (splitterWidth <= 0)
+                return;
+
+            _fileExplorerWidth = Math.Max(FileExplorerMinWidth, splitterWidth);
+            WriteFileExplorerLayoutValue(FileExplorerWidthKey, _fileExplorerWidth);
+        }
+
+        private void SaveFileExplorerNuGetHeight(bool force = false)
+        {
+            if (!force && (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave))
+                return;
+
+            if (_fileExplorerContentSplitContainer == null ||
+                _fileExplorerContentSplitContainer.IsDisposed ||
+                _fileExplorerContentSplitContainer.Panel2Collapsed)
+            {
+                return;
+            }
+
+            int splitterHeight = GetCurrentFileExplorerNuGetHeight();
+            if (splitterHeight <= 0)
+                return;
+
+            _fileExplorerNuGetHeight = Math.Max(FileExplorerNuGetMinHeight, splitterHeight);
+            WriteFileExplorerLayoutValue(FileExplorerNuGetHeightKey, _fileExplorerNuGetHeight);
+        }
+
+        private int GetCurrentFileExplorerWidth()
+        {
+            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+                return 0;
+
+            if (_editorExplorerSplitContainer.Panel2.Width > 0)
+                return _editorExplorerSplitContainer.Panel2.Width;
+
+            int availableWidth = GetEditorExplorerSplitWidth() - _editorExplorerSplitContainer.SplitterWidth;
+            return availableWidth > 0
+                ? Math.Max(0, availableWidth - _editorExplorerSplitContainer.SplitterDistance)
+                : 0;
+        }
+
+        private int GetCurrentFileExplorerNuGetHeight()
+        {
+            if (_fileExplorerContentSplitContainer == null ||
+                _fileExplorerContentSplitContainer.IsDisposed)
+            {
+                return 0;
+            }
+
+            if (_fileExplorerContentSplitContainer.Panel2.Height > 0)
+                return _fileExplorerContentSplitContainer.Panel2.Height;
+
+            int availableHeight = _fileExplorerContentSplitContainer.ClientSize.Height -
+                _fileExplorerContentSplitContainer.SplitterWidth;
+            return availableHeight > 0
+                ? Math.Max(0, availableHeight - _fileExplorerContentSplitContainer.SplitterDistance)
+                : 0;
+        }
+
+        private static void WriteFileExplorerLayoutValue(string key, int value)
+        {
+            InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, key, value.ToString());
+            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, key, value.ToString());
+            WriteFileExplorerLayoutFileValue(key, value);
+        }
+
+        private static string ReadFileExplorerLayoutFileValue(string key)
+        {
+            try
+            {
+                if (!File.Exists(FileExplorerLayoutFilePath))
+                    return string.Empty;
+
+                foreach (string line in File.ReadAllLines(FileExplorerLayoutFilePath))
+                {
+                    int separatorIndex = line.IndexOf('=');
+                    if (separatorIndex <= 0)
+                        continue;
+
+                    string savedKey = line.Substring(0, separatorIndex).Trim();
+                    if (string.Equals(savedKey, key, StringComparison.OrdinalIgnoreCase))
+                        return line.Substring(separatorIndex + 1).Trim();
+                }
+            }
+            catch
+            {
+            }
+
+            return string.Empty;
+        }
+
+        private static void WriteFileExplorerLayoutFileValue(string key, int value)
+        {
+            try
+            {
+                var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                if (File.Exists(FileExplorerLayoutFilePath))
+                {
+                    foreach (string line in File.ReadAllLines(FileExplorerLayoutFilePath))
+                    {
+                        int separatorIndex = line.IndexOf('=');
+                        if (separatorIndex <= 0)
+                            continue;
+
+                        values[line.Substring(0, separatorIndex).Trim()] =
+                            line.Substring(separatorIndex + 1).Trim();
+                    }
+                }
+
+                values[key] = value.ToString();
+                Directory.CreateDirectory(GlobalVariables.userProfileDirectory);
+                File.WriteAllLines(FileExplorerLayoutFilePath,
+                    values.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                        .Select(pair => pair.Key + "=" + pair.Value));
+            }
+            catch
+            {
+                // Layout state persistence is best-effort.
+            }
         }
 
         private int GetEditorExplorerSplitWidth()
@@ -438,6 +1226,28 @@ namespace CIARE
             return _editorExplorerSplitContainer.ClientSize.Width > 0
                 ? _editorExplorerSplitContainer.ClientSize.Width
                 : _editorExplorerSplitContainer.Width;
+        }
+
+        private static Color GetEditorSurfaceBackColor()
+        {
+            return GlobalVariables.darkColor ? GlobalVariables.controlBgColor : SystemColors.Window;
+        }
+
+        private static void EnableBufferedPainting(params Control[] controls)
+        {
+            foreach (Control control in controls)
+            {
+                if (control == null)
+                    continue;
+
+                try
+                {
+                    DoubleBufferedProperty?.SetValue(control, true, null);
+                }
+                catch
+                {
+                }
+            }
         }
 
         private void ApplyEditorExplorerMinimumWidths()
@@ -485,31 +1295,63 @@ namespace CIARE
             _fileExplorerShowButton.BringToFront();
         }
 
-        private void ConfigureEditorTabControlLayout()
+        private void ConfigureEditorTabControlLayout(bool configureAllTabs = false)
         {
             if (EditorTabControl == null)
                 return;
 
             EditorTabControl.SuspendLayout();
-            EditorTabControl.Anchor = AnchorStyles.None;
-            EditorTabControl.Dock = DockStyle.Fill;
-            EditorTabControl.Location = Point.Empty;
-            EditorTabControl.Margin = Padding.Empty;
+            try
+            {
+                if (EditorTabControl.Anchor != AnchorStyles.None)
+                    EditorTabControl.Anchor = AnchorStyles.None;
+                if (EditorTabControl.Dock != DockStyle.Fill)
+                    EditorTabControl.Dock = DockStyle.Fill;
+                if (EditorTabControl.Location != Point.Empty)
+                    EditorTabControl.Location = Point.Empty;
+                if (EditorTabControl.Margin != Padding.Empty)
+                    EditorTabControl.Margin = Padding.Empty;
 
-            foreach (TabPage tabPage in EditorTabControl.TabPages)
-                ConfigureEditorTabPageLayout(tabPage);
+                Color editorSurfaceBackColor = GetEditorSurfaceBackColor();
+                if (EditorTabControl.BackColor != editorSurfaceBackColor)
+                    EditorTabControl.BackColor = editorSurfaceBackColor;
 
-            EditorTabControl.ResumeLayout(true);
+                if (configureAllTabs)
+                {
+                    foreach (TabPage tabPage in EditorTabControl.TabPages)
+                        ConfigureEditorTabPageLayout(tabPage, editorSurfaceBackColor);
+                }
+                else if (EditorTabControl.SelectedTab != null)
+                {
+                    ConfigureEditorTabPageLayout(EditorTabControl.SelectedTab, editorSurfaceBackColor);
+                }
+            }
+            finally
+            {
+                EditorTabControl.ResumeLayout(false);
+            }
         }
 
         private void ConfigureEditorTabPageLayout(TabPage tabPage)
         {
+            ConfigureEditorTabPageLayout(tabPage, GetEditorSurfaceBackColor());
+        }
+
+        private void ConfigureEditorTabPageLayout(TabPage tabPage, Color editorSurfaceBackColor)
+        {
             if (tabPage == null)
                 return;
 
-            tabPage.AutoScroll = false;
-            tabPage.Margin = Padding.Empty;
-            tabPage.Padding = Padding.Empty;
+            if (tabPage.AutoScroll)
+                tabPage.AutoScroll = false;
+            if (tabPage.Margin != Padding.Empty)
+                tabPage.Margin = Padding.Empty;
+            if (tabPage.Padding != Padding.Empty)
+                tabPage.Padding = Padding.Empty;
+            if (tabPage.UseVisualStyleBackColor)
+                tabPage.UseVisualStyleBackColor = false;
+            if (tabPage.BackColor != editorSurfaceBackColor)
+                tabPage.BackColor = editorSurfaceBackColor;
 
             foreach (Control control in tabPage.Controls)
             {
@@ -524,10 +1366,14 @@ namespace CIARE
                 return;
 
             editor.SuspendLayout();
-            editor.Anchor = AnchorStyles.None;
-            editor.Dock = DockStyle.Fill;
-            editor.Location = Point.Empty;
-            editor.Margin = Padding.Empty;
+            if (editor.Anchor != AnchorStyles.None)
+                editor.Anchor = AnchorStyles.None;
+            if (editor.Dock != DockStyle.Fill)
+                editor.Dock = DockStyle.Fill;
+            if (editor.Location != Point.Empty)
+                editor.Location = Point.Empty;
+            if (editor.Margin != Padding.Empty)
+                editor.Margin = Padding.Empty;
             ConfigureEditorScrollBars(editor);
             editor.ResumeLayout(true);
         }
@@ -538,11 +1384,50 @@ namespace CIARE
             if (textAreaControl == null)
                 return;
 
-            textAreaControl.AutoHideScrollbars = false;
-            textAreaControl.VScrollBar.Visible = true;
-            textAreaControl.HScrollBar.Visible = true;
-            textAreaControl.ResizeTextArea();
-            textAreaControl.AdjustScrollBars();
+            if (textAreaControl.AutoHideScrollbars)
+                textAreaControl.AutoHideScrollbars = false;
+            if (!textAreaControl.VScrollBar.Visible)
+                textAreaControl.VScrollBar.Visible = true;
+            if (!textAreaControl.HScrollBar.Visible)
+                textAreaControl.HScrollBar.Visible = true;
+            if (editor.Visible && textAreaControl.Width > 0 && textAreaControl.Height > 0)
+            {
+                textAreaControl.ResizeTextArea();
+                textAreaControl.AdjustScrollBars();
+            }
+        }
+
+        private void QueueEditorLayoutRefresh()
+        {
+            if (EditorTabControl == null || EditorTabControl.IsDisposed || IsDisposed)
+                return;
+
+            _pendingEditorLayoutRefresh = true;
+            EnsureEditorLayoutRefreshTimer();
+            _editorLayoutRefreshTimer.Stop();
+            _editorLayoutRefreshTimer.Start();
+        }
+
+        private void EnsureEditorLayoutRefreshTimer()
+        {
+            if (_editorLayoutRefreshTimer != null)
+                return;
+
+            _editorLayoutRefreshTimer = new System.Windows.Forms.Timer(components)
+            {
+                Interval = 50
+            };
+            _editorLayoutRefreshTimer.Tick += OnEditorLayoutRefreshTimer;
+        }
+
+        private void OnEditorLayoutRefreshTimer(object sender, EventArgs e)
+        {
+            _editorLayoutRefreshTimer?.Stop();
+            if (!_pendingEditorLayoutRefresh)
+                return;
+
+            _pendingEditorLayoutRefresh = false;
+            RefreshEditorLayoutBounds();
         }
 
         private void RefreshEditorLayoutBounds()
@@ -550,11 +1435,21 @@ namespace CIARE
             if (EditorTabControl == null || EditorTabControl.IsDisposed)
                 return;
 
-            ConfigureEditorTabControlLayout();
-            EditorTabControl.PerformLayout();
+            if (_refreshingEditorLayoutBounds)
+                return;
 
-            foreach (TabPage tabPage in EditorTabControl.TabPages)
-                tabPage.PerformLayout();
+            _refreshingEditorLayoutBounds = true;
+            try
+            {
+                ConfigureEditorTabControlLayout();
+                EditorTabControl.PerformLayout();
+
+                EditorTabControl.SelectedTab?.PerformLayout();
+            }
+            finally
+            {
+                _refreshingEditorLayoutBounds = false;
+            }
         }
 
         private void fileExplorerOpenFolderButton_Click(object sender, EventArgs e)
@@ -582,6 +1477,8 @@ namespace CIARE
         {
             InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerPathKey, string.Empty);
             InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerVisibleKey, "True");
+            InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerStartupProjectKey, string.Empty);
+            LoadFileExplorerLayoutValues();
 
             string savedPath = RegistryManagement.RegKey_Read(
                 $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", FileExplorerPathKey);
@@ -593,14 +1490,22 @@ namespace CIARE
 
             if (savedVisible == "False")
                 ToggleFileExplorer(false, saveWidth: false);
+            else
+                QueueFileExplorerLayoutApply();
         }
 
-        private void LoadFileExplorerFolder(string folderPath)
+        private void LoadFileExplorerFolder(string folderPath, string solutionPath = null)
         {
             if (!Directory.Exists(folderPath) || _fileExplorerTree == null)
                 return;
 
             _fileExplorerRootPath = folderPath;
+            _fileExplorerSolutionPath = ResolveSolutionPathForLoadedFolder(folderPath, solutionPath);
+            RestoreStartupProjectForLoadedFolder();
+
+            InvalidateCompletionWorkspace();
+            Interlocked.Increment(ref _projectPackageRefreshVersion);
+            ClearProjectPackageCompletionReferences();
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerPathKey, folderPath);
             var expandedPaths = ReadFileExplorerExpandedPaths(folderPath);
             _fileExplorerTree.BeginUpdate();
@@ -624,6 +1529,8 @@ namespace CIARE
 
             StartFileExplorerWatcher(folderPath);
             SaveFileExplorerExpandedState();
+            RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                showRestoreFailure: false);
             ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
         }
 
@@ -636,12 +1543,13 @@ namespace CIARE
 
             _fileExplorerWatcher = new FileSystemWatcher(folderPath)
             {
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName,
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite,
                 IncludeSubdirectories = true,
                 EnableRaisingEvents = true
             };
             _fileExplorerWatcher.Created += OnFileExplorerWatcherEvent;
             _fileExplorerWatcher.Deleted += OnFileExplorerWatcherEvent;
+            _fileExplorerWatcher.Changed += OnFileExplorerWatcherChanged;
             _fileExplorerWatcher.Renamed += OnFileExplorerWatcherRenamed;
 
             _fileExplorerRefreshTimer = new System.Windows.Forms.Timer { Interval = 300 };
@@ -659,9 +1567,20 @@ namespace CIARE
             if (_fileExplorerRefreshTimer != null)
             {
                 _fileExplorerRefreshTimer.Stop();
+                _fileExplorerRefreshTimer.Tick -= OnFileExplorerRefreshTimer;
                 _fileExplorerRefreshTimer.Dispose();
                 _fileExplorerRefreshTimer = null;
             }
+            if (_fileExplorerNuGetRefreshTimer != null)
+            {
+                _fileExplorerNuGetRefreshTimer.Stop();
+                _fileExplorerNuGetRefreshTimer.Tick -= OnFileExplorerNuGetRefreshTimer;
+                _fileExplorerNuGetRefreshTimer.Dispose();
+                _fileExplorerNuGetRefreshTimer = null;
+            }
+            _pendingProjectPackageRefreshPath = string.Empty;
+            _pendingProjectPackageRestore = false;
+            _pendingProjectPackageShowRestoreFailure = false;
             _pendingRefreshPaths.Clear();
         }
 
@@ -670,6 +1589,15 @@ namespace CIARE
             string parentDir = Path.GetDirectoryName(e.FullPath);
             if (!string.IsNullOrEmpty(parentDir))
                 ScheduleExplorerRefresh(parentDir);
+
+            if (ShouldRefreshExplorerNuGetPackages(e.FullPath))
+                ScheduleExplorerNuGetRefresh();
+        }
+
+        private void OnFileExplorerWatcherChanged(object sender, FileSystemEventArgs e)
+        {
+            if (ShouldRefreshExplorerNuGetPackages(e.FullPath))
+                ScheduleExplorerNuGetRefresh();
         }
 
         private void OnFileExplorerWatcherRenamed(object sender, RenamedEventArgs e)
@@ -677,6 +1605,12 @@ namespace CIARE
             string parentDir = Path.GetDirectoryName(e.FullPath);
             if (!string.IsNullOrEmpty(parentDir))
                 ScheduleExplorerRefresh(parentDir);
+
+            if (ShouldRefreshExplorerNuGetPackages(e.FullPath) ||
+                ShouldRefreshExplorerNuGetPackages(e.OldFullPath))
+            {
+                ScheduleExplorerNuGetRefresh();
+            }
         }
 
         private void ScheduleExplorerRefresh(string dirPath)
@@ -780,13 +1714,16 @@ namespace CIARE
         private TreeNode CreateDirectoryNode(DirectoryInfo directory)
         {
             string text = string.IsNullOrEmpty(directory.Name) ? directory.FullName : directory.Name;
+            string imageKey = GetDirectoryImageKey(directory.FullName, open: false);
+            string selectedImageKey = GetDirectoryImageKey(directory.FullName, open: true);
             var node = new TreeNode(text)
             {
                 Tag = directory.FullName,
-                ImageKey = "folder",
-                SelectedImageKey = "folder-open",
+                ImageKey = imageKey,
+                SelectedImageKey = selectedImageKey,
                 ToolTipText = directory.FullName
             };
+            ApplyStartupProjectNodeStyle(node);
             node.Nodes.Add(new TreeNode("Loading...") { Tag = FileExplorerLoadingTag });
             return node;
         }
@@ -794,13 +1731,26 @@ namespace CIARE
         private TreeNode CreateFileNode(FileInfo file)
         {
             string imageKey = GetFileExplorerImageKey(file.FullName);
-            return new TreeNode(file.Name)
+            var node = new TreeNode(file.Name)
             {
                 Tag = file.FullName,
                 ImageKey = imageKey,
                 SelectedImageKey = imageKey,
                 ToolTipText = file.FullName
             };
+            ApplyStartupProjectNodeStyle(node);
+            return node;
+        }
+
+        private static string GetDirectoryImageKey(string folderPath, bool open)
+        {
+            if (DirectoryContainsSolutionFile(folderPath))
+                return open ? "folder-solution-open" : "folder-solution";
+
+            if (DirectoryContainsProjectFile(folderPath))
+                return open ? "folder-project-open" : "folder-project";
+
+            return open ? "folder-open" : "folder";
         }
 
         private static string GetFileExplorerImageKey(string filePath)
@@ -810,6 +1760,10 @@ namespace CIARE
             {
                 case ".cs":
                     return "cs";
+                case ".csproj":
+                    return "project";
+                case ".sln":
+                    return "solution";
                 case ".txt":
                 case ".md":
                 case ".json":
@@ -836,6 +1790,11 @@ namespace CIARE
         private void fileExplorerTree_AfterCollapse(object sender, TreeViewEventArgs e)
         {
             SaveFileExplorerExpandedState();
+        }
+
+        private void fileExplorerTree_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            RefreshExplorerNuGetPackages();
         }
 
         private void SaveFileExplorerExpandedState()
@@ -891,6 +1850,588 @@ namespace CIARE
             return expandedPaths;
         }
 
+        public void RefreshExplorerNuGetPackages()
+        {
+            if (_fileExplorerNuGetList == null || _fileExplorerNuGetList.IsDisposed)
+                return;
+
+            if (InvokeRequired)
+            {
+                TryBeginInvoke(RefreshExplorerNuGetPackages);
+                return;
+            }
+
+            string projectPath = GetActivePackageProjectPath();
+            int refreshVersion = Interlocked.Increment(ref _fileExplorerNuGetListRefreshVersion);
+            List<ProjectNuGetPackageReference> packages = null;
+            _fileExplorerNuGetList.BeginUpdate();
+            try
+            {
+                _fileExplorerNuGetList.Items.Clear();
+                if (string.IsNullOrEmpty(projectPath))
+                {
+                    _fileExplorerNuGetTitleLabel.Text = "NuGet packages";
+                    toolTip1.SetToolTip(_fileExplorerNuGetTitleLabel, "Open a project folder or select a .csproj file");
+                    AddFileExplorerNuGetPlaceholder("No project selected");
+                    return;
+                }
+
+                _fileExplorerNuGetTitleLabel.Text = $"NuGet: {Path.GetFileName(projectPath)}";
+                toolTip1.SetToolTip(_fileExplorerNuGetTitleLabel, projectPath);
+
+                packages = ProjectNuGetManager.GetPackageReferences(projectPath);
+                if (packages.Count == 0)
+                {
+                    AddFileExplorerNuGetPlaceholder("No PackageReference items");
+                    return;
+                }
+
+                foreach (var package in packages)
+                {
+                    var item = new ListViewItem(new[]
+                    {
+                        package.Name,
+                        package.Version,
+                        "Checking...",
+                        "Checking..."
+                    })
+                    {
+                        Tag = package,
+                        ToolTipText = FormatExplorerNuGetToolTip(package)
+                    };
+                    _fileExplorerNuGetList.Items.Add(item);
+                }
+            }
+            finally
+            {
+                _fileExplorerNuGetList.EndUpdate();
+                ResizeFileExplorerNuGetColumns();
+            }
+
+            if (packages != null && packages.Count > 0)
+                ScheduleExplorerNuGetPackageMetadataRefresh(projectPath, packages, refreshVersion);
+        }
+
+        public void RefreshProjectPackageContext(string projectPath, bool restoreProject,
+            bool showRestoreFailure = true)
+        {
+            if (InvokeRequired)
+            {
+                TryBeginInvoke(() => RefreshProjectPackageContext(projectPath, restoreProject, showRestoreFailure));
+                return;
+            }
+
+            int refreshVersion = Interlocked.Increment(ref _projectPackageRefreshVersion);
+            bool useCompletionReferences = ShouldUseProjectPackageCompletionReferences(projectPath);
+            RefreshExplorerNuGetPackages();
+
+            if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
+            {
+                RealTimeChecker.InvalidateReferenceCache();
+                ClearProjectPackageCompletionReferences();
+                ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+                return;
+            }
+
+            RealTimeChecker.InvalidateReferenceCache();
+            if (!useCompletionReferences)
+                ClearProjectPackageCompletionReferences();
+
+            Task.Run(() =>
+            {
+                ProcessRunResult restoreResult = null;
+                if (restoreProject)
+                    restoreResult = ProjectNuGetManager.RestoreProject(projectPath);
+
+                RealTimeChecker.InvalidateReferenceCache();
+                if (useCompletionReferences &&
+                    refreshVersion == Volatile.Read(ref _projectPackageRefreshVersion))
+                {
+                    RefreshProjectPackageCompletionReferences(projectPath);
+                }
+                return restoreResult;
+            }).ContinueWith(task =>
+            {
+                if (IsDisposed || !IsHandleCreated || refreshVersion != _projectPackageRefreshVersion)
+                    return;
+
+                TryBeginInvoke(() =>
+                {
+                    if (refreshVersion != _projectPackageRefreshVersion)
+                        return;
+
+                    RefreshExplorerNuGetPackages();
+                    ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+
+                    ProcessRunResult restoreResult = null;
+                    if (task.Status == TaskStatus.RanToCompletion)
+                        restoreResult = task.Result;
+                    else if (task.Exception != null)
+                        restoreResult = new ProcessRunResult(-1,
+                            task.Exception.GetBaseException()?.Message ?? task.Exception.Message);
+
+                    if (showRestoreFailure && restoreResult != null && !restoreResult.Success)
+                    {
+                        MessageBox.Show(FormatProjectRestoreFailure(restoreResult.Output),
+                            "NuGet restore", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                });
+            });
+        }
+
+        private bool ShouldUseProjectPackageCompletionReferences(string projectPath)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
+                return false;
+
+            string activeProjectPath = GetCompletionProjectPath(GetActiveEditorFilePath());
+            return !string.IsNullOrEmpty(activeProjectPath) &&
+                string.Equals(NormalizeCompletionPath(activeProjectPath),
+                    NormalizeCompletionPath(projectPath), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void RefreshProjectPackageCompletionReferences(string projectPath)
+        {
+            if (!GlobalVariables.OCodeCompletion || pcRegistry == null || myProjectContent == null)
+                return;
+
+            var referencePaths = GetCompletionCompileReferencePaths(projectPath);
+            var activeReferences = new HashSet<string>(referencePaths, StringComparer.OrdinalIgnoreCase);
+
+            lock (_completionDataLock)
+            {
+                var removedReferences = _projectPackageCompletionContents.Keys
+                    .Where(path => !activeReferences.Contains(path))
+                    .ToList();
+
+                foreach (var referencePath in removedReferences)
+                {
+                    Dom.IProjectContent projectContent = _projectPackageCompletionContents[referencePath];
+                    myProjectContent.ReferencedContents.Remove(projectContent);
+                    projectContent.Dispose();
+                    _projectPackageCompletionContents.Remove(referencePath);
+                }
+
+                foreach (var referencePath in referencePaths)
+                {
+                    if (_projectPackageCompletionContents.ContainsKey(referencePath))
+                        continue;
+
+                    Dom.IProjectContent projectContent = LoadProjectPackageCompletionContent(referencePath);
+                    if (projectContent == null)
+                        continue;
+
+                    _projectPackageCompletionContents[referencePath] = projectContent;
+                    myProjectContent.AddReferencedContent(projectContent);
+                }
+            }
+        }
+
+        private void ClearProjectPackageCompletionReferences()
+        {
+            if (myProjectContent == null)
+                return;
+
+            lock (_completionDataLock)
+            {
+                foreach (var projectContent in _projectPackageCompletionContents.Values)
+                {
+                    myProjectContent.ReferencedContents.Remove(projectContent);
+                    projectContent.Dispose();
+                }
+
+                _projectPackageCompletionContents.Clear();
+            }
+        }
+
+        private Dom.IProjectContent LoadProjectPackageCompletionContent(string referencePath)
+        {
+            try
+            {
+                var assembly = System.Reflection.Assembly.LoadFile(referencePath);
+                var projectContent = new Dom.ReflectionProjectContent(assembly, pcRegistry);
+                projectContent.InitializeReferences();
+                return projectContent;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string FormatProjectRestoreFailure(string restoreOutput)
+        {
+            string output = (restoreOutput ?? string.Empty).Trim();
+            if (output.Length > 1800)
+                output = output.Substring(0, 1800) + Environment.NewLine + "...";
+
+            return string.IsNullOrWhiteSpace(output)
+                ? "NuGet restore failed. Project references may be stale until restore succeeds."
+                : "NuGet restore failed. Project references may be stale until restore succeeds." +
+                  Environment.NewLine + Environment.NewLine + output;
+        }
+
+        private void ScheduleExplorerNuGetPackageMetadataRefresh(string projectPath,
+            List<ProjectNuGetPackageReference> packages, int refreshVersion)
+        {
+            var usageSnapshot = CreateExplorerNuGetPackageSnapshot(packages);
+            Task.Run(() =>
+            {
+                try
+                {
+                    ProjectNuGetManager.PopulateUnusedPackageStatus(projectPath, usageSnapshot);
+                }
+                catch
+                {
+                    foreach (var package in usageSnapshot)
+                        package.UnusedCheckCompleted = true;
+                }
+
+                return usageSnapshot;
+            }).ContinueWith(task =>
+            {
+                if (IsDisposed ||
+                    !IsHandleCreated ||
+                    refreshVersion != _fileExplorerNuGetListRefreshVersion)
+                {
+                    return;
+                }
+
+                var result = task.Status == TaskStatus.RanToCompletion ? task.Result : usageSnapshot;
+                TryBeginInvoke(() => ApplyExplorerNuGetPackageMetadata(projectPath, result,
+                    refreshVersion));
+            });
+
+            var updateSnapshot = CreateExplorerNuGetPackageSnapshot(packages);
+            Task.Run(() =>
+            {
+                ProjectNuGetManager.PopulateLatestPackageVersions(updateSnapshot);
+                return updateSnapshot;
+            }).ContinueWith(task =>
+            {
+                if (task.Status != TaskStatus.RanToCompletion ||
+                    IsDisposed ||
+                    !IsHandleCreated ||
+                    refreshVersion != _fileExplorerNuGetListRefreshVersion)
+                {
+                    return;
+                }
+
+                TryBeginInvoke(() => ApplyExplorerNuGetPackageUpdateMetadata(projectPath, task.Result,
+                    refreshVersion));
+            });
+        }
+
+        private static List<ProjectNuGetPackageReference> CreateExplorerNuGetPackageSnapshot(
+            IEnumerable<ProjectNuGetPackageReference> packages)
+        {
+            return packages
+                .Select(package => new ProjectNuGetPackageReference
+                {
+                    Name = package.Name,
+                    Version = package.Version,
+                    ProjectPath = package.ProjectPath
+                })
+                .ToList();
+        }
+
+        private void ApplyExplorerNuGetPackageMetadata(string projectPath,
+            List<ProjectNuGetPackageReference> packages, int refreshVersion)
+        {
+            if (refreshVersion != _fileExplorerNuGetListRefreshVersion ||
+                !string.Equals(GetActivePackageProjectPath(), projectPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var metadataByName = packages
+                .GroupBy(package => package.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+            _fileExplorerNuGetList.BeginUpdate();
+            try
+            {
+                foreach (ListViewItem item in _fileExplorerNuGetList.Items)
+                {
+                    if (!(item.Tag is ProjectNuGetPackageReference package) ||
+                        !metadataByName.TryGetValue(package.Name, out var metadata))
+                    {
+                        continue;
+                    }
+
+                    package.UnusedCheckCompleted = metadata.UnusedCheckCompleted;
+                    package.IsUnused = metadata.IsUnused;
+
+                    EnsureExplorerNuGetSubItemCount(item);
+                    item.SubItems[2].Text = FormatExplorerNuGetUpdateText(package);
+                    item.SubItems[3].Text = FormatExplorerNuGetStatusText(package);
+                    item.ToolTipText = FormatExplorerNuGetToolTip(package);
+                    item.ForeColor = package.UnusedCheckCompleted && package.IsUnused
+                        ? (GlobalVariables.darkColor ? Color.FromArgb(245, 174, 96) : Color.DarkOrange)
+                        : _fileExplorerNuGetList.ForeColor;
+                }
+            }
+            finally
+            {
+                _fileExplorerNuGetList.EndUpdate();
+                ResizeFileExplorerNuGetColumns();
+            }
+        }
+
+        private void ApplyExplorerNuGetPackageUpdateMetadata(string projectPath,
+            List<ProjectNuGetPackageReference> packages, int refreshVersion)
+        {
+            if (refreshVersion != _fileExplorerNuGetListRefreshVersion ||
+                !string.Equals(GetActivePackageProjectPath(), projectPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var metadataByName = packages
+                .GroupBy(package => package.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+            _fileExplorerNuGetList.BeginUpdate();
+            try
+            {
+                foreach (ListViewItem item in _fileExplorerNuGetList.Items)
+                {
+                    if (!(item.Tag is ProjectNuGetPackageReference package) ||
+                        !metadataByName.TryGetValue(package.Name, out var metadata))
+                    {
+                        continue;
+                    }
+
+                    package.LatestVersion = metadata.LatestVersion;
+                    package.HasUpdate = metadata.HasUpdate;
+
+                    EnsureExplorerNuGetSubItemCount(item);
+                    item.SubItems[2].Text = FormatExplorerNuGetUpdateText(package);
+                    item.ToolTipText = FormatExplorerNuGetToolTip(package);
+                }
+            }
+            finally
+            {
+                _fileExplorerNuGetList.EndUpdate();
+                ResizeFileExplorerNuGetColumns();
+            }
+        }
+
+        private static void EnsureExplorerNuGetSubItemCount(ListViewItem item)
+        {
+            while (item.SubItems.Count < 4)
+                item.SubItems.Add(string.Empty);
+        }
+
+        private static string FormatExplorerNuGetUpdateText(ProjectNuGetPackageReference package)
+        {
+            if (package.HasUpdate)
+                return package.LatestVersion;
+
+            return string.IsNullOrWhiteSpace(package.LatestVersion) ? "Unknown" : "Current";
+        }
+
+        private static string FormatExplorerNuGetStatusText(ProjectNuGetPackageReference package)
+        {
+            if (!package.UnusedCheckCompleted)
+                return "Checking...";
+
+            return package.IsUnused ? "Unused" : "Used";
+        }
+
+        private static string FormatExplorerNuGetToolTip(ProjectNuGetPackageReference package)
+        {
+            string updateStatus = package.HasUpdate
+                ? $"Update available: {package.LatestVersion}"
+                : (!string.IsNullOrWhiteSpace(package.LatestVersion) ? "No update available" : "Update unknown");
+            string usageStatus = package.UnusedCheckCompleted
+                ? (package.IsUnused ? "Marked unused by source scan" : "Used by source scan")
+                : "Usage unknown";
+
+            return $"{package.Name} {package.Version}{Environment.NewLine}{updateStatus}{Environment.NewLine}{usageStatus}";
+        }
+
+        private void AddFileExplorerNuGetPlaceholder(string text)
+        {
+            var item = new ListViewItem(new[] { text, string.Empty, string.Empty, string.Empty })
+            {
+                ForeColor = GlobalVariables.darkColor ? Color.FromArgb(150, 170, 165) : SystemColors.GrayText
+            };
+            _fileExplorerNuGetList.Items.Add(item);
+        }
+
+        private void ResizeFileExplorerNuGetColumns()
+        {
+            if (_fileExplorerNuGetList == null ||
+                _fileExplorerNuGetList.IsDisposed ||
+                _fileExplorerNuGetList.Columns.Count < 4)
+            {
+                return;
+            }
+
+            int availableWidth = _fileExplorerNuGetList.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 4;
+            if (availableWidth <= 0)
+                return;
+
+            int versionWidth = Math.Max(64, Math.Min(86, availableWidth / 5));
+            int updateWidth = Math.Max(72, Math.Min(96, availableWidth / 4));
+            int statusWidth = Math.Max(62, Math.Min(76, availableWidth / 5));
+            int packageWidth = Math.Max(90, availableWidth - versionWidth - updateWidth - statusWidth);
+
+            _fileExplorerNuGetVersionColumn.Width = versionWidth;
+            _fileExplorerNuGetUpdateColumn.Width = updateWidth;
+            _fileExplorerNuGetStatusColumn.Width = statusWidth;
+            _fileExplorerNuGetPackageColumn.Width = packageWidth;
+        }
+
+        private void ScheduleExplorerNuGetRefresh()
+        {
+            if (IsDisposed || !IsHandleCreated)
+                return;
+
+            TryBeginInvoke(() => ScheduleProjectPackageContextRefresh(GetActiveEditorPackageProjectPath(),
+                restoreProject: false, showRestoreFailure: false));
+        }
+
+        private void ScheduleProjectPackageContextRefresh(string projectPath, bool restoreProject,
+            bool showRestoreFailure = true)
+        {
+            if (IsDisposed || !IsHandleCreated)
+                return;
+
+            if (InvokeRequired)
+            {
+                TryBeginInvoke(() => ScheduleProjectPackageContextRefresh(projectPath, restoreProject,
+                    showRestoreFailure));
+                return;
+            }
+
+            _pendingProjectPackageRefreshPath = projectPath;
+            _pendingProjectPackageRestore = _pendingProjectPackageRestore || restoreProject;
+            _pendingProjectPackageShowRestoreFailure =
+                _pendingProjectPackageShowRestoreFailure || showRestoreFailure;
+
+            if (_fileExplorerNuGetRefreshTimer == null)
+            {
+                _fileExplorerNuGetRefreshTimer = new System.Windows.Forms.Timer { Interval = 300 };
+                _fileExplorerNuGetRefreshTimer.Tick += OnFileExplorerNuGetRefreshTimer;
+            }
+
+            _fileExplorerNuGetRefreshTimer.Stop();
+            _fileExplorerNuGetRefreshTimer.Start();
+        }
+
+        private void OnFileExplorerNuGetRefreshTimer(object sender, EventArgs e)
+        {
+            _fileExplorerNuGetRefreshTimer?.Stop();
+
+            string projectPath = _pendingProjectPackageRefreshPath;
+            bool restoreProject = _pendingProjectPackageRestore;
+            bool showRestoreFailure = _pendingProjectPackageShowRestoreFailure;
+
+            _pendingProjectPackageRefreshPath = string.Empty;
+            _pendingProjectPackageRestore = false;
+            _pendingProjectPackageShowRestoreFailure = false;
+
+            RefreshProjectPackageContext(projectPath, restoreProject, showRestoreFailure);
+        }
+
+        private void TryBeginInvoke(Action action)
+        {
+            if (action == null || IsDisposed || !IsHandleCreated)
+                return;
+
+            try
+            {
+                if (InvokeRequired)
+                    BeginInvoke(action);
+                else
+                    action();
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
+        private static bool ShouldRefreshExplorerNuGetPackages(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            return string.Equals(Path.GetExtension(path), ".csproj", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(Path.GetFileName(path), "Directory.Packages.props", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(Path.GetFileName(path), "project.assets.json", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void fileExplorerNuGetList_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right || _fileExplorerNuGetList == null)
+                return;
+
+            ListViewHitTestInfo hit = _fileExplorerNuGetList.HitTest(e.Location);
+            if (!(hit.Item?.Tag is ProjectNuGetPackageReference package))
+                return;
+
+            hit.Item.Selected = true;
+            _fileExplorerNuGetUpdateMenuItem.Tag = package;
+            _fileExplorerNuGetUpdateMenuItem.Enabled = package.HasUpdate &&
+                !string.IsNullOrWhiteSpace(package.LatestVersion);
+            _fileExplorerNuGetUpdateMenuItem.Text = _fileExplorerNuGetUpdateMenuItem.Enabled
+                ? $"Update {package.Name} to {package.LatestVersion}"
+                : "No update available";
+
+            _fileExplorerNuGetRemoveMenuItem.Tag = package;
+            _fileExplorerNuGetRemoveMenuItem.Text = $"Remove {package.Name} from Project";
+            _fileExplorerNuGetContextMenu.Show(_fileExplorerNuGetList, e.Location);
+        }
+
+        private void fileExplorerNuGetUpdateMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!(_fileExplorerNuGetUpdateMenuItem.Tag is ProjectNuGetPackageReference package) ||
+                !package.HasUpdate ||
+                string.IsNullOrWhiteSpace(package.LatestVersion))
+            {
+                return;
+            }
+
+            DialogResult dialog = MessageBox.Show(
+                $"Update NuGet package {package.Name} from {package.Version} to {package.LatestVersion}?",
+                "CIARE", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (dialog != DialogResult.Yes)
+                return;
+
+            if (!ProjectNuGetManager.UpdatePackageReference(package.ProjectPath, package.Name,
+                    package.LatestVersion, out string message))
+            {
+                MessageBox.Show(message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            RefreshProjectPackageContext(package.ProjectPath, restoreProject: true);
+            MessageBox.Show(message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void fileExplorerNuGetRemoveMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!(_fileExplorerNuGetRemoveMenuItem.Tag is ProjectNuGetPackageReference package))
+                return;
+
+            DialogResult dialog = MessageBox.Show(
+                $"Remove NuGet package {package.Name} from {Path.GetFileName(package.ProjectPath)}?",
+                "CIARE", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (dialog != DialogResult.Yes)
+                return;
+
+            if (!ProjectNuGetManager.RemovePackageReference(package.ProjectPath, package.Name, out string message))
+            {
+                MessageBox.Show(message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            RefreshProjectPackageContext(package.ProjectPath, restoreProject: true);
+            MessageBox.Show(message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
         private void PopulateDirectoryNode(TreeNode node)
         {
             string folderPath = node.Tag as string;
@@ -905,7 +2446,7 @@ namespace CIARE
                     .Select(path => new DirectoryInfo(path))
                     .OrderBy(directory => directory.Name, StringComparer.OrdinalIgnoreCase))
                 {
-                    if (ShouldHideExplorerItem(directory.Attributes))
+                    if (ShouldHideExplorerDirectory(directory))
                         continue;
                     node.Nodes.Add(CreateDirectoryNode(directory));
                 }
@@ -929,6 +2470,1165 @@ namespace CIARE
         {
             return (attributes & FileAttributes.Hidden) == FileAttributes.Hidden ||
                    (attributes & FileAttributes.System) == FileAttributes.System;
+        }
+
+        private static bool ShouldHideExplorerDirectory(DirectoryInfo directory)
+        {
+            return directory == null ||
+                string.Equals(directory.Name, ".ciare", StringComparison.OrdinalIgnoreCase) ||
+                ShouldHideExplorerItem(directory.Attributes);
+        }
+
+        private void fileExplorerTree_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right)
+                return;
+
+            TreeNode node = _fileExplorerTree.GetNodeAt(e.Location);
+            if (node == null)
+            {
+                _fileExplorerContextNode = null;
+                return;
+            }
+
+            _fileExplorerTree.SelectedNode = node;
+            _fileExplorerContextNode = node;
+        }
+
+        private void fileExplorerContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            TreeNode node = _fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode;
+            string path = node?.Tag as string;
+            if (string.IsNullOrWhiteSpace(path) || Equals(path, FileExplorerLoadingTag))
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            bool isDirectory = Directory.Exists(path);
+            bool isFile = File.Exists(path);
+            if (!isDirectory && !isFile)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            string solutionPath = GetSolutionPathFromExplorerPath(path);
+            string projectPath = GetProjectPathFromExplorerPath(path);
+            bool hasSolutionContext = !string.IsNullOrEmpty(solutionPath);
+            bool canAddProjectToSolution = hasSolutionContext &&
+                IsAddProjectToSolutionContext(path, solutionPath);
+            bool hasProjectContext = !string.IsNullOrEmpty(projectPath);
+            bool hasProjectReferenceCandidates = hasProjectContext &&
+                ProjectReferenceManager.GetReferenceableProjects(projectPath, solutionPath,
+                    _fileExplorerRootPath).Count > 0;
+            bool hasProjectReferences = hasProjectContext &&
+                ProjectReferenceManager.GetProjectReferences(projectPath).Count > 0;
+
+            _fileExplorerAddProjectMenuItem.Visible = hasSolutionContext;
+            _fileExplorerAddProjectMenuItem.Enabled = canAddProjectToSolution;
+            _fileExplorerAddProjectReferenceMenuItem.Visible = hasProjectContext;
+            _fileExplorerAddProjectReferenceMenuItem.Enabled = hasProjectReferenceCandidates;
+            _fileExplorerRemoveProjectReferenceMenuItem.Visible = hasProjectContext;
+            _fileExplorerRemoveProjectReferenceMenuItem.Enabled = hasProjectReferences;
+            _fileExplorerSetStartupProjectMenuItem.Visible = hasProjectContext;
+            _fileExplorerSetStartupProjectMenuItem.Enabled = hasProjectContext;
+            _fileExplorerSetStartupProjectMenuItem.Checked = hasProjectContext &&
+                IsStartupProjectPath(projectPath);
+            _fileExplorerProjectSeparator.Visible = hasSolutionContext || hasProjectContext;
+            _fileExplorerNewFileMenuItem.Visible = isDirectory;
+            _fileExplorerNewFolderMenuItem.Visible = isDirectory;
+            _fileExplorerContextSeparator.Visible = isDirectory;
+            _fileExplorerRenameMenuItem.Visible = isDirectory || isFile;
+            _fileExplorerRenameMenuItem.Enabled = !IsExplorerRootPath(path);
+            _fileExplorerDeleteMenuItem.Visible = isDirectory || isFile;
+            _fileExplorerDeleteMenuItem.Enabled = !IsExplorerRootPath(path);
+        }
+
+        private void fileExplorerAddProjectMenuItem_Click(object sender, EventArgs e)
+        {
+            string contextPath = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
+            string solutionPath = GetSolutionPathFromExplorerPath(contextPath);
+            if (string.IsNullOrEmpty(solutionPath))
+                return;
+
+            if (!IsAddProjectToSolutionContext(contextPath, solutionPath))
+                return;
+
+            using (var dialog = new NewProject(solutionPath))
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return;
+
+                NewProjectResult project = dialog.CreatedProject;
+                if (project == null)
+                    return;
+
+                _fileExplorerSolutionPath = solutionPath;
+                _fileExplorerStartupProjectPath =
+                    SolutionStartupProjectStore.Ensure(solutionPath, project.ProjectFilePath);
+
+                string solutionDirectory = Path.GetDirectoryName(solutionPath);
+                string projectDirectory = Path.GetDirectoryName(project.ProjectFilePath);
+                if (!string.IsNullOrEmpty(solutionDirectory))
+                    RefreshAndExpandExplorerFolder(solutionDirectory);
+                if (!string.IsNullOrEmpty(projectDirectory))
+                    RefreshAndExpandExplorerFolder(projectDirectory);
+
+                SelectExplorerPath(project.ProjectFilePath);
+                UpdateFileExplorerStartupProjectHighlight();
+                if (File.Exists(project.StarterFilePath))
+                    OpenFileFromExplorer(project.StarterFilePath);
+
+                InvalidateCompletionWorkspace();
+                RealTimeChecker.InvalidateReferenceCache();
+                RefreshProjectPackageContext(project.ProjectFilePath, restoreProject: true,
+                    showRestoreFailure: false);
+                ShowProjectStatus("Added project to solution", project.ProjectFilePath, solutionPath);
+            }
+        }
+
+        private void fileExplorerAddProjectReferenceMenuItem_Click(object sender, EventArgs e)
+        {
+            string contextPath = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
+            string projectPath = GetProjectPathFromExplorerPath(contextPath);
+            if (!IsProjectFilePath(projectPath))
+                return;
+
+            string solutionPath = GetSolutionPathFromExplorerPath(contextPath);
+            var candidates = ProjectReferenceManager.GetReferenceableProjects(projectPath, solutionPath,
+                _fileExplorerRootPath);
+            if (candidates.Count == 0)
+            {
+                MessageBox.Show("No available project references were found in this solution.",
+                    "Add Project Reference", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string referencedProjectPath = ShowProjectReferencePicker(projectPath, candidates);
+            if (string.IsNullOrEmpty(referencedProjectPath))
+                return;
+
+            if (!ProjectReferenceManager.AddProjectReference(projectPath, referencedProjectPath, out string message))
+            {
+                MessageBox.Show(message, "Add Project Reference", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string projectDirectory = Path.GetDirectoryName(projectPath);
+            if (!string.IsNullOrEmpty(projectDirectory))
+                RefreshAndExpandExplorerFolder(projectDirectory);
+
+            InvalidateCompletionWorkspace();
+            RealTimeChecker.InvalidateReferenceCache();
+            RefreshProjectPackageContext(projectPath, restoreProject: false, showRestoreFailure: false);
+            ShowProjectStatus("Added project reference", projectPath, solutionPath, referencedProjectPath);
+        }
+
+        private void fileExplorerRemoveProjectReferenceMenuItem_Click(object sender, EventArgs e)
+        {
+            string contextPath = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
+            string projectPath = GetProjectPathFromExplorerPath(contextPath);
+            if (!IsProjectFilePath(projectPath))
+                return;
+
+            var references = ProjectReferenceManager.GetProjectReferences(projectPath);
+            if (references.Count == 0)
+            {
+                MessageBox.Show("No project references were found in this project.",
+                    "Remove Project Reference", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string referencedProjectPath = ShowProjectReferencePicker(projectPath, references,
+                "Remove Project Reference", "Remove");
+            if (string.IsNullOrEmpty(referencedProjectPath))
+                return;
+
+            DialogResult dialog = MessageBox.Show(
+                $"Remove project reference {Path.GetFileNameWithoutExtension(referencedProjectPath)} from {Path.GetFileName(projectPath)}?",
+                "Remove Project Reference", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (dialog != DialogResult.Yes)
+                return;
+
+            if (!ProjectReferenceManager.RemoveProjectReference(projectPath, referencedProjectPath, out string message))
+            {
+                MessageBox.Show(message, "Remove Project Reference", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string projectDirectory = Path.GetDirectoryName(projectPath);
+            if (!string.IsNullOrEmpty(projectDirectory))
+                RefreshAndExpandExplorerFolder(projectDirectory);
+
+            InvalidateCompletionWorkspace();
+            RealTimeChecker.InvalidateReferenceCache();
+            RefreshProjectPackageContext(projectPath, restoreProject: false, showRestoreFailure: false);
+            ShowProjectStatus("Removed project reference", projectPath, GetSolutionPathFromExplorerPath(contextPath),
+                referencedProjectPath);
+        }
+
+        private string ShowProjectReferencePicker(string projectPath, IList<string> candidateProjects,
+            string title = "Add Project Reference", string actionText = "Add")
+        {
+            using (var dialog = new Form())
+            {
+                dialog.Text = title;
+                dialog.StartPosition = FormStartPosition.CenterParent;
+                dialog.ClientSize = new Size(560, 340);
+                dialog.MinimumSize = new Size(460, 280);
+                dialog.MinimizeBox = false;
+                dialog.MaximizeBox = false;
+                dialog.ShowInTaskbar = false;
+                dialog.Font = SystemFonts.MessageBoxFont;
+
+                var layout = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    ColumnCount = 1,
+                    RowCount = 3,
+                    Padding = new Padding(10)
+                };
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+                layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+
+                var targetLabel = new Label
+                {
+                    AutoEllipsis = true,
+                    Dock = DockStyle.Fill,
+                    Text = "Target: " + Path.GetFileNameWithoutExtension(projectPath),
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+
+                var projectList = new ListBox
+                {
+                    Dock = DockStyle.Fill,
+                    IntegralHeight = false,
+                    HorizontalScrollbar = true
+                };
+                foreach (string candidate in candidateProjects)
+                    projectList.Items.Add(new ProjectReferenceListItem(candidate, _fileExplorerRootPath));
+                if (projectList.Items.Count > 0)
+                    projectList.SelectedIndex = 0;
+
+                var buttons = new FlowLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    FlowDirection = FlowDirection.RightToLeft,
+                    Padding = new Padding(0, 8, 0, 0)
+                };
+                var addButton = new Button
+                {
+                    Text = actionText,
+                    Width = 92,
+                    Height = 28,
+                    DialogResult = DialogResult.OK
+                };
+                var cancelButton = new Button
+                {
+                    Text = "Cancel",
+                    Width = 92,
+                    Height = 28,
+                    DialogResult = DialogResult.Cancel
+                };
+                buttons.Controls.Add(addButton);
+                buttons.Controls.Add(cancelButton);
+
+                layout.Controls.Add(targetLabel, 0, 0);
+                layout.Controls.Add(projectList, 0, 1);
+                layout.Controls.Add(buttons, 0, 2);
+                dialog.Controls.Add(layout);
+                dialog.AcceptButton = addButton;
+                dialog.CancelButton = cancelButton;
+                projectList.DoubleClick += (_, _) =>
+                {
+                    if (projectList.SelectedItem != null)
+                        dialog.DialogResult = DialogResult.OK;
+                };
+
+                FrmColorMod.ToogleColorMode(dialog, GlobalVariables.darkColor);
+
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return string.Empty;
+
+                return (projectList.SelectedItem as ProjectReferenceListItem)?.ProjectPath ?? string.Empty;
+            }
+        }
+
+        private sealed class ProjectReferenceListItem
+        {
+            private readonly string _workspaceFolder;
+
+            public ProjectReferenceListItem(string projectPath, string workspaceFolder)
+            {
+                ProjectPath = projectPath;
+                _workspaceFolder = workspaceFolder;
+            }
+
+            public string ProjectPath { get; }
+
+            public override string ToString()
+            {
+                string name = Path.GetFileNameWithoutExtension(ProjectPath);
+                string displayPath = ProjectPath;
+                try
+                {
+                    if (Directory.Exists(_workspaceFolder))
+                        displayPath = Path.GetRelativePath(_workspaceFolder, ProjectPath);
+                }
+                catch
+                {
+                }
+
+                return $"{name} ({displayPath})";
+            }
+        }
+
+        private void fileExplorerSetStartupProjectMenuItem_Click(object sender, EventArgs e)
+        {
+            string projectPath = GetProjectPathFromExplorerPath(
+                (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string);
+            if (!IsProjectFilePath(projectPath))
+                return;
+
+            _fileExplorerStartupProjectPath = projectPath;
+            SaveStartupProjectPath();
+            UpdateFileExplorerStartupProjectHighlight();
+            ShowProjectStatus("Startup project set", projectPath, FindNearestBuildFile(
+                Path.GetDirectoryName(projectPath), _fileExplorerRootPath, "*.sln"));
+        }
+
+        private void fileExplorerNewFileMenuItem_Click(object sender, EventArgs e)
+        {
+            string folderPath = GetExplorerContextFolderPath();
+            if (string.IsNullOrEmpty(folderPath))
+                return;
+
+            string fileName = PromptForExplorerName("New C# File", "File name:", GetUniqueExplorerName(folderPath, "Class1.cs"));
+            if (string.IsNullOrWhiteSpace(fileName))
+                return;
+
+            if (!TryNormalizeExplorerFileName(fileName, ".cs", out fileName))
+                return;
+
+            string filePath = Path.Combine(folderPath, fileName);
+            if (File.Exists(filePath) || Directory.Exists(filePath))
+            {
+                MessageBox.Show("An item with that name already exists.", "Explorer",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                File.WriteAllText(filePath, BuildNewCSharpFileContent(fileName));
+                RefreshAndExpandExplorerFolder(folderPath);
+                SelectExplorerPath(filePath);
+                OpenFileFromExplorer(filePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "New C# File", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void fileExplorerNewFolderMenuItem_Click(object sender, EventArgs e)
+        {
+            string folderPath = GetExplorerContextFolderPath();
+            if (string.IsNullOrEmpty(folderPath))
+                return;
+
+            string folderName = PromptForExplorerName("New Folder", "Folder name:", GetUniqueExplorerName(folderPath, "New Folder"));
+            if (string.IsNullOrWhiteSpace(folderName))
+                return;
+
+            if (!TryValidateExplorerItemName(folderName, out folderName))
+                return;
+
+            string newFolderPath = Path.Combine(folderPath, folderName);
+            if (Directory.Exists(newFolderPath) || File.Exists(newFolderPath))
+            {
+                MessageBox.Show("An item with that name already exists.", "Explorer",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(newFolderPath);
+                RefreshAndExpandExplorerFolder(folderPath);
+                SelectExplorerPath(newFolderPath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "New Folder", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void fileExplorerRenameMenuItem_Click(object sender, EventArgs e)
+        {
+            TreeNode node = _fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode;
+            string path = node?.Tag as string;
+            if (string.IsNullOrWhiteSpace(path) || IsExplorerRootPath(path))
+                return;
+
+            bool isDirectory = Directory.Exists(path);
+            bool isFile = File.Exists(path);
+            if (!isDirectory && !isFile)
+                return;
+
+            if (!IsPathInsideExplorerRoot(path))
+            {
+                MessageBox.Show("This item is outside the opened explorer folder.", "Rename",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string sourcePath = isDirectory
+                ? path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                : path;
+            string currentName = Path.GetFileName(sourcePath);
+            string newName = PromptForExplorerName("Rename", "Name:", currentName);
+            if (string.IsNullOrWhiteSpace(newName))
+                return;
+
+            if (!TryValidateExplorerItemName(newName, out newName))
+                return;
+
+            if (string.Equals(currentName, newName, StringComparison.Ordinal))
+                return;
+
+            string parentPath = Path.GetDirectoryName(sourcePath);
+            if (string.IsNullOrWhiteSpace(parentPath))
+                return;
+
+            string newPath = Path.Combine(parentPath, newName);
+            bool samePathIgnoreCase = string.Equals(NormalizeCompletionPath(path),
+                NormalizeCompletionPath(newPath), StringComparison.OrdinalIgnoreCase);
+            if (!samePathIgnoreCase && (File.Exists(newPath) || Directory.Exists(newPath)))
+            {
+                MessageBox.Show("An item with that name already exists.", "Rename",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                MoveExplorerItem(path, newPath, isDirectory);
+                UpdateLoadedSolutionAfterExplorerRename(path, newPath, isDirectory);
+                UpdateStartupProjectAfterExplorerRename(path, newPath, isDirectory);
+                UpdateProjectReferencesAfterExplorerRename(path, newPath, isDirectory);
+                UpdateOpenTabsAfterExplorerRename(path, newPath, isDirectory);
+
+                RefreshAndExpandExplorerFolder(parentPath);
+                SelectExplorerPath(newPath);
+                UpdateFileExplorerStartupProjectHighlight();
+
+                InvalidateCompletionWorkspace();
+                RealTimeChecker.InvalidateReferenceCache();
+                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                    showRestoreFailure: false);
+                ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Rename", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void fileExplorerDeleteMenuItem_Click(object sender, EventArgs e)
+        {
+            TreeNode node = _fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode;
+            string path = node?.Tag as string;
+            if (string.IsNullOrWhiteSpace(path) || IsExplorerRootPath(path))
+                return;
+
+            bool isDirectory = Directory.Exists(path);
+            bool isFile = File.Exists(path);
+            if (!isDirectory && !isFile)
+                return;
+
+            if (!IsPathInsideExplorerRoot(path))
+            {
+                MessageBox.Show("This item is outside the opened explorer folder.", "Delete",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string itemType = isDirectory ? "folder" : "file";
+            DialogResult dialog = MessageBox.Show(
+                $"Delete {itemType} '{Path.GetFileName(path)}'?",
+                "Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (dialog != DialogResult.Yes)
+                return;
+
+            string parentPath = Path.GetDirectoryName(path);
+            List<string> deletedProjectPaths = GetExplorerDeletedProjectPaths(path, isDirectory);
+            try
+            {
+                if (isDirectory)
+                {
+                    VBFileSystem.DeleteDirectory(path, VBUIOption.OnlyErrorDialogs,
+                        VBRecycleOption.SendToRecycleBin);
+                }
+                else
+                {
+                    VBFileSystem.DeleteFile(path, VBUIOption.OnlyErrorDialogs,
+                        VBRecycleOption.SendToRecycleBin);
+                }
+
+                RemoveProjectsFromWorkspaceSolutions(deletedProjectPaths, _fileExplorerRootPath);
+                ClearStartupProjectAfterExplorerDelete(path, isDirectory);
+                if (!string.IsNullOrEmpty(parentPath))
+                    RefreshExplorerNodeForPath(parentPath);
+                UpdateFileExplorerStartupProjectHighlight();
+                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                    showRestoreFailure: false);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Delete", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void MoveExplorerItem(string path, string newPath, bool isDirectory)
+        {
+            string normalizedPath = NormalizeCompletionPath(path);
+            string normalizedNewPath = NormalizeCompletionPath(newPath);
+            bool isCaseOnlyRename = string.Equals(normalizedPath, normalizedNewPath, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(normalizedPath, normalizedNewPath, StringComparison.Ordinal);
+
+            if (!isCaseOnlyRename)
+            {
+                if (isDirectory)
+                    Directory.Move(path, newPath);
+                else
+                    File.Move(path, newPath);
+                return;
+            }
+
+            string parentPath = Path.GetDirectoryName(normalizedPath);
+            if (string.IsNullOrEmpty(parentPath))
+                return;
+
+            string tempPath;
+            do
+            {
+                tempPath = Path.Combine(parentPath, ".ciare-rename-" + Guid.NewGuid().ToString("N"));
+            }
+            while (File.Exists(tempPath) || Directory.Exists(tempPath));
+
+            if (isDirectory)
+            {
+                Directory.Move(path, tempPath);
+                Directory.Move(tempPath, newPath);
+            }
+            else
+            {
+                File.Move(path, tempPath);
+                File.Move(tempPath, newPath);
+            }
+        }
+
+        private void UpdateOpenTabsAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        {
+            if (EditorTabControl == null)
+                return;
+
+            bool selectedTabChanged = false;
+            for (int i = 0; i < EditorTabControl.TabPages.Count; i++)
+            {
+                TabPage tabPage = EditorTabControl.TabPages[i];
+                string tabPath = tabPage.ToolTipText?.Trim();
+                string renamedPath = GetRenamedExplorerPath(tabPath, oldPath, newPath, renamedDirectory);
+                if (string.IsNullOrEmpty(renamedPath))
+                    continue;
+
+                tabPage.ToolTipText = renamedPath;
+                tabPage.Text = $"{Path.GetFileName(renamedPath)}               ";
+
+                if (GlobalVariables.OStartUp)
+                {
+                    TabControllerManage.DeleteFileSize(EditorTabControl, tabPath, GlobalVariables.userProfileDirectory,
+                        GlobalVariables.tabsFilePath, i.ToString());
+                    TabControllerManage.StoreFileMD5(renamedPath, GlobalVariables.userProfileDirectory,
+                        GlobalVariables.tabsFilePath, i);
+                    TabControllerManage.StoreDeleteTabs(tabPath, renamedPath, GlobalVariables.userProfileDirectory,
+                        GlobalVariables.tabsFilePathAll, i);
+                }
+
+                if (ReferenceEquals(tabPage, EditorTabControl.SelectedTab))
+                    selectedTabChanged = true;
+            }
+
+            if (selectedTabChanged)
+                UpdateActiveEditorPathFromSelectedTab();
+        }
+
+        private void UpdateActiveEditorPathFromSelectedTab()
+        {
+            try
+            {
+                string filePath = EditorTabControl.SelectedTab?.ToolTipText?.Trim();
+                if (string.IsNullOrWhiteSpace(filePath))
+                    return;
+
+                GlobalVariables.openedFilePath = filePath;
+                GlobalVariables.openedFileName = Path.GetFileName(filePath);
+                if (File.Exists(filePath))
+                    FileManage.SetFileMD5(filePath);
+
+                if (!string.IsNullOrEmpty(GlobalVariables.openedFileName))
+                    Text = $"{GlobalVariables.openedFileName} : {FileManage.GetFilePath(filePath)} - CIARE {GlobalVariables.versionName}";
+            }
+            catch
+            {
+            }
+        }
+
+        private void UpdateProjectReferencesAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        {
+            if (!Directory.Exists(_fileExplorerRootPath))
+                return;
+
+            try
+            {
+                foreach (string projectPath in EnumerateBuildFiles(_fileExplorerRootPath, "*.csproj"))
+                    UpdateProjectFileItemReferences(projectPath, oldPath, newPath, renamedDirectory);
+
+                var projectPathPairs = GetRenamedProjectPathPairs(oldPath, newPath, renamedDirectory).ToList();
+                if (projectPathPairs.Count == 0)
+                    return;
+
+                foreach (string solutionPath in EnumerateBuildFiles(_fileExplorerRootPath, "*.sln"))
+                    UpdateSolutionProjectReferences(solutionPath, projectPathPairs);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void UpdateProjectFileItemReferences(string projectPath, string oldPath, string newPath,
+            bool renamedDirectory)
+        {
+            try
+            {
+                string projectDirectory = Path.GetDirectoryName(projectPath);
+                if (string.IsNullOrEmpty(projectDirectory))
+                    return;
+
+                XDocument document = XDocument.Load(projectPath, LoadOptions.PreserveWhitespace);
+                bool changed = false;
+                foreach (XAttribute attribute in document.Descendants()
+                    .SelectMany(element => element.Attributes())
+                    .Where(IsProjectItemPathAttribute)
+                    .ToList())
+                {
+                    string value = attribute.Value;
+                    if (!TryGetRenamedProjectItemReference(projectDirectory, value, oldPath, newPath,
+                            renamedDirectory, out string updatedValue))
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(value, updatedValue, StringComparison.Ordinal))
+                        continue;
+
+                    attribute.Value = updatedValue;
+                    changed = true;
+                }
+
+                if (changed)
+                    document.Save(projectPath, SaveOptions.DisableFormatting);
+            }
+            catch
+            {
+            }
+        }
+
+        private static bool IsProjectItemPathAttribute(XAttribute attribute)
+        {
+            string attributeName = attribute.Name.LocalName;
+            if (!string.Equals(attributeName, "Include", StringComparison.Ordinal) &&
+                !string.Equals(attributeName, "Update", StringComparison.Ordinal) &&
+                !string.Equals(attributeName, "Remove", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            switch (attribute.Parent?.Name.LocalName)
+            {
+                case "AdditionalFiles":
+                case "Analyzer":
+                case "ApplicationDefinition":
+                case "Compile":
+                case "Content":
+                case "EmbeddedResource":
+                case "None":
+                case "Page":
+                case "ProjectReference":
+                case "Resource":
+                case "SplashScreen":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool TryGetRenamedProjectItemReference(string projectDirectory, string value, string oldPath,
+            string newPath, bool renamedDirectory, out string updatedValue)
+        {
+            updatedValue = string.Empty;
+            string candidate = (value ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(candidate) ||
+                candidate.Contains("$(") ||
+                candidate.IndexOfAny(new[] { '*', '?', ';' }) >= 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                string fullPath = Path.IsPathRooted(candidate)
+                    ? Path.GetFullPath(candidate)
+                    : Path.GetFullPath(Path.Combine(projectDirectory, candidate));
+                string renamedPath = GetRenamedExplorerPath(fullPath, oldPath, newPath, renamedDirectory);
+                if (string.IsNullOrEmpty(renamedPath))
+                    return false;
+
+                string projectPath = Path.IsPathRooted(candidate)
+                    ? renamedPath
+                    : Path.GetRelativePath(projectDirectory, renamedPath);
+                updatedValue = PreserveProjectPathSeparators(value, projectPath);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string PreserveProjectPathSeparators(string originalValue, string path)
+        {
+            if ((originalValue ?? string.Empty).Contains("/") && !(originalValue ?? string.Empty).Contains("\\"))
+                return path.Replace(Path.DirectorySeparatorChar, '/').Replace(Path.AltDirectorySeparatorChar, '/');
+
+            return path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        }
+
+        private static IEnumerable<KeyValuePair<string, string>> GetRenamedProjectPathPairs(string oldPath,
+            string newPath, bool renamedDirectory)
+        {
+            if (!renamedDirectory)
+            {
+                if (string.Equals(Path.GetExtension(oldPath), ".csproj", StringComparison.OrdinalIgnoreCase))
+                    yield return new KeyValuePair<string, string>(oldPath, newPath);
+                yield break;
+            }
+
+            if (!Directory.Exists(newPath))
+                yield break;
+
+            foreach (string newProjectPath in EnumerateBuildFiles(newPath, "*.csproj"))
+            {
+                string relativePath;
+                try
+                {
+                    relativePath = Path.GetRelativePath(newPath, newProjectPath);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                yield return new KeyValuePair<string, string>(
+                    Path.Combine(oldPath, relativePath),
+                    newProjectPath);
+            }
+        }
+
+        private static void UpdateSolutionProjectReferences(string solutionPath,
+            IEnumerable<KeyValuePair<string, string>> projectPathPairs)
+        {
+            try
+            {
+                string solutionDirectory = Path.GetDirectoryName(solutionPath);
+                if (string.IsNullOrEmpty(solutionDirectory))
+                    return;
+
+                string content = File.ReadAllText(solutionPath);
+                string updatedContent = content;
+                foreach (var projectPathPair in projectPathPairs)
+                {
+                    string oldRelativePath = Path.GetRelativePath(solutionDirectory, projectPathPair.Key)
+                        .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                    string newRelativePath = Path.GetRelativePath(solutionDirectory, projectPathPair.Value)
+                        .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+
+                    updatedContent = ReplaceOrdinalIgnoreCase(updatedContent, oldRelativePath, newRelativePath);
+                    updatedContent = ReplaceOrdinalIgnoreCase(updatedContent, oldRelativePath.Replace('\\', '/'),
+                        newRelativePath.Replace('\\', '/'));
+                }
+
+                if (!string.Equals(content, updatedContent, StringComparison.Ordinal))
+                    File.WriteAllText(solutionPath, updatedContent);
+            }
+            catch
+            {
+            }
+        }
+
+        private static List<string> GetExplorerDeletedProjectPaths(string path, bool isDirectory)
+        {
+            if (isDirectory)
+                return EnumerateBuildFiles(path, "*.csproj")
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            return IsProjectFilePath(path)
+                ? new List<string> { path }
+                : new List<string>();
+        }
+
+        private static void RemoveProjectsFromWorkspaceSolutions(IList<string> projectPaths, string workspaceFolder)
+        {
+            if (projectPaths == null || projectPaths.Count == 0 ||
+                string.IsNullOrWhiteSpace(workspaceFolder) ||
+                !Directory.Exists(workspaceFolder))
+            {
+                return;
+            }
+
+            foreach (string solutionPath in EnumerateBuildFiles(workspaceFolder, "*.sln"))
+                RemoveProjectsFromSolution(solutionPath, projectPaths);
+        }
+
+        private static void RemoveProjectsFromSolution(string solutionPath, IList<string> projectPaths)
+        {
+            if (!IsSolutionFilePath(solutionPath) || projectPaths == null || projectPaths.Count == 0)
+                return;
+
+            try
+            {
+                string solutionDirectory = Path.GetDirectoryName(solutionPath);
+                if (string.IsNullOrEmpty(solutionDirectory))
+                    return;
+
+                var deletedProjects = new HashSet<string>(
+                    projectPaths.Select(NormalizeCompletionPath).Where(path => !string.IsNullOrEmpty(path)),
+                    StringComparer.OrdinalIgnoreCase);
+                if (deletedProjects.Count == 0)
+                    return;
+
+                var lines = File.ReadAllLines(solutionPath).ToList();
+                var updatedLines = new List<string>(lines.Count);
+                var removedProjectGuids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    if (TryGetRemovedSolutionProjectGuid(lines[i], solutionDirectory, deletedProjects,
+                        out string projectGuid))
+                    {
+                        if (!string.IsNullOrWhiteSpace(projectGuid))
+                            removedProjectGuids.Add(projectGuid);
+
+                        while (i + 1 < lines.Count &&
+                            !lines[i].Trim().Equals("EndProject", StringComparison.OrdinalIgnoreCase))
+                        {
+                            i++;
+                        }
+
+                        continue;
+                    }
+
+                    updatedLines.Add(lines[i]);
+                }
+
+                if (removedProjectGuids.Count == 0)
+                    return;
+
+                updatedLines = updatedLines
+                    .Where(line => !IsRemovedSolutionProjectConfigurationLine(line, removedProjectGuids))
+                    .ToList();
+
+                File.WriteAllLines(solutionPath, updatedLines);
+            }
+            catch
+            {
+            }
+        }
+
+        private static bool TryGetRemovedSolutionProjectGuid(string line, string solutionDirectory,
+            HashSet<string> deletedProjects, out string projectGuid)
+        {
+            projectGuid = string.Empty;
+            if (string.IsNullOrWhiteSpace(line) ||
+                string.IsNullOrWhiteSpace(solutionDirectory) ||
+                deletedProjects == null ||
+                deletedProjects.Count == 0)
+            {
+                return false;
+            }
+
+            Match match = Regex.Match(line,
+                @"Project\(""\{[^}]+\}""\)\s*=\s*""[^""]+"",\s*""([^""]+\.csproj)"",\s*""(\{[^}]+\})""",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            if (!match.Success)
+                return false;
+
+            string projectPath = match.Groups[1].Value;
+            try
+            {
+                if (!Path.IsPathRooted(projectPath))
+                    projectPath = Path.GetFullPath(Path.Combine(solutionDirectory, projectPath));
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (!deletedProjects.Contains(NormalizeCompletionPath(projectPath)))
+                return false;
+
+            projectGuid = match.Groups[2].Value;
+            return true;
+        }
+
+        private static bool IsRemovedSolutionProjectConfigurationLine(string line,
+            HashSet<string> removedProjectGuids)
+        {
+            if (string.IsNullOrWhiteSpace(line) || removedProjectGuids == null || removedProjectGuids.Count == 0)
+                return false;
+
+            string trimmed = line.TrimStart();
+            return removedProjectGuids.Any(guid =>
+                trimmed.StartsWith(guid + ".", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.StartsWith(guid + " =", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string ReplaceOrdinalIgnoreCase(string value, string oldValue, string newValue)
+        {
+            if (string.IsNullOrEmpty(value) || string.IsNullOrEmpty(oldValue))
+                return value;
+
+            var builder = new StringBuilder(value.Length);
+            int startIndex = 0;
+            while (true)
+            {
+                int matchIndex = value.IndexOf(oldValue, startIndex, StringComparison.OrdinalIgnoreCase);
+                if (matchIndex < 0)
+                {
+                    builder.Append(value, startIndex, value.Length - startIndex);
+                    break;
+                }
+
+                builder.Append(value, startIndex, matchIndex - startIndex);
+                builder.Append(newValue);
+                startIndex = matchIndex + oldValue.Length;
+            }
+
+            return builder.ToString();
+        }
+
+        private static string GetRenamedExplorerPath(string path, string oldPath, string newPath, bool renamedDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path))
+                return string.Empty;
+
+            try
+            {
+                string normalizedPath = NormalizeCompletionPath(path);
+                string normalizedOldPath = NormalizeCompletionPath(oldPath);
+
+                if (!renamedDirectory)
+                    return string.Equals(normalizedPath, normalizedOldPath, StringComparison.OrdinalIgnoreCase)
+                        ? newPath
+                        : string.Empty;
+
+                if (!IsSameOrChildDirectory(normalizedPath, normalizedOldPath))
+                    return string.Empty;
+
+                string relativePath = normalizedPath.Length == normalizedOldPath.Length
+                    ? string.Empty
+                    : normalizedPath.Substring(normalizedOldPath.Length)
+                        .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+                return string.IsNullOrEmpty(relativePath)
+                    ? newPath
+                    : Path.Combine(newPath, relativePath);
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private string GetExplorerContextFolderPath()
+        {
+            string path = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
+            return Directory.Exists(path) && IsPathInsideExplorerRoot(path) ? path : string.Empty;
+        }
+
+        private bool IsExplorerRootPath(string path)
+        {
+            return !string.IsNullOrWhiteSpace(path) &&
+                Directory.Exists(_fileExplorerRootPath) &&
+                string.Equals(NormalizeCompletionPath(path), NormalizeCompletionPath(_fileExplorerRootPath),
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool IsPathInsideExplorerRoot(string path)
+        {
+            return !string.IsNullOrWhiteSpace(path) &&
+                Directory.Exists(_fileExplorerRootPath) &&
+                IsSameOrChildDirectory(path, _fileExplorerRootPath);
+        }
+
+        private void SelectExplorerPath(string path)
+        {
+            if (_fileExplorerTree == null || _fileExplorerTree.Nodes.Count == 0 || string.IsNullOrWhiteSpace(path))
+                return;
+
+            TreeNode node = FindTreeNodeByPath(_fileExplorerTree.Nodes[0], path);
+            if (node != null)
+            {
+                _fileExplorerTree.SelectedNode = node;
+                node.EnsureVisible();
+            }
+        }
+
+        private void RefreshAndExpandExplorerFolder(string folderPath)
+        {
+            if (_fileExplorerTree == null || _fileExplorerTree.Nodes.Count == 0)
+                return;
+
+            TreeNode node = FindTreeNodeByPath(_fileExplorerTree.Nodes[0], folderPath);
+            if (node == null)
+                return;
+
+            PopulateDirectoryNode(node);
+            if (!node.IsExpanded)
+                node.Expand();
+        }
+
+        private static bool TryNormalizeExplorerFileName(string value, string extension, out string fileName)
+        {
+            if (!TryValidateExplorerItemName(value, out fileName))
+                return false;
+
+            if (!string.Equals(Path.GetExtension(fileName), extension, StringComparison.OrdinalIgnoreCase))
+                fileName = Path.ChangeExtension(fileName, extension);
+
+            return true;
+        }
+
+        private static bool TryValidateExplorerItemName(string value, out string itemName)
+        {
+            itemName = (value ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(itemName))
+                return false;
+
+            if (itemName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                MessageBox.Show("The name contains characters that cannot be used in a file name.", "Explorer",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            return true;
+        }
+
+        private static string GetUniqueExplorerName(string folderPath, string preferredName)
+        {
+            string candidate = preferredName;
+            string nameWithoutExtension = Path.GetFileNameWithoutExtension(preferredName);
+            string extension = Path.GetExtension(preferredName);
+            int count = 1;
+
+            while (File.Exists(Path.Combine(folderPath, candidate)) ||
+                   Directory.Exists(Path.Combine(folderPath, candidate)))
+            {
+                count++;
+                candidate = string.IsNullOrEmpty(extension)
+                    ? $"{preferredName} {count}"
+                    : $"{nameWithoutExtension}{count}{extension}";
+            }
+
+            return candidate;
+        }
+
+        private static string BuildNewCSharpFileContent(string fileName)
+        {
+            string className = Path.GetFileNameWithoutExtension(fileName);
+            className = ToSafeCSharpIdentifier(className);
+
+            return "public class " + className + Environment.NewLine +
+                   "{" + Environment.NewLine +
+                   "}" + Environment.NewLine;
+        }
+
+        private static string ToSafeCSharpIdentifier(string value)
+        {
+            var builder = new StringBuilder();
+            foreach (char ch in value ?? string.Empty)
+                builder.Append(char.IsLetterOrDigit(ch) || ch == '_' ? ch : '_');
+
+            if (builder.Length == 0 || char.IsDigit(builder[0]))
+                builder.Insert(0, '_');
+
+            return builder.ToString();
+        }
+
+        private string PromptForExplorerName(string title, string labelText, string defaultValue)
+        {
+            using (var form = new Form())
+            using (var label = new Label())
+            using (var textBox = new TextBox())
+            using (var okButton = new Button())
+            using (var cancelButton = new Button())
+            {
+                form.Text = title;
+                form.StartPosition = FormStartPosition.CenterParent;
+                form.FormBorderStyle = FormBorderStyle.FixedDialog;
+                form.MinimizeBox = false;
+                form.MaximizeBox = false;
+                form.ShowInTaskbar = false;
+                form.ClientSize = new Size(360, 118);
+                form.Font = Font;
+
+                label.AutoSize = true;
+                label.Text = labelText;
+                label.Location = new Point(12, 14);
+
+                textBox.Text = defaultValue;
+                textBox.Location = new Point(12, 38);
+                textBox.Width = 336;
+                textBox.SelectAll();
+
+                okButton.Text = "OK";
+                okButton.DialogResult = DialogResult.OK;
+                okButton.Location = new Point(156, 78);
+                okButton.Width = 92;
+
+                cancelButton.Text = "Cancel";
+                cancelButton.DialogResult = DialogResult.Cancel;
+                cancelButton.Location = new Point(256, 78);
+                cancelButton.Width = 92;
+
+                form.Controls.Add(label);
+                form.Controls.Add(textBox);
+                form.Controls.Add(okButton);
+                form.Controls.Add(cancelButton);
+                form.AcceptButton = okButton;
+                form.CancelButton = cancelButton;
+
+                FrmColorMod.ToogleColorMode(form, GlobalVariables.darkColor);
+
+                return form.ShowDialog(this) == DialogResult.OK
+                    ? textBox.Text.Trim()
+                    : string.Empty;
+            }
         }
 
         private void fileExplorerTree_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
@@ -986,6 +3686,8 @@ namespace CIARE
                     TabControllerManage.AddNewTab(EditorTabControl);
 
                 FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), filePath);
+                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                    showRestoreFailure: false);
                 ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
             }
             catch (Exception ex)
@@ -1004,6 +3706,13 @@ namespace CIARE
             {
                 RealTimeChecker.Cancel(editor, typeCheckLbl, errorsLV, errorsTabPage, warningsCheckLbl);
                 return;
+            }
+
+            if (Directory.Exists(_fileExplorerRootPath) &&
+                !IsPathInsideFolder(filePath, _fileExplorerRootPath))
+            {
+                InvalidateCompletionWorkspace();
+                ClearProjectPackageCompletionReferences();
             }
 
             string workspaceFolder = GetActiveWorkspaceFolder();
@@ -1027,12 +3736,35 @@ namespace CIARE
             }
         }
 
+        private bool IsActiveUntitledEditorPage()
+        {
+            try
+            {
+                TabPage selectedTab = EditorTabControl?.SelectedTab;
+                if (selectedTab == null)
+                    return false;
+
+                string path = selectedTab.ToolTipText?.Trim();
+                if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    return false;
+
+                string title = (selectedTab.Text ?? string.Empty).TrimStart('*').Trim();
+                return string.IsNullOrWhiteSpace(path) &&
+                    title.StartsWith("New Page", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private string GetActiveWorkspaceFolder()
         {
+            string filePath = GetActiveEditorFilePath();
+
             if (!Directory.Exists(_fileExplorerRootPath))
                 return string.Empty;
 
-            string filePath = GetActiveEditorFilePath();
             if (string.IsNullOrEmpty(filePath) || IsPathInsideFolder(filePath, _fileExplorerRootPath))
                 return _fileExplorerRootPath;
 
@@ -1043,11 +3775,26 @@ namespace CIARE
         {
             string filePath = GetActiveEditorFilePath();
 
-            if (Directory.Exists(_fileExplorerRootPath) &&
-                File.Exists(filePath) &&
-                IsPathInsideFolder(filePath, _fileExplorerRootPath))
+            if (IsActiveUntitledEditorPage())
+                return string.Empty;
+
+            if (IsCSharpFilePath(filePath))
+                return GetBuildTargetForActiveCSharpFile(filePath);
+
+            if (Directory.Exists(_fileExplorerRootPath))
             {
-                string openFolderTarget = FindBuildTargetFile(_fileExplorerRootPath, filePath);
+                if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
+                    IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
+                {
+                    return _fileExplorerStartupProjectPath;
+                }
+
+                string activeFilePath = File.Exists(filePath) &&
+                    IsPathInsideFolder(filePath, _fileExplorerRootPath)
+                    ? filePath
+                    : null;
+
+                string openFolderTarget = FindBuildTargetFile(_fileExplorerRootPath, activeFilePath);
                 if (!string.IsNullOrEmpty(openFolderTarget))
                     return openFolderTarget;
             }
@@ -1055,10 +3802,611 @@ namespace CIARE
             return string.Empty;
         }
 
+        public string GetActiveRunProjectPath()
+        {
+            if (!Directory.Exists(_fileExplorerRootPath))
+                return string.Empty;
+
+            string filePath = GetActiveEditorFilePath();
+            if (IsActiveUntitledEditorPage() || string.IsNullOrEmpty(filePath))
+                return string.Empty;
+
+            if (!IsPathInsideFolder(filePath, _fileExplorerRootPath))
+                return string.Empty;
+
+            if (IsCSharpFilePath(filePath))
+            {
+                string sourceProject = FindProjectContainingSourceFile(filePath);
+                if (string.IsNullOrEmpty(sourceProject))
+                    return string.Empty;
+
+                if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
+                    IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
+                {
+                    return _fileExplorerStartupProjectPath;
+                }
+
+                return sourceProject;
+            }
+
+            if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
+                IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
+            {
+                return _fileExplorerStartupProjectPath;
+            }
+
+            string activeProject = FindProjectFileForPath(filePath, _fileExplorerRootPath);
+            if (!string.IsNullOrEmpty(activeProject))
+                return activeProject;
+
+            string selectedPath = _fileExplorerTree?.SelectedNode?.Tag as string;
+            string selectedProject = FindProjectFileForPath(selectedPath, _fileExplorerRootPath);
+            if (!string.IsNullOrEmpty(selectedProject))
+                return selectedProject;
+
+            string rootProject = FindTopLevelBuildFile(_fileExplorerRootPath, "*.csproj");
+            if (!string.IsNullOrEmpty(rootProject))
+                return rootProject;
+
+            return FindSingleRecursiveBuildFile(_fileExplorerRootPath, "*.csproj");
+        }
+
+        private string GetBuildTargetForActiveCSharpFile(string filePath)
+        {
+            if (!Directory.Exists(_fileExplorerRootPath) ||
+                !File.Exists(filePath) ||
+                !IsPathInsideFolder(filePath, _fileExplorerRootPath))
+            {
+                return string.Empty;
+            }
+
+            string activeProject = FindProjectContainingSourceFile(filePath);
+            if (string.IsNullOrEmpty(activeProject))
+                return string.Empty;
+
+            if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
+                IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath) &&
+                ProjectContainsSourceFile(_fileExplorerStartupProjectPath, filePath))
+            {
+                return _fileExplorerStartupProjectPath;
+            }
+
+            string activeSolution = FindContainingSolutionForProjectInWorkspace(activeProject);
+            return !string.IsNullOrEmpty(activeSolution) ? activeSolution : activeProject;
+        }
+
+        private string FindProjectContainingSourceFile(string filePath)
+        {
+            if (!IsCSharpFilePath(filePath) ||
+                !Directory.Exists(_fileExplorerRootPath) ||
+                !IsPathInsideFolder(filePath, _fileExplorerRootPath))
+            {
+                return string.Empty;
+            }
+
+            foreach (string projectPath in GetProjectCandidatesForSourceFile(filePath))
+            {
+                if (ProjectContainsSourceFile(projectPath, filePath))
+                    return projectPath;
+            }
+
+            return string.Empty;
+        }
+
+        private IEnumerable<string> GetProjectCandidatesForSourceFile(string filePath)
+        {
+            var candidates = new List<string>();
+            string activeFolder = Path.GetDirectoryName(filePath);
+
+            string activeSolution = FindNearestBuildFile(activeFolder, _fileExplorerRootPath, "*.sln");
+            if (!string.IsNullOrEmpty(activeSolution))
+                candidates.AddRange(ReadSolutionProjectFiles(activeSolution));
+
+            candidates.AddRange(EnumerateBuildFiles(_fileExplorerRootPath, "*.csproj"));
+
+            return candidates
+                .Where(IsProjectFilePath)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderByDescending(projectPath => GetCommonPathLength(filePath, Path.GetDirectoryName(projectPath)))
+                .ThenBy(projectPath => projectPath, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private string FindContainingSolutionForProjectInWorkspace(string projectPath)
+        {
+            if (!IsProjectFilePath(projectPath) || !Directory.Exists(_fileExplorerRootPath))
+                return string.Empty;
+
+            string projectFolder = Path.GetDirectoryName(projectPath);
+            string solutionPath = FindNearestBuildFile(projectFolder, _fileExplorerRootPath, "*.sln");
+            return SolutionFileContainsProject(solutionPath, projectPath) ? solutionPath : string.Empty;
+        }
+
+        public string GetActivePackageProjectPath()
+        {
+            if (!Directory.Exists(_fileExplorerRootPath))
+                return string.Empty;
+
+            string selectedPath = _fileExplorerTree?.SelectedNode?.Tag as string;
+            string selectedProject = FindProjectFileForPath(selectedPath, _fileExplorerRootPath);
+            if (!string.IsNullOrEmpty(selectedProject))
+                return selectedProject;
+
+            string activeProject = FindProjectFileForPath(GetActiveEditorFilePath(), _fileExplorerRootPath);
+            if (!string.IsNullOrEmpty(activeProject))
+                return activeProject;
+
+            string rootProject = FindTopLevelBuildFile(_fileExplorerRootPath, "*.csproj");
+            if (!string.IsNullOrEmpty(rootProject))
+                return rootProject;
+
+            return FindSingleRecursiveBuildFile(_fileExplorerRootPath, "*.csproj");
+        }
+
+        public string GetActivePackageInstallProjectPath()
+        {
+            if (!Directory.Exists(_fileExplorerRootPath))
+                return string.Empty;
+
+            string filePath = GetActiveEditorFilePath();
+            if (!File.Exists(filePath) || !IsPathInsideFolder(filePath, _fileExplorerRootPath))
+                return string.Empty;
+
+            return FindProjectFileForPath(filePath, _fileExplorerRootPath);
+        }
+
+        private string GetActiveEditorPackageProjectPath()
+        {
+            string activeProject = GetActivePackageInstallProjectPath();
+            return !string.IsNullOrEmpty(activeProject) ? activeProject : GetActivePackageProjectPath();
+        }
+
         private static bool IsCSharpFilePath(string filePath)
         {
             return !string.IsNullOrWhiteSpace(filePath) &&
                 string.Equals(Path.GetExtension(filePath), ".cs", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsProjectFilePath(string filePath)
+        {
+            return !string.IsNullOrWhiteSpace(filePath) &&
+                File.Exists(filePath) &&
+                string.Equals(Path.GetExtension(filePath), ".csproj", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsSolutionFilePath(string filePath)
+        {
+            return !string.IsNullOrWhiteSpace(filePath) &&
+                File.Exists(filePath) &&
+                string.Equals(Path.GetExtension(filePath), ".sln", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ProjectContainsSourceFile(string projectPath, string sourceFilePath)
+        {
+            if (!IsProjectFilePath(projectPath) || !IsCSharpFilePath(sourceFilePath) || !File.Exists(sourceFilePath))
+                return false;
+
+            string projectDirectory = Path.GetDirectoryName(projectPath);
+            if (string.IsNullOrEmpty(projectDirectory) ||
+                !IsSameOrChildDirectory(Path.GetDirectoryName(sourceFilePath), projectDirectory))
+            {
+                return false;
+            }
+
+            XDocument document;
+            try
+            {
+                document = XDocument.Load(projectPath);
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (ProjectItemMatchesSourceFile(document, projectDirectory, sourceFilePath, "Compile", "Remove"))
+                return false;
+
+            if (ProjectCompileIncludeMatchesSourceFile(document, projectDirectory, sourceFilePath))
+                return true;
+
+            if (!ProjectUsesSdkStyle(document) || !DefaultCompileItemsEnabled(document))
+                return false;
+
+            return IsDefaultCompileCandidate(projectDirectory, sourceFilePath);
+        }
+
+        private static bool ProjectUsesSdkStyle(XDocument document)
+        {
+            if (document?.Root == null)
+                return false;
+
+            return document.Root.Attribute("Sdk") != null ||
+                document.Root.Elements()
+                    .Any(element => string.Equals(element.Name.LocalName, "Import", StringComparison.Ordinal) &&
+                        element.Attribute("Sdk") != null);
+        }
+
+        private static bool DefaultCompileItemsEnabled(XDocument document)
+        {
+            return !ProjectPropertyIsFalse(document, "EnableDefaultItems") &&
+                !ProjectPropertyIsFalse(document, "EnableDefaultCompileItems");
+        }
+
+        private static bool ProjectPropertyIsFalse(XDocument document, string propertyName)
+        {
+            return document?.Root?
+                .Descendants()
+                .Where(element => string.Equals(element.Name.LocalName, propertyName, StringComparison.Ordinal))
+                .Any(element => string.Equals((element.Value ?? string.Empty).Trim(), "false",
+                    StringComparison.OrdinalIgnoreCase)) == true;
+        }
+
+        private static bool IsDefaultCompileCandidate(string projectDirectory, string sourceFilePath)
+        {
+            if (!IsSameOrChildDirectory(sourceFilePath, projectDirectory))
+                return false;
+
+            string relativePath;
+            try
+            {
+                relativePath = Path.GetRelativePath(projectDirectory, sourceFilePath);
+            }
+            catch
+            {
+                return false;
+            }
+
+            string normalizedRelativePath = relativePath
+                .Replace(Path.DirectorySeparatorChar, '/')
+                .Replace(Path.AltDirectorySeparatorChar, '/');
+
+            if (string.IsNullOrWhiteSpace(normalizedRelativePath) ||
+                normalizedRelativePath == ".." ||
+                normalizedRelativePath.StartsWith("../"))
+            {
+                return false;
+            }
+
+            string[] segments = relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return !segments.Any(segment =>
+                string.Equals(segment, "bin", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(segment, "obj", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool ProjectCompileIncludeMatchesSourceFile(XDocument document, string projectDirectory,
+            string sourceFilePath)
+        {
+            if (document?.Root == null)
+                return false;
+
+            foreach (XElement item in document.Root
+                .Descendants()
+                .Where(element => string.Equals(element.Name.LocalName, "Compile", StringComparison.Ordinal)))
+            {
+                string include = item.Attribute("Include")?.Value;
+                if (string.IsNullOrWhiteSpace(include) ||
+                    !ProjectItemSpecMatchesSourceFile(projectDirectory, include, sourceFilePath))
+                {
+                    continue;
+                }
+
+                string exclude = item.Attribute("Exclude")?.Value;
+                if (!string.IsNullOrWhiteSpace(exclude) &&
+                    ProjectItemSpecMatchesSourceFile(projectDirectory, exclude, sourceFilePath))
+                {
+                    continue;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool ProjectItemMatchesSourceFile(XDocument document, string projectDirectory,
+            string sourceFilePath, string itemName, string attributeName)
+        {
+            if (document?.Root == null)
+                return false;
+
+            foreach (XElement item in document.Root
+                .Descendants()
+                .Where(element => string.Equals(element.Name.LocalName, itemName, StringComparison.Ordinal)))
+            {
+                string itemSpec = item.Attribute(attributeName)?.Value;
+                if (string.IsNullOrWhiteSpace(itemSpec))
+                    continue;
+
+                if (ProjectItemSpecMatchesSourceFile(projectDirectory, itemSpec, sourceFilePath))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool ProjectItemSpecMatchesSourceFile(string projectDirectory, string itemSpec,
+            string sourceFilePath)
+        {
+            foreach (string spec in SplitProjectItemSpec(itemSpec))
+            {
+                if (spec.Contains("$"))
+                    continue;
+
+                bool hasWildcards = spec.IndexOfAny(new[] { '*', '?' }) >= 0;
+                if (!hasWildcards)
+                {
+                    string itemPath = ResolveProjectItemPath(projectDirectory, spec);
+                    if (string.Equals(NormalizeCompletionPath(itemPath), NormalizeCompletionPath(sourceFilePath),
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+
+                    continue;
+                }
+
+                string pattern = NormalizeProjectItemPattern(spec);
+                string candidate = Path.IsPathRooted(spec)
+                    ? NormalizeCompletionPath(sourceFilePath).Replace(Path.DirectorySeparatorChar, '/')
+                    : GetProjectRelativePath(projectDirectory, sourceFilePath);
+
+                if (!string.IsNullOrEmpty(candidate) && GlobMatches(pattern, candidate))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static IEnumerable<string> SplitProjectItemSpec(string itemSpec)
+        {
+            return (itemSpec ?? string.Empty)
+                .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(spec => spec.Trim())
+                .Where(spec => !string.IsNullOrWhiteSpace(spec));
+        }
+
+        private static string ResolveProjectItemPath(string projectDirectory, string itemSpec)
+        {
+            try
+            {
+                return Path.IsPathRooted(itemSpec)
+                    ? Path.GetFullPath(itemSpec)
+                    : Path.GetFullPath(Path.Combine(projectDirectory, itemSpec));
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string GetProjectRelativePath(string projectDirectory, string sourceFilePath)
+        {
+            try
+            {
+                return Path.GetRelativePath(projectDirectory, sourceFilePath)
+                    .Replace(Path.DirectorySeparatorChar, '/')
+                    .Replace(Path.AltDirectorySeparatorChar, '/');
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string NormalizeProjectItemPattern(string itemSpec)
+        {
+            string pattern = (itemSpec ?? string.Empty)
+                .Replace(Path.DirectorySeparatorChar, '/')
+                .Replace(Path.AltDirectorySeparatorChar, '/');
+
+            while (pattern.StartsWith("./", StringComparison.Ordinal))
+                pattern = pattern.Substring(2);
+
+            return pattern;
+        }
+
+        private static bool GlobMatches(string pattern, string candidate)
+        {
+            if (string.IsNullOrWhiteSpace(pattern) || string.IsNullOrWhiteSpace(candidate))
+                return false;
+
+            var regex = new StringBuilder("^");
+            for (int i = 0; i < pattern.Length; i++)
+            {
+                char ch = pattern[i];
+                if (ch == '*')
+                {
+                    bool recursive = i + 1 < pattern.Length && pattern[i + 1] == '*';
+                    if (recursive && i + 2 < pattern.Length && pattern[i + 2] == '/')
+                    {
+                        regex.Append("(?:.*/)?");
+                        i += 2;
+                    }
+                    else
+                    {
+                        regex.Append(recursive ? ".*" : "[^/]*");
+                        if (recursive)
+                            i++;
+                    }
+                }
+                else if (ch == '?')
+                {
+                    regex.Append("[^/]");
+                }
+                else
+                {
+                    regex.Append(Regex.Escape(ch.ToString()));
+                }
+            }
+
+            regex.Append("$");
+            return Regex.IsMatch(candidate, regex.ToString(),
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        }
+
+        private static IEnumerable<string> ReadSolutionProjectFiles(string solutionPath)
+        {
+            if (!IsSolutionFilePath(solutionPath))
+                yield break;
+
+            string solutionDirectory = Path.GetDirectoryName(solutionPath);
+            if (string.IsNullOrEmpty(solutionDirectory))
+                yield break;
+
+            IEnumerable<string> lines;
+            try
+            {
+                lines = File.ReadLines(solutionPath);
+            }
+            catch
+            {
+                yield break;
+            }
+
+            foreach (string line in lines)
+            {
+                Match match = Regex.Match(line,
+                    @"Project\(""\{[^}]+\}""\)\s*=\s*""[^""]+"",\s*""([^""]+\.csproj)""",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                if (!match.Success)
+                    continue;
+
+                string projectPath = match.Groups[1].Value;
+                if (!Path.IsPathRooted(projectPath))
+                    projectPath = Path.GetFullPath(Path.Combine(solutionDirectory, projectPath));
+
+                if (IsProjectFilePath(projectPath))
+                    yield return projectPath;
+            }
+        }
+
+        private static int GetCommonPathLength(string filePath, string folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || string.IsNullOrWhiteSpace(folderPath))
+                return 0;
+
+            string normalizedFile = NormalizeCompletionPath(filePath);
+            string normalizedFolder = NormalizeCompletionPath(folderPath);
+            if (string.IsNullOrEmpty(normalizedFile) || string.IsNullOrEmpty(normalizedFolder))
+                return 0;
+
+            return normalizedFile.StartsWith(normalizedFolder + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase) ||
+                normalizedFile.StartsWith(normalizedFolder + Path.AltDirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase)
+                ? normalizedFolder.Length
+                : 0;
+        }
+
+        private string GetProjectPathFromExplorerPath(string path)
+        {
+            if (IsProjectFilePath(path))
+                return path;
+
+            if (string.IsNullOrWhiteSpace(path))
+                return string.Empty;
+
+            if (File.Exists(path))
+                return Directory.Exists(_fileExplorerRootPath)
+                    ? FindProjectFileForPath(path, _fileExplorerRootPath)
+                    : string.Empty;
+
+            if (!Directory.Exists(path))
+                return string.Empty;
+
+            string childProject = FindTopLevelBuildFile(path, "*.csproj");
+            if (!string.IsNullOrEmpty(childProject))
+                return childProject;
+
+            return Directory.Exists(_fileExplorerRootPath)
+                ? FindNearestBuildFile(path, _fileExplorerRootPath, "*.csproj")
+                : string.Empty;
+        }
+
+        private string GetSolutionPathFromExplorerPath(string path)
+        {
+            if (IsSolutionFilePath(path))
+                return path;
+
+            if (string.IsNullOrWhiteSpace(path))
+                return string.Empty;
+
+            string folder = Directory.Exists(path)
+                ? path
+                : File.Exists(path)
+                    ? Path.GetDirectoryName(path)
+                    : string.Empty;
+
+            if (string.IsNullOrEmpty(folder))
+                return string.Empty;
+
+            if (IsSolutionFilePath(_fileExplorerSolutionPath) &&
+                IsSameOrChildDirectory(folder, Path.GetDirectoryName(_fileExplorerSolutionPath)))
+            {
+                return _fileExplorerSolutionPath;
+            }
+
+            if (Directory.Exists(_fileExplorerRootPath))
+                return FindNearestBuildFile(folder, _fileExplorerRootPath, "*.sln");
+
+            return FindTopLevelBuildFile(folder, "*.sln");
+        }
+
+        private static string ResolveSolutionPathForLoadedFolder(string folderPath, string solutionPath)
+        {
+            if (solutionPath != null)
+                return IsSolutionFilePath(solutionPath) ? Path.GetFullPath(solutionPath) : string.Empty;
+
+            string topLevelSolution = FindTopLevelBuildFile(folderPath, "*.sln");
+            if (!string.IsNullOrEmpty(topLevelSolution))
+                return topLevelSolution;
+
+            return FindSingleRecursiveBuildFile(folderPath, "*.sln");
+        }
+
+        private static bool IsAddProjectToSolutionContext(string path, string solutionPath)
+        {
+            if (!IsSolutionFilePath(solutionPath) || string.IsNullOrWhiteSpace(path))
+                return false;
+
+            if (IsSolutionFilePath(path))
+                return string.Equals(NormalizeCompletionPath(path),
+                    NormalizeCompletionPath(solutionPath), StringComparison.OrdinalIgnoreCase);
+
+            if (!Directory.Exists(path))
+                return false;
+
+            string solutionDirectory = Path.GetDirectoryName(solutionPath);
+            return !string.IsNullOrEmpty(solutionDirectory) &&
+                string.Equals(NormalizeCompletionPath(path), NormalizeCompletionPath(solutionDirectory),
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string FindProjectFileForPath(string path, string workspaceFolder)
+        {
+            if (string.IsNullOrWhiteSpace(path) ||
+                string.IsNullOrWhiteSpace(workspaceFolder) ||
+                !Directory.Exists(workspaceFolder))
+            {
+                return string.Empty;
+            }
+
+            if (IsProjectFilePath(path) && IsPathInsideFolder(path, workspaceFolder))
+                return path;
+
+            string folder = Directory.Exists(path)
+                ? path
+                : File.Exists(path)
+                    ? Path.GetDirectoryName(path)
+                    : string.Empty;
+
+            if (string.IsNullOrEmpty(folder) || !IsSameOrChildDirectory(folder, workspaceFolder))
+                return string.Empty;
+
+            string childProject = FindTopLevelBuildFile(folder, "*.csproj");
+            if (!string.IsNullOrEmpty(childProject))
+                return childProject;
+
+            return FindNearestBuildFile(folder, workspaceFolder, "*.csproj");
         }
 
         private static bool IsPathInsideFolder(string filePath, string folderPath)
@@ -1238,6 +4586,166 @@ namespace CIARE
             }
         }
 
+        private void RestoreStartupProjectForLoadedFolder()
+        {
+            if (IsSolutionFilePath(_fileExplorerSolutionPath))
+            {
+                _fileExplorerStartupProjectPath =
+                    SolutionStartupProjectStore.Ensure(_fileExplorerSolutionPath);
+                return;
+            }
+
+            string startupProjectPath = RegistryManagement.RegKey_Read(
+                $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", FileExplorerStartupProjectKey);
+            _fileExplorerStartupProjectPath = IsProjectFilePath(startupProjectPath) &&
+                IsPathInsideFolder(startupProjectPath, _fileExplorerRootPath)
+                    ? startupProjectPath
+                    : string.Empty;
+        }
+
+        private void SaveStartupProjectPath()
+        {
+            if (IsSolutionFilePath(_fileExplorerSolutionPath))
+            {
+                SolutionStartupProjectStore.Save(_fileExplorerSolutionPath,
+                    _fileExplorerStartupProjectPath ?? string.Empty);
+                return;
+            }
+
+            RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath,
+                FileExplorerStartupProjectKey, _fileExplorerStartupProjectPath ?? string.Empty);
+        }
+
+        private bool IsStartupProjectPath(string projectPath)
+        {
+            return IsProjectFilePath(projectPath) &&
+                IsProjectFilePath(_fileExplorerStartupProjectPath) &&
+                string.Equals(NormalizeCompletionPath(projectPath),
+                    NormalizeCompletionPath(_fileExplorerStartupProjectPath),
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool IsStartupProjectNode(TreeNode node)
+        {
+            string path = node?.Tag as string;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path) ||
+                !IsProjectFilePath(_fileExplorerStartupProjectPath))
+                return false;
+
+            string startupDirectory = Path.GetDirectoryName(_fileExplorerStartupProjectPath);
+            return !string.IsNullOrEmpty(startupDirectory) &&
+                string.Equals(NormalizeCompletionPath(path), NormalizeCompletionPath(startupDirectory),
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ApplyStartupProjectNodeStyle(TreeNode node)
+        {
+            if (node == null)
+                return;
+
+            if (IsStartupProjectNode(node))
+            {
+                node.BackColor = GlobalVariables.darkColor
+                    ? Color.FromArgb(70, 72, 38)
+                    : Color.FromArgb(255, 245, 189);
+                node.ForeColor = GlobalVariables.darkColor
+                    ? Color.FromArgb(255, 235, 150)
+                    : Color.FromArgb(80, 63, 0);
+                if (!node.ToolTipText.EndsWith("Startup project", StringComparison.Ordinal))
+                    node.ToolTipText = node.ToolTipText + Environment.NewLine + "Startup project";
+            }
+            else
+            {
+                node.BackColor = Color.Empty;
+                node.ForeColor = Color.Empty;
+                string marker = Environment.NewLine + "Startup project";
+                if (!string.IsNullOrEmpty(node.ToolTipText) &&
+                    node.ToolTipText.EndsWith(marker, StringComparison.Ordinal))
+                {
+                    node.ToolTipText = node.ToolTipText.Substring(0, node.ToolTipText.Length - marker.Length);
+                }
+            }
+        }
+
+        private void UpdateFileExplorerStartupProjectHighlight()
+        {
+            if (_fileExplorerTree == null || _fileExplorerTree.IsDisposed)
+                return;
+
+            _fileExplorerTree.BeginUpdate();
+            try
+            {
+                foreach (TreeNode node in _fileExplorerTree.Nodes)
+                    ApplyStartupProjectNodeStyleRecursive(node);
+            }
+            finally
+            {
+                _fileExplorerTree.EndUpdate();
+            }
+        }
+
+        private void ApplyStartupProjectNodeStyleRecursive(TreeNode node)
+        {
+            ApplyStartupProjectNodeStyle(node);
+            foreach (TreeNode child in node.Nodes)
+                ApplyStartupProjectNodeStyleRecursive(child);
+        }
+
+        private void UpdateStartupProjectAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(_fileExplorerStartupProjectPath) ||
+                !string.Equals(Path.GetExtension(_fileExplorerStartupProjectPath), ".csproj",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            string renamedStartupProject = GetRenamedExplorerPath(_fileExplorerStartupProjectPath, oldPath, newPath,
+                renamedDirectory);
+            if (!string.IsNullOrEmpty(renamedStartupProject))
+            {
+                _fileExplorerStartupProjectPath = renamedStartupProject;
+                SaveStartupProjectPath();
+            }
+        }
+
+        private void UpdateLoadedSolutionAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        {
+            string renamedSolutionPath = GetRenamedExplorerPath(_fileExplorerSolutionPath, oldPath, newPath,
+                renamedDirectory);
+            if (IsSolutionFilePath(renamedSolutionPath))
+                _fileExplorerSolutionPath = renamedSolutionPath;
+        }
+
+        private void ClearStartupProjectAfterExplorerDelete(string deletedPath, bool deletedDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(_fileExplorerStartupProjectPath) ||
+                !string.Equals(Path.GetExtension(_fileExplorerStartupProjectPath), ".csproj",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            bool deletedStartupProject = deletedDirectory
+                ? IsSameOrChildDirectory(_fileExplorerStartupProjectPath, deletedPath)
+                : string.Equals(NormalizeCompletionPath(_fileExplorerStartupProjectPath),
+                    NormalizeCompletionPath(deletedPath), StringComparison.OrdinalIgnoreCase);
+
+            if (deletedStartupProject)
+            {
+                if (IsSolutionFilePath(_fileExplorerSolutionPath))
+                {
+                    _fileExplorerStartupProjectPath =
+                        SolutionStartupProjectStore.Ensure(_fileExplorerSolutionPath);
+                }
+                else
+                {
+                    _fileExplorerStartupProjectPath = string.Empty;
+                    SaveStartupProjectPath();
+                }
+            }
+        }
+
         private void ApplyFileExplorerTheme(string highlight = null)
         {
             if (_fileExplorerPanel == null)
@@ -1253,6 +4761,8 @@ namespace CIARE
 
             _editorWorkspacePanel.BackColor = backColor;
             _editorExplorerSplitContainer.BackColor = borderColor;
+            _editorExplorerSplitContainer.Panel1.BackColor = backColor;
+            _editorExplorerSplitContainer.Panel2.BackColor = backColor;
             _fileExplorerPanel.BackColor = backColor;
             _fileExplorerHeader.BackColor = headerColor;
             _fileExplorerTitleLabel.BackColor = headerColor;
@@ -1260,10 +4770,19 @@ namespace CIARE
             _fileExplorerTree.BackColor = backColor;
             _fileExplorerTree.ForeColor = foreColor;
             _fileExplorerTree.LineColor = borderColor;
+            _fileExplorerContentSplitContainer.BackColor = borderColor;
+            _fileExplorerContentSplitContainer.Panel1.BackColor = backColor;
+            _fileExplorerContentSplitContainer.Panel2.BackColor = backColor;
+            _fileExplorerNuGetPanel.BackColor = backColor;
+            _fileExplorerNuGetTitleLabel.BackColor = headerColor;
+            _fileExplorerNuGetTitleLabel.ForeColor = foreColor;
+            _fileExplorerNuGetList.BackColor = backColor;
+            _fileExplorerNuGetList.ForeColor = foreColor;
 
             ApplyFileExplorerButtonTheme(_fileExplorerOpenFolderButton, buttonBackColor, foreColor, borderColor);
             ApplyFileExplorerButtonTheme(_fileExplorerHideButton, buttonBackColor, foreColor, borderColor);
             ApplyFileExplorerButtonTheme(_fileExplorerShowButton, buttonBackColor, foreColor, borderColor);
+            UpdateFileExplorerStartupProjectHighlight();
         }
 
         private static void ApplyFileExplorerButtonTheme(Button button, Color backColor, Color foreColor, Color borderColor)
@@ -1345,7 +4864,8 @@ namespace CIARE
 
             // Run initial type check so errors are underlined from the first load.
             RestoreFileExplorerState();
-            RefreshEditorLayoutBounds();
+            QueueFileExplorerLayoutApply();
+            QueueEditorLayoutRefresh();
             var startEditor = SelectedEditor.GetSelectedEditor();
             if (startEditor != null && !string.IsNullOrWhiteSpace(startEditor.Text))
                 ScheduleCurrentTypeCheck(startEditor);
@@ -1359,13 +4879,23 @@ namespace CIARE
                 CodeCompletionKeyHandler.Attach(this, SelectedEditor.GetSelectedEditor(index));
                 ToolTipProvider.Attach(this, SelectedEditor.GetSelectedEditor(index));
 
-                pcRegistry = new Dom.ProjectContentRegistry();
-                if (!Directory.Exists((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"))))
-                    Directory.CreateDirectory((Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion")));
-
-                pcRegistry.ActivatePersistence(Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion"));
+                EnsureCompletionRegistry();
                 SelectedEditor.GetSelectedEditor(index).ActiveTextAreaControl.Refresh();
             }
+        }
+
+        private void EnsureCompletionRegistry()
+        {
+            if (_completionRegistryInitialized && pcRegistry != null)
+                return;
+
+            pcRegistry = new Dom.ProjectContentRegistry();
+            string completionCachePath = Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion");
+            if (!Directory.Exists(completionCachePath))
+                Directory.CreateDirectory(completionCachePath);
+
+            pcRegistry.ActivatePersistence(completionCachePath);
+            _completionRegistryInitialized = true;
         }
 
         /// <summary>
@@ -1430,6 +4960,201 @@ namespace CIARE
         {
             int indexTab = EditorTabControl.SelectedIndex;
             FileManage.OpenFileTab(EditorTabControl, SelectedEditor.GetSelectedEditor(indexTab));
+        }
+
+        private void newProjectStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (var dialog = new NewProject())
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return;
+
+                OpenCreatedProject(dialog.CreatedProject);
+            }
+        }
+
+        private void openProjectStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenProjectOrSolutionDialog();
+        }
+
+        private void OpenCreatedProject(NewProjectResult project)
+        {
+            if (project == null)
+                return;
+
+            string projectOrSolutionPath = !string.IsNullOrEmpty(project.SolutionFilePath)
+                ? project.SolutionFilePath
+                : project.ProjectFilePath;
+
+            if (!OpenProjectOrSolutionPath(projectOrSolutionPath, showMessage: false))
+                return;
+
+            if (File.Exists(project.StarterFilePath))
+                OpenFileFromExplorer(project.StarterFilePath);
+
+            ShowProjectStatus("Created project", project.ProjectFilePath, project.SolutionFilePath);
+        }
+
+        private void OpenProjectOrSolutionDialog()
+        {
+            using (var dialog = new OpenFileDialog())
+            {
+                dialog.Filter =
+                    "Solution or C# Project (*.sln;*.csproj)|*.sln;*.csproj|Solution Files (*.sln)|*.sln|C# Project Files (*.csproj)|*.csproj|All Files (*.*)|*.*";
+                dialog.Title = "Open Project or Solution";
+                dialog.CheckFileExists = true;
+                dialog.CheckPathExists = true;
+                dialog.InitialDirectory = GetInitialProjectDialogDirectory();
+
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                    OpenProjectOrSolutionPath(dialog.FileName, showMessage: true);
+            }
+        }
+
+        private string GetInitialProjectDialogDirectory()
+        {
+            if (Directory.Exists(_fileExplorerRootPath))
+                return _fileExplorerRootPath;
+
+            string filePath = GetActiveEditorFilePath();
+            if (File.Exists(filePath))
+                return Path.GetDirectoryName(filePath);
+
+            return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        }
+
+        private bool OpenProjectOrSolutionPath(string filePath, bool showMessage)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                return false;
+
+            string extension = Path.GetExtension(filePath);
+            if (!string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show("Select a .sln or .csproj file.", "Open Project/Solution",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            string folderPath = Path.GetDirectoryName(filePath);
+            if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
+                return false;
+
+            string containingSolutionPath = string.Empty;
+            if (string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase))
+            {
+                containingSolutionPath = FindContainingSolutionForProject(filePath);
+                string solutionDirectory = Path.GetDirectoryName(containingSolutionPath);
+                if (!string.IsNullOrEmpty(solutionDirectory) && Directory.Exists(solutionDirectory))
+                    folderPath = solutionDirectory;
+            }
+
+            string loadedSolutionPath = string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase)
+                ? filePath
+                : containingSolutionPath;
+            LoadFileExplorerFolder(folderPath, loadedSolutionPath);
+            ToggleFileExplorer(true);
+
+            if (showMessage)
+            {
+                string projectPath = string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase)
+                    ? filePath
+                    : GetActivePackageProjectPath();
+                string solutionPath = string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase)
+                    ? filePath
+                    : containingSolutionPath;
+                ShowProjectStatus("Opened project/solution", projectPath, solutionPath);
+            }
+
+            return true;
+        }
+
+        private static string FindContainingSolutionForProject(string projectPath)
+        {
+            if (!IsProjectFilePath(projectPath))
+                return string.Empty;
+
+            string folder = Path.GetDirectoryName(projectPath);
+            while (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
+            {
+                try
+                {
+                    foreach (string solutionPath in Directory.GetFiles(folder, "*.sln", SearchOption.TopDirectoryOnly)
+                        .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+                    {
+                        if (SolutionFileContainsProject(solutionPath, projectPath))
+                            return solutionPath;
+                    }
+                }
+                catch
+                {
+                }
+
+                string parent = Path.GetDirectoryName(folder);
+                if (string.IsNullOrEmpty(parent) || string.Equals(parent, folder, StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                folder = parent;
+            }
+
+            return string.Empty;
+        }
+
+        private static bool SolutionFileContainsProject(string solutionPath, string projectPath)
+        {
+            if (!IsSolutionFilePath(solutionPath) || !IsProjectFilePath(projectPath))
+                return false;
+
+            string solutionDirectory = Path.GetDirectoryName(solutionPath);
+            if (string.IsNullOrEmpty(solutionDirectory))
+                return false;
+
+            string normalizedProject = NormalizeCompletionPath(projectPath);
+            try
+            {
+                foreach (string line in File.ReadLines(solutionPath))
+                {
+                    Match match = Regex.Match(line,
+                        @"Project\(""\{[^}]+\}""\)\s*=\s*""[^""]+"",\s*""([^""]+\.csproj)""",
+                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                    if (!match.Success)
+                        continue;
+
+                    string referencedProject = match.Groups[1].Value;
+                    if (!Path.IsPathRooted(referencedProject))
+                        referencedProject = Path.GetFullPath(Path.Combine(solutionDirectory, referencedProject));
+
+                    if (string.Equals(NormalizeCompletionPath(referencedProject), normalizedProject,
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private void ShowProjectStatus(string action, string projectPath, string solutionPath,
+            string referencePath = null)
+        {
+            if (outputTabControl.SelectedTab == errorsTabPage)
+                outputTabControl.SelectedTab = outputTabPage;
+
+            var lines = new List<string> { action + "." };
+            if (!string.IsNullOrEmpty(solutionPath))
+                lines.Add("Solution: " + solutionPath);
+            if (!string.IsNullOrEmpty(projectPath))
+                lines.Add("Project: " + projectPath);
+            if (!string.IsNullOrEmpty(referencePath))
+                lines.Add("Reference: " + referencePath);
+
+            outputRBT.Text = string.Join(Environment.NewLine, lines);
         }
 
 
@@ -1657,6 +5382,9 @@ namespace CIARE
                 case Keys.N | Keys.Control:
                     FileManage.NewFile(SelectedEditor.GetSelectedEditor(), outputRBT);
                     return true;
+                case Keys.N | Keys.Control | Keys.Shift:
+                    newProjectStripMenuItem_Click(this, EventArgs.Empty);
+                    return true;
                 case Keys.H | Keys.Control:
                     GlobalVariables.findTabOpen = false;
                     FindAndReplace findAndReplace = new FindAndReplace();
@@ -1672,6 +5400,9 @@ namespace CIARE
                     int indexTab = EditorTabControl.SelectedIndex;
                     FileManage.OpenFileTab(EditorTabControl, SelectedEditor.GetSelectedEditor(indexTab));
                     return true;
+                case Keys.O | Keys.Control | Keys.Shift:
+                    OpenProjectOrSolutionDialog();
+                    return true;
                 case Keys.F | Keys.Control:
                     GlobalVariables.findTabOpen = true;
                     FindAndReplace find = new FindAndReplace();
@@ -1681,7 +5412,6 @@ namespace CIARE
                     FindUsagesAtCaret();
                     return true;
                 case Keys.F5:
-                    FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
                     if (outputTabControl.SelectedTab == errorsTabPage)
                         outputTabControl.SelectedTab = outputTabPage;
                     RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
@@ -1769,6 +5499,7 @@ namespace CIARE
                     menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator(), GlobalVariables.isVStheme);
                 errorsLV.BackColor = darkBg;
                 errorsLV.ForeColor = darkFg;
+                ApplyTabControlDarkMode(EditorTabControl, darkBg);
                 ApplyTabControlDarkMode(outputTabControl, darkBg);
                 ApplyFileExplorerTheme(highlight);
                 return;
@@ -1778,6 +5509,7 @@ namespace CIARE
                 menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
             errorsLV.BackColor = SystemColors.Window;
             errorsLV.ForeColor = Color.Black;
+            ApplyTabControlDarkMode(EditorTabControl, SystemColors.Window);
             ApplyTabControlDarkMode(outputTabControl, SystemColors.Window);
             ApplyFileExplorerTheme(highlight);
         }
@@ -1817,44 +5549,52 @@ namespace CIARE
 
         private static void ApplyTabControlDarkMode(TabControl tabControl, Color backColor)
         {
+            if (tabControl == null)
+                return;
+
             tabControl.BackColor = backColor;
             foreach (TabPage page in tabControl.TabPages)
+            {
+                page.UseVisualStyleBackColor = false;
                 page.BackColor = backColor;
+            }
             tabControl.Invalidate();
         }
 
         private void OutputTabControl_DrawItem(object sender, DrawItemEventArgs e)
         {
+            if (e.Index < 0 || e.Index >= outputTabControl.TabPages.Count)
+                return;
+
             bool dark = GlobalVariables.darkColor;
             var g = e.Graphics;
             var tp = outputTabControl.TabPages[e.Index];
-            var rt = e.Bounds;
+            var tabBounds = outputTabControl.GetTabRect(e.Index);
+            bool selected = e.Index == outputTabControl.SelectedIndex;
 
-            // Fill tab background in dark mode (same colours as the editor tabs)
-            if (dark)
-            {
-                Color tabBg = GlobalVariables.TabBgColor;
-                using (var bgBrush = new SolidBrush(tabBg))
-                    g.FillRectangle(bgBrush, rt);
-            }
-
-            // Fill the empty strip area beyond the last tab (same helper as editor tabs)
-            TabControllerManage.SetTransparentTabBar(outputTabControl, e,
-                GlobalVariables.formBgColor.R, GlobalVariables.formBgColor.G, GlobalVariables.formBgColor.B);
-
-            // Draw text centred in the FULL tab rect — no close-button indentation for output tabs
+            Color tabBackColor = dark
+                ? (selected ? GlobalVariables.TabSelectedColor : GlobalVariables.TabBgColor)
+                : (selected ? SystemColors.Window : SystemColors.Control);
             Color textColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
-            using (var textBrush = new SolidBrush(textColor))
-            using (var sf = new StringFormat
+            Color borderColor = dark ? GlobalVariables.TabSelectedColor : SystemColors.ControlDark;
+
+            using (var bgBrush = new SolidBrush(tabBackColor))
+                g.FillRectangle(bgBrush, tabBounds);
+            using (var borderPen = new Pen(borderColor))
+                g.DrawRectangle(borderPen, tabBounds.X, tabBounds.Y, tabBounds.Width - 1, tabBounds.Height - 1);
+
+            if (e.Index == outputTabControl.TabPages.Count - 1)
             {
-                Alignment = StringAlignment.Center,
-                LineAlignment = StringAlignment.Center,
-                Trimming = StringTrimming.EllipsisCharacter,
-                FormatFlags = StringFormatFlags.NoWrap,
-            })
-            {
-                g.DrawString(tp.Text, tp.Font ?? Control.DefaultFont, textBrush, (RectangleF)rt, sf);
+                TabControllerManage.SetTransparentTabBar(outputTabControl, e,
+                    GlobalVariables.formBgColor.R, GlobalVariables.formBgColor.G, GlobalVariables.formBgColor.B);
             }
+
+            Rectangle textBounds = Rectangle.Inflate(tabBounds, -8, 0);
+            TextRenderer.DrawText(g, tp.Text, tp.Font ?? outputTabControl.Font, textBounds, textColor,
+                TextFormatFlags.HorizontalCenter |
+                TextFormatFlags.VerticalCenter |
+                TextFormatFlags.NoPrefix |
+                TextFormatFlags.SingleLine);
         }
 
         private void errorsLV_ItemActivate(object sender, EventArgs e)
@@ -1996,6 +5736,15 @@ namespace CIARE
             else
                 e.Cancel = false;
 
+            if (_editorLayoutRefreshTimer != null)
+            {
+                _editorLayoutRefreshTimer.Stop();
+                _editorLayoutRefreshTimer.Tick -= OnEditorLayoutRefreshTimer;
+                _editorLayoutRefreshTimer.Dispose();
+                _editorLayoutRefreshTimer = null;
+            }
+            _pendingEditorLayoutRefresh = false;
+
             // Delete temp mark file.
             if (GetCiareProcesses() == 1)
             {
@@ -2013,6 +5762,8 @@ namespace CIARE
             // Stop Live share if connected.
             Task.Run(() => _apiConnectionEvents.CloseConnection(hubConnection));
 
+            SaveFileExplorerWidth(force: true);
+            SaveFileExplorerNuGetHeight(force: true);
             SaveFileExplorerExpandedState();
             StopFileExplorerWatcher();
         }
@@ -2160,7 +5911,10 @@ namespace CIARE
         {
             if (GlobalVariables.OCodeCompletion)
             {
-                var parserThread = new Thread(ParserThread);
+                if (parserThread != null && parserThread.IsAlive)
+                    return;
+
+                parserThread = new Thread(ParserThread);
                 parserThread.IsBackground = true;
                 parserThread.Start();
             }
@@ -2199,47 +5953,31 @@ namespace CIARE
         void ParseStep()
         {
             string code = null;
-            string workspaceFolder = null;
-            string currentFilePath = null;
-            Invoke(new MethodInvoker(delegate
+            CompletionScopeSnapshot completionScope = default;
+            Invoke(new System.Windows.Forms.MethodInvoker(delegate
             {
                 code = SelectedEditor.GetSelectedEditor().Text;
-                workspaceFolder = !string.IsNullOrEmpty(_fileExplorerRootPath)
-                    ? _fileExplorerRootPath
-                    : (!string.IsNullOrEmpty(GetActiveEditorFilePath())
-                        ? FindWorkspaceRoot(Path.GetDirectoryName(GetActiveEditorFilePath()))
-                        : null);
-                currentFilePath = GetActiveEditorFilePath();
+                completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
             }));
             var workspaceCompletionClasses = new List<WorkspaceCompletionClass>();
-            AddRoslynCompletionClasses(workspaceCompletionClasses, code, currentFilePath);
+            AddRoslynCompletionClasses(workspaceCompletionClasses, code, completionScope.CurrentFilePath);
             var topLevelFunctions = new List<WorkspaceCompletionItem>();
-            CollectTopLevelLocalFunctions(topLevelFunctions, code, currentFilePath);
-            string parsedCode = IsVisualBasic ? code : WrapTopLevelStatementsForNRefactory(ConvertFileScopedNamespace(code), out _, out _);
-            TextReader textReader = new StringReader(parsedCode);
-            Dom.ICompilationUnit newCompilationUnit;
-            NRefactory.SupportedLanguage supportedLanguage;
-            if (IsVisualBasic)
-                supportedLanguage = NRefactory.SupportedLanguage.VBNet;
-            else
-                supportedLanguage = NRefactory.SupportedLanguage.CSharp;
-            using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(supportedLanguage, textReader))
-            {
-                p.ParseMethodBodies = false;
-                p.Parse();
-                newCompilationUnit = ConvertCompilationUnit(p.CompilationUnit);
-            }
-            if (newCompilationUnit is Dom.DefaultCompilationUnit dcuCurrent && !string.IsNullOrEmpty(currentFilePath))
-                dcuCurrent.FileName = currentFilePath;
+            CollectTopLevelLocalFunctions(topLevelFunctions, code, completionScope.CurrentFilePath);
+            Dom.ICompilationUnit activeCompilationUnit = ParseCompletionCompilationUnit(code,
+                completionScope.CurrentFilePath);
+            if (!IsCompletionScopeCurrent(completionScope))
+                return;
+
+            SetActiveCompletionCompilationUnit(activeCompilationUnit, completionScope.CurrentFilePath);
+            ParseWorkspaceFilesForCompletion(completionScope, workspaceCompletionClasses);
+            if (!IsCompletionScopeCurrent(completionScope))
+                return;
+
             lock (_completionDataLock)
             {
-                myProjectContent.UpdateCompilationUnit(lastCompilationUnit, newCompilationUnit, DummyFileName);
-                lastCompilationUnit = newCompilationUnit;
-                parseInformation.SetCompilationUnit(newCompilationUnit);
-            }
-            ParseWorkspaceFilesForCompletion(workspaceFolder, currentFilePath, workspaceCompletionClasses);
-            lock (_completionDataLock)
-            {
+                if (!IsCompletionScopeCurrent(completionScope))
+                    return;
+
                 _workspaceCompletionClasses.Clear();
                 _workspaceCompletionClasses.AddRange(workspaceCompletionClasses);
                 _topLevelLocalFunctions.Clear();
@@ -2247,56 +5985,182 @@ namespace CIARE
             }
         }
 
-        private void ParseWorkspaceFilesForCompletion(string workspaceFolder, string currentFilePath, List<WorkspaceCompletionClass> workspaceCompletionClasses)
+        internal void RefreshActiveCompletionUnit(string code)
         {
-            if (string.IsNullOrEmpty(workspaceFolder) || !Directory.Exists(workspaceFolder))
+            if (!GlobalVariables.OCodeCompletion || myProjectContent == null)
+                return;
+
+            CompletionScopeSnapshot completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
+            SetActiveCompletionCompilationUnit(ParseCompletionCompilationUnit(code, completionScope.CurrentFilePath),
+                completionScope.CurrentFilePath);
+        }
+
+        private Dom.ICompilationUnit ParseCompletionCompilationUnit(string code, string currentFilePath)
+        {
+            string parsedCode = PrepareCodeForNRefactoryCompletion(code ?? string.Empty, currentFilePath,
+                out _, out _, out _);
+            NRefactory.SupportedLanguage supportedLanguage = IsVisualBasic
+                ? NRefactory.SupportedLanguage.VBNet
+                : NRefactory.SupportedLanguage.CSharp;
+
+            using (TextReader textReader = new StringReader(parsedCode))
+            using (NRefactory.IParser parser = NRefactory.ParserFactory.CreateParser(supportedLanguage, textReader))
             {
-                lock (_completionDataLock)
-                {
-                    foreach (var pair in _workspaceCompilationUnits)
-                        myProjectContent.RemoveCompilationUnit(pair.Value);
-                    _workspaceCompilationUnits.Clear();
-                }
+                parser.ParseMethodBodies = false;
+                parser.Parse();
+                return ConvertCompilationUnit(parser.CompilationUnit);
+            }
+        }
+
+        private void SetActiveCompletionCompilationUnit(Dom.ICompilationUnit compilationUnit,
+            string currentFilePath)
+        {
+            if (compilationUnit == null)
+                return;
+
+            if (compilationUnit is Dom.DefaultCompilationUnit dcuCurrent &&
+                !string.IsNullOrEmpty(currentFilePath))
+            {
+                dcuCurrent.FileName = currentFilePath;
+            }
+
+            lock (_completionDataLock)
+            {
+                myProjectContent.UpdateCompilationUnit(lastCompilationUnit, compilationUnit, DummyFileName);
+                lastCompilationUnit = compilationUnit;
+                parseInformation.SetCompilationUnit(compilationUnit);
+            }
+        }
+
+        private struct CompletionScopeSnapshot
+        {
+            public string CurrentFilePath;
+            public string WorkspaceFolder;
+            public List<string> SourceFolders;
+            public string WorkspaceKey;
+            public string FileKey;
+            public int Version;
+        }
+
+        private CompletionScopeSnapshot RefreshCompletionScope(string currentFilePath)
+        {
+            string projectPath = GetCompletionProjectPath(currentFilePath);
+            string workspaceFolder = GetCompletionWorkspaceFolder(currentFilePath);
+            var projectPaths = GetCompletionProjectPaths(projectPath);
+            var sourceFolders = GetCompletionSourceFolders(projectPaths);
+            string workspaceKey = BuildCompletionWorkspaceKey(projectPaths);
+            if (string.IsNullOrEmpty(workspaceKey))
+                workspaceKey = NormalizeCompletionPath(workspaceFolder);
+            string fileKey = NormalizeCompletionPath(currentFilePath);
+            bool workspaceChanged = !string.Equals(workspaceKey, _completionWorkspaceKey,
+                StringComparison.OrdinalIgnoreCase);
+            bool fileChanged = !string.Equals(fileKey, _completionFileKey,
+                StringComparison.OrdinalIgnoreCase);
+
+            if (workspaceChanged || fileChanged)
+            {
+                _completionWorkspaceKey = workspaceKey;
+                _completionFileKey = fileKey;
+                Interlocked.Increment(ref _completionWorkspaceVersion);
+
+                if (workspaceChanged)
+                    ClearWorkspaceCompletionData();
+            }
+
+            return new CompletionScopeSnapshot
+            {
+                CurrentFilePath = currentFilePath,
+                WorkspaceFolder = workspaceFolder,
+                SourceFolders = sourceFolders,
+                WorkspaceKey = workspaceKey,
+                FileKey = fileKey,
+                Version = Volatile.Read(ref _completionWorkspaceVersion)
+            };
+        }
+
+        private bool IsCompletionScopeCurrent(CompletionScopeSnapshot scope)
+        {
+            return scope.Version == Volatile.Read(ref _completionWorkspaceVersion) &&
+                string.Equals(scope.WorkspaceKey, _completionWorkspaceKey, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(scope.FileKey, _completionFileKey, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void InvalidateCompletionWorkspace()
+        {
+            _completionWorkspaceKey = string.Empty;
+            _completionFileKey = string.Empty;
+            Interlocked.Increment(ref _completionWorkspaceVersion);
+            ClearWorkspaceCompletionData();
+        }
+
+        private void ParseWorkspaceFilesForCompletion(CompletionScopeSnapshot scope, List<WorkspaceCompletionClass> workspaceCompletionClasses)
+        {
+            List<string> sourceFolders = scope.SourceFolders ?? new List<string>();
+            string currentFilePath = scope.CurrentFilePath;
+            if (!IsCompletionScopeCurrent(scope))
+                return;
+
+            if (sourceFolders.Count == 0)
+            {
+                ClearWorkspaceCompletionData();
                 return;
             }
 
             string normalizedCurrent = NormalizeCompletionPath(currentFilePath);
             var visitedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var filePath in GetWorkspaceCsFiles(workspaceFolder))
+            foreach (string sourceFolder in sourceFolders)
             {
-                if (!string.IsNullOrEmpty(normalizedCurrent) &&
-                    string.Equals(NormalizeCompletionPath(filePath), normalizedCurrent, StringComparison.OrdinalIgnoreCase))
+                if (string.IsNullOrEmpty(sourceFolder) || !Directory.Exists(sourceFolder))
                     continue;
 
-                visitedPaths.Add(filePath);
-                try
+                foreach (var filePath in GetWorkspaceCsFiles(sourceFolder))
                 {
-                    string originalFileCode = File.ReadAllText(filePath);
-                    AddRoslynCompletionClasses(workspaceCompletionClasses, originalFileCode, filePath);
-                    string fileCode = ConvertFileScopedNamespace(originalFileCode);
-                    Dom.ICompilationUnit newCU;
-                    using (var reader = new StringReader(fileCode))
-                    using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(NRefactory.SupportedLanguage.CSharp, reader))
+                    if (!IsCompletionScopeCurrent(scope))
+                        return;
+
+                    if (!string.IsNullOrEmpty(normalizedCurrent) &&
+                        string.Equals(NormalizeCompletionPath(filePath), normalizedCurrent, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    if (!visitedPaths.Add(filePath))
+                        continue;
+
+                    try
                     {
-                        p.ParseMethodBodies = false;
-                        p.Parse();
-                        newCU = ConvertCompilationUnit(p.CompilationUnit);
+                        string originalFileCode = File.ReadAllText(filePath);
+                        AddRoslynCompletionClasses(workspaceCompletionClasses, originalFileCode, filePath);
+                        string fileCode = PrepareCodeForNRefactoryCompletion(originalFileCode, filePath,
+                            out _, out _, out _);
+                        Dom.ICompilationUnit newCU;
+                        using (var reader = new StringReader(fileCode))
+                        using (NRefactory.IParser p = NRefactory.ParserFactory.CreateParser(NRefactory.SupportedLanguage.CSharp, reader))
+                        {
+                            p.ParseMethodBodies = false;
+                            p.Parse();
+                            newCU = ConvertCompilationUnit(p.CompilationUnit);
+                        }
+                        if (newCU is Dom.DefaultCompilationUnit dcuW)
+                            dcuW.FileName = filePath;
+                        lock (_completionDataLock)
+                        {
+                            if (!IsCompletionScopeCurrent(scope))
+                                return;
+
+                            _workspaceCompilationUnits.TryGetValue(filePath, out var oldCU);
+                            myProjectContent.UpdateCompilationUnit(oldCU, newCU, filePath);
+                            _workspaceCompilationUnits[filePath] = newCU;
+                        }
                     }
-                    if (newCU is Dom.DefaultCompilationUnit dcuW)
-                        dcuW.FileName = filePath;
-                    lock (_completionDataLock)
-                    {
-                        _workspaceCompilationUnits.TryGetValue(filePath, out var oldCU);
-                        myProjectContent.UpdateCompilationUnit(oldCU, newCU, filePath);
-                        _workspaceCompilationUnits[filePath] = newCU;
-                    }
+                    catch { }
                 }
-                catch { }
             }
 
             lock (_completionDataLock)
             {
+                if (!IsCompletionScopeCurrent(scope))
+                    return;
+
                 var toRemove = _workspaceCompilationUnits.Keys.Where(p => !visitedPaths.Contains(p)).ToList();
                 foreach (var path in toRemove)
                 {
@@ -2310,6 +6174,9 @@ namespace CIARE
         {
             var result = new ArrayList();
             if (string.IsNullOrWhiteSpace(prefix))
+                return result;
+
+            if (!ShouldUseWorkspaceCompletionData())
                 return result;
 
             var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -2340,6 +6207,9 @@ namespace CIARE
             if (string.IsNullOrEmpty(normalizedExpression))
                 return result;
 
+            if (!ShouldUseWorkspaceCompletionData())
+                return result;
+
             var seen = new HashSet<string>(StringComparer.Ordinal);
             lock (_completionDataLock)
             {
@@ -2358,6 +6228,696 @@ namespace CIARE
             }
 
             return result;
+        }
+
+        internal ArrayList GetRoslynMemberCompletionData(string code, int caretOffset, string expressionText)
+        {
+            var result = new ArrayList();
+            if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
+                return result;
+
+            try
+            {
+                var context = BuildRoslynCompletionContext(code);
+                if (context == null)
+                    return result;
+
+                int position = Math.Max(0, Math.Min(caretOffset, code.Length));
+                string completionExpression = NormalizeCompletionExpression(expressionText);
+                if (string.IsNullOrEmpty(completionExpression))
+                    completionExpression = GetMemberCompletionExpressionText(code, position);
+
+                ExpressionSyntax expression = FindRoslynMemberAccessExpression(context.Root, position, completionExpression);
+                if (expression == null)
+                    return result;
+
+                var symbolInfo = context.SemanticModel.GetSymbolInfo(expression);
+                var typeInfo = context.SemanticModel.GetTypeInfo(expression);
+                ISymbol expressionSymbol = symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
+
+                if (expressionSymbol is INamespaceSymbol namespaceSymbol)
+                {
+                    AddRoslynSymbolsToCompletionData(result, namespaceSymbol.GetMembers(), string.Empty,
+                        staticOnly: false, instanceOnly: false);
+                    return result;
+                }
+
+                bool staticOnly = expressionSymbol is INamedTypeSymbol;
+                ITypeSymbol typeSymbol = staticOnly
+                    ? expressionSymbol as ITypeSymbol
+                    : typeInfo.Type ?? typeInfo.ConvertedType;
+                if (typeSymbol == null)
+                    return result;
+
+                AddRoslynSymbolsToCompletionData(result,
+                    GetRoslynTypeMembers(typeSymbol, staticOnly),
+                    string.Empty,
+                    staticOnly,
+                    instanceOnly: !staticOnly);
+            }
+            catch
+            {
+            }
+
+            return result;
+        }
+
+        private static string GetMemberCompletionExpressionText(string code, int caretOffset)
+        {
+            if (string.IsNullOrEmpty(code))
+                return string.Empty;
+
+            int offset = Math.Max(0, Math.Min(caretOffset, code.Length));
+            while (offset > 0 && char.IsWhiteSpace(code[offset - 1]))
+                offset--;
+
+            if (offset > 0 && code[offset - 1] == '.')
+                offset--;
+
+            while (offset > 0 && char.IsWhiteSpace(code[offset - 1]))
+                offset--;
+
+            int end = offset;
+            while (offset > 0 && IsSimpleMemberExpressionChar(code[offset - 1]))
+                offset--;
+
+            return end > offset
+                ? NormalizeCompletionExpression(code.Substring(offset, end - offset))
+                : string.Empty;
+        }
+
+        private static bool IsSimpleMemberExpressionChar(char ch)
+        {
+            return char.IsLetterOrDigit(ch) ||
+                   ch == '_' ||
+                   ch == '@' ||
+                   ch == '.';
+        }
+
+        internal ArrayList GetRoslynCtrlSpaceCompletionData(string code, int caretOffset, string prefix)
+        {
+            var result = new ArrayList();
+            if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
+                return result;
+
+            try
+            {
+                var context = BuildRoslynCompletionContext(code);
+                if (context == null)
+                    return result;
+
+                int position = Math.Max(0, Math.Min(caretOffset, code.Length));
+                AddRoslynSymbolsToCompletionData(result,
+                    context.SemanticModel.LookupSymbols(position),
+                    prefix,
+                    staticOnly: false,
+                    instanceOnly: false);
+            }
+            catch
+            {
+            }
+
+            return result;
+        }
+
+        private RoslynCompletionContext BuildRoslynCompletionContext(string code)
+        {
+            string currentFilePath = GetActiveEditorFilePath();
+            string projectPath = GetCompletionProjectPath(currentFilePath);
+            var parseOptions = BuildCompletionParseOptions();
+            SyntaxTree activeTree;
+            var syntaxTrees = BuildRoslynCompletionSyntaxTrees(code, currentFilePath, projectPath,
+                parseOptions, out activeTree);
+            if (activeTree == null)
+                return null;
+
+            var compilation = CSharpCompilation.Create(
+                "__CiareCompletion",
+                syntaxTrees,
+                BuildCompletionReferences(projectPath),
+                new CSharpCompilationOptions(
+                    OutputKind.DynamicallyLinkedLibrary,
+                    allowUnsafe: GlobalVariables.OUnsafeCode));
+
+            var root = activeTree.GetCompilationUnitRoot();
+            return new RoslynCompletionContext(
+                activeTree,
+                root,
+                compilation,
+                compilation.GetSemanticModel(activeTree, true));
+        }
+
+        private List<SyntaxTree> BuildRoslynCompletionSyntaxTrees(string code, string currentFilePath,
+            string projectPath, CSharpParseOptions parseOptions, out SyntaxTree activeTree)
+        {
+            string activePath = string.IsNullOrWhiteSpace(currentFilePath) ? DummyFileName : currentFilePath;
+            activeTree = CSharpSyntaxTree.ParseText(code ?? string.Empty, parseOptions, path: activePath);
+            var syntaxTrees = new List<SyntaxTree> { activeTree };
+
+            var projectPaths = GetCompletionProjectPaths(projectPath);
+            AddRoslynCompletionGlobalUsings(syntaxTrees, projectPaths, parseOptions);
+
+            var sourceFolders = GetCompletionSourceFolders(projectPaths);
+            if (sourceFolders.Count == 0)
+                return syntaxTrees;
+
+            string normalizedCurrent = NormalizeCompletionPath(currentFilePath);
+            var seenSourceFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(normalizedCurrent))
+                seenSourceFiles.Add(normalizedCurrent);
+
+            int sourceFileCount = 0;
+            foreach (string sourceFolder in sourceFolders)
+            {
+                foreach (string filePath in GetWorkspaceCsFiles(sourceFolder))
+                {
+                    string normalizedFile = NormalizeCompletionPath(filePath);
+                    if (string.IsNullOrEmpty(normalizedFile) || !seenSourceFiles.Add(normalizedFile))
+                        continue;
+
+                    if (++sourceFileCount > RoslynCompletionSourceFileLimit)
+                        return syntaxTrees;
+
+                    AddRoslynCompletionSyntaxTree(syntaxTrees, filePath, parseOptions);
+                }
+            }
+
+            return syntaxTrees;
+        }
+
+        private static void AddRoslynCompletionGlobalUsings(List<SyntaxTree> syntaxTrees,
+            IList<string> projectPaths, CSharpParseOptions parseOptions)
+        {
+            var addedGeneratedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string projectPath in projectPaths)
+            {
+                string globalUsingsPath = FindProjectGlobalUsingsFile(projectPath);
+                if (!string.IsNullOrEmpty(globalUsingsPath) &&
+                    addedGeneratedFiles.Add(NormalizeCompletionPath(globalUsingsPath)))
+                {
+                    AddRoslynCompletionSyntaxTree(syntaxTrees, globalUsingsPath, parseOptions);
+                    continue;
+                }
+
+                syntaxTrees.Add(CSharpSyntaxTree.ParseText(BuildCompletionImplicitUsingsCode(projectPath),
+                    parseOptions, path: GetCompletionImplicitUsingsTreePath(projectPath)));
+            }
+        }
+
+        private static string GetCompletionImplicitUsingsTreePath(string projectPath)
+        {
+            string normalizedProject = NormalizeCompletionPath(projectPath);
+            string fileName = string.IsNullOrEmpty(normalizedProject)
+                ? "Project"
+                : Path.GetFileNameWithoutExtension(normalizedProject);
+            return "__CIARE_ImplicitUsings_" + fileName + ".g.cs";
+        }
+
+        private static void AddRoslynCompletionSyntaxTree(List<SyntaxTree> syntaxTrees,
+            string filePath, CSharpParseOptions parseOptions)
+        {
+            try
+            {
+                if (!File.Exists(filePath))
+                    return;
+
+                syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(filePath),
+                    parseOptions, path: filePath));
+            }
+            catch
+            {
+            }
+        }
+
+        private static List<string> GetCompletionProjectPaths(string projectPath)
+        {
+            var projectPaths = new List<string>();
+            AddCompletionProjectPath(projectPath, projectPaths,
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            return projectPaths;
+        }
+
+        private static void AddCompletionProjectPath(string projectPath, List<string> projectPaths,
+            HashSet<string> visited)
+        {
+            if (!IsProjectFilePath(projectPath))
+                return;
+
+            string normalizedProject = NormalizeCompletionPath(projectPath);
+            if (string.IsNullOrEmpty(normalizedProject) || !visited.Add(normalizedProject))
+                return;
+
+            projectPaths.Add(projectPath);
+            foreach (string referencedProjectPath in ProjectReferenceManager.GetProjectReferences(projectPath))
+                AddCompletionProjectPath(referencedProjectPath, projectPaths, visited);
+        }
+
+        private static List<string> GetCompletionSourceFolders(IList<string> projectPaths)
+        {
+            return projectPaths
+                .Select(GetProjectDirectory)
+                .Where(path => !string.IsNullOrEmpty(path) && Directory.Exists(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static string GetProjectDirectory(string projectPath)
+        {
+            try
+            {
+                return string.IsNullOrWhiteSpace(projectPath) ? string.Empty : Path.GetDirectoryName(projectPath);
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string BuildCompletionWorkspaceKey(IList<string> projectPaths)
+        {
+            if (projectPaths == null || projectPaths.Count == 0)
+                return string.Empty;
+
+            return string.Join("|", projectPaths
+                .Select(NormalizeCompletionPath)
+                .Where(path => !string.IsNullOrEmpty(path))
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase));
+        }
+
+        private static List<string> GetCompletionFrameworkReferencePaths(string projectPath)
+        {
+            return GetCompletionProjectPaths(projectPath)
+                .SelectMany(path => ProjectNuGetManager.GetFrameworkReferencePaths(path))
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static List<string> GetCompletionCompileReferencePaths(string projectPath)
+        {
+            var paths = new List<string>();
+            foreach (string path in GetCompletionProjectPaths(projectPath))
+            {
+                paths.AddRange(ProjectNuGetManager.GetAssemblyReferencePaths(path));
+                paths.AddRange(ProjectNuGetManager.GetCompileReferencePaths(path));
+            }
+
+            return paths
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private string GetCompletionWorkspaceFolder(string currentFilePath)
+        {
+            string projectPath = GetCompletionProjectPath(currentFilePath);
+            if (string.IsNullOrEmpty(projectPath))
+                return string.Empty;
+
+            string projectFolder = Path.GetDirectoryName(projectPath);
+            return !string.IsNullOrEmpty(projectFolder) && Directory.Exists(projectFolder)
+                ? projectFolder
+                : string.Empty;
+        }
+
+        private bool ShouldUseWorkspaceCompletionData()
+        {
+            string projectPath = GetCompletionProjectPath(GetActiveEditorFilePath());
+            return GetCompletionSourceFolders(GetCompletionProjectPaths(projectPath)).Count > 0;
+        }
+
+        internal void ResetCompletionWorkspaceIfInactive()
+        {
+            CompletionScopeSnapshot completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
+            if (string.IsNullOrEmpty(completionScope.WorkspaceFolder))
+            {
+                InvalidateCompletionWorkspace();
+                ClearProjectPackageCompletionReferences();
+            }
+        }
+
+        private void ClearWorkspaceCompletionData()
+        {
+            if (myProjectContent == null)
+                return;
+
+            lock (_completionDataLock)
+            {
+                foreach (var pair in _workspaceCompilationUnits)
+                    myProjectContent.RemoveCompilationUnit(pair.Value);
+
+                _workspaceCompilationUnits.Clear();
+                _workspaceCompletionClasses.Clear();
+                _topLevelLocalFunctions.Clear();
+            }
+        }
+
+        internal ArrayList FilterCompletionDataForActiveProject(ArrayList completionData)
+        {
+            if (completionData == null || completionData.Count == 0)
+                return completionData;
+
+            string activeFilePath = GetActiveEditorFilePath();
+            var sourceFolders = GetCompletionSourceFolders(
+                GetCompletionProjectPaths(GetCompletionProjectPath(activeFilePath)));
+            var filtered = new ArrayList(completionData.Count);
+
+            foreach (object item in completionData)
+            {
+                if (ShouldKeepCompletionDataItem(item, activeFilePath, sourceFolders))
+                    filtered.Add(item);
+            }
+
+            return filtered;
+        }
+
+        private bool ShouldKeepCompletionDataItem(object item, string activeFilePath, IList<string> sourceFolders)
+        {
+            string sourcePath = GetCompletionDataSourcePath(item);
+            if (string.IsNullOrWhiteSpace(sourcePath))
+                return true;
+
+            if (!string.Equals(Path.GetExtension(sourcePath), ".cs", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            string normalizedSource = NormalizeCompletionPath(sourcePath);
+            if (string.IsNullOrEmpty(normalizedSource))
+                return true;
+
+            string normalizedActive = NormalizeCompletionPath(activeFilePath);
+            if (!string.IsNullOrEmpty(normalizedActive) &&
+                string.Equals(normalizedSource, normalizedActive, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            foreach (string sourceFolder in sourceFolders ?? Array.Empty<string>())
+            {
+                if (!string.IsNullOrEmpty(sourceFolder) &&
+                    Directory.Exists(sourceFolder) &&
+                    IsPathInsideFolder(sourcePath, sourceFolder))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string GetCompletionDataSourcePath(object item)
+        {
+            try
+            {
+                if (item is Dom.IClass completionClass)
+                    return completionClass.CompilationUnit?.FileName ?? string.Empty;
+
+                if (item is Dom.IMember completionMember)
+                    return completionMember.DeclaringType?.CompilationUnit?.FileName ?? string.Empty;
+            }
+            catch
+            {
+            }
+
+            return string.Empty;
+        }
+
+        private static IEnumerable<MetadataReference> BuildCompletionReferences(string projectPath)
+        {
+            var references = new List<MetadataReference>();
+            var referencePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var referenceAssemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var referencePath in GetCompletionFrameworkReferencePaths(projectPath))
+                AddCompletionReference(references, referencePaths, referenceAssemblyNames, referencePath);
+
+            AddCompletionReferencePaths(references, referencePaths, referenceAssemblyNames,
+                GlobalVariables.customRefList);
+            AddCompletionReferencePaths(references, referencePaths, referenceAssemblyNames,
+                GlobalVariables.filteredCustomRef);
+            AddCompletionReferencePaths(references, referencePaths, referenceAssemblyNames,
+                GlobalVariables.customRefAsm);
+
+            foreach (var referencePath in GetCompletionCompileReferencePaths(projectPath))
+                AddCompletionReference(references, referencePaths, referenceAssemblyNames, referencePath);
+
+            string trusted = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
+            if (!string.IsNullOrEmpty(trusted))
+            {
+                foreach (var referencePath in trusted.Split(Path.PathSeparator))
+                    AddCompletionReference(references, referencePaths, referenceAssemblyNames, referencePath);
+            }
+
+            return references;
+        }
+
+        private static void AddCompletionReferencePaths(List<MetadataReference> references,
+            HashSet<string> referencePaths, HashSet<string> referenceAssemblyNames,
+            IEnumerable<string> storedReferences)
+        {
+            if (storedReferences == null)
+                return;
+
+            foreach (string storedReference in storedReferences)
+                AddCompletionReference(references, referencePaths, referenceAssemblyNames,
+                    GetCompletionReferencePath(storedReference));
+        }
+
+        private static void AddCompletionReference(List<MetadataReference> references,
+            HashSet<string> referencePaths, HashSet<string> referenceAssemblyNames, string referencePath)
+        {
+            if (string.IsNullOrWhiteSpace(referencePath) || !File.Exists(referencePath))
+                return;
+
+            try
+            {
+                string normalizedPath = NormalizeCompletionPath(referencePath);
+                if (!referencePaths.Add(normalizedPath))
+                    return;
+
+                string assemblyName = GetCompletionReferenceAssemblyName(referencePath);
+                if (!string.IsNullOrEmpty(assemblyName) &&
+                    !referenceAssemblyNames.Add(assemblyName))
+                {
+                    referencePaths.Remove(normalizedPath);
+                    return;
+                }
+
+                references.Add(MetadataReference.CreateFromFile(referencePath));
+            }
+            catch
+            {
+            }
+        }
+
+        private static string GetCompletionReferenceAssemblyName(string referencePath)
+        {
+            try
+            {
+                return AssemblyName.GetAssemblyName(referencePath).Name ?? string.Empty;
+            }
+            catch
+            {
+                return Path.GetFileNameWithoutExtension(referencePath);
+            }
+        }
+
+        private static string GetCompletionReferencePath(string storedReference)
+        {
+            if (string.IsNullOrWhiteSpace(storedReference))
+                return string.Empty;
+
+            string[] parts = storedReference.Split('|');
+            return parts.Length >= 2 ? parts[1] : storedReference;
+        }
+
+        private static CSharpParseOptions BuildCompletionParseOptions()
+        {
+            string framework = GlobalVariables.Framework ?? string.Empty;
+            var languageVersion = LanguageVersion.Default;
+            if (framework.StartsWith("net6.0", StringComparison.OrdinalIgnoreCase))
+                languageVersion = LanguageVersion.CSharp10;
+            else if (framework.StartsWith("net7.0", StringComparison.OrdinalIgnoreCase))
+                languageVersion = LanguageVersion.CSharp11;
+            else if (framework.StartsWith("net8.0", StringComparison.OrdinalIgnoreCase))
+                languageVersion = LanguageVersion.CSharp12;
+            else if (framework.StartsWith("net9.0", StringComparison.OrdinalIgnoreCase))
+                languageVersion = LanguageVersion.CSharp13;
+            else if (framework.StartsWith("net10.0", StringComparison.OrdinalIgnoreCase))
+                languageVersion = LanguageVersion.CSharp14;
+
+            return CSharpParseOptions.Default.WithLanguageVersion(languageVersion);
+        }
+
+        private static string BuildCompletionImplicitUsingsCode(string projectPath)
+        {
+            var namespaces = ProjectNuGetManager.GetImplicitUsingNamespaces(projectPath);
+            if (namespaces.Count == 0)
+                namespaces.AddRange(CompletionImplicitUsingNamespaces);
+
+            return string.Join(Environment.NewLine,
+                namespaces.Distinct(StringComparer.Ordinal).Select(ns => $"global using {ns};"));
+        }
+
+        private static ExpressionSyntax FindRoslynMemberAccessExpression(
+            CompilationUnitSyntax root, int caretOffset, string expressionText)
+        {
+            if (root == null)
+                return null;
+
+            int lookupPosition = Math.Max(0, Math.Min(caretOffset - 1, root.FullSpan.End));
+            SyntaxToken token = root.FindToken(lookupPosition);
+            var memberAccess = token.Parent?.AncestorsAndSelf()
+                .OfType<MemberAccessExpressionSyntax>()
+                .Where(access => access.OperatorToken.SpanStart <= lookupPosition &&
+                                 access.SpanStart <= lookupPosition)
+                .OrderByDescending(access => access.SpanStart)
+                .FirstOrDefault();
+            if (memberAccess != null)
+                return memberAccess.Expression;
+
+            string normalizedExpression = NormalizeCompletionExpression(expressionText);
+            if (string.IsNullOrEmpty(normalizedExpression))
+                return null;
+
+            return root.DescendantNodes()
+                .OfType<ExpressionSyntax>()
+                .Where(expression => expression.Span.End <= caretOffset &&
+                                     string.Equals(NormalizeCompletionExpression(expression.ToString()),
+                                         normalizedExpression, StringComparison.Ordinal))
+                .OrderByDescending(expression => expression.Span.End)
+                .FirstOrDefault();
+        }
+
+        private static IEnumerable<ISymbol> GetRoslynTypeMembers(ITypeSymbol typeSymbol, bool staticOnly)
+        {
+            if (typeSymbol == null)
+                yield break;
+
+            if (staticOnly)
+            {
+                foreach (var member in typeSymbol.GetMembers())
+                    yield return member;
+                yield break;
+            }
+
+            for (INamedTypeSymbol current = typeSymbol as INamedTypeSymbol;
+                current != null;
+                current = current.BaseType)
+            {
+                foreach (var member in current.GetMembers())
+                    yield return member;
+            }
+        }
+
+        private static void AddRoslynSymbolsToCompletionData(ArrayList result, IEnumerable<ISymbol> symbols,
+            string prefix, bool staticOnly, bool instanceOnly)
+        {
+            if (result == null || symbols == null)
+                return;
+
+            string normalizedPrefix = prefix ?? string.Empty;
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var symbol in symbols.OrderBy(symbol => symbol.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                if (!IsRoslynCompletionSymbol(symbol, staticOnly, instanceOnly))
+                    continue;
+
+                string name = GetRoslynCompletionName(symbol);
+                if (string.IsNullOrEmpty(name))
+                    continue;
+
+                if (!string.IsNullOrEmpty(normalizedPrefix) &&
+                    !name.StartsWith(normalizedPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!seen.Add(name))
+                    continue;
+
+                result.Add(new DefaultCompletionData(name,
+                    GetRoslynCompletionDescription(symbol),
+                    GetRoslynCompletionImageIndex(symbol)));
+                if (result.Count >= WorkspaceCompletionMethodLimit)
+                    return;
+            }
+        }
+
+        private static bool IsRoslynCompletionSymbol(ISymbol symbol, bool staticOnly, bool instanceOnly)
+        {
+            if (symbol == null || symbol.IsImplicitlyDeclared || string.IsNullOrEmpty(symbol.Name))
+                return false;
+
+            if (symbol is IMethodSymbol method)
+            {
+                if (method.MethodKind != MethodKind.Ordinary &&
+                    method.MethodKind != MethodKind.ReducedExtension)
+                {
+                    return false;
+                }
+            }
+
+            if (staticOnly && symbol.Kind != SymbolKind.NamedType && !symbol.IsStatic)
+                return false;
+
+            if (instanceOnly && symbol.IsStatic && symbol.Kind != SymbolKind.NamedType)
+                return false;
+
+            return symbol.Kind == SymbolKind.Method ||
+                   symbol.Kind == SymbolKind.Property ||
+                   symbol.Kind == SymbolKind.Field ||
+                   symbol.Kind == SymbolKind.Event ||
+                   symbol.Kind == SymbolKind.NamedType ||
+                   symbol.Kind == SymbolKind.Namespace ||
+                   symbol.Kind == SymbolKind.Local ||
+                   symbol.Kind == SymbolKind.Parameter;
+        }
+
+        private static string GetRoslynCompletionName(ISymbol symbol)
+        {
+            if (symbol == null)
+                return string.Empty;
+
+            if (symbol is INamedTypeSymbol namedType && !string.IsNullOrEmpty(namedType.Name))
+                return namedType.Name;
+
+            return symbol.Name ?? string.Empty;
+        }
+
+        private static string GetRoslynCompletionDescription(ISymbol symbol)
+        {
+            try
+            {
+                return symbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+            }
+            catch
+            {
+                return symbol?.Name ?? string.Empty;
+            }
+        }
+
+        private static int GetRoslynCompletionImageIndex(ISymbol symbol)
+        {
+            switch (symbol?.Kind)
+            {
+                case SymbolKind.Method:
+                    return 1;
+                case SymbolKind.Property:
+                    return 2;
+                case SymbolKind.Field:
+                case SymbolKind.Local:
+                case SymbolKind.Parameter:
+                    return 3;
+                case SymbolKind.Event:
+                    return 6;
+                case SymbolKind.NamedType:
+                    return symbol is INamedTypeSymbol namedType && namedType.TypeKind == TypeKind.Enum ? 4 : 0;
+                case SymbolKind.Namespace:
+                    return 5;
+                default:
+                    return 0;
+            }
         }
 
         private static void AddWorkspaceClassCompletionItems(ArrayList result, HashSet<string> seen, WorkspaceCompletionClass completionClass)
@@ -2449,6 +7009,10 @@ namespace CIARE
             if (hit.FilePath != null)
                 return hit;
 
+            hit = FindDefinitionInWorkspaceSemantic(name, offset);
+            if (hit.FilePath != null)
+                return hit;
+
             hit = FindDefinitionInWorkspaceMembers(name, qualifier);
             return hit.FilePath != null ? hit : FindDefinition(name);
         }
@@ -2501,7 +7065,13 @@ namespace CIARE
 
                 qualifier = GetMemberAccessQualifier(token);
 
-                var compilation = CSharpCompilation.Create("__CiareGoToDefinition", new[] { tree });
+                var compilation = CSharpCompilation.Create(
+                    "__CiareGoToDefinition",
+                    syntaxTrees: new[] { tree },
+                    references: BuildUsageReferences(),
+                    options: new CSharpCompilationOptions(
+                        OutputKind.DynamicallyLinkedLibrary,
+                        allowUnsafe: GlobalVariables.OUnsafeCode));
                 var semanticModel = compilation.GetSemanticModel(tree, true);
 
                 ISymbol symbol = GetDeclaredSymbolForIdentifier(semanticModel, token);
@@ -2518,6 +7088,10 @@ namespace CIARE
                     if (hit.FilePath != null)
                         return hit;
                 }
+
+                hit = FindLocalDefinitionBySyntax(root, token, name, filePath);
+                if (hit.FilePath != null)
+                    return hit;
             }
             catch
             {
@@ -2525,6 +7099,48 @@ namespace CIARE
             }
 
             return (null, 0);
+        }
+
+        private (string FilePath, int Line) FindDefinitionInWorkspaceSemantic(string name, int offset)
+        {
+            if (IsVisualBasic || string.IsNullOrEmpty(name) || offset < 0)
+                return (null, 0);
+
+            try
+            {
+                var openTabs = CollectOpenTabInfo(name);
+                var workspaceFolders = GetUsageWorkspaceFolders(GetActiveEditorFilePath()).ToList();
+                List<string> compilationUnitKeys;
+                lock (_completionDataLock)
+                    compilationUnitKeys = _workspaceCompilationUnits.Keys.ToList();
+
+                var documents = BuildUsageDocuments(name, openTabs, workspaceFolders, compilationUnitKeys);
+                var activeDocument = documents.FirstOrDefault(document => document.IsActive);
+                if (activeDocument == null)
+                    return (null, 0);
+
+                var compilation = CSharpCompilation.Create(
+                    "__CiareGoToDefinitionWorkspace",
+                    syntaxTrees: documents.Select(document => document.SyntaxTree),
+                    references: BuildUsageReferences(),
+                    options: new CSharpCompilationOptions(
+                        OutputKind.DynamicallyLinkedLibrary,
+                        allowUnsafe: GlobalVariables.OUnsafeCode));
+
+                var semanticModel = compilation.GetSemanticModel(activeDocument.SyntaxTree, true);
+                ISymbol symbol = GetIdentifierSymbolAtOffset(semanticModel, activeDocument.Root, offset, name);
+                var hit = GetDefinitionLocation(symbol, activeDocument.FilePath);
+                if (hit.FilePath != null)
+                    return hit;
+
+                SyntaxToken token = activeDocument.Root.FindToken(
+                    Math.Max(0, Math.Min(offset, Math.Max(0, activeDocument.Root.FullSpan.End - 1))));
+                return FindLocalDefinitionBySyntax(activeDocument.Root, token, name, activeDocument.FilePath);
+            }
+            catch
+            {
+                return (null, 0);
+            }
         }
 
         private static string GetMemberAccessQualifier(SyntaxToken token)
@@ -2585,6 +7201,146 @@ namespace CIARE
             }
 
             return (null, 0);
+        }
+
+        private static (string FilePath, int Line) FindLocalDefinitionBySyntax(
+            CompilationUnitSyntax root, SyntaxToken targetToken, string name, string filePath)
+        {
+            if (root == null ||
+                !targetToken.IsKind(SyntaxKind.IdentifierToken) ||
+                string.IsNullOrEmpty(name))
+            {
+                return (null, 0);
+            }
+
+            if (!TryFindLocalDefinitionToken(root, targetToken, name, out SyntaxToken definitionToken))
+                return (null, 0);
+
+            return GetDefinitionLocation(definitionToken.GetLocation(), filePath);
+        }
+
+        private static bool TryFindLocalDefinitionToken(
+            CompilationUnitSyntax root, SyntaxToken targetToken, string name, out SyntaxToken definitionToken)
+        {
+            definitionToken = default;
+            int bestStart = -1;
+
+            foreach (var variable in root.DescendantNodes().OfType<VariableDeclaratorSyntax>())
+            {
+                if (IsFieldVariableDeclarator(variable))
+                    continue;
+
+                TryUseDefinitionToken(variable, variable.Identifier, targetToken, name,
+                    ref definitionToken, ref bestStart);
+            }
+
+            foreach (var parameter in root.DescendantNodes().OfType<ParameterSyntax>())
+                TryUseDefinitionToken(parameter, parameter.Identifier, targetToken, name,
+                    ref definitionToken, ref bestStart);
+
+            foreach (var forEach in root.DescendantNodes().OfType<ForEachStatementSyntax>())
+                TryUseDefinitionToken(forEach, forEach.Identifier, targetToken, name,
+                    ref definitionToken, ref bestStart);
+
+            foreach (var catchDeclaration in root.DescendantNodes().OfType<CatchDeclarationSyntax>())
+                TryUseDefinitionToken(catchDeclaration, catchDeclaration.Identifier, targetToken, name,
+                    ref definitionToken, ref bestStart);
+
+            foreach (var designation in root.DescendantNodes().OfType<SingleVariableDesignationSyntax>())
+                TryUseDefinitionToken(designation, designation.Identifier, targetToken, name,
+                    ref definitionToken, ref bestStart);
+
+            return bestStart >= 0;
+        }
+
+        private static void TryUseDefinitionToken(SyntaxNode declarationNode, SyntaxToken candidateToken,
+            SyntaxToken targetToken, string name, ref SyntaxToken definitionToken, ref int bestStart)
+        {
+            if (!candidateToken.IsKind(SyntaxKind.IdentifierToken) ||
+                !string.Equals(candidateToken.ValueText, name, StringComparison.Ordinal) ||
+                candidateToken.SpanStart > targetToken.SpanStart ||
+                candidateToken.SpanStart < bestStart ||
+                !IsDeclarationVisibleAtToken(declarationNode, targetToken))
+            {
+                return;
+            }
+
+            definitionToken = candidateToken;
+            bestStart = candidateToken.SpanStart;
+        }
+
+        private static bool IsFieldVariableDeclarator(VariableDeclaratorSyntax variable)
+        {
+            return variable?.Ancestors().Any(node =>
+                node is FieldDeclarationSyntax || node is EventFieldDeclarationSyntax) == true;
+        }
+
+        private static bool IsDeclarationVisibleAtToken(SyntaxNode declarationNode, SyntaxToken targetToken)
+        {
+            if (declarationNode == null || targetToken.Parent == null ||
+                declarationNode.SpanStart > targetToken.SpanStart)
+            {
+                return false;
+            }
+
+            SyntaxNode scope = GetDeclarationScopeNode(declarationNode);
+            return scope == null || IsAncestorOrSelf(scope, targetToken.Parent);
+        }
+
+        private static SyntaxNode GetDeclarationScopeNode(SyntaxNode declarationNode)
+        {
+            if (declarationNode == null)
+                return null;
+
+            if (declarationNode is ParameterSyntax || declarationNode is TypeParameterSyntax)
+            {
+                return declarationNode.Ancestors().FirstOrDefault(node =>
+                    node is BaseMethodDeclarationSyntax ||
+                    node is LocalFunctionStatementSyntax ||
+                    node is ParenthesizedLambdaExpressionSyntax ||
+                    node is SimpleLambdaExpressionSyntax ||
+                    node is AnonymousMethodExpressionSyntax ||
+                    node is TypeDeclarationSyntax);
+            }
+
+            if (declarationNode is ForEachStatementSyntax)
+                return declarationNode;
+
+            if (declarationNode is CatchDeclarationSyntax)
+                return declarationNode.Parent;
+
+            SyntaxNode localDeclaration = declarationNode.AncestorsAndSelf()
+                .FirstOrDefault(node => node is LocalDeclarationStatementSyntax);
+            if (localDeclaration != null)
+            {
+                if (localDeclaration.Parent is GlobalStatementSyntax globalStatement)
+                    return globalStatement.Parent;
+
+                return localDeclaration.Parent;
+            }
+
+            return declarationNode.AncestorsAndSelf().FirstOrDefault(node =>
+                node is ForStatementSyntax ||
+                node is UsingStatementSyntax ||
+                node is FixedStatementSyntax ||
+                node is BlockSyntax ||
+                node is SwitchSectionSyntax ||
+                node is GlobalStatementSyntax ||
+                node is StatementSyntax ||
+                node is BaseMethodDeclarationSyntax ||
+                node is LocalFunctionStatementSyntax ||
+                node is AnonymousFunctionExpressionSyntax);
+        }
+
+        private static bool IsAncestorOrSelf(SyntaxNode ancestor, SyntaxNode node)
+        {
+            for (SyntaxNode current = node; current != null; current = current.Parent)
+            {
+                if (current == ancestor)
+                    return true;
+            }
+
+            return false;
         }
 
         private static ISymbol GetDeclaredSymbolForIdentifier(SemanticModel semanticModel, SyntaxToken token)
@@ -2759,6 +7515,184 @@ namespace CIARE
             string before = code.Substring(0, match.Index);
             string after = code.Substring(match.Index + match.Length);
             return before + "namespace " + nsName + "\n{" + after + "\n}";
+        }
+
+        internal string PrepareCodeForNRefactoryCompletion(string code, out int prefixLineOffset,
+            out int wrapLineOffset, out int bodyStartLine)
+        {
+            return PrepareCodeForNRefactoryCompletion(code, GetActiveEditorFilePath(),
+                out prefixLineOffset, out wrapLineOffset, out bodyStartLine);
+        }
+
+        private string PrepareCodeForNRefactoryCompletion(string code, string filePath,
+            out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine)
+        {
+            prefixLineOffset = 0;
+            wrapLineOffset = 0;
+            bodyStartLine = 1;
+
+            if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
+                return code;
+
+            string globalUsings = GetProjectGlobalUsingsForCompletion(filePath);
+            string codeWithGlobalUsings = code;
+            if (!string.IsNullOrEmpty(globalUsings))
+            {
+                prefixLineOffset = CountLineBreaks(globalUsings);
+                codeWithGlobalUsings = globalUsings + code;
+            }
+
+            return WrapTopLevelStatementsForNRefactory(ConvertFileScopedNamespace(codeWithGlobalUsings),
+                out wrapLineOffset, out bodyStartLine);
+        }
+
+        private string GetProjectGlobalUsingsForCompletion(string sourceFilePath)
+        {
+            return ReadGlobalUsingsAsRegularDirectives(GetCompletionProjectPath(sourceFilePath));
+        }
+
+        private string GetCompletionProjectPath(string sourceFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourceFilePath) || !File.Exists(sourceFilePath))
+                return string.Empty;
+
+            if (Directory.Exists(_fileExplorerRootPath))
+            {
+                return IsPathInsideFolder(sourceFilePath, _fileExplorerRootPath)
+                    ? FindProjectFileForPath(sourceFilePath, _fileExplorerRootPath)
+                    : string.Empty;
+            }
+
+            return string.Empty;
+        }
+
+        private static string ReadGlobalUsingsAsRegularDirectives(string projectPath)
+        {
+            var directives = new List<string>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            string globalUsingsPath = FindProjectGlobalUsingsFile(projectPath);
+            if (!string.IsNullOrEmpty(globalUsingsPath))
+                AddGlobalUsingDirectivesFromFile(globalUsingsPath, directives, seen);
+
+            try
+            {
+                string projectDirectory = string.IsNullOrWhiteSpace(projectPath)
+                    ? string.Empty
+                    : Path.GetDirectoryName(projectPath);
+                if (!string.IsNullOrEmpty(projectDirectory) && Directory.Exists(projectDirectory))
+                {
+                    foreach (string filePath in GetWorkspaceCsFiles(projectDirectory))
+                        AddGlobalUsingDirectivesFromFile(filePath, directives, seen);
+                }
+
+                foreach (string namespaceName in ProjectNuGetManager.GetImplicitUsingNamespaces(projectPath))
+                    AddRegularUsingDirective("using " + namespaceName + ";", directives, seen);
+
+                return directives.Count == 0
+                    ? string.Empty
+                    : string.Join(Environment.NewLine, directives) + Environment.NewLine;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static void AddGlobalUsingDirectivesFromFile(string filePath, List<string> directives,
+            HashSet<string> seen)
+        {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+                return;
+
+            try
+            {
+                foreach (string line in File.ReadAllLines(filePath))
+                    AddRegularUsingDirective(ConvertGlobalUsingLine(line), directives, seen);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void AddRegularUsingDirective(string directive, List<string> directives,
+            HashSet<string> seen)
+        {
+            if (!string.IsNullOrWhiteSpace(directive) && seen.Add(directive))
+                directives.Add(directive);
+        }
+
+        private static string FindProjectGlobalUsingsFile(string projectPath)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
+                return string.Empty;
+
+            string projectDirectory = Path.GetDirectoryName(projectPath);
+            if (string.IsNullOrEmpty(projectDirectory))
+                return string.Empty;
+
+            string objDirectory = Path.Combine(projectDirectory, "obj");
+            if (!Directory.Exists(objDirectory))
+                return string.Empty;
+
+            try
+            {
+                string targetFramework = ProjectNuGetManager.GetProjectTargetFramework(projectPath);
+                var files = Directory.EnumerateFiles(objDirectory, "*GlobalUsings.g.cs",
+                        SearchOption.AllDirectories)
+                    .Where(File.Exists)
+                    .OrderByDescending(path => IsPreferredGlobalUsingsPath(path, targetFramework))
+                    .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                return files.FirstOrDefault(path => IsPreferredGlobalUsingsPath(path, targetFramework)) ??
+                    files.FirstOrDefault() ??
+                    string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static bool IsPreferredGlobalUsingsPath(string filePath, string targetFramework)
+        {
+            string framework = string.IsNullOrWhiteSpace(targetFramework)
+                ? GlobalVariables.Framework
+                : targetFramework;
+            if (string.IsNullOrWhiteSpace(framework))
+                return false;
+
+            return filePath
+                .Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+                    StringSplitOptions.RemoveEmptyEntries)
+                .Any(segment => segment.StartsWith(framework, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string ConvertGlobalUsingLine(string line)
+        {
+            string trimmed = (line ?? string.Empty).Trim();
+            const string prefix = "global using ";
+            if (!trimmed.StartsWith(prefix, StringComparison.Ordinal))
+                return string.Empty;
+
+            string body = trimmed.Substring(prefix.Length);
+            if (body.StartsWith("static ", StringComparison.Ordinal))
+                return string.Empty;
+
+            string directive = "using " + body.Replace("global::", string.Empty);
+            return directive.EndsWith(";", StringComparison.Ordinal) ? directive : directive + ";";
+        }
+
+        private static int CountLineBreaks(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return 0;
+
+            int count = 0;
+            foreach (char ch in text)
+                if (ch == '\n')
+                    count++;
+            return count;
         }
 
         /// <summary>
@@ -3151,6 +8085,23 @@ namespace CIARE
             }
         }
 
+        private sealed class RoslynCompletionContext
+        {
+            public RoslynCompletionContext(SyntaxTree activeTree, CompilationUnitSyntax root,
+                CSharpCompilation compilation, SemanticModel semanticModel)
+            {
+                ActiveTree = activeTree;
+                Root = root;
+                Compilation = compilation;
+                SemanticModel = semanticModel;
+            }
+
+            public SyntaxTree ActiveTree { get; }
+            public CompilationUnitSyntax Root { get; }
+            public CSharpCompilation Compilation { get; }
+            public SemanticModel SemanticModel { get; }
+        }
+
         private sealed class WorkspaceCompletionItem
         {
             public WorkspaceCompletionItem(string name, string description, int imageIndex, string filePath = null, int line = 0)
@@ -3186,7 +8137,8 @@ namespace CIARE
 
         private sealed class UsageDocument
         {
-            private readonly string[] _lines;
+            private readonly object _linesLock = new object();
+            private string[] _lines;
 
             public UsageDocument(string filePath, string text, SyntaxTree syntaxTree, CompilationUnitSyntax root, bool isActive)
             {
@@ -3195,7 +8147,6 @@ namespace CIARE
                 SyntaxTree = syntaxTree;
                 Root = root;
                 IsActive = isActive;
-                _lines = Regex.Split(Text, "\r\n|\r|\n");
             }
 
             public string FilePath { get; }
@@ -3208,7 +8159,45 @@ namespace CIARE
             public string GetLineText(int lineNumber)
             {
                 int index = lineNumber - 1;
-                return index >= 0 && index < _lines.Length ? _lines[index] : string.Empty;
+                var lines = GetLines();
+                return index >= 0 && index < lines.Length ? lines[index] : string.Empty;
+            }
+
+            private string[] GetLines()
+            {
+                if (_lines != null)
+                    return _lines;
+
+                lock (_linesLock)
+                {
+                    if (_lines == null)
+                    {
+                        _lines = Text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                    }
+
+                    return _lines;
+                }
+            }
+        }
+
+        private sealed class UsageDocumentCacheEntry
+        {
+            public UsageDocumentCacheEntry(UsageDocument document, long lastWriteUtcTicks, long length)
+            {
+                Document = document;
+                LastWriteUtcTicks = lastWriteUtcTicks;
+                Length = length;
+                LastAccessUtc = DateTime.UtcNow;
+            }
+
+            public UsageDocument Document { get; }
+            public long LastWriteUtcTicks { get; }
+            public long Length { get; }
+            public DateTime LastAccessUtc { get; private set; }
+
+            public void Touch()
+            {
+                LastAccessUtc = DateTime.UtcNow;
             }
         }
 
@@ -3403,20 +8392,10 @@ namespace CIARE
 
             // Scan and parse files in parallel (disk I/O + Roslyn parse are the bottleneck).
             var newDocs = new ConcurrentDictionary<string, UsageDocument>(StringComparer.OrdinalIgnoreCase);
-            Parallel.ForEach(pathsToScan, filePath =>
+            Parallel.ForEach(pathsToScan, CreateUsageParallelOptions(), filePath =>
             {
-                try
-                {
-                    if (!FileContainsIdentifier(filePath, identifier))
-                        return;
-                    string text = File.ReadAllText(filePath);
-                    var syntaxTree = CSharpSyntaxTree.ParseText(text, parseOptions, path: filePath);
-                    var root = syntaxTree.GetCompilationUnitRoot();
-                    string normalizedPath = NormalizeCompletionPath(filePath);
-                    if (!string.IsNullOrEmpty(normalizedPath))
-                        newDocs.TryAdd(normalizedPath, new UsageDocument(filePath, text, syntaxTree, root, false));
-                }
-                catch { }
+                if (TryGetUsageDocumentFromFile(filePath, identifier, parseOptions, out UsageDocument document))
+                    newDocs.TryAdd(NormalizeCompletionPath(filePath), document);
             });
 
             foreach (var kvp in newDocs)
@@ -3426,6 +8405,147 @@ namespace CIARE
             }
 
             return documents;
+        }
+
+        private static ParallelOptions CreateUsageParallelOptions()
+        {
+            return new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount)
+            };
+        }
+
+        private static bool TryGetUsageDocumentFromFile(string filePath, string identifier,
+            CSharpParseOptions parseOptions, out UsageDocument document)
+        {
+            document = null;
+            if (string.IsNullOrWhiteSpace(filePath) || string.IsNullOrEmpty(identifier))
+                return false;
+
+            string normalizedPath = NormalizeCompletionPath(filePath);
+            if (string.IsNullOrEmpty(normalizedPath))
+                return false;
+
+            FileInfo fileInfo;
+            try
+            {
+                fileInfo = new FileInfo(filePath);
+                if (!fileInfo.Exists)
+                    return false;
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (TryGetCachedUsageDocument(normalizedPath, fileInfo, identifier, out document))
+                return true;
+
+            try
+            {
+                if (!TryReadUsageFileTextIfContainsIdentifier(filePath, fileInfo, identifier, out string text))
+                    return false;
+
+                var syntaxTree = CSharpSyntaxTree.ParseText(text, parseOptions, path: filePath);
+                var root = syntaxTree.GetCompilationUnitRoot();
+                document = new UsageDocument(filePath, text, syntaxTree, root, false);
+                CacheUsageDocument(normalizedPath, document, fileInfo);
+                return true;
+            }
+            catch
+            {
+                document = null;
+                return false;
+            }
+        }
+
+        private static bool TryReadUsageFileTextIfContainsIdentifier(string filePath, FileInfo fileInfo,
+            string identifier, out string text)
+        {
+            text = null;
+            try
+            {
+                if (fileInfo.Length <= UsageFastReadMaxFileBytes)
+                {
+                    text = File.ReadAllText(filePath);
+                    if (TextContainsIdentifier(text, identifier))
+                        return true;
+
+                    text = null;
+                    return false;
+                }
+
+                if (!FileContainsIdentifier(filePath, identifier))
+                    return false;
+
+                text = File.ReadAllText(filePath);
+                return true;
+            }
+            catch
+            {
+                text = null;
+                return false;
+            }
+        }
+
+        private static bool TryGetCachedUsageDocument(string normalizedPath, FileInfo fileInfo,
+            string identifier, out UsageDocument document)
+        {
+            document = null;
+            UsageDocumentCacheEntry entry;
+            lock (_usageDocumentCacheLock)
+            {
+                if (!_usageDocumentCache.TryGetValue(normalizedPath, out entry))
+                    return false;
+
+                if (entry.LastWriteUtcTicks != fileInfo.LastWriteTimeUtc.Ticks ||
+                    entry.Length != fileInfo.Length)
+                {
+                    _usageDocumentCache.Remove(normalizedPath);
+                    return false;
+                }
+            }
+
+            if (!TextContainsIdentifier(entry.Document.Text, identifier))
+                return false;
+
+            lock (_usageDocumentCacheLock)
+            {
+                entry.Touch();
+            }
+
+            document = entry.Document;
+            return true;
+        }
+
+        private static void CacheUsageDocument(string normalizedPath, UsageDocument document, FileInfo fileInfo)
+        {
+            if (document == null || fileInfo.Length > UsageDocumentCacheMaxFileBytes)
+                return;
+
+            lock (_usageDocumentCacheLock)
+            {
+                _usageDocumentCache[normalizedPath] = new UsageDocumentCacheEntry(
+                    document,
+                    fileInfo.LastWriteTimeUtc.Ticks,
+                    fileInfo.Length);
+                TrimUsageDocumentCache();
+            }
+        }
+
+        private static void TrimUsageDocumentCache()
+        {
+            if (_usageDocumentCache.Count <= UsageDocumentCacheLimit)
+                return;
+
+            var keysToRemove = _usageDocumentCache
+                .OrderBy(kvp => kvp.Value.LastAccessUtc)
+                .Take(_usageDocumentCache.Count - UsageDocumentCacheLimit)
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (string key in keysToRemove)
+                _usageDocumentCache.Remove(key);
         }
 
         private static void AddUsageDocument(List<UsageDocument> documents, HashSet<string> seen,
@@ -3597,7 +8717,7 @@ namespace CIARE
 
                 // Search each document's tokens in parallel (Roslyn compilation/model is thread-safe for reads).
                 var rawUsages = new ConcurrentBag<UsageLocation>();
-                Parallel.ForEach(documents, document =>
+                Parallel.ForEach(documents, CreateUsageParallelOptions(), document =>
                 {
                     var semanticModel = compilation.GetSemanticModel(document.SyntaxTree, true);
                     foreach (var token in GetIdentifierTokens(document.Root, identifier))
@@ -3635,7 +8755,7 @@ namespace CIARE
         private static List<UsageLocation> FindSyntaxUsages(string identifier, List<UsageDocument> documents)
         {
             var rawUsages = new ConcurrentBag<UsageLocation>();
-            Parallel.ForEach(documents, document =>
+            Parallel.ForEach(documents, CreateUsageParallelOptions(), document =>
             {
                 foreach (var token in GetIdentifierTokens(document.Root, identifier))
                 {
@@ -3902,9 +9022,12 @@ namespace CIARE
             list.Columns.Add("Column", 70);
             list.Columns.Add("Code", 400);
 
+            string workspaceFolder = GetUsageWorkspaceFolder(GetActiveEditorFilePath());
+            bool hasWorkspaceFolder = Directory.Exists(workspaceFolder);
+            var usageItems = new List<ListViewItem>(Math.Max(1, usages.Count));
             foreach (var usage in usages)
             {
-                var item = new ListViewItem(GetUsageWindowDisplayPath(usage.FilePath))
+                var item = new ListViewItem(GetUsageWindowDisplayPath(usage.FilePath, workspaceFolder, hasWorkspaceFolder))
                 {
                     Tag = usage,
                     ToolTipText = usage.FilePath
@@ -3912,11 +9035,21 @@ namespace CIARE
                 item.SubItems.Add(usage.Line.ToString());
                 item.SubItems.Add(usage.Column.ToString());
                 item.SubItems.Add(usage.Text);
-                list.Items.Add(item);
+                usageItems.Add(item);
             }
 
             if (usages.Count == 0)
-                list.Items.Add(new ListViewItem(new[] { "No usages found.", string.Empty, string.Empty, string.Empty }));
+                usageItems.Add(new ListViewItem(new[] { "No usages found.", string.Empty, string.Empty, string.Empty }));
+
+            list.BeginUpdate();
+            try
+            {
+                list.Items.AddRange(usageItems.ToArray());
+            }
+            finally
+            {
+                list.EndUpdate();
+            }
 
             var footer = new FlowLayoutPanel
             {
@@ -4009,13 +9142,18 @@ namespace CIARE
 
         private string GetUsageWindowDisplayPath(string filePath)
         {
+            string workspaceFolder = GetUsageWorkspaceFolder(GetActiveEditorFilePath());
+            return GetUsageWindowDisplayPath(filePath, workspaceFolder, Directory.Exists(workspaceFolder));
+        }
+
+        private static string GetUsageWindowDisplayPath(string filePath, string workspaceFolder, bool hasWorkspaceFolder)
+        {
             if (string.IsNullOrEmpty(filePath) || string.Equals(filePath, CurrentFileUsageDisplayName, StringComparison.Ordinal))
                 return CurrentFileUsageDisplayName;
 
             try
             {
-                string workspaceFolder = GetUsageWorkspaceFolder(GetActiveEditorFilePath());
-                if (Directory.Exists(workspaceFolder) && IsPathInsideFolder(filePath, workspaceFolder))
+                if (hasWorkspaceFolder && IsPathInsideFolder(filePath, workspaceFolder))
                     return Path.GetRelativePath(workspaceFolder, filePath);
             }
             catch { }
@@ -4184,8 +9322,12 @@ namespace CIARE
                         string.Equals(name, "bin", StringComparison.OrdinalIgnoreCase) ||
                         string.Equals(name, "obj", StringComparison.OrdinalIgnoreCase) ||
                         string.Equals(name, "node_modules", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(name, "packages", StringComparison.OrdinalIgnoreCase))
+                        string.Equals(name, "packages", StringComparison.OrdinalIgnoreCase) ||
+                        DirectoryContainsProjectFile(d))
+                    {
                         continue;
+                    }
+
                     try
                     {
                         var attrs = File.GetAttributes(d);
@@ -4199,6 +9341,30 @@ namespace CIARE
                 catch { files = Array.Empty<string>(); }
                 foreach (var f in files)
                     yield return f;
+            }
+        }
+
+        private static bool DirectoryContainsProjectFile(string folder)
+        {
+            try
+            {
+                return Directory.EnumerateFiles(folder, "*.csproj", SearchOption.TopDirectoryOnly).Any();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool DirectoryContainsSolutionFile(string folder)
+        {
+            try
+            {
+                return Directory.EnumerateFiles(folder, "*.sln", SearchOption.TopDirectoryOnly).Any();
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -4231,7 +9397,7 @@ namespace CIARE
             {
                 InitializeEditor.SetMaximizedWindowState(GlobalVariables.registryPath, true);
             }
-            RefreshEditorLayoutBounds();
+            QueueEditorLayoutRefresh();
         }
 
 
@@ -4256,8 +9422,11 @@ namespace CIARE
         private void textEditorControl1_Resize(object sender, EventArgs e)
         {
             if (sender is TextEditorControl editor)
+            {
                 ConfigureEditorScrollBars(editor);
-            SplitEditorWindow.SetSplitWindowSize(SelectedEditor.GetSelectedEditor(), GlobalVariables.splitWindowPosition);
+                if (editor.secondaryTextArea != null)
+                    SplitEditorWindow.SetSplitWindowSize(editor, GlobalVariables.splitWindowPosition);
+            }
         }
 
         /// <summary>
@@ -4381,7 +9550,7 @@ namespace CIARE
                 ConfigureEditorTabPageLayout(tabPage);
                 SetDesignEditor(ref dynamicTextEdtior);
                 tabPage.Controls.Add(dynamicTextEdtior);
-                RefreshEditorLayoutBounds();
+                QueueEditorLayoutRefresh();
                 Initiliaze(EditorTabControl.SelectedIndex);
             }
 
@@ -4403,6 +9572,14 @@ namespace CIARE
             {
                 var editor = SelectedEditor.GetSelectedEditor();
                 if (editor == null) return;
+                CompletionScopeSnapshot completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
+                if (string.IsNullOrEmpty(completionScope.WorkspaceFolder))
+                {
+                    ClearProjectPackageCompletionReferences();
+                    ClearWorkspaceCompletionData();
+                }
+                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                    showRestoreFailure: false);
                 ScheduleCurrentTypeCheck(editor);
             }
             catch { }
@@ -4474,7 +9651,21 @@ namespace CIARE
             _filesDrag = files;
             worker = new BackgroundWorker();
             worker.DoWork += AddTabOnDop;
+            worker.RunWorkerCompleted += DragDropWorkerCompleted;
             worker.RunWorkerAsync();
+        }
+
+        private void DragDropWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (sender is BackgroundWorker completedWorker)
+            {
+                completedWorker.DoWork -= AddTabOnDop;
+                completedWorker.RunWorkerCompleted -= DragDropWorkerCompleted;
+                completedWorker.Dispose();
+
+                if (ReferenceEquals(worker, completedWorker))
+                    worker = null;
+            }
         }
 
         /// <summary>

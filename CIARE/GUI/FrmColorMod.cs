@@ -14,6 +14,7 @@ namespace CIARE.GUI
         private static extern int DwmSetWindowAttribute(
           IntPtr hwnd, int attr, ref int attrValue, int attrSize);
         private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+        private const int DWMWA_USE_IMMERSIVE_DARK_MODE_LEGACY = 19;
         private static Color ForeColor;
         private static Color BackGroundColor;
         private static Color ForeColorForm;
@@ -28,7 +29,7 @@ namespace CIARE.GUI
         /// <param name="dark"></param>
         public static void ToogleColorMode(this Form form, bool dark)
         {
-            EnableDarkTitleBar(form.Handle);
+            ApplyTitleBarColor(form, dark);
             ForeColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
             BackGroundColor = dark ? GlobalVariables.controlBgColor : SystemColors.Window;
             ForeColorForm = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
@@ -44,8 +45,41 @@ namespace CIARE.GUI
         /// <param name="handle"></param>
         public static void EnableDarkTitleBar(IntPtr handle)
         {
-            int value = 1;
-            DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE, ref value, sizeof(int));
+            SetDarkTitleBar(handle, true);
+        }
+
+        /// <summary>
+        /// Disable dark title bar on windows 10 and 11.
+        /// </summary>
+        /// <param name="handle"></param>
+        public static void DisableDarkTitleBar(IntPtr handle)
+        {
+            SetDarkTitleBar(handle, false);
+        }
+
+        /// <summary>
+        /// Set title bar dark mode on windows 10 and 11.
+        /// </summary>
+        /// <param name="handle"></param>
+        /// <param name="dark"></param>
+        public static void SetDarkTitleBar(IntPtr handle, bool dark)
+        {
+            if (handle == IntPtr.Zero)
+                return;
+
+            int value = dark ? 1 : 0;
+            if (DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE, ref value, sizeof(int)) != 0)
+                DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE_LEGACY, ref value, sizeof(int));
+        }
+
+        private static void ApplyTitleBarColor(Form form, bool dark)
+        {
+            if (form == null)
+                return;
+
+            SetDarkTitleBar(form.Handle, dark);
+            form.HandleCreated += (_, _) => SetDarkTitleBar(form.Handle, dark);
+            form.Shown += (_, _) => SetDarkTitleBar(form.Handle, dark);
         }
 
 
