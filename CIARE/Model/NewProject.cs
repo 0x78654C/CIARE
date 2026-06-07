@@ -35,6 +35,7 @@ namespace CIARE
         private readonly TextBox _solutionNameText = new TextBox();
         private readonly ComboBox _targetFrameworkCombo = new ComboBox();
         private readonly CheckBox _createSolutionCheckBox = new CheckBox();
+        private readonly CheckBox _nativeAotCheckBox = new CheckBox();
         private readonly Button _createButton = new Button();
         private readonly Button _cancelButton = new Button();
         private readonly Button _browseButton = new Button();
@@ -104,7 +105,7 @@ namespace CIARE
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 3,
-                RowCount = 7,
+                RowCount = 8,
                 Padding = new Padding(12, 0, 0, 0)
             };
             optionsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
@@ -114,6 +115,7 @@ namespace CIARE
             optionsLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
             optionsLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
             optionsLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+            optionsLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
             optionsLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
             optionsLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             optionsLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
@@ -175,6 +177,9 @@ namespace CIARE
             _createSolutionCheckBox.CheckedChanged += (_, _) =>
                 _solutionNameText.Enabled = _createSolutionCheckBox.Checked;
 
+            _nativeAotCheckBox.AutoSize = true;
+            _nativeAotCheckBox.Text = "Native AOT project";
+
             _createButton.Text = "Create";
             _createButton.Width = 92;
             _createButton.Height = 28;
@@ -191,6 +196,8 @@ namespace CIARE
             AddOptionRow(optionsLayout, 3, "Framework:", _targetFrameworkCombo);
             optionsLayout.Controls.Add(_createSolutionCheckBox, 1, 4);
             optionsLayout.SetColumnSpan(_createSolutionCheckBox, 2);
+            optionsLayout.Controls.Add(_nativeAotCheckBox, 1, 5);
+            optionsLayout.SetColumnSpan(_nativeAotCheckBox, 2);
 
             var buttonPanel = new FlowLayoutPanel
             {
@@ -200,7 +207,7 @@ namespace CIARE
             };
             buttonPanel.Controls.Add(_createButton);
             buttonPanel.Controls.Add(_cancelButton);
-            optionsLayout.Controls.Add(buttonPanel, 0, 6);
+            optionsLayout.Controls.Add(buttonPanel, 0, 7);
             optionsLayout.SetColumnSpan(buttonPanel, 3);
 
             mainLayout.Controls.Add(templatePanel, 0, 0);
@@ -404,7 +411,8 @@ namespace CIARE
 
             string rootNamespace = ToSafeNamespace(projectName);
 
-            File.WriteAllText(projectPath, SelectedTemplate.BuildProjectFile(targetFramework), Encoding.UTF8);
+            File.WriteAllText(projectPath,
+                SelectedTemplate.BuildProjectFile(targetFramework, _nativeAotCheckBox.Checked), Encoding.UTF8);
             File.WriteAllText(starterPath, SelectedTemplate.BuildStarterFile(projectName, rootNamespace), Encoding.UTF8);
 
             if (addToExistingSolution)
@@ -817,7 +825,8 @@ namespace CIARE
             }
         }
 
-        private static string BuildSdkProjectFile(string targetFramework, string outputType = null, bool useWindowsForms = false)
+        private static string BuildSdkProjectFile(string targetFramework, string outputType = null,
+            bool useWindowsForms = false, bool publishAot = false)
         {
             var builder = new StringBuilder();
             builder.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><Project Sdk=\"Microsoft.NET.Sdk\">");
@@ -825,6 +834,8 @@ namespace CIARE
             if (!string.IsNullOrWhiteSpace(outputType))
                 builder.AppendLine($"    <OutputType>{outputType}</OutputType>");
             builder.AppendLine($"    <TargetFramework>{targetFramework}</TargetFramework>");
+            if (publishAot)
+                builder.AppendLine("    <PublishAot>true</PublishAot>");
             if (useWindowsForms)
                 builder.AppendLine("    <UseWindowsForms>true</UseWindowsForms>");
             builder.AppendLine("    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>");
@@ -851,7 +862,8 @@ namespace CIARE
                     "Console App",
                     "Program.cs",
                     false,
-                    targetFramework => BuildSdkProjectFile(targetFramework, "Exe"),
+                    (targetFramework, publishAot) => BuildSdkProjectFile(targetFramework, "Exe",
+                        publishAot: publishAot),
                     (projectName, rootNamespace) =>
                         "Console.WriteLine(\"Hello, World!\");\r\n"),
 
@@ -859,7 +871,7 @@ namespace CIARE
                     "Class Library",
                     "Class1.cs",
                     false,
-                    targetFramework => BuildSdkProjectFile(targetFramework),
+                    (targetFramework, publishAot) => BuildSdkProjectFile(targetFramework, publishAot: publishAot),
                     (projectName, rootNamespace) =>
                         $"namespace {rootNamespace};\r\n\r\n" +
                         "public class Class1\r\n" +
@@ -870,7 +882,8 @@ namespace CIARE
                     "Windows Forms App",
                     "Program.cs",
                     true,
-                    targetFramework => BuildSdkProjectFile(targetFramework, "WinExe", useWindowsForms: true),
+                    (targetFramework, publishAot) => BuildSdkProjectFile(targetFramework, "WinExe",
+                        useWindowsForms: true, publishAot: publishAot),
                     (projectName, rootNamespace) =>
                         "using System;\r\n" +
                         "using System.Drawing;\r\n" +
@@ -900,14 +913,14 @@ namespace CIARE
                         "}\r\n")
             };
 
-            private readonly Func<string, string> _projectFileFactory;
+            private readonly Func<string, bool, string> _projectFileFactory;
             private readonly Func<string, string, string> _starterFileFactory;
 
             private ProjectTemplate(
                 string name,
                 string starterFileName,
                 bool requiresWindowsTargetFramework,
-                Func<string, string> projectFileFactory,
+                Func<string, bool, string> projectFileFactory,
                 Func<string, string, string> starterFileFactory)
             {
                 Name = name;
@@ -921,7 +934,8 @@ namespace CIARE
             public string StarterFileName { get; }
             public bool RequiresWindowsTargetFramework { get; }
 
-            public string BuildProjectFile(string targetFramework) => _projectFileFactory(targetFramework);
+            public string BuildProjectFile(string targetFramework, bool publishAot) =>
+                _projectFileFactory(targetFramework, publishAot);
 
             public string BuildStarterFile(string projectName, string rootNamespace) =>
                 _starterFileFactory(projectName, rootNamespace);

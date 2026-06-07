@@ -20,6 +20,7 @@ using System.Drawing.Text;
 using CIARE.Utils.OpenAISettings;
 using CIARE.Utils.Options;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace CIARE.Roslyn
 {
@@ -192,7 +193,14 @@ namespace CIARE.Roslyn
 
                 if (!Directory.Exists(pathOutput))
                     Directory.CreateDirectory(pathOutput);
-                if (exeFile)
+                if (GlobalVariables.OPublishNative && !exeFile)
+                {
+                    richTextBox.Text = "ERROR: Native AOT publish requires an executable output.";
+                    return;
+                }
+                if (GlobalVariables.OPublishNative)
+                    richTextBox.Text = "Publish Native AOT EXE binary file ...";
+                else if (exeFile)
                     richTextBox.Text = "Compile EXE binary file ...";
                 else
                     richTextBox.Text = "Compile DLL binary file ...";
@@ -246,7 +254,9 @@ namespace CIARE.Roslyn
                     else
                     {
                         richTextBox.Clear();
-                        CsProjCompile projCompile = new CsProjCompile(outPut, pathOutput, code, !exeFile, GlobalVariables.binaryPublish);
+                        bool nativeAot = GlobalVariables.OPublishNative;
+                        bool publish = GlobalVariables.binaryPublish || nativeAot;
+                        CsProjCompile projCompile = new CsProjCompile(outPut, pathOutput, code, !exeFile, publish, nativeAot);
                         projCompile.Build(richTextBox);
                         s_stopWatch.Stop();
                         s_timeSpan = s_stopWatch.Elapsed;
@@ -416,6 +426,8 @@ namespace CIARE.Roslyn
             if (string.IsNullOrEmpty(projectPath))
                 return false;
 
+            projectPath = PreferActiveNativeAotProject(projectPath);
+
             if (GlobalVariables.darkColor)
                 outLogRtb.ForeColor = Color.FromArgb(192, 215, 207);
             else
@@ -444,8 +456,28 @@ namespace CIARE.Roslyn
             if (string.IsNullOrEmpty(projectPath))
                 return false;
 
+            FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
             RunExistingProject(projectPath, outLogRtb);
             return true;
+        }
+
+        private static string PreferActiveNativeAotProject(string buildTargetPath)
+        {
+            if (!GlobalVariables.OPublishNative ||
+                !string.Equals(Path.GetExtension(buildTargetPath), ".sln", StringComparison.OrdinalIgnoreCase))
+            {
+                return buildTargetPath;
+            }
+
+            try
+            {
+                string activeProject = MainForm.Instance?.GetActivePackageInstallProjectPath() ?? string.Empty;
+                return ProjectHasPublishAotEnabled(activeProject) ? activeProject : buildTargetPath;
+            }
+            catch
+            {
+                return buildTargetPath;
+            }
         }
 
         private static void RunExistingProject(string projectPath, RichTextBox logOutput)
@@ -491,16 +523,30 @@ namespace CIARE.Roslyn
                     return;
                 }
 
-                string action = publish ? "Publish" : "Build";
+                bool nativeAot = GlobalVariables.OPublishNative &&
+                    BuildTargetHasPublishAotEnabled(projectPath);
+                bool effectivePublish = publish || nativeAot;
+                string nativeAotRuntimeIdentifier = nativeAot
+                    ? ExistingProjectNativeAotRuntimeIdentifier()
+                    : string.Empty;
+                if (nativeAot && string.IsNullOrEmpty(nativeAotRuntimeIdentifier))
+                {
+                    RichExtColor.ErrorDisplay(logOutput, "ERROR: Native AOT publish works only with x64 architecture!");
+                    return;
+                }
+
+                string action = nativeAot ? "Publish Native AOT" : effectivePublish ? "Publish" : "Build";
                 logOutput.Text = $"{action} project ...\n{projectPath}";
 
                 string workingDirectory = Path.GetDirectoryName(projectPath);
-                ProjectBuildCommand command = CreateBuildCommand(projectPath, publish, BuildTargetPrefersFullFrameworkMsBuild(projectPath));
+                ProjectBuildCommand command = CreateBuildCommand(projectPath, effectivePublish,
+                    BuildTargetPrefersFullFrameworkMsBuild(projectPath), nativeAotRuntimeIdentifier);
                 ProcessRunResult build = RunBuildCommand(command, workingDirectory);
 
                 if (!command.UsesFullFrameworkMsBuild && RequiresFullFrameworkMsBuild(build.Output))
                 {
-                    ProjectBuildCommand msBuildCommand = CreateBuildCommand(projectPath, publish, true);
+                    ProjectBuildCommand msBuildCommand = CreateBuildCommand(projectPath, effectivePublish, true,
+                        nativeAotRuntimeIdentifier);
                     if (msBuildCommand.UsesFullFrameworkMsBuild)
                     {
                         command = msBuildCommand;
@@ -536,15 +582,18 @@ namespace CIARE.Roslyn
             }
         }
 
-        private static ProjectBuildCommand CreateBuildCommand(string projectPath, bool publish, bool preferFullFrameworkMsBuild)
+        private static ProjectBuildCommand CreateBuildCommand(string projectPath, bool publish,
+            bool preferFullFrameworkMsBuild, string nativeAotRuntimeIdentifier)
         {
             if (preferFullFrameworkMsBuild && TryFindFullFrameworkMsBuild(out string msBuildPath))
             {
-                return new ProjectBuildCommand(msBuildPath, BuildExistingProjectMsBuildArguments(projectPath, publish),
+                return new ProjectBuildCommand(msBuildPath,
+                    BuildExistingProjectMsBuildArguments(projectPath, publish, nativeAotRuntimeIdentifier),
                     "Visual Studio MSBuild", true);
             }
 
-            return new ProjectBuildCommand("dotnet", BuildExistingProjectDotnetArguments(projectPath, publish),
+            return new ProjectBuildCommand("dotnet",
+                BuildExistingProjectDotnetArguments(projectPath, publish, nativeAotRuntimeIdentifier),
                 ".NET SDK MSBuild", false);
         }
 
@@ -554,26 +603,40 @@ namespace CIARE.Roslyn
             return processRun.RunWithResult();
         }
 
-        private static string BuildExistingProjectDotnetArguments(string projectPath, bool publish)
+        private static string BuildExistingProjectDotnetArguments(string projectPath, bool publish,
+            string nativeAotRuntimeIdentifier)
         {
             string quotedProjectPath = QuoteProcessArgument(projectPath);
             string configuration = ExistingProjectConfiguration();
             string platform = ExistingProjectPlatformDotnetArgument(projectPath);
+            string runtime = string.IsNullOrEmpty(nativeAotRuntimeIdentifier)
+                ? string.Empty
+                : $"--runtime {nativeAotRuntimeIdentifier}";
+            string publishAotOverride = publish
+                ? $"--property:PublishAot={(string.IsNullOrEmpty(nativeAotRuntimeIdentifier) ? "false" : "true")}"
+                : string.Empty;
 
             if (publish)
-                return $"publish {quotedProjectPath} --configuration {configuration} {platform}".Trim();
+                return $"publish {quotedProjectPath} --configuration {configuration} {platform} {publishAotOverride} {runtime}".Trim();
 
             return $"build {quotedProjectPath} --configuration {configuration} {platform}".Trim();
         }
 
-        private static string BuildExistingProjectMsBuildArguments(string projectPath, bool publish)
+        private static string BuildExistingProjectMsBuildArguments(string projectPath, bool publish,
+            string nativeAotRuntimeIdentifier)
         {
             string quotedProjectPath = QuoteProcessArgument(projectPath);
             string configuration = ExistingProjectConfiguration();
             string platform = ExistingProjectPlatformMsBuildArgument(projectPath);
             string target = publish ? "Publish" : "Build";
+            string runtime = string.IsNullOrEmpty(nativeAotRuntimeIdentifier)
+                ? string.Empty
+                : $"/p:RuntimeIdentifier={nativeAotRuntimeIdentifier}";
+            string publishAotOverride = publish
+                ? $"/p:PublishAot={(string.IsNullOrEmpty(nativeAotRuntimeIdentifier) ? "false" : "true")}"
+                : string.Empty;
 
-            return $"{quotedProjectPath} /restore /t:{target} /p:Configuration={configuration} {platform}".Trim();
+            return $"{quotedProjectPath} /restore /t:{target} /p:Configuration={configuration} {platform} {publishAotOverride} {runtime}".Trim();
         }
 
         private static string ExistingProjectConfiguration() =>
@@ -621,6 +684,40 @@ namespace CIARE.Roslyn
                 .Substring(platformIndex + platformKey.Length)
                 .Trim()
                 .Trim('"');
+        }
+
+        private static string ExistingProjectNativeAotRuntimeIdentifier()
+        {
+            return string.Equals(ExistingProjectRequestedPlatform(), "x64", StringComparison.OrdinalIgnoreCase)
+                ? "win-x64"
+                : string.Empty;
+        }
+
+        private static bool BuildTargetHasPublishAotEnabled(string buildTargetPath)
+        {
+            return string.Equals(Path.GetExtension(buildTargetPath), ".csproj",
+                    StringComparison.OrdinalIgnoreCase) &&
+                ProjectHasPublishAotEnabled(buildTargetPath);
+        }
+
+        private static bool ProjectHasPublishAotEnabled(string projectPath)
+        {
+            if (!File.Exists(projectPath))
+                return false;
+
+            try
+            {
+                XDocument project = XDocument.Load(projectPath);
+                return project.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "PublishAot",
+                        StringComparison.OrdinalIgnoreCase))
+                    .Any(element => string.Equals(element.Value.Trim(), "true",
+                        StringComparison.OrdinalIgnoreCase));
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static bool SolutionHasConfigurationPlatform(string solutionPath, string configuration, string platform)

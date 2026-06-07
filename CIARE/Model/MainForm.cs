@@ -3792,8 +3792,27 @@ namespace CIARE
             if (!Directory.Exists(_fileExplorerRootPath))
                 return string.Empty;
 
-            if (IsActiveUntitledEditorPage())
+            string filePath = GetActiveEditorFilePath();
+            if (IsActiveUntitledEditorPage() || string.IsNullOrEmpty(filePath))
                 return string.Empty;
+
+            if (!IsPathInsideFolder(filePath, _fileExplorerRootPath))
+                return string.Empty;
+
+            if (IsCSharpFilePath(filePath))
+            {
+                string sourceProject = FindProjectContainingSourceFile(filePath);
+                if (string.IsNullOrEmpty(sourceProject))
+                    return string.Empty;
+
+                if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
+                    IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
+                {
+                    return _fileExplorerStartupProjectPath;
+                }
+
+                return sourceProject;
+            }
 
             if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
                 IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
@@ -3801,17 +3820,7 @@ namespace CIARE
                 return _fileExplorerStartupProjectPath;
             }
 
-            string filePath = GetActiveEditorFilePath();
-            if (IsCSharpFilePath(filePath))
-            {
-                string sourceProject = FindProjectContainingSourceFile(filePath);
-                if (string.IsNullOrEmpty(sourceProject))
-                    return string.Empty;
-
-                return sourceProject;
-            }
-
-            string activeProject = FindProjectFileForPath(GetActiveEditorFilePath(), _fileExplorerRootPath);
+            string activeProject = FindProjectFileForPath(filePath, _fileExplorerRootPath);
             if (!string.IsNullOrEmpty(activeProject))
                 return activeProject;
 
@@ -5343,7 +5352,6 @@ namespace CIARE
                     FindUsagesAtCaret();
                     return true;
                 case Keys.F5:
-                    FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
                     if (outputTabControl.SelectedTab == errorsTabPage)
                         outputTabControl.SelectedTab = outputTabPage;
                     RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);

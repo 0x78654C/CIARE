@@ -52,7 +52,6 @@ namespace CIARE.Utils
         public static bool darkColor = false;
         public static string configParam = "/p:configuration=Debug";
         public static string platformParam = "/p:Platform=\"Any CPU\"";
-        public static string publishAot = string.Empty;
         public static string WinExe { get; set; } = "Exe";
         public static OutputKind OutputKind { get; set; }
         public static bool OCodeCompletion = true;

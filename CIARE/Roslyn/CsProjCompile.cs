@@ -19,6 +19,7 @@ namespace CIARE.Roslyn
         private string Code { get; set; }
         private bool Library { get; set; } = false;
         private bool Publish { get; set; } = false;
+        private bool NativeAot { get; set; } = false;
         private string _exeFilePath;
         private string _pathNative;
         private string CsProjTemplateExe = @"<Project Sdk=""Microsoft.NET.Sdk"">
@@ -58,14 +59,19 @@ namespace CIARE.Roslyn
 </Project>
 ";
 
-        private string CsProjTemplatePublish = $@"<Project Sdk=""Microsoft.NET.Sdk"">
+        private string CreateCsProjTemplatePublish()
+        {
+            string publishAot = NativeAot ? @"
+    <PublishAot>true</PublishAot>" : string.Empty;
+
+            return $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>"+GlobalVariables.binarytypeTemplate + @"</OutputType>
     <UseWindowsForms>"+GlobalVariables.winForms.ToString() + @"</UseWindowsForms>
     <TargetFramework>" + GlobalVariables.Framework + @"</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ImplicitUsings>enable</ImplicitUsings>
-    <WarningLevel>0</WarningLevel>"+GlobalVariables.publishAot+@"
+    <WarningLevel>0</WarningLevel>"+publishAot+@"
     <Nullable>enable</Nullable>
     <DefaultItemExcludes>$(DefaultItemExcludes);**\bin\**;**\obj\**</DefaultItemExcludes>
 <AllowUnsafeBlocks>" + GlobalVariables.OUnsafeCode.ToString() + @"</AllowUnsafeBlocks>
@@ -76,6 +82,7 @@ namespace CIARE.Roslyn
 " + SetReference(GlobalVariables.filteredCustomRef, GlobalVariables.nugetNames) + @"
 </Project>
 ";
+        }
 
         /// <summary>
         /// Compile csproject.
@@ -83,13 +90,14 @@ namespace CIARE.Roslyn
         /// <param name="binaryName">Binary file name</param>
         /// <param name="binaryPath">CIARE binary path</param>
         /// <param name="code">Provided code for compile.</param>
-        public CsProjCompile(string binaryName, string binaryPath, string code, bool library, bool publish)
+        public CsProjCompile(string binaryName, string binaryPath, string code, bool library, bool publish, bool nativeAot)
         {
             FileName = binaryName;
             BinaryPath = binaryPath;
             Code = code;
             Library = library;
             Publish = publish;
+            NativeAot = nativeAot;
         }
 
         /// <summary>
@@ -154,7 +162,7 @@ namespace CIARE.Roslyn
                     Directory.CreateDirectory(projectDir);
                 File.Delete($"{projectDir}\\{exeName}.csproj");
                 if (Publish)
-                    File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplatePublish);
+                    File.WriteAllText($"{projectDir}\\{exeName}.csproj", CreateCsProjTemplatePublish());
                 else if (Library)
                     File.WriteAllText($"{projectDir}\\{exeName}.csproj", CsProjTemplateDll);
                 else
@@ -163,12 +171,15 @@ namespace CIARE.Roslyn
                 var param = "";
                 if (Publish)
                 {
-                    if (!GlobalVariables.platformParam.Contains("x64"))
+                    if (NativeAot && !GlobalVariables.platformParam.Contains("x64"))
                     {
-                        RichExtColor.ErrorDisplay(logOutput, $"ERROR: Native AOT publish works only with x64 arhitecture!");
+                        RichExtColor.ErrorDisplay(logOutput, "ERROR: Native AOT publish works only with x64 architecture!");
                         return;
                     }
-                    param = $"publish -r win-x64 -c {StateCompile}";
+
+                    param = NativeAot
+                        ? $"publish -r win-x64 -c {StateCompile}"
+                        : $"publish -c {StateCompile} {GlobalVariables.platformParam}";
                 }
                 else
                     param = $"build {GlobalVariables.configParam} {GlobalVariables.platformParam}";

@@ -26,7 +26,9 @@ namespace CIARE
             binaryNameTxt.Text = binaryNameTxt.Text.Trim();
             typeApp.Text = GlobalVariables.binarytype;
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
-            if (GlobalVariables.binaryPublish)
+            if (GlobalVariables.OPublishNative)
+                this.Text = "Set binary name - Native AOT publish";
+            else if (GlobalVariables.binaryPublish)
                 this.Text = "Set binary name - Publish";
             else
                 this.Text = "Set binary name - Compile";

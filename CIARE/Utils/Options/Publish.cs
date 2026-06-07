@@ -16,7 +16,6 @@ namespace CIARE.Utils.Options
             string regPublish = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.publish);
             if (regPublish.Length > 0)
                 GlobalVariables.OPublishNative = bool.Parse(regPublish);
-            GlobalVariables.publishAot = (GlobalVariables.OPublishNative) ? "\n<PublishAot>true</PublishAot>\n" : string.Empty;
         }
 
         /// <summary>
@@ -28,7 +27,6 @@ namespace CIARE.Utils.Options
         {
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, regKeyName, status.Checked.ToString());
             GlobalVariables.OPublishNative = status.Checked;
-            GlobalVariables.publishAot = (status.Checked)? "\n<PublishAot>true</PublishAot>\n": string.Empty;
         }
     }
 }
