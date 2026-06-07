@@ -12,7 +12,7 @@
 
 ![Preview](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_2.0.4.png?raw=true)
 
-> **Version 3.1.0**
+> **Version 3.2.0**
 
 ---
 
