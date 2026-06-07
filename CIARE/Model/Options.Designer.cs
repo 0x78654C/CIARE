@@ -263,12 +263,12 @@ namespace CIARE
             // 
             platformBox.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             platformBox.FormattingEnabled = true;
-            platformBox.Items.AddRange(new object[] { "Any CPU", "x64", "x86" });
+            platformBox.Items.AddRange(new object[] { "AnyCPU", "x64", "x86" });
             platformBox.Location = new System.Drawing.Point(217, 23);
             platformBox.Name = "platformBox";
             platformBox.Size = new System.Drawing.Size(93, 23);
             platformBox.TabIndex = 15;
-            platformBox.Text = "Any CPU";
+            platformBox.Text = "AnyCPU";
             platformBox.SelectedIndexChanged += platformBox_SelectedIndexChanged;
             // 
             // configurationBox

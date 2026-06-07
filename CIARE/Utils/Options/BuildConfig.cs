@@ -51,7 +51,7 @@ namespace CIARE.Utils.Options
         {
             string regPlat = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", GlobalVariables.OPlatformParam);
             if (regPlat.Length > 0)
-                GlobalVariables.platformParam = regPlat;
+                GlobalVariables.platformParam = regPlat.Replace(" ", string.Empty);
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace CIARE.Utils.Options
             else if(GlobalVariables.platformParam.Contains("x64"))
                 comboBox.SelectedIndex = 1;
             else
-                comboBox.SelectedIndex = 0; // Any CPU
+                comboBox.SelectedIndex = 0; // AnyCPU
         }
 
         /// <summary>

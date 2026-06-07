@@ -27,7 +27,7 @@ namespace CIARE
     {
         private const string CSharpProjectTypeGuid = "{9A19103F-16F7-4668-BE54-9A1E7A4F7556}";
         private static readonly string[] SolutionConfigurations = { "Debug", "Release" };
-        private static readonly string[] SolutionPlatforms = { "Any CPU", "x64", "x86" };
+        private static readonly string[] SolutionPlatforms = { "AnyCPU", "x64", "x86" };
 
         private readonly ListBox _templateList = new ListBox();
         private readonly TextBox _projectNameText = new TextBox();
@@ -760,14 +760,15 @@ namespace CIARE
 
             string configuration = solutionConfigurationPlatform.Substring(0, separatorIndex).Trim();
             string platform = solutionConfigurationPlatform.Substring(separatorIndex + 1).Trim();
-            if (string.Equals(platform, "Any CPU", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(platform, "x64", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(platform, "x86", StringComparison.OrdinalIgnoreCase))
+            string normalizedPlatform = platform.Replace(" ", string.Empty);
+            if (string.Equals(normalizedPlatform, "AnyCPU", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalizedPlatform, "x64", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalizedPlatform, "x86", StringComparison.OrdinalIgnoreCase))
             {
-                return configuration + "|" + platform;
+                return configuration + "|" + normalizedPlatform;
             }
 
-            return configuration + "|Any CPU";
+            return configuration + "|AnyCPU";
         }
 
         private static int FindGlobalLineIndex(List<string> lines)

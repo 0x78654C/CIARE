@@ -663,8 +663,9 @@ namespace CIARE.Roslyn
             if (string.Equals(Path.GetExtension(buildTargetPath), ".sln", StringComparison.OrdinalIgnoreCase))
             {
                 string configuration = ExistingProjectConfiguration();
-                if (!SolutionHasConfigurationPlatform(buildTargetPath, configuration, platform))
-                    return FindFallbackSolutionPlatform(buildTargetPath, configuration) ?? string.Empty;
+                return FindMatchingSolutionPlatform(buildTargetPath, configuration, platform) ??
+                    FindFallbackSolutionPlatform(buildTargetPath, configuration) ??
+                    string.Empty;
             }
 
             return platform;
@@ -720,19 +721,20 @@ namespace CIARE.Roslyn
             }
         }
 
-        private static bool SolutionHasConfigurationPlatform(string solutionPath, string configuration, string platform)
+        private static string FindMatchingSolutionPlatform(string solutionPath, string configuration, string platform)
         {
             return ReadSolutionPlatforms(solutionPath, configuration)
-                .Contains(platform, StringComparer.OrdinalIgnoreCase);
+                .FirstOrDefault(item => string.Equals(NormalizePlatformName(item), NormalizePlatformName(platform),
+                    StringComparison.OrdinalIgnoreCase));
         }
 
         private static string FindFallbackSolutionPlatform(string solutionPath, string configuration)
         {
             List<string> platforms = ReadSolutionPlatforms(solutionPath, configuration).ToList();
-            foreach (string preferredPlatform in new[] { "Any CPU", "x64", "x86" })
+            foreach (string preferredPlatform in new[] { "AnyCPU", "x64", "x86" })
             {
                 string platform = platforms.FirstOrDefault(item =>
-                    string.Equals(item, preferredPlatform, StringComparison.OrdinalIgnoreCase));
+                    string.Equals(NormalizePlatformName(item), preferredPlatform, StringComparison.OrdinalIgnoreCase));
                 if (!string.IsNullOrEmpty(platform))
                     return platform;
             }
@@ -785,6 +787,11 @@ namespace CIARE.Roslyn
             }
 
             return platforms;
+        }
+
+        private static string NormalizePlatformName(string platform)
+        {
+            return (platform ?? string.Empty).Replace(" ", string.Empty);
         }
 
         private static string QuoteProcessArgument(string argument) =>
