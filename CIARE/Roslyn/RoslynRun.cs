@@ -660,12 +660,21 @@ namespace CIARE.Roslyn
             if (string.IsNullOrEmpty(platform))
                 return string.Empty;
 
-            if (string.Equals(Path.GetExtension(buildTargetPath), ".sln", StringComparison.OrdinalIgnoreCase))
+            string extension = Path.GetExtension(buildTargetPath);
+            if (string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase))
             {
                 string configuration = ExistingProjectConfiguration();
                 return FindMatchingSolutionPlatform(buildTargetPath, configuration, platform) ??
                     FindFallbackSolutionPlatform(buildTargetPath, configuration) ??
                     string.Empty;
+            }
+
+            if (string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase))
+            {
+                string configuration = ExistingProjectConfiguration();
+                return FindMatchingProjectOutputPlatform(buildTargetPath, configuration, platform) ??
+                    FindFallbackProjectOutputPlatform(buildTargetPath, configuration) ??
+                    platform;
             }
 
             return platform;
@@ -740,6 +749,109 @@ namespace CIARE.Roslyn
             }
 
             return platforms.FirstOrDefault();
+        }
+
+        private static string FindMatchingProjectOutputPlatform(string projectPath, string configuration,
+            string platform)
+        {
+            return ReadProjectOutputPlatforms(projectPath, configuration)
+                .FirstOrDefault(item => string.Equals(NormalizePlatformName(item), NormalizePlatformName(platform),
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string FindFallbackProjectOutputPlatform(string projectPath, string configuration)
+        {
+            List<string> platforms = ReadProjectOutputPlatforms(projectPath, configuration).ToList();
+            foreach (string preferredPlatform in new[] { "AnyCPU", "x64", "x86" })
+            {
+                string platform = platforms.FirstOrDefault(item =>
+                    string.Equals(NormalizePlatformName(item), preferredPlatform, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(platform))
+                    return platform;
+            }
+
+            return platforms.FirstOrDefault();
+        }
+
+        private static IEnumerable<string> ReadProjectOutputPlatforms(string projectPath, string configuration)
+        {
+            var platforms = new List<string>();
+            if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
+                return platforms;
+
+            try
+            {
+                XDocument project = XDocument.Load(projectPath);
+                foreach (XElement outputPath in project.Descendants()
+                    .Where(element => string.Equals(element.Name.LocalName, "OutputPath",
+                        StringComparison.OrdinalIgnoreCase)))
+                {
+                    XElement propertyGroup = outputPath.Parent;
+                    if (propertyGroup == null ||
+                        !string.Equals(propertyGroup.Name.LocalName, "PropertyGroup",
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    foreach (string condition in new[]
+                    {
+                        propertyGroup.Attribute("Condition")?.Value,
+                        outputPath.Attribute("Condition")?.Value
+                    })
+                    {
+                        if (!TryReadConfigurationPlatformCondition(condition, out string conditionConfiguration,
+                                out string conditionPlatform) ||
+                            !string.Equals(conditionConfiguration, configuration, StringComparison.OrdinalIgnoreCase) ||
+                            platforms.Any(item => string.Equals(NormalizePlatformName(item),
+                                NormalizePlatformName(conditionPlatform), StringComparison.OrdinalIgnoreCase)))
+                        {
+                            continue;
+                        }
+
+                        platforms.Add(conditionPlatform);
+                    }
+                }
+            }
+            catch
+            {
+                return Array.Empty<string>();
+            }
+
+            return platforms;
+        }
+
+        private static bool TryReadConfigurationPlatformCondition(string condition, out string configuration,
+            out string platform)
+        {
+            configuration = string.Empty;
+            platform = string.Empty;
+            if (string.IsNullOrWhiteSpace(condition) ||
+                condition.IndexOf("$(Configuration)", StringComparison.OrdinalIgnoreCase) < 0 ||
+                condition.IndexOf("$(Platform)", StringComparison.OrdinalIgnoreCase) < 0 ||
+                condition.IndexOf("==", StringComparison.Ordinal) < 0)
+            {
+                return false;
+            }
+
+            foreach (Match match in Regex.Matches(condition,
+                @"['""](?<configuration>[^'""|]+)\|(?<platform>[^'""]+)['""]",
+                RegexOptions.CultureInvariant))
+            {
+                string matchedConfiguration = match.Groups["configuration"].Value.Trim();
+                string matchedPlatform = match.Groups["platform"].Value.Trim();
+                if (matchedConfiguration.IndexOf("$(", StringComparison.Ordinal) >= 0 ||
+                    matchedPlatform.IndexOf("$(", StringComparison.Ordinal) >= 0)
+                {
+                    continue;
+                }
+
+                configuration = matchedConfiguration;
+                platform = matchedPlatform;
+                return !string.IsNullOrEmpty(configuration) && !string.IsNullOrEmpty(platform);
+            }
+
+            return false;
         }
 
         private static IEnumerable<string> ReadSolutionPlatforms(string solutionPath, string configuration)
