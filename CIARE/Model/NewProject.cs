@@ -820,7 +820,7 @@ namespace CIARE
         private static string BuildSdkProjectFile(string targetFramework, string outputType = null, bool useWindowsForms = false)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
+            builder.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><Project Sdk=\"Microsoft.NET.Sdk\">");
             builder.AppendLine("  <PropertyGroup>");
             if (!string.IsNullOrWhiteSpace(outputType))
                 builder.AppendLine($"    <OutputType>{outputType}</OutputType>");
@@ -831,7 +831,7 @@ namespace CIARE
             builder.AppendLine("    <ImplicitUsings>enable</ImplicitUsings>");
             builder.AppendLine("    <Nullable>enable</Nullable>");
             builder.AppendLine("    <DefaultItemExcludes>$(DefaultItemExcludes);**\\bin\\**;**\\obj\\**</DefaultItemExcludes>");
-            builder.AppendLine("    <Platforms>Any CPU;x64;x86</Platforms>");
+            builder.AppendLine("    <Platforms>AnyCPU;x64;x86</Platforms>");
             builder.AppendLine("  </PropertyGroup>");
             builder.AppendLine("  <PropertyGroup Condition=\"'$(Platform)' == 'x64'\">");
             builder.AppendLine("    <PlatformTarget>x64</PlatformTarget>");
