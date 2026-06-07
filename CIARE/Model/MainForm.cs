@@ -148,6 +148,7 @@ namespace CIARE
         private TreeNode _fileExplorerContextNode;
         private ImageList _fileExplorerImageList;
         private string _fileExplorerRootPath = string.Empty;
+        private string _fileExplorerSolutionPath = string.Empty;
         private string _fileExplorerStartupProjectPath = string.Empty;
         private int _fileExplorerWidth = FileExplorerDefaultWidth;
         private int _fileExplorerNuGetHeight = FileExplorerDefaultNuGetHeight;
@@ -1493,12 +1494,13 @@ namespace CIARE
                 QueueFileExplorerLayoutApply();
         }
 
-        private void LoadFileExplorerFolder(string folderPath)
+        private void LoadFileExplorerFolder(string folderPath, string solutionPath = null)
         {
             if (!Directory.Exists(folderPath) || _fileExplorerTree == null)
                 return;
 
             _fileExplorerRootPath = folderPath;
+            _fileExplorerSolutionPath = ResolveSolutionPathForLoadedFolder(folderPath, solutionPath);
             RestoreStartupProjectForLoadedFolder();
 
             InvalidateCompletionWorkspace();
@@ -2444,7 +2446,7 @@ namespace CIARE
                     .Select(path => new DirectoryInfo(path))
                     .OrderBy(directory => directory.Name, StringComparer.OrdinalIgnoreCase))
                 {
-                    if (ShouldHideExplorerItem(directory.Attributes))
+                    if (ShouldHideExplorerDirectory(directory))
                         continue;
                     node.Nodes.Add(CreateDirectoryNode(directory));
                 }
@@ -2468,6 +2470,13 @@ namespace CIARE
         {
             return (attributes & FileAttributes.Hidden) == FileAttributes.Hidden ||
                    (attributes & FileAttributes.System) == FileAttributes.System;
+        }
+
+        private static bool ShouldHideExplorerDirectory(DirectoryInfo directory)
+        {
+            return directory == null ||
+                string.Equals(directory.Name, ".ciare", StringComparison.OrdinalIgnoreCase) ||
+                ShouldHideExplorerItem(directory.Attributes);
         }
 
         private void fileExplorerTree_MouseDown(object sender, MouseEventArgs e)
@@ -2555,6 +2564,10 @@ namespace CIARE
                 if (project == null)
                     return;
 
+                _fileExplorerSolutionPath = solutionPath;
+                _fileExplorerStartupProjectPath =
+                    SolutionStartupProjectStore.Ensure(solutionPath, project.ProjectFilePath);
+
                 string solutionDirectory = Path.GetDirectoryName(solutionPath);
                 string projectDirectory = Path.GetDirectoryName(project.ProjectFilePath);
                 if (!string.IsNullOrEmpty(solutionDirectory))
@@ -2563,6 +2576,7 @@ namespace CIARE
                     RefreshAndExpandExplorerFolder(projectDirectory);
 
                 SelectExplorerPath(project.ProjectFilePath);
+                UpdateFileExplorerStartupProjectHighlight();
                 if (File.Exists(project.StarterFilePath))
                     OpenFileFromExplorer(project.StarterFilePath);
 
@@ -2902,6 +2916,7 @@ namespace CIARE
             try
             {
                 MoveExplorerItem(path, newPath, isDirectory);
+                UpdateLoadedSolutionAfterExplorerRename(path, newPath, isDirectory);
                 UpdateStartupProjectAfterExplorerRename(path, newPath, isDirectory);
                 UpdateProjectReferencesAfterExplorerRename(path, newPath, isDirectory);
                 UpdateOpenTabsAfterExplorerRename(path, newPath, isDirectory);
@@ -4324,10 +4339,28 @@ namespace CIARE
             if (string.IsNullOrEmpty(folder))
                 return string.Empty;
 
+            if (IsSolutionFilePath(_fileExplorerSolutionPath) &&
+                IsSameOrChildDirectory(folder, Path.GetDirectoryName(_fileExplorerSolutionPath)))
+            {
+                return _fileExplorerSolutionPath;
+            }
+
             if (Directory.Exists(_fileExplorerRootPath))
                 return FindNearestBuildFile(folder, _fileExplorerRootPath, "*.sln");
 
             return FindTopLevelBuildFile(folder, "*.sln");
+        }
+
+        private static string ResolveSolutionPathForLoadedFolder(string folderPath, string solutionPath)
+        {
+            if (solutionPath != null)
+                return IsSolutionFilePath(solutionPath) ? Path.GetFullPath(solutionPath) : string.Empty;
+
+            string topLevelSolution = FindTopLevelBuildFile(folderPath, "*.sln");
+            if (!string.IsNullOrEmpty(topLevelSolution))
+                return topLevelSolution;
+
+            return FindSingleRecursiveBuildFile(folderPath, "*.sln");
         }
 
         private static bool IsAddProjectToSolutionContext(string path, string solutionPath)
@@ -4555,14 +4588,15 @@ namespace CIARE
 
         private void RestoreStartupProjectForLoadedFolder()
         {
-            string startupProjectPath = _fileExplorerStartupProjectPath;
-            if (!IsProjectFilePath(startupProjectPath) ||
-                !IsPathInsideFolder(startupProjectPath, _fileExplorerRootPath))
+            if (IsSolutionFilePath(_fileExplorerSolutionPath))
             {
-                startupProjectPath = RegistryManagement.RegKey_Read(
-                    $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", FileExplorerStartupProjectKey);
+                _fileExplorerStartupProjectPath =
+                    SolutionStartupProjectStore.Ensure(_fileExplorerSolutionPath);
+                return;
             }
 
+            string startupProjectPath = RegistryManagement.RegKey_Read(
+                $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", FileExplorerStartupProjectKey);
             _fileExplorerStartupProjectPath = IsProjectFilePath(startupProjectPath) &&
                 IsPathInsideFolder(startupProjectPath, _fileExplorerRootPath)
                     ? startupProjectPath
@@ -4571,6 +4605,13 @@ namespace CIARE
 
         private void SaveStartupProjectPath()
         {
+            if (IsSolutionFilePath(_fileExplorerSolutionPath))
+            {
+                SolutionStartupProjectStore.Save(_fileExplorerSolutionPath,
+                    _fileExplorerStartupProjectPath ?? string.Empty);
+                return;
+            }
+
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath,
                 FileExplorerStartupProjectKey, _fileExplorerStartupProjectPath ?? string.Empty);
         }
@@ -4668,6 +4709,14 @@ namespace CIARE
             }
         }
 
+        private void UpdateLoadedSolutionAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        {
+            string renamedSolutionPath = GetRenamedExplorerPath(_fileExplorerSolutionPath, oldPath, newPath,
+                renamedDirectory);
+            if (IsSolutionFilePath(renamedSolutionPath))
+                _fileExplorerSolutionPath = renamedSolutionPath;
+        }
+
         private void ClearStartupProjectAfterExplorerDelete(string deletedPath, bool deletedDirectory)
         {
             if (string.IsNullOrWhiteSpace(_fileExplorerStartupProjectPath) ||
@@ -4684,8 +4733,16 @@ namespace CIARE
 
             if (deletedStartupProject)
             {
-                _fileExplorerStartupProjectPath = string.Empty;
-                SaveStartupProjectPath();
+                if (IsSolutionFilePath(_fileExplorerSolutionPath))
+                {
+                    _fileExplorerStartupProjectPath =
+                        SolutionStartupProjectStore.Ensure(_fileExplorerSolutionPath);
+                }
+                else
+                {
+                    _fileExplorerStartupProjectPath = string.Empty;
+                    SaveStartupProjectPath();
+                }
             }
         }
 
@@ -4994,7 +5051,10 @@ namespace CIARE
                     folderPath = solutionDirectory;
             }
 
-            LoadFileExplorerFolder(folderPath);
+            string loadedSolutionPath = string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase)
+                ? filePath
+                : containingSolutionPath;
+            LoadFileExplorerFolder(folderPath, loadedSolutionPath);
             ToggleFileExplorer(true);
 
             if (showMessage)

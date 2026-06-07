@@ -421,6 +421,9 @@ namespace CIARE
                 File.WriteAllText(solutionPath, BuildSolutionFile(projectName, projectPath, solutionDirectory),
                     Encoding.UTF8);
 
+            if (addToExistingSolution || createNewSolution)
+                SolutionStartupProjectStore.Ensure(solutionPath, projectPath);
+
             return new NewProjectResult
             {
                 WorkspacePath = addToExistingSolution || createNewSolution ? solutionDirectory : projectDirectory,
