@@ -8236,15 +8236,26 @@ namespace CIARE
             try
             {
                 // Capture all UI-thread state before going async.
-                var openTabs = CollectOpenTabInfo(identifier);
-                var workspaceFolders = GetUsageWorkspaceFolders(GetActiveEditorFilePath()).ToList();
-                List<string> compilationUnitKeys;
-                lock (_completionDataLock)
-                    compilationUnitKeys = _workspaceCompilationUnits.Keys.ToList();
+                string activeFilePath = GetActiveEditorFilePath();
+                var projectPaths = GetFileExplorerUsageProjectPaths();
+                if (projectPaths.Count == 0)
+                {
+                    ShowFindUsagesMessage("Open a C# project in File Explorer before finding usages.");
+                    return;
+                }
+
+                if (!projectPaths.Any(projectPath => ProjectContainsSourceFile(projectPath, activeFilePath)))
+                {
+                    ShowFindUsagesMessage("The active C# file is not part of a project opened in File Explorer.");
+                    return;
+                }
+
+                var activeTab = CollectActiveUsageTabInfo();
+                var projectFolders = GetCompletionSourceFolders(projectPaths);
 
                 List<UsageLocation> usages = await Task.Run(() =>
                 {
-                    var documents = BuildUsageDocuments(identifier, openTabs, workspaceFolders, compilationUnitKeys);
+                    var documents = BuildUsageDocuments(identifier, activeTab, projectFolders, new List<string>());
                     if (documents.Count == 0)
                         return null;
 
@@ -8356,6 +8367,31 @@ namespace CIARE
             }
 
             return tabs;
+        }
+
+        private List<OpenTabInfo> CollectActiveUsageTabInfo()
+        {
+            var editor = SelectedEditor.GetSelectedEditor();
+            string filePath = GetActiveEditorFilePath();
+            if (editor == null || !IsCSharpFilePath(filePath))
+                return new List<OpenTabInfo>();
+
+            return new List<OpenTabInfo>
+            {
+                new OpenTabInfo(filePath, editor.Text ?? string.Empty, true)
+            };
+        }
+
+        private List<string> GetFileExplorerUsageProjectPaths()
+        {
+            if (!Directory.Exists(_fileExplorerRootPath))
+                return new List<string>();
+
+            return EnumerateBuildFiles(_fileExplorerRootPath, "*.csproj")
+                .Where(IsProjectFilePath)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(projectPath => projectPath, StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         private static List<UsageDocument> BuildUsageDocuments(
