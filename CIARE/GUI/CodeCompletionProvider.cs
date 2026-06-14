@@ -121,11 +121,12 @@ namespace CIARE.GUI
 		internal ICompletionData[] GenerateCompletionData(CompletionRequest request)
 		{
 			string rawCode = request.RawCode;
-			Dom.ExpressionResult expression = FindExpression(rawCode, request.CaretOffset,
+			string completionCode = PrepareCodeForMemberCompletion(request);
+			Dom.ExpressionResult expression = FindExpression(completionCode, request.CaretOffset,
 				request.CaretLine, request.CaretColumn);
 			if (!request.UsingDirectiveDotCompletion)
 			{
-				mainForm.RefreshActiveCompletionUnit(rawCode, request.CurrentFilePath);
+				mainForm.RefreshActiveCompletionUnit(completionCode, request.CurrentFilePath);
 			}
 			mainForm.ResetCompletionWorkspaceIfInactive(request.CurrentFilePath);
 			NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
@@ -135,7 +136,7 @@ namespace CIARE.GUI
 				// For top-level statement files the code has no class/method context, so the
 				// NRefactory resolver cannot find a scope.  Wrap the code before passing it to
 				// the resolver and adjust the caret line accordingly.
-				string resolverCode = mainForm.PrepareCodeForNRefactoryCompletion(rawCode, request.CurrentFilePath,
+				string resolverCode = mainForm.PrepareCodeForNRefactoryCompletion(completionCode, request.CurrentFilePath,
 					out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine);
 				int caretLine = request.CaretLine + 1 + prefixLineOffset;
 				int caretCol  = request.CaretColumn + 1;
@@ -178,7 +179,7 @@ namespace CIARE.GUI
 					if (ShouldUseRoslynMemberFallback(completionData, request.UsingDirectiveDotCompletion))
 					{
 						completionData = MergeCompletionData(completionData,
-							mainForm.GetRoslynMemberCompletionData(rawCode, request.CaretOffset,
+							mainForm.GetRoslynMemberCompletionData(completionCode, request.CaretOffset,
 								expression.Expression, request.CurrentFilePath));
 					}
 					if (completionData != null)
@@ -205,6 +206,39 @@ namespace CIARE.GUI
 				}
 				return resultList.ToArray();
 			}
+
+		static string PrepareCodeForMemberCompletion(CompletionRequest request)
+		{
+			if (request.CharacterTyped != '.' || request.UsingDirectiveDotCompletion ||
+				string.IsNullOrEmpty(request.RawCode) ||
+				request.CaretOffset < 0 || request.CaretOffset > request.RawCode.Length ||
+				!IsStandaloneMemberAccessExpression(request.RawCode, request.CaretOffset))
+			{
+				return request.RawCode;
+			}
+
+			// The dot request is captured before the dot is inserted. Terminate the active
+			// expression in the analysis snapshot so parser recovery cannot merge it with
+			// an adjacent statement that uses the same variable.
+			return request.RawCode.Insert(request.CaretOffset, ";");
+		}
+
+		static bool IsStandaloneMemberAccessExpression(string code, int caretOffset)
+		{
+			int lineStart = caretOffset > 0
+				? code.LastIndexOf('\n', caretOffset - 1) + 1
+				: 0;
+			string linePrefix = code.Substring(lineStart, caretOffset - lineStart).Trim();
+			if (linePrefix.Length == 0)
+				return false;
+
+			foreach (char ch in linePrefix)
+			{
+				if (!(char.IsLetterOrDigit(ch) || ch == '_' || ch == '@' || ch == '.'))
+					return false;
+			}
+			return true;
+		}
 
 		static bool IsUsingDirectiveDotCompletion(TextArea textArea)
 		{
