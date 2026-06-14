@@ -47,8 +47,25 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 			codeCompletionWindow.ShowCompletionWindow();
 			return codeCompletionWindow;
 		}
+
+		public static CodeCompletionWindow ShowCompletionWindow(Form parent, TextEditorControl control,
+			ICompletionDataProvider completionDataProvider, ICompletionData[] completionData,
+			int startOffset, int endOffset, bool showDeclarationWindow, bool fixedListViewWidth)
+		{
+			if (completionData == null || completionData.Length == 0) {
+				return null;
+			}
+
+			CodeCompletionWindow codeCompletionWindow = new CodeCompletionWindow(
+				completionDataProvider, completionData, parent, control, showDeclarationWindow,
+				fixedListViewWidth, startOffset, endOffset);
+			codeCompletionWindow.ShowCompletionWindow();
+			return codeCompletionWindow;
+		}
 		
-		CodeCompletionWindow(ICompletionDataProvider completionDataProvider, ICompletionData[] completionData, Form parentForm, TextEditorControl control, bool showDeclarationWindow, bool fixedListViewWidth) : base(parentForm, control)
+		CodeCompletionWindow(ICompletionDataProvider completionDataProvider, ICompletionData[] completionData,
+			Form parentForm, TextEditorControl control, bool showDeclarationWindow, bool fixedListViewWidth,
+			int startOffsetOverride = -1, int endOffsetOverride = -1) : base(parentForm, control)
 		{
 			this.dataProvider = completionDataProvider;
 			this.completionData = completionData;
@@ -57,11 +74,16 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 			this.fixedListViewWidth = fixedListViewWidth;
 
 			workingScreen = Screen.GetWorkingArea(Location);
-			startOffset = control.ActiveTextAreaControl.Caret.Offset + 1;
-			endOffset   = startOffset;
-			if (completionDataProvider.PreSelection != null) {
-				startOffset -= completionDataProvider.PreSelection.Length + 1;
-				endOffset--;
+			if (startOffsetOverride >= 0 && endOffsetOverride >= startOffsetOverride) {
+				startOffset = startOffsetOverride;
+				endOffset = endOffsetOverride;
+			} else {
+				startOffset = control.ActiveTextAreaControl.Caret.Offset + 1;
+				endOffset   = startOffset;
+				if (completionDataProvider.PreSelection != null) {
+					startOffset -= completionDataProvider.PreSelection.Length + 1;
+					endOffset--;
+				}
 			}
 			
 			codeCompletionListView = new CodeCompletionListView(completionData);

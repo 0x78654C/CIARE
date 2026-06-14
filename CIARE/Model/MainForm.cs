@@ -172,6 +172,8 @@ namespace CIARE
         private bool _refreshingEditorLayoutBounds;
         private bool _pendingEditorLayoutRefresh;
         private System.Windows.Forms.Timer _editorLayoutRefreshTimer;
+        private bool _pendingEditorTextRefresh;
+        private System.Windows.Forms.Timer _editorTextRefreshTimer;
         private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const int WorkspaceCompletionMethodLimit = 300;
         private const int RoslynCompletionSourceFileLimit = 300;
@@ -3696,7 +3698,7 @@ namespace CIARE
             }
         }
 
-        private void ScheduleCurrentTypeCheck(TextEditorControl editor)
+        private void ScheduleCurrentTypeCheck(TextEditorControl editor, string code = null)
         {
             if (editor == null)
                 return;
@@ -3719,7 +3721,7 @@ namespace CIARE
             bool useProjectReferences = !string.IsNullOrEmpty(workspaceFolder) &&
                 IsPathInsideFolder(filePath, workspaceFolder);
 
-            RealTimeChecker.ScheduleCheck(editor.Text, editor, typeCheckLbl, errorsLV, errorsTabPage,
+            RealTimeChecker.ScheduleCheck(code ?? editor.Text, editor, typeCheckLbl, errorsLV, errorsTabPage,
                 warningsCheckLbl, workspaceFolder, filePath, useProjectReferences);
         }
 
@@ -3734,6 +3736,11 @@ namespace CIARE
             {
                 return string.Empty;
             }
+        }
+
+        internal string GetActiveEditorFilePathForCompletion()
+        {
+            return GetActiveEditorFilePath();
         }
 
         private bool IsActiveUntitledEditorPage()
@@ -5189,10 +5196,47 @@ namespace CIARE
         /// </summary>
         private void TextDataChangedAction()
         {
+            QueueEditorTextRefresh();
+
+            // Send live share data to api.
+            SendData();
+        }
+
+        private void QueueEditorTextRefresh()
+        {
+            if (EditorTabControl == null || EditorTabControl.IsDisposed || IsDisposed)
+                return;
+
+            _pendingEditorTextRefresh = true;
+            if (_editorTextRefreshTimer == null)
+            {
+                _editorTextRefreshTimer = new System.Windows.Forms.Timer(components)
+                {
+                    Interval = 200
+                };
+                _editorTextRefreshTimer.Tick += OnEditorTextRefreshTimer;
+            }
+
+            _editorTextRefreshTimer.Stop();
+            _editorTextRefreshTimer.Start();
+        }
+
+        private void OnEditorTextRefreshTimer(object sender, EventArgs e)
+        {
+            _editorTextRefreshTimer?.Stop();
+            if (!_pendingEditorTextRefresh)
+                return;
+
+            _pendingEditorTextRefresh = false;
+            TextEditorControl editor = SelectedEditor.GetSelectedEditor();
+            if (editor == null || editor.IsDisposed)
+                return;
+
+            string code = editor.Text;
             var path = EditorTabControl.SelectedTab.ToolTipText;
             if (File.Exists(path))
             {
-                var md5Txt = FileHash.GetFileHash(SelectedEditor.GetSelectedEditor().Text);
+                var md5Txt = FileHash.GetFileHash(code);
 
                 //Remove * depende of file size in comparison text size.
                 if (GlobalVariables.openedFileMD5 != md5Txt)
@@ -5218,14 +5262,11 @@ namespace CIARE
             }
 
             LinesManage.GetTotalLinesCount(linesCountLbl);
-            SelectedEditor.GetSelectedEditor().Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
-            SelectedEditor.GetSelectedEditor().Document.FoldingManager.UpdateFoldings(null, null);
+            editor.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
+            editor.Document.FoldingManager.UpdateFoldings(null, null);
 
             // Trigger real-time type checking after a short debounce.
-            ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
-
-            // Send live share data to api.
-            SendData();
+            ScheduleCurrentTypeCheck(editor, code);
         }
 
         /// <summary>
@@ -5744,6 +5785,14 @@ namespace CIARE
                 _editorLayoutRefreshTimer = null;
             }
             _pendingEditorLayoutRefresh = false;
+            if (_editorTextRefreshTimer != null)
+            {
+                _editorTextRefreshTimer.Stop();
+                _editorTextRefreshTimer.Tick -= OnEditorTextRefreshTimer;
+                _editorTextRefreshTimer.Dispose();
+                _editorTextRefreshTimer = null;
+            }
+            _pendingEditorTextRefresh = false;
 
             // Delete temp mark file.
             if (GetCiareProcesses() == 1)
@@ -5987,10 +6036,15 @@ namespace CIARE
 
         internal void RefreshActiveCompletionUnit(string code)
         {
+            RefreshActiveCompletionUnit(code, GetActiveEditorFilePath());
+        }
+
+        internal void RefreshActiveCompletionUnit(string code, string currentFilePath)
+        {
             if (!GlobalVariables.OCodeCompletion || myProjectContent == null)
                 return;
 
-            CompletionScopeSnapshot completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
+            CompletionScopeSnapshot completionScope = RefreshCompletionScope(currentFilePath);
             SetActiveCompletionCompilationUnit(ParseCompletionCompilationUnit(code, completionScope.CurrentFilePath),
                 completionScope.CurrentFilePath);
         }
@@ -6232,13 +6286,19 @@ namespace CIARE
 
         internal ArrayList GetRoslynMemberCompletionData(string code, int caretOffset, string expressionText)
         {
+            return GetRoslynMemberCompletionData(code, caretOffset, expressionText, GetActiveEditorFilePath());
+        }
+
+        internal ArrayList GetRoslynMemberCompletionData(string code, int caretOffset, string expressionText,
+            string currentFilePath)
+        {
             var result = new ArrayList();
             if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
                 return result;
 
             try
             {
-                var context = BuildRoslynCompletionContext(code);
+                var context = BuildRoslynCompletionContext(code, currentFilePath);
                 if (context == null)
                     return result;
 
@@ -6316,13 +6376,19 @@ namespace CIARE
 
         internal ArrayList GetRoslynCtrlSpaceCompletionData(string code, int caretOffset, string prefix)
         {
+            return GetRoslynCtrlSpaceCompletionData(code, caretOffset, prefix, GetActiveEditorFilePath());
+        }
+
+        internal ArrayList GetRoslynCtrlSpaceCompletionData(string code, int caretOffset, string prefix,
+            string currentFilePath)
+        {
             var result = new ArrayList();
             if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
                 return result;
 
             try
             {
-                var context = BuildRoslynCompletionContext(code);
+                var context = BuildRoslynCompletionContext(code, currentFilePath);
                 if (context == null)
                     return result;
 
@@ -6342,7 +6408,11 @@ namespace CIARE
 
         private RoslynCompletionContext BuildRoslynCompletionContext(string code)
         {
-            string currentFilePath = GetActiveEditorFilePath();
+            return BuildRoslynCompletionContext(code, GetActiveEditorFilePath());
+        }
+
+        private RoslynCompletionContext BuildRoslynCompletionContext(string code, string currentFilePath)
+        {
             string projectPath = GetCompletionProjectPath(currentFilePath);
             var parseOptions = BuildCompletionParseOptions();
             SyntaxTree activeTree;
@@ -6549,7 +6619,12 @@ namespace CIARE
 
         internal void ResetCompletionWorkspaceIfInactive()
         {
-            CompletionScopeSnapshot completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
+            ResetCompletionWorkspaceIfInactive(GetActiveEditorFilePath());
+        }
+
+        internal void ResetCompletionWorkspaceIfInactive(string currentFilePath)
+        {
+            CompletionScopeSnapshot completionScope = RefreshCompletionScope(currentFilePath);
             if (string.IsNullOrEmpty(completionScope.WorkspaceFolder))
             {
                 InvalidateCompletionWorkspace();
@@ -6575,10 +6650,14 @@ namespace CIARE
 
         internal ArrayList FilterCompletionDataForActiveProject(ArrayList completionData)
         {
+            return FilterCompletionDataForActiveProject(completionData, GetActiveEditorFilePath());
+        }
+
+        internal ArrayList FilterCompletionDataForActiveProject(ArrayList completionData, string activeFilePath)
+        {
             if (completionData == null || completionData.Count == 0)
                 return completionData;
 
-            string activeFilePath = GetActiveEditorFilePath();
             var sourceFolders = GetCompletionSourceFolders(
                 GetCompletionProjectPaths(GetCompletionProjectPath(activeFilePath)));
             var filtered = new ArrayList(completionData.Count);
@@ -7524,7 +7603,7 @@ namespace CIARE
                 out prefixLineOffset, out wrapLineOffset, out bodyStartLine);
         }
 
-        private string PrepareCodeForNRefactoryCompletion(string code, string filePath,
+        internal string PrepareCodeForNRefactoryCompletion(string code, string filePath,
             out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine)
         {
             prefixLineOffset = 0;
