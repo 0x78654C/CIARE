@@ -6446,6 +6446,12 @@ namespace CIARE
 
             var projectPaths = GetCompletionProjectPaths(projectPath);
             AddRoslynCompletionGlobalUsings(syntaxTrees, projectPaths, parseOptions);
+            foreach (string completionProjectPath in projectPaths)
+            {
+                syntaxTrees.AddRange(RealTimeChecker.BuildProjectGeneratedXamlSyntaxTrees(
+                    completionProjectPath, parseOptions, CancellationToken.None,
+                    useTypedSyntheticFields: true));
+            }
 
             var sourceFolders = GetCompletionSourceFolders(projectPaths);
             if (sourceFolders.Count == 0)

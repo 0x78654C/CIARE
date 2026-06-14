@@ -438,8 +438,20 @@ namespace CIARE.Roslyn
             public HashSet<string> Fields { get; } = new HashSet<string>(StringComparer.Ordinal);
         }
 
-        private static List<SyntaxTree> BuildProjectGeneratedXamlSyntaxTrees(string projectFile,
-            CSharpParseOptions parseOptions, CancellationToken ct)
+        private sealed class GeneratedXamlFieldInfo
+        {
+            public GeneratedXamlFieldInfo(string name, string typeName)
+            {
+                Name = name;
+                TypeName = typeName;
+            }
+
+            public string Name { get; }
+            public string TypeName { get; }
+        }
+
+        internal static List<SyntaxTree> BuildProjectGeneratedXamlSyntaxTrees(string projectFile,
+            CSharpParseOptions parseOptions, CancellationToken ct, bool useTypedSyntheticFields = false)
         {
             var trees = new List<SyntaxTree>();
             var generatedClasses = new Dictionary<string, GeneratedXamlClassInfo>(StringComparer.Ordinal);
@@ -472,7 +484,8 @@ namespace CIARE.Roslyn
                 }
             }
 
-            foreach (var tree in BuildSyntheticXamlSyntaxTrees(projectFile, generatedClasses, parseOptions, ct))
+            foreach (var tree in BuildSyntheticXamlSyntaxTrees(projectFile, generatedClasses, parseOptions, ct,
+                useTypedSyntheticFields))
                 trees.Add(tree);
 
             return trees;
@@ -608,7 +621,7 @@ namespace CIARE.Roslyn
 
         private static IEnumerable<SyntaxTree> BuildSyntheticXamlSyntaxTrees(string projectFile,
             Dictionary<string, GeneratedXamlClassInfo> generatedClasses, CSharpParseOptions parseOptions,
-            CancellationToken ct)
+            CancellationToken ct, bool useTypedSyntheticFields)
         {
             string projectDirectory = Path.GetDirectoryName(projectFile);
             if (string.IsNullOrEmpty(projectDirectory) || !Directory.Exists(projectDirectory))
@@ -618,7 +631,8 @@ namespace CIARE.Roslyn
                 .Take(GeneratedXamlSyntaxTreeLimit))
             {
                 ct.ThrowIfCancellationRequested();
-                if (!TryBuildSyntheticXamlCode(xamlPath, generatedClasses, out string generatedCode))
+                if (!TryBuildSyntheticXamlCode(xamlPath, generatedClasses, useTypedSyntheticFields,
+                    out string generatedCode))
                     continue;
 
                 string path = "__CIARE_Xaml_" + Path.GetFileNameWithoutExtension(xamlPath) + ".g.cs";
@@ -657,7 +671,8 @@ namespace CIARE.Roslyn
         }
 
         private static bool TryBuildSyntheticXamlCode(string xamlPath,
-            Dictionary<string, GeneratedXamlClassInfo> generatedClasses, out string generatedCode)
+            Dictionary<string, GeneratedXamlClassInfo> generatedClasses, bool useTypedSyntheticFields,
+            out string generatedCode)
         {
             generatedCode = string.Empty;
             try
@@ -671,11 +686,14 @@ namespace CIARE.Roslyn
                 generatedClasses.TryGetValue(className, out var classInfo);
                 var fields = document.Descendants()
                     .Skip(1)
-                    .Select(element => element.Attribute(xamlNamespace + "Name")?.Value ??
-                        element.Attribute("Name")?.Value)
-                    .Where(IsValidGeneratedFieldName)
-                    .Distinct(StringComparer.Ordinal)
-                    .Where(name => classInfo == null || !classInfo.Fields.Contains(name))
+                    .Select(element => new GeneratedXamlFieldInfo(
+                        element.Attribute(xamlNamespace + "Name")?.Value ??
+                            element.Attribute("Name")?.Value,
+                        useTypedSyntheticFields ? GetSyntheticXamlFieldTypeName(element) : "dynamic"))
+                    .Where(field => IsValidGeneratedFieldName(field.Name))
+                    .GroupBy(field => field.Name, StringComparer.Ordinal)
+                    .Select(group => group.First())
+                    .Where(field => classInfo == null || !classInfo.Fields.Contains(field.Name))
                     .ToList();
 
                 bool needsInitializeComponent = classInfo == null || !classInfo.HasInitializeComponent;
@@ -691,6 +709,48 @@ namespace CIARE.Roslyn
             }
         }
 
+        private static string GetSyntheticXamlFieldTypeName(XElement element)
+        {
+            string namespaceName = element?.Name.NamespaceName ?? string.Empty;
+            string localName = element?.Name.LocalName ?? string.Empty;
+            if (!IsValidGeneratedFieldName(localName))
+                return "dynamic";
+
+            const string presentationNamespace = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
+            if (string.Equals(namespaceName, presentationNamespace, StringComparison.Ordinal))
+            {
+                string[] typeNames =
+                {
+                    "System.Windows.Controls." + localName + ", PresentationFramework",
+                    "System.Windows.Controls.Primitives." + localName + ", PresentationFramework",
+                    "System.Windows." + localName + ", PresentationFramework",
+                    "System.Windows.Shapes." + localName + ", PresentationFramework",
+                    "System.Windows.Documents." + localName + ", PresentationFramework",
+                    "System.Windows.Media." + localName + ", PresentationCore",
+                    "System.Windows.Media.Animation." + localName + ", PresentationCore"
+                };
+
+                foreach (string typeName in typeNames)
+                {
+                    Type type = Type.GetType(typeName, throwOnError: false);
+                    if (type != null && !string.IsNullOrEmpty(type.FullName))
+                        return "global::" + type.FullName.Replace('+', '.');
+                }
+            }
+            else if (namespaceName.StartsWith("clr-namespace:", StringComparison.Ordinal))
+            {
+                string clrNamespace = namespaceName.Substring("clr-namespace:".Length);
+                int separatorIndex = clrNamespace.IndexOf(';');
+                if (separatorIndex >= 0)
+                    clrNamespace = clrNamespace.Substring(0, separatorIndex);
+
+                if (!string.IsNullOrWhiteSpace(clrNamespace))
+                    return "global::" + clrNamespace.Trim() + "." + localName;
+            }
+
+            return "dynamic";
+        }
+
         private static bool IsValidGeneratedFieldName(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -701,7 +761,8 @@ namespace CIARE.Roslyn
                 SyntaxFacts.GetKeywordKind(trimmed) == SyntaxKind.None;
         }
 
-        private static string BuildSyntheticXamlPartialClass(string fullClassName, IEnumerable<string> fields,
+        private static string BuildSyntheticXamlPartialClass(string fullClassName,
+            IEnumerable<GeneratedXamlFieldInfo> fields,
             bool includeInitializeComponent)
         {
             int lastDot = fullClassName.LastIndexOf('.');
@@ -720,8 +781,11 @@ namespace CIARE.Roslyn
             string indent = string.IsNullOrWhiteSpace(namespaceName) ? string.Empty : "    ";
             builder.Append(indent).Append("public partial class ").Append(className).AppendLine();
             builder.Append(indent).AppendLine("{");
-            foreach (string field in fields)
-                builder.Append(indent).Append("    internal dynamic ").Append(field).AppendLine(";");
+            foreach (GeneratedXamlFieldInfo field in fields)
+            {
+                builder.Append(indent).Append("    internal ").Append(field.TypeName).Append(' ')
+                    .Append(field.Name).AppendLine(";");
+            }
 
             if (includeInitializeComponent)
                 builder.Append(indent).AppendLine("    private void InitializeComponent() { }");
