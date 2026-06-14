@@ -1,11 +1,13 @@
-﻿using System;
+﻿using ICSharpCode.TextEditor;
+using ICSharpCode.TextEditor.Gui.CompletionWindow;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
-using ICSharpCode.TextEditor;
-using ICSharpCode.TextEditor.Gui.CompletionWindow;
-
 using Dom = ICSharpCode.SharpDevelop.Dom;
 using NRefactoryResolver = ICSharpCode.SharpDevelop.Dom.NRefactoryResolver.NRefactoryResolver;
 
@@ -16,6 +18,17 @@ namespace CIARE.GUI
 	{
 		MainForm mainForm;
 		readonly string preSelection;
+		internal sealed class CompletionRequest
+		{
+			public string RawCode;
+			public string CurrentFilePath;
+			public int CaretOffset;
+			public int CaretLine;
+			public int CaretColumn;
+			public char CharacterTyped;
+			public bool UsingDirectiveDotCompletion;
+		}
+
 		static readonly string[] DirectTypingKeywords = {
 			"abstract", "as", "async", "await", "base", "bool", "break", "byte",
 			"case", "catch", "char", "checked", "class", "const", "continue",
@@ -90,29 +103,52 @@ namespace CIARE.GUI
 
 		public ICompletionData[] GenerateCompletionData(string fileName, TextArea textArea, char charTyped)
 		{
-			string rawCode = textArea.MotherTextEditorControl.Text;
-			bool usingDirectiveDotCompletion = charTyped == '.' && IsUsingDirectiveDotCompletion(textArea);
-			if (!usingDirectiveDotCompletion)
+			return GenerateCompletionData(CaptureCompletionRequest(textArea, charTyped));
+		}
+
+		internal CompletionRequest CaptureCompletionRequest(TextArea textArea, char charTyped)
+		{
+			return new CompletionRequest
 			{
-				mainForm.RefreshActiveCompletionUnit(rawCode);
+				RawCode = textArea.MotherTextEditorControl.Text,
+				CurrentFilePath = mainForm.GetActiveEditorFilePathForCompletion(),
+				CaretOffset = textArea.Caret.Offset,
+				CaretLine = textArea.Caret.Line,
+				CaretColumn = textArea.Caret.Column,
+				CharacterTyped = charTyped,
+				UsingDirectiveDotCompletion = charTyped == '.' && IsUsingDirectiveDotCompletion(textArea)
+			};
+		}
+
+		internal ICompletionData[] GenerateCompletionData(CompletionRequest request)
+		{
+			string rawCode = request.RawCode;
+			string completionCode = PrepareCodeForMemberCompletion(request);
+            bool insideInterpolationExpression = request.CharacterTyped == '.' &&
+                IsInsideInterpolationExpression(rawCode, request.CaretOffset);
+            Dom.ExpressionResult expression = FindExpression(completionCode, request.CaretOffset,
+				request.CaretLine, request.CaretColumn);
+			if (!request.UsingDirectiveDotCompletion)
+			{
+				mainForm.RefreshActiveCompletionUnit(completionCode, request.CurrentFilePath);
 			}
-			mainForm.ResetCompletionWorkspaceIfInactive();
+			mainForm.ResetCompletionWorkspaceIfInactive(request.CurrentFilePath);
 			NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
 			List<ICompletionData> resultList = new List<ICompletionData>();
+			HashSet<string> resultTexts = new HashSet<string>(StringComparer.Ordinal);
 
 				// For top-level statement files the code has no class/method context, so the
 				// NRefactory resolver cannot find a scope.  Wrap the code before passing it to
 				// the resolver and adjust the caret line accordingly.
-				string resolverCode = mainForm.PrepareCodeForNRefactoryCompletion(rawCode,
+				string resolverCode = mainForm.PrepareCodeForNRefactoryCompletion(completionCode, request.CurrentFilePath,
 					out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine);
-				int caretLine = textArea.Caret.Line + 1 + prefixLineOffset;
-				int caretCol  = textArea.Caret.Column + 1;
+				int caretLine = request.CaretLine + 1 + prefixLineOffset;
+				int caretCol  = request.CaretColumn + 1;
 				if (wrapLineOffset > 0 && caretLine >= bodyStartLine)
 					caretLine += wrapLineOffset;
 
-				if (charTyped == '.')
+				if (request.CharacterTyped == '.')
 				{
-					Dom.ExpressionResult expression = FindExpression(textArea);
 					int expressionBeginLine = expression.Region.IsEmpty
 						? 0
 						: expression.Region.BeginLine + prefixLineOffset;
@@ -141,37 +177,105 @@ namespace CIARE.GUI
 						completionData = rr.GetCompletionData(MainForm.myProjectContent);
 					}
 
-					completionData = mainForm.FilterCompletionDataForActiveProject(completionData);
+					completionData = mainForm.FilterCompletionDataForActiveProject(completionData,
+						request.CurrentFilePath);
 					completionData = MergeCompletionData(completionData, mainForm.GetWorkspaceMemberCompletionData(expression.Expression));
-					if (ShouldUseRoslynMemberFallback(completionData, usingDirectiveDotCompletion))
+					if (insideInterpolationExpression || ShouldUseRoslynMemberFallback(completionData, request.UsingDirectiveDotCompletion))
 					{
 						completionData = MergeCompletionData(completionData,
-							mainForm.GetRoslynMemberCompletionData(rawCode, textArea.Caret.Offset, expression.Expression));
-					}
+							mainForm.GetRoslynMemberCompletionData(completionCode, request.CaretOffset,
+                                insideInterpolationExpression ? null : expression.Expression,
+                                request.CurrentFilePath));
+                }
 					if (completionData != null)
-						AddCompletionData(resultList, completionData);
+						AddCompletionData(resultList, resultTexts, completionData);
 				}
 				else
 				{
-					Dom.ExpressionResult expression = FindExpression(textArea);
 					ArrayList completionData = resolver.CtrlSpace(caretLine,
 																  caretCol,
 																  MainForm.parseInformation,
 																  resolverCode,
 																  expression.Context);
 					if (completionData != null)
-						completionData = mainForm.FilterCompletionDataForActiveProject(completionData);
+						completionData = mainForm.FilterCompletionDataForActiveProject(completionData,
+							request.CurrentFilePath);
 					completionData = MergeCompletionData(completionData,
-						mainForm.GetRoslynCtrlSpaceCompletionData(rawCode, textArea.Caret.Offset, preSelection));
+						mainForm.GetRoslynCtrlSpaceCompletionData(rawCode, request.CaretOffset, preSelection,
+							request.CurrentFilePath));
 					if (completionData != null)
-						AddCompletionData(resultList, completionData);
-					AddCompletionData(resultList, mainForm.GetWorkspaceMethodCompletionData(preSelection));
-					AddDirectTypingKeywords(resultList);
+						AddCompletionData(resultList, resultTexts, completionData);
+					AddCompletionData(resultList, resultTexts,
+						mainForm.GetWorkspaceMethodCompletionData(preSelection));
+					AddDirectTypingKeywords(resultList, resultTexts);
 				}
 				return resultList.ToArray();
 			}
 
-		static bool IsUsingDirectiveDotCompletion(TextArea textArea)
+		static string PrepareCodeForMemberCompletion(CompletionRequest request)
+		{
+			if (request.CharacterTyped != '.' || request.UsingDirectiveDotCompletion ||
+				string.IsNullOrEmpty(request.RawCode) ||
+				request.CaretOffset < 0 || request.CaretOffset > request.RawCode.Length ||
+				!IsStandaloneMemberAccessExpression(request.RawCode, request.CaretOffset))
+			{
+				return request.RawCode;
+			}
+
+			// The dot request is captured before the dot is inserted. Terminate the active
+			// expression in the analysis snapshot so parser recovery cannot merge it with
+			// an adjacent statement that uses the same variable.
+			return request.RawCode.Insert(request.CaretOffset, ";");
+		}
+
+		static bool IsStandaloneMemberAccessExpression(string code, int caretOffset)
+		{
+			int lineStart = caretOffset > 0
+				? code.LastIndexOf('\n', caretOffset - 1) + 1
+				: 0;
+			string linePrefix = code.Substring(lineStart, caretOffset - lineStart).Trim();
+			if (linePrefix.Length == 0)
+				return false;
+
+			foreach (char ch in linePrefix)
+			{
+				if (!(char.IsLetterOrDigit(ch) || ch == '_' || ch == '@' || ch == '.'))
+					return false;
+			}
+			return true;
+		}
+        static bool IsInsideInterpolationExpression(string code, int caretOffset)
+        {
+            if (string.IsNullOrEmpty(code))
+                return false;
+
+            try
+            {
+                var root = CSharpSyntaxTree.ParseText(code).GetRoot();
+                if (root.FullSpan.IsEmpty)
+                    return false;
+
+                int position = Math.Max(0, Math.Min(caretOffset - 1, root.FullSpan.End - 1));
+                InterpolationSyntax interpolation = root.FindToken(position, findInsideTrivia: true)
+                    .Parent?.AncestorsAndSelf()
+                    .OfType<InterpolationSyntax>()
+                    .FirstOrDefault();
+                if (interpolation == null)
+                    return false;
+
+                int expressionEnd = interpolation.CloseBraceToken.IsMissing
+                    ? interpolation.FullSpan.End
+                    : interpolation.CloseBraceToken.SpanStart;
+                return caretOffset >= interpolation.OpenBraceToken.Span.End &&
+                    caretOffset <= expressionEnd;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        static bool IsUsingDirectiveDotCompletion(TextArea textArea)
 		{
 			if (textArea == null || textArea.Document == null)
 				return false;
@@ -222,7 +326,7 @@ namespace CIARE.GUI
 		/// Also determines the context (using statement, "new"-expression etc.) the
 		/// cursor is at.
 		/// </summary>
-		Dom.ExpressionResult FindExpression(TextArea textArea)
+		Dom.ExpressionResult FindExpression(string code, int caretOffset, int caretLine, int caretColumn)
 		{
 			Dom.IExpressionFinder finder;
 			if (MainForm.IsVisualBasic)
@@ -233,15 +337,16 @@ namespace CIARE.GUI
 			{
 				finder = new Dom.CSharp.CSharpExpressionFinder(MainForm.parseInformation);
 			}
-			Dom.ExpressionResult expression = finder.FindExpression(textArea.Document.TextContent, textArea.Caret.Offset);
+			Dom.ExpressionResult expression = finder.FindExpression(code, caretOffset);
 			if (expression.Region.IsEmpty)
 			{
-				expression.Region = new Dom.DomRegion(textArea.Caret.Line + 1, textArea.Caret.Column + 1);
+				expression.Region = new Dom.DomRegion(caretLine + 1, caretColumn + 1);
 			}
 			return expression;
 		}
 
-		void AddCompletionData(List<ICompletionData> resultList, ArrayList completionData)
+		void AddCompletionData(List<ICompletionData> resultList, HashSet<string> resultTexts,
+			ArrayList completionData)
 		{
 			// used to store the method names for grouping overloads
 			Dictionary<string, CodeCompletionData> nameDictionary = new Dictionary<string, CodeCompletionData>();
@@ -253,7 +358,7 @@ namespace CIARE.GUI
 				if (obj is string)
 				{
 					string text = (string)obj;
-					if (ContainsCompletionText(resultList, text))
+					if (!resultTexts.Add(text))
 					{
 						continue;
 					}
@@ -265,7 +370,7 @@ namespace CIARE.GUI
 				else if (obj is Dom.IClass)
 				{
 					Dom.IClass c = (Dom.IClass)obj;
-						if (!ContainsCompletionText(resultList, c.Name))
+						if (resultTexts.Add(c.Name))
 							resultList.Add(new CodeCompletionData(c));
 					}
 					else if (obj is Dom.IMember)
@@ -285,7 +390,7 @@ namespace CIARE.GUI
 						{
 							data.AddOverload();
 						}
-						else if (!ContainsCompletionText(resultList, m.Name))
+						else if (resultTexts.Add(m.Name))
 						{
 							nameDictionary[m.Name] = data = new CodeCompletionData(m);
 							resultList.Add(data);
@@ -294,7 +399,7 @@ namespace CIARE.GUI
 				else if (obj is ICompletionData)
 				{
 					ICompletionData data = (ICompletionData)obj;
-					if (!ContainsCompletionText(resultList, data.Text))
+					if (resultTexts.Add(data.Text))
 						resultList.Add(data);
 				}
 				else
@@ -313,26 +418,21 @@ namespace CIARE.GUI
 				return fallback;
 
 			ArrayList merged = new ArrayList(primary);
+			HashSet<string> seenTexts = new HashSet<string>(StringComparer.Ordinal);
+			foreach (object item in primary)
+			{
+				string text = GetCompletionObjectText(item);
+				if (text != null)
+					seenTexts.Add(text);
+			}
+
 			foreach (object item in fallback)
 			{
-				if (!ContainsCompletionObject(merged, item))
+				string text = GetCompletionObjectText(item);
+				if ((text == null && !merged.Contains(item)) || (text != null && seenTexts.Add(text)))
 					merged.Add(item);
 			}
 			return merged;
-		}
-
-		static bool ContainsCompletionObject(ArrayList completionData, object candidate)
-		{
-			string candidateText = GetCompletionObjectText(candidate);
-			if (candidateText == null)
-				return completionData.Contains(candidate);
-
-			foreach (object item in completionData)
-			{
-				if (string.Equals(GetCompletionObjectText(item), candidateText, StringComparison.Ordinal))
-					return true;
-			}
-			return false;
 		}
 
 		static string GetCompletionObjectText(object item)
@@ -348,7 +448,7 @@ namespace CIARE.GUI
 			return null;
 		}
 
-		void AddDirectTypingKeywords(List<ICompletionData> resultList)
+		void AddDirectTypingKeywords(List<ICompletionData> resultList, HashSet<string> resultTexts)
 		{
 			if (MainForm.IsVisualBasic)
 			{
@@ -362,24 +462,12 @@ namespace CIARE.GUI
 				{
 					continue;
 				}
-				if (ContainsCompletionText(resultList, keyword))
+				if (!resultTexts.Add(keyword))
 				{
 					continue;
 				}
 				resultList.Add(new DefaultCompletionData(keyword, "keyword " + keyword, 10));
 			}
-		}
-
-		static bool ContainsCompletionText(List<ICompletionData> resultList, string text)
-		{
-			foreach (ICompletionData data in resultList)
-			{
-				if (string.Equals(data.Text, text, StringComparison.Ordinal))
-				{
-					return true;
-				}
-			}
-			return false;
 		}
 
 		static bool IsCSharpKeyword(string text)

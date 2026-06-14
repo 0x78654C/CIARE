@@ -1,11 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Runtime.Versioning;
-using System.Windows.Forms;
-using ICSharpCode.TextEditor;
+﻿using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Document;
 using ICSharpCode.TextEditor.Gui.CompletionWindow;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace CIARE.GUI
 {
@@ -15,9 +21,15 @@ namespace CIARE.GUI
 		MainForm mainForm;
 		TextEditorControl editor;
 		CodeCompletionWindow codeCompletionWindow;
+		System.Windows.Forms.Timer automaticCompletionTimer;
+		CancellationTokenSource completionRequestCancellation;
+		int completionRequestVersion;
+		char pendingAutomaticCompletionKey;
 		string pendingDefinitionWord;
 		int pendingDefinitionOffset = -1;
 		Point pendingDefinitionMouseLocation;
+		const int AutomaticCompletionDelayMs = 1; // delay time for autocompletion window.
+		static readonly SemaphoreSlim CompletionGenerationLock = new SemaphoreSlim(1, 1);
 		static readonly HashSet<string> DeclarationTypeKeywords = new HashSet<string>(StringComparer.Ordinal)
 		{
 			"var", "bool", "byte", "sbyte", "char", "decimal", "double", "float",
@@ -52,7 +64,7 @@ namespace CIARE.GUI
 				editor.ActiveTextAreaControl.TextArea.MouseUp += h.TextAreaMouseUp;
 
 				// When the editor is disposed, close the code completion window
-				editor.Disposed += h.CloseCodeCompletionWindow;
+				editor.Disposed += h.EditorDisposed;
 
 				return h;
 			}
@@ -65,7 +77,7 @@ namespace CIARE.GUI
 			TextArea textArea = editor.ActiveTextAreaControl.TextArea;
 			if (codeCompletionWindow != null)
 			{
-				if (key == '"' || key == '\'' || IsCompletionSuppressedContext(textArea, textArea.Caret.Offset))
+				if (key == '"' || key == '\'' || StartsSuppressedContext(textArea, key))
 				{
 					CloseCodeCompletionWindow(codeCompletionWindow, EventArgs.Empty);
 					return false;
@@ -78,33 +90,57 @@ namespace CIARE.GUI
 			}
 			if (key == '.')
 			{
-				if (IsCompletionSuppressedContext(textArea, textArea.Caret.Offset) || IsDotAfterNumericToken(textArea))
+				CancelPendingCompletionRequest();
+				if (IsDotAfterNumericToken(textArea))
 				{
 					return false;
 				}
 
-				ShowCodeCompletionWindow(new CodeCompletionProvider(mainForm), key, false);
+				BeginCompletionRequest(new CodeCompletionProvider(mainForm), key, false, true);
 			}
 			else if (IsAutomaticCompletionTrigger(key))
 			{
-				editor.BeginInvoke(new MethodInvoker(delegate { ShowAutomaticCompletionWindow(key); }));
+				ScheduleAutomaticCompletionWindow(key);
+			}
+			else
+			{
+				CancelPendingCompletionRequest();
 			}
 			return false;
 		}
 
+		void ScheduleAutomaticCompletionWindow(char key)
+		{
+			pendingAutomaticCompletionKey = key;
+			CancelCompletionWorker();
+			if (automaticCompletionTimer == null)
+			{
+				automaticCompletionTimer = new System.Windows.Forms.Timer
+				{
+					Interval = AutomaticCompletionDelayMs
+				};
+				automaticCompletionTimer.Tick += AutomaticCompletionTimerTick;
+			}
+
+			automaticCompletionTimer.Stop();
+			automaticCompletionTimer.Start();
+		}
+
+		void AutomaticCompletionTimerTick(object sender, EventArgs e)
+		{
+			automaticCompletionTimer.Stop();
+			ShowAutomaticCompletionWindow(pendingAutomaticCompletionKey);
+		}
+
 		void ShowAutomaticCompletionWindow(char key)
 		{
-			if (editor.IsDisposed || codeCompletionWindow != null)
+			if (editor.IsDisposed || codeCompletionWindow != null ||
+				!editor.ActiveTextAreaControl.TextArea.Focused)
 			{
 				return;
 			}
 
 			TextArea textArea = editor.ActiveTextAreaControl.TextArea;
-			if (IsCompletionSuppressedContext(textArea, textArea.Caret.Offset))
-			{
-				return;
-			}
-
 			string preSelection = GetCurrentWord(textArea);
 			if (preSelection.Length == 0)
 			{
@@ -125,29 +161,148 @@ namespace CIARE.GUI
 				return;
 			}
 
-			ShowCodeCompletionWindow(new CodeCompletionProvider(mainForm, preSelection), key, true);
+			BeginCompletionRequest(new CodeCompletionProvider(mainForm, preSelection), key, true, false);
 		}
 
-		void ShowCodeCompletionWindow(ICompletionDataProvider completionDataProvider, char key, bool closeWhenCaretAtBeginning)
+		void BeginCompletionRequest(CodeCompletionProvider completionDataProvider, char key,
+			bool closeWhenCaretAtBeginning, bool dotTypedAfterRequest)
 		{
-			codeCompletionWindow = CodeCompletionWindow.ShowCompletionWindow(
-				mainForm,                   // The parent window for the completion window
-				editor,                     // The text editor to show the window for
-				MainForm.DummyFileName,     // Filename - will be passed back to the provider
-				completionDataProvider,     // Provider to get the list of possible completions
-				key                         // Key pressed - will be passed to the provider
-			);
-			if (codeCompletionWindow != null)
+			if (editor.IsDisposed || codeCompletionWindow != null)
+				return;
+
+			CodeCompletionProvider.CompletionRequest request =
+				completionDataProvider.CaptureCompletionRequest(editor.ActiveTextAreaControl.TextArea, key);
+			CancelCompletionWorker();
+			var cancellation = new CancellationTokenSource();
+			CancellationToken cancellationToken = cancellation.Token;
+			completionRequestCancellation = cancellation;
+			int requestVersion = ++completionRequestVersion;
+
+			Task.Run(() =>
+				{
+					if (IsCompletionSuppressedContext(request.RawCode, request.CaretOffset))
+						return Array.Empty<ICompletionData>();
+
+					CompletionGenerationLock.Wait(cancellationToken);
+					try
+					{
+						cancellationToken.ThrowIfCancellationRequested();
+						ICompletionData[] result = completionDataProvider.GenerateCompletionData(request);
+						cancellationToken.ThrowIfCancellationRequested();
+						return result;
+					}
+					finally
+					{
+						CompletionGenerationLock.Release();
+					}
+				}, cancellationToken)
+				.ContinueWith(task =>
+				{
+					if (task.IsCanceled || task.IsFaulted || cancellationToken.IsCancellationRequested ||
+						editor.IsDisposed || !editor.IsHandleCreated)
+					{
+						return;
+					}
+
+					try
+					{
+						editor.BeginInvoke(new MethodInvoker(delegate
+						{
+							CompleteCompletionRequest(completionDataProvider, request, task.Result,
+								closeWhenCaretAtBeginning, dotTypedAfterRequest, cancellation,
+								cancellationToken, requestVersion);
+						}));
+					}
+					catch
+					{
+					}
+				}, TaskScheduler.Default);
+		}
+
+		void CompleteCompletionRequest(CodeCompletionProvider completionDataProvider,
+			CodeCompletionProvider.CompletionRequest request, ICompletionData[] completionData,
+			bool closeWhenCaretAtBeginning, bool dotTypedAfterRequest,
+			CancellationTokenSource cancellation, CancellationToken cancellationToken, int requestVersion)
+		{
+			try
 			{
-				// ShowCompletionWindow can return null when the provider returns an empty list
-				codeCompletionWindow.CloseWhenCaretAtBeginning = closeWhenCaretAtBeginning;
-				codeCompletionWindow.Closed += new EventHandler(CloseCodeCompletionWindow);
+				if (editor.IsDisposed || cancellationToken.IsCancellationRequested ||
+					completionRequestCancellation != cancellation ||
+					completionRequestVersion != requestVersion ||
+					codeCompletionWindow != null)
+				{
+					return;
+				}
+
+				TextArea textArea = editor.ActiveTextAreaControl.TextArea;
+				if (!textArea.Focused)
+					return;
+
+				int caretOffset = textArea.Caret.Offset;
+				int startOffset;
+				if (dotTypedAfterRequest)
+				{
+					if (caretOffset != request.CaretOffset + 1 ||
+						request.CaretOffset >= textArea.Document.TextLength ||
+						textArea.Document.GetCharAt(request.CaretOffset) != '.')
+					{
+						return;
+					}
+
+					startOffset = caretOffset;
+				}
+				else
+				{
+					string currentWord = GetCurrentWord(textArea);
+					if (caretOffset != request.CaretOffset ||
+						!string.Equals(currentWord, completionDataProvider.PreSelection, StringComparison.Ordinal))
+					{
+						return;
+					}
+
+					startOffset = Math.Max(0, caretOffset - currentWord.Length);
+				}
+
+				codeCompletionWindow = CodeCompletionWindow.ShowCompletionWindow(
+					mainForm, editor, completionDataProvider, completionData, startOffset, caretOffset,
+					true, true);
+				if (codeCompletionWindow != null)
+				{
+					codeCompletionWindow.CloseWhenCaretAtBeginning = closeWhenCaretAtBeginning;
+					codeCompletionWindow.Closed += new EventHandler(CloseCodeCompletionWindow);
+				}
 			}
+			finally
+			{
+				if (completionRequestCancellation == cancellation)
+				{
+					completionRequestCancellation = null;
+					cancellation.Dispose();
+				}
+			}
+		}
+
+		void CancelPendingCompletionRequest()
+		{
+			automaticCompletionTimer?.Stop();
+			CancelCompletionWorker();
+		}
+
+		void CancelCompletionWorker()
+		{
+			var cancellation = completionRequestCancellation;
+			completionRequestCancellation = null;
+			if (cancellation != null)
+			{
+				cancellation.Cancel();
+				cancellation.Dispose();
+			}
+			completionRequestVersion++;
 		}
 
 		static bool IsAutomaticCompletionTrigger(char key)
 		{
-			return char.IsLetter(key) || key == '_';
+			return char.IsLetterOrDigit(key) || key == '_';
 		}
 
 		static string GetCurrentWord(TextArea textArea)
@@ -161,21 +316,35 @@ namespace CIARE.GUI
 			return textArea.Document.GetText(startOffset, offset - startOffset);
 		}
 
-		static bool IsCompletionSuppressedContext(TextArea textArea, int offset)
+		static bool StartsSuppressedContext(TextArea textArea, char key)
 		{
-			if (textArea == null || textArea.Document == null)
+			if (key == '#')
+				return true;
+
+			int offset = textArea.Caret.Offset;
+			return offset > 0 && (key == '/' || key == '*') &&
+				textArea.Document.GetCharAt(offset - 1) == '/';
+		}
+
+		static bool IsCompletionSuppressedContext(string text, int offset)
+		{
+			if (string.IsNullOrEmpty(text))
 			{
 				return false;
 			}
 
-			IDocument document = textArea.Document;
-			offset = Math.Max(0, Math.Min(offset, document.TextLength));
-			if (IsPreprocessorDirectiveLine(document, offset))
+			offset = Math.Max(0, Math.Min(offset, text.Length));
+			if (IsPreprocessorDirectiveLine(text, offset))
 			{
 				return true;
 			}
 
-			bool inLineComment = false;
+            if (TryGetInterpolationSuppression(text, offset, out bool interpolationSuppressed))
+            {
+                return interpolationSuppressed;
+            }
+
+            bool inLineComment = false;
 			bool inBlockComment = false;
 			bool inString = false;
 			bool inVerbatimString = false;
@@ -185,8 +354,8 @@ namespace CIARE.GUI
 
 			for (int i = 0; i < offset; i++)
 			{
-				char ch = document.GetCharAt(i);
-				char next = i + 1 < offset ? document.GetCharAt(i + 1) : '\0';
+				char ch = text[i];
+				char next = i + 1 < offset ? text[i + 1] : '\0';
 
 				if (inLineComment)
 				{
@@ -209,7 +378,7 @@ namespace CIARE.GUI
 
 				if (inRawString)
 				{
-					if (ch == '"' && CountConsecutiveQuotes(document, i, offset) >= rawStringQuoteCount)
+					if (ch == '"' && CountConsecutiveQuotes(text, i, offset) >= rawStringQuoteCount)
 					{
 						inRawString = false;
 						i += rawStringQuoteCount - 1;
@@ -285,7 +454,7 @@ namespace CIARE.GUI
 				}
 				else if (ch == '"')
 				{
-					int quoteCount = CountConsecutiveQuotes(document, i, offset);
+					int quoteCount = CountConsecutiveQuotes(text, i, offset);
 					if (quoteCount >= 3)
 					{
 						inRawString = true;
@@ -294,7 +463,7 @@ namespace CIARE.GUI
 					}
 					else
 					{
-						inVerbatimString = IsVerbatimStringStart(document, i);
+						inVerbatimString = IsVerbatimStringStart(text, i);
 						inString = !inVerbatimString;
 					}
 				}
@@ -303,18 +472,56 @@ namespace CIARE.GUI
 			return inString || inVerbatimString || inRawString || inChar || inLineComment || inBlockComment;
 		}
 
-		static bool IsPreprocessorDirectiveLine(IDocument document, int offset)
+        static bool TryGetInterpolationSuppression(string text, int offset, out bool suppressed)
+        {
+            suppressed = false;
+            try
+            {
+                SyntaxNode root = CSharpSyntaxTree.ParseText(text).GetRoot();
+                if (root.FullSpan.IsEmpty)
+                    return false;
+
+                int position = Math.Max(0, Math.Min(offset - 1, root.FullSpan.End - 1));
+                SyntaxToken token = root.FindToken(position, findInsideTrivia: true);
+                InterpolationSyntax interpolation = token.Parent?.AncestorsAndSelf()
+                    .OfType<InterpolationSyntax>()
+                    .FirstOrDefault();
+                if (interpolation == null)
+                    return false;
+
+                int expressionStart = interpolation.OpenBraceToken.Span.End;
+                int expressionEnd = interpolation.CloseBraceToken.IsMissing
+                    ? interpolation.FullSpan.End
+                    : interpolation.CloseBraceToken.SpanStart;
+                if (offset < expressionStart || offset > expressionEnd)
+                    return false;
+
+                SyntaxTrivia trivia = root.FindTrivia(position, findInsideTrivia: true);
+                suppressed =
+                    trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) ||
+                    trivia.IsKind(SyntaxKind.MultiLineCommentTrivia) ||
+                    token.IsKind(SyntaxKind.StringLiteralToken) ||
+                    token.IsKind(SyntaxKind.CharacterLiteralToken) ||
+                    token.IsKind(SyntaxKind.InterpolatedStringTextToken);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        static bool IsPreprocessorDirectiveLine(string text, int offset)
 		{
 			if (offset <= 0)
 			{
 				return false;
 			}
 
-			LineSegment line = document.GetLineSegmentForOffset(offset);
-			int length = Math.Max(0, offset - line.Offset);
-			for (int i = 0; i < length; i++)
+			int lineOffset = text.LastIndexOf('\n', offset - 1);
+			lineOffset = lineOffset < 0 ? 0 : lineOffset + 1;
+			for (int i = lineOffset; i < offset; i++)
 			{
-				char ch = document.GetCharAt(line.Offset + i);
+				char ch = text[i];
 				if (char.IsWhiteSpace(ch))
 				{
 					continue;
@@ -353,14 +560,14 @@ namespace CIARE.GUI
 			return word.Length > 0 && char.IsDigit(word[0]);
 		}
 
-		static bool IsVerbatimStringStart(IDocument document, int quoteOffset)
+		static bool IsVerbatimStringStart(string text, int quoteOffset)
 		{
 			if (quoteOffset <= 0)
 			{
 				return false;
 			}
 
-			char previous = document.GetCharAt(quoteOffset - 1);
+			char previous = text[quoteOffset - 1];
 			if (previous == '@')
 			{
 				return true;
@@ -368,13 +575,13 @@ namespace CIARE.GUI
 
 			return quoteOffset > 1
 				&& previous == '$'
-				&& document.GetCharAt(quoteOffset - 2) == '@';
+				&& text[quoteOffset - 2] == '@';
 		}
 
-		static int CountConsecutiveQuotes(IDocument document, int offset, int maxOffset)
+		static int CountConsecutiveQuotes(string text, int offset, int maxOffset)
 		{
 			int count = 0;
-			while (offset + count < maxOffset && document.GetCharAt(offset + count) == '"')
+			while (offset + count < maxOffset && text[offset + count] == '"')
 			{
 				count++;
 			}
@@ -660,6 +867,19 @@ namespace CIARE.GUI
 				codeCompletionWindow.Dispose();
 				codeCompletionWindow = null;
 			}
+		}
+
+		void EditorDisposed(object sender, EventArgs e)
+		{
+			CancelPendingCompletionRequest();
+			if (automaticCompletionTimer != null)
+			{
+				automaticCompletionTimer.Tick -= AutomaticCompletionTimerTick;
+				automaticCompletionTimer.Dispose();
+				automaticCompletionTimer = null;
+			}
+
+			CloseCodeCompletionWindow(codeCompletionWindow, EventArgs.Empty);
 		}
 	}
 }
