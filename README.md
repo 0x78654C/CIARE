@@ -12,7 +12,7 @@
 
 ![Preview](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_2.0.4.png?raw=true)
 
-> **Version 3.1.0**
+> **Version 3.2.0**
 
 ---
 
@@ -65,6 +65,7 @@
 - Mark files to open on next app start or Windows logon
 - Add references to custom managed libraries
 - NuGet Manager — download and use packages instantly
+- NuGet view for newer package versions and identify packages that appear unused.
 
 ### Themes
 - 4 built-in themes: Default, C#-Light, C#-Dark, C#-DarkVS
