@@ -1,11 +1,13 @@
-﻿using System;
+﻿using ICSharpCode.TextEditor;
+using ICSharpCode.TextEditor.Gui.CompletionWindow;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
-using ICSharpCode.TextEditor;
-using ICSharpCode.TextEditor.Gui.CompletionWindow;
-
 using Dom = ICSharpCode.SharpDevelop.Dom;
 using NRefactoryResolver = ICSharpCode.SharpDevelop.Dom.NRefactoryResolver.NRefactoryResolver;
 
@@ -122,7 +124,9 @@ namespace CIARE.GUI
 		{
 			string rawCode = request.RawCode;
 			string completionCode = PrepareCodeForMemberCompletion(request);
-			Dom.ExpressionResult expression = FindExpression(completionCode, request.CaretOffset,
+            bool insideInterpolationExpression = request.CharacterTyped == '.' &&
+                IsInsideInterpolationExpression(rawCode, request.CaretOffset);
+            Dom.ExpressionResult expression = FindExpression(completionCode, request.CaretOffset,
 				request.CaretLine, request.CaretColumn);
 			if (!request.UsingDirectiveDotCompletion)
 			{
@@ -176,12 +180,13 @@ namespace CIARE.GUI
 					completionData = mainForm.FilterCompletionDataForActiveProject(completionData,
 						request.CurrentFilePath);
 					completionData = MergeCompletionData(completionData, mainForm.GetWorkspaceMemberCompletionData(expression.Expression));
-					if (ShouldUseRoslynMemberFallback(completionData, request.UsingDirectiveDotCompletion))
+					if (insideInterpolationExpression || ShouldUseRoslynMemberFallback(completionData, request.UsingDirectiveDotCompletion))
 					{
 						completionData = MergeCompletionData(completionData,
 							mainForm.GetRoslynMemberCompletionData(completionCode, request.CaretOffset,
-								expression.Expression, request.CurrentFilePath));
-					}
+                                insideInterpolationExpression ? null : expression.Expression,
+                                request.CurrentFilePath));
+                }
 					if (completionData != null)
 						AddCompletionData(resultList, resultTexts, completionData);
 				}
@@ -239,8 +244,38 @@ namespace CIARE.GUI
 			}
 			return true;
 		}
+        static bool IsInsideInterpolationExpression(string code, int caretOffset)
+        {
+            if (string.IsNullOrEmpty(code))
+                return false;
 
-		static bool IsUsingDirectiveDotCompletion(TextArea textArea)
+            try
+            {
+                var root = CSharpSyntaxTree.ParseText(code).GetRoot();
+                if (root.FullSpan.IsEmpty)
+                    return false;
+
+                int position = Math.Max(0, Math.Min(caretOffset - 1, root.FullSpan.End - 1));
+                InterpolationSyntax interpolation = root.FindToken(position, findInsideTrivia: true)
+                    .Parent?.AncestorsAndSelf()
+                    .OfType<InterpolationSyntax>()
+                    .FirstOrDefault();
+                if (interpolation == null)
+                    return false;
+
+                int expressionEnd = interpolation.CloseBraceToken.IsMissing
+                    ? interpolation.FullSpan.End
+                    : interpolation.CloseBraceToken.SpanStart;
+                return caretOffset >= interpolation.OpenBraceToken.Span.End &&
+                    caretOffset <= expressionEnd;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        static bool IsUsingDirectiveDotCompletion(TextArea textArea)
 		{
 			if (textArea == null || textArea.Document == null)
 				return false;

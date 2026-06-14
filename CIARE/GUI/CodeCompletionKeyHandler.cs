@@ -1,13 +1,17 @@
-﻿using System;
+﻿using ICSharpCode.TextEditor;
+using ICSharpCode.TextEditor.Document;
+using ICSharpCode.TextEditor.Gui.CompletionWindow;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using ICSharpCode.TextEditor;
-using ICSharpCode.TextEditor.Document;
-using ICSharpCode.TextEditor.Gui.CompletionWindow;
 
 namespace CIARE.GUI
 {
@@ -335,7 +339,12 @@ namespace CIARE.GUI
 				return true;
 			}
 
-			bool inLineComment = false;
+            if (TryGetInterpolationSuppression(text, offset, out bool interpolationSuppressed))
+            {
+                return interpolationSuppressed;
+            }
+
+            bool inLineComment = false;
 			bool inBlockComment = false;
 			bool inString = false;
 			bool inVerbatimString = false;
@@ -463,7 +472,45 @@ namespace CIARE.GUI
 			return inString || inVerbatimString || inRawString || inChar || inLineComment || inBlockComment;
 		}
 
-		static bool IsPreprocessorDirectiveLine(string text, int offset)
+        static bool TryGetInterpolationSuppression(string text, int offset, out bool suppressed)
+        {
+            suppressed = false;
+            try
+            {
+                SyntaxNode root = CSharpSyntaxTree.ParseText(text).GetRoot();
+                if (root.FullSpan.IsEmpty)
+                    return false;
+
+                int position = Math.Max(0, Math.Min(offset - 1, root.FullSpan.End - 1));
+                SyntaxToken token = root.FindToken(position, findInsideTrivia: true);
+                InterpolationSyntax interpolation = token.Parent?.AncestorsAndSelf()
+                    .OfType<InterpolationSyntax>()
+                    .FirstOrDefault();
+                if (interpolation == null)
+                    return false;
+
+                int expressionStart = interpolation.OpenBraceToken.Span.End;
+                int expressionEnd = interpolation.CloseBraceToken.IsMissing
+                    ? interpolation.FullSpan.End
+                    : interpolation.CloseBraceToken.SpanStart;
+                if (offset < expressionStart || offset > expressionEnd)
+                    return false;
+
+                SyntaxTrivia trivia = root.FindTrivia(position, findInsideTrivia: true);
+                suppressed =
+                    trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) ||
+                    trivia.IsKind(SyntaxKind.MultiLineCommentTrivia) ||
+                    token.IsKind(SyntaxKind.StringLiteralToken) ||
+                    token.IsKind(SyntaxKind.CharacterLiteralToken) ||
+                    token.IsKind(SyntaxKind.InterpolatedStringTextToken);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        static bool IsPreprocessorDirectiveLine(string text, int offset)
 		{
 			if (offset <= 0)
 			{
