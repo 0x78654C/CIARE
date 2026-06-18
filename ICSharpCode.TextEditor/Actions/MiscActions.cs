@@ -857,6 +857,48 @@ namespace ICSharpCode.TextEditor.Actions
 			textArea.Document.CommitUpdate();
 		}
 	}
+
+	public class DuplicateLine : AbstractEditAction
+	{
+		public override void Execute(TextArea textArea)
+		{
+			int lineNr = textArea.Caret.Line;
+			LineSegment line = textArea.Document.GetLineSegment(lineNr);
+			if (textArea.IsReadOnly(line.Offset, line.Length))
+				return;
+
+			int insertOffset = line.Offset + line.TotalLength;
+			int column = Math.Min(textArea.Caret.Column, line.Length);
+			string lineText = textArea.Document.GetText(line.Offset, line.TotalLength);
+			int duplicateLineOffset;
+
+			if (line.DelimiterLength == 0) {
+				string lineTerminator = textArea.Document.TextEditorProperties.LineTerminator;
+				if (String.IsNullOrEmpty(lineTerminator)) {
+					lineTerminator = Environment.NewLine;
+				}
+				lineText = lineTerminator + lineText;
+				duplicateLineOffset = insertOffset + lineTerminator.Length;
+			} else {
+				duplicateLineOffset = insertOffset;
+			}
+
+			textArea.BeginUpdate();
+			textArea.Document.UndoStack.StartUndoGroup();
+			try {
+				textArea.Document.Insert(insertOffset, lineText);
+				textArea.Caret.Position = textArea.Document.OffsetToPosition(duplicateLineOffset + column);
+				textArea.SetDesiredColumn();
+
+				textArea.Document.RequestUpdate(new TextAreaUpdate(TextAreaUpdateType.PositionToEnd, new TextLocation(0, lineNr)));
+				textArea.UpdateMatchingBracket();
+				textArea.Document.CommitUpdate();
+			} finally {
+				textArea.Document.UndoStack.EndUndoGroup();
+				textArea.EndUpdate();
+			}
+		}
+	}
 	
 	public class DeleteToLineEnd : AbstractEditAction
 	{
