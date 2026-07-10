@@ -28,7 +28,7 @@ namespace CIARE.GUI
 		string pendingDefinitionWord;
 		int pendingDefinitionOffset = -1;
 		Point pendingDefinitionMouseLocation;
-		const int AutomaticCompletionDelayMs = 80;
+		const int AutomaticCompletionDelayMs = 1;
 		static readonly SemaphoreSlim CompletionGenerationLock = new SemaphoreSlim(1, 1);
 		static readonly HashSet<string> DeclarationTypeKeywords = new HashSet<string>(StringComparer.Ordinal)
 		{
