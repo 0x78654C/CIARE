@@ -1981,6 +1981,20 @@ namespace CIARE
             });
         }
 
+        public void RefreshStandaloneReferenceContext()
+        {
+            RealTimeChecker.InvalidateReferenceCache();
+
+            if (InvokeRequired)
+            {
+                TryBeginInvoke(RefreshStandaloneReferenceContext);
+                return;
+            }
+
+            ReloadRef();
+            ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+        }
+
         private bool ShouldUseProjectPackageCompletionReferences(string projectPath)
         {
             if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
