@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Versioning;
+using System.Threading;
 using System.Windows.Forms;
 using Dom = ICSharpCode.SharpDevelop.Dom;
 using NRefactoryResolver = ICSharpCode.SharpDevelop.Dom.NRefactoryResolver.NRefactoryResolver;
@@ -103,7 +104,7 @@ namespace CIARE.GUI
 
 		public ICompletionData[] GenerateCompletionData(string fileName, TextArea textArea, char charTyped)
 		{
-			return GenerateCompletionData(CaptureCompletionRequest(textArea, charTyped));
+			return GenerateCompletionData(CaptureCompletionRequest(textArea, charTyped), CancellationToken.None);
 		}
 
 		internal CompletionRequest CaptureCompletionRequest(TextArea textArea, char charTyped)
@@ -120,18 +121,22 @@ namespace CIARE.GUI
 			};
 		}
 
-		internal ICompletionData[] GenerateCompletionData(CompletionRequest request)
+		internal ICompletionData[] GenerateCompletionData(CompletionRequest request,
+			CancellationToken cancellationToken)
 		{
+			cancellationToken.ThrowIfCancellationRequested();
 			string rawCode = request.RawCode;
 			string completionCode = PrepareCodeForMemberCompletion(request);
             bool insideInterpolationExpression = request.CharacterTyped == '.' &&
                 IsInsideInterpolationExpression(rawCode, request.CaretOffset);
             Dom.ExpressionResult expression = FindExpression(completionCode, request.CaretOffset,
 				request.CaretLine, request.CaretColumn);
+			cancellationToken.ThrowIfCancellationRequested();
 			if (!request.UsingDirectiveDotCompletion)
 			{
 				mainForm.RefreshActiveCompletionUnit(completionCode, request.CurrentFilePath);
 			}
+			cancellationToken.ThrowIfCancellationRequested();
 			mainForm.ResetCompletionWorkspaceIfInactive(request.CurrentFilePath);
 			NRefactoryResolver resolver = new NRefactoryResolver(MainForm.myProjectContent.Language);
 			List<ICompletionData> resultList = new List<ICompletionData>();
@@ -169,8 +174,9 @@ namespace CIARE.GUI
 								expression.Region.EndLine + prefixLineOffset, expression.Region.EndColumn);
 					}
 					Dom.ResolveResult rr = resolver.Resolve(expression,
-															MainForm.parseInformation,
-															resolverCode);
+														MainForm.parseInformation,
+														resolverCode);
+					cancellationToken.ThrowIfCancellationRequested();
 					ArrayList completionData = null;
 					if (rr != null)
 					{
@@ -185,7 +191,7 @@ namespace CIARE.GUI
 						completionData = MergeCompletionData(completionData,
 							mainForm.GetRoslynMemberCompletionData(completionCode, request.CaretOffset,
                                 insideInterpolationExpression ? null : expression.Expression,
-                                request.CurrentFilePath));
+                                request.CurrentFilePath, cancellationToken));
                 }
 					if (completionData != null)
 						AddCompletionData(resultList, resultTexts, completionData);
@@ -195,20 +201,22 @@ namespace CIARE.GUI
 					ArrayList completionData = resolver.CtrlSpace(caretLine,
 																  caretCol,
 																  MainForm.parseInformation,
-																  resolverCode,
-																  expression.Context);
+														  resolverCode,
+														  expression.Context);
+					cancellationToken.ThrowIfCancellationRequested();
 					if (completionData != null)
 						completionData = mainForm.FilterCompletionDataForActiveProject(completionData,
 							request.CurrentFilePath);
 					completionData = MergeCompletionData(completionData,
 						mainForm.GetRoslynCtrlSpaceCompletionData(rawCode, request.CaretOffset, preSelection,
-							request.CurrentFilePath));
+							request.CurrentFilePath, cancellationToken));
 					if (completionData != null)
 						AddCompletionData(resultList, resultTexts, completionData);
 					AddCompletionData(resultList, resultTexts,
 						mainForm.GetWorkspaceMethodCompletionData(preSelection));
 					AddDirectTypingKeywords(resultList, resultTexts);
 				}
+				cancellationToken.ThrowIfCancellationRequested();
 				return resultList.ToArray();
 			}
 

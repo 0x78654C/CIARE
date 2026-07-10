@@ -28,7 +28,7 @@ namespace CIARE.GUI
 		string pendingDefinitionWord;
 		int pendingDefinitionOffset = -1;
 		Point pendingDefinitionMouseLocation;
-		const int AutomaticCompletionDelayMs = 1; // delay time for autocompletion window.
+		const int AutomaticCompletionDelayMs = 80;
 		static readonly SemaphoreSlim CompletionGenerationLock = new SemaphoreSlim(1, 1);
 		static readonly HashSet<string> DeclarationTypeKeywords = new HashSet<string>(StringComparer.Ordinal)
 		{
@@ -187,7 +187,8 @@ namespace CIARE.GUI
 					try
 					{
 						cancellationToken.ThrowIfCancellationRequested();
-						ICompletionData[] result = completionDataProvider.GenerateCompletionData(request);
+						ICompletionData[] result = completionDataProvider.GenerateCompletionData(request,
+							cancellationToken);
 						cancellationToken.ThrowIfCancellationRequested();
 						return result;
 					}
