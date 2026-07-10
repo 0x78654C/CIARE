@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 
 
@@ -21,40 +21,33 @@ namespace CIARE.Utils.Encryption
                 throw new ArgumentException($"Can not make a string of {length} length");
             }
 
-            if (!new[] { useLower, useUpper, useSymbols, useNumbers }.Any(e => e))
-            {
+            var characterGroups = new List<string>();
+            if (useLower) characterGroups.Add(Alphabet);
+            if (useUpper) characterGroups.Add(Alphabet.ToUpperInvariant());
+            if (useNumbers) characterGroups.Add(Numbers);
+            if (useSymbols) characterGroups.Add(Symbols);
+
+            if (characterGroups.Count == 0)
                 throw new ArgumentException($"Can not make a string of {length} length while not using any chars");
-            }
+            if (length < characterGroups.Count)
+                throw new ArgumentException("Password length must accommodate every requested character group.");
 
-            var collection = useLower ? Alphabet.ToLower() : "";
-            collection += useNumbers ? Numbers : "";
-            collection += useUpper ? Alphabet.ToUpper() : "";
-            collection += useSymbols ? Symbols : "";
-
-            return GeneratePassword(collection.OrderBy(r => Guid.NewGuid().GetHashCode()).ToArray(), 0, length, useUpper, useLower, useSymbols, useNumbers);
-        }
-
-        private static string GeneratePassword(char[] chars, int attempt, int length = 16, bool useUpper = true, bool useLower = true,
-             bool useSymbols = true, bool useNumbers = true)
-        {
-
-            var bytes = new byte[length * 8];
-            RandomNumberGenerator.Fill(bytes);
+            string allCharacters = string.Concat(characterGroups);
             var result = new char[length];
-            for (int i = 0; i < length; i++)
+            int index = 0;
+            foreach (string group in characterGroups)
+                result[index++] = group[RandomNumberGenerator.GetInt32(group.Length)];
+
+            while (index < result.Length)
+                result[index++] = allCharacters[RandomNumberGenerator.GetInt32(allCharacters.Length)];
+
+            for (int i = result.Length - 1; i > 0; i--)
             {
-                ulong value = BitConverter.ToUInt64(bytes, i * 8);
-                result[i] = chars[value % (uint)chars.Length];
+                int swapIndex = RandomNumberGenerator.GetInt32(i + 1);
+                (result[i], result[swapIndex]) = (result[swapIndex], result[i]);
             }
-            var password = string.Join("", result);
-            if (length > 7 && attempt < 5 && (useLower && !password.Any(e => Alphabet.ToLower().Contains(e))) ||
-                (useSymbols && !password.Any(e => Symbols.Contains(e))) ||
-                    (useNumbers && !password.Any(e => Numbers.Contains(e))) ||
-                (useUpper && !password.Any(e => Alphabet.ToUpper().Contains(e))))
-            {
-                return GeneratePassword(chars, attempt + 1, length, useUpper, useUpper, useSymbols, useNumbers);
-            }
-            return password;
+
+            return new string(result);
         }
     }
 }
