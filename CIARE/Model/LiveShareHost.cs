@@ -13,6 +13,8 @@ namespace CIARE
     [SupportedOSPlatform("windows")]
     public partial class LiveShareHost : Form
     {
+        private const long LiveShareMaxBufferBytes = 8L * 1024L * 1024L;
+
         public LiveShareHost()
         {
             InitializeComponent();
@@ -272,8 +274,8 @@ namespace CIARE
                 MainForm.Instance.hubConnection = new HubConnectionBuilder()
       .WithUrl(GlobalVariables.apiUrl, opts =>
         {
-            opts.TransportMaxBufferSize = 100000000; //100mb
-            opts.ApplicationMaxBufferSize = 100000000; //100mb
+            opts.TransportMaxBufferSize = LiveShareMaxBufferBytes;
+            opts.ApplicationMaxBufferSize = LiveShareMaxBufferBytes;
         }
       )
       .Build();
