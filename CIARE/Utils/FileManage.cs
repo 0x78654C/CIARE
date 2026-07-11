@@ -608,51 +608,134 @@ MessageBoxIcon.Information);
         /// <param name="directoryName"></param>
         public static void SearchFile(string directoryName, List<string> listFramework)
         {
-            GetLibsFromPacakage(directoryName);
-            foreach (var framework in listFramework)
+            try
+            {
+                GetLibsFromPacakage(directoryName);
+                var selectedLibraries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                AddPackageReferenceCandidates(selectedLibraries, listFramework, @"\lib\");
+                AddPackageReferenceCandidates(selectedLibraries, listFramework, @"\build\");
+                AddPackageReferenceCandidates(selectedLibraries, listFramework, @"\ref\");
+                AddDotNetPackageReferenceCandidates(selectedLibraries);
+
+                foreach (var library in selectedLibraries.Values)
+                    AddCustomReferenceAssembly(library);
+            }
+            finally
+            {
+                s_packageLibs.Clear();
+            }
+        }
+
+        private static void AddPackageReferenceCandidates(Dictionary<string, string> selectedLibraries,
+            IEnumerable<string> frameworks, string packageFolder)
+        {
+            if (selectedLibraries == null || frameworks == null)
+                return;
+
+            foreach (var framework in frameworks.Where(framework => !string.IsNullOrWhiteSpace(framework)))
             {
                 foreach (var file in s_packageLibs)
                 {
-                    if (file.Contains(@"\analyzers\")) continue;
-                    if (file.Contains(@"\ref\")) continue; //texst
-                    if (file.Contains(@$"\{framework}\") && file.Contains(@"\lib\") && file.EndsWith(".dll"))
-                    {
-                        var fileInfo = new FileInfo(file);
-                        if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
-                        {
-                            if (!GetPlatformAsmNames().Contains(fileInfo.Name) &&
-                                !GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
-                                GlobalVariables.customRefAsm.Add(file);
-                            break;
-                        }
-                    }
+                    if (!IsPackageReferenceCandidate(file, framework, packageFolder))
+                        continue;
 
-                    if (file.Contains(@$"\{framework}\") && file.Contains(@"\build\") && file.EndsWith(".dll"))
-                    {
-                        var fileInfo = new FileInfo(file);
-                        if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
-                        {
-                            if (!GetPlatformAsmNames().Contains(fileInfo.Name) &&
-                                !GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
-                                GlobalVariables.customRefAsm.Add(file);
-                            break;
-                        }
-                    }
-
-                    if (file.EndsWith(".dll") && file.Contains(@"\dotnet\"))
-                    {
-                        var fileInfo = new FileInfo(file);
-                        if (!GlobalVariables.customRefAsm.Any(item => item.EndsWith(fileInfo.Name) && !item.Contains("netstandard")))
-                        {
-                            if (!GetPlatformAsmNames().Contains(fileInfo.Name) &&
-                                !GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
-                                GlobalVariables.customRefAsm.Add(file);
-                            break;
-                        }
-                    }
+                    AddSelectedPackageReference(selectedLibraries, file);
                 }
             }
-            s_packageLibs.Clear();
+        }
+
+        private static void AddDotNetPackageReferenceCandidates(Dictionary<string, string> selectedLibraries)
+        {
+            if (selectedLibraries == null)
+                return;
+
+            foreach (var file in s_packageLibs)
+            {
+                if (!IsPackageReferenceCandidate(file) ||
+                    !file.Contains(@"\dotnet\", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                AddSelectedPackageReference(selectedLibraries, file);
+            }
+        }
+
+        private static bool IsPackageReferenceCandidate(string file, string framework = null,
+            string packageFolder = null)
+        {
+            if (string.IsNullOrWhiteSpace(file) ||
+                !file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
+                file.Contains(@"\analyzers\", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(packageFolder) &&
+                !file.Contains(packageFolder, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return string.IsNullOrWhiteSpace(framework) ||
+                HasCompatibleFrameworkSegment(file, framework);
+        }
+
+        private static bool HasCompatibleFrameworkSegment(string file, string framework)
+        {
+            if (string.IsNullOrWhiteSpace(file) || string.IsNullOrWhiteSpace(framework))
+                return false;
+
+            string normalizedFramework = framework.Trim();
+            foreach (var segment in file.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+                         StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (string.Equals(segment, normalizedFramework, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                if (segment.StartsWith(normalizedFramework + "-", StringComparison.OrdinalIgnoreCase) &&
+                    segment.IndexOf("-windows", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void AddSelectedPackageReference(Dictionary<string, string> selectedLibraries, string file)
+        {
+            var fileInfo = new FileInfo(file);
+            if (selectedLibraries.ContainsKey(fileInfo.Name) ||
+                GetPlatformAsmNames().Contains(fileInfo.Name) ||
+                GlobalVariables.blackRefList.Any(item => item.EndsWith(fileInfo.Name)))
+            {
+                return;
+            }
+
+            selectedLibraries[fileInfo.Name] = file;
+        }
+
+        private static void AddCustomReferenceAssembly(string file)
+        {
+            var fileInfo = new FileInfo(file);
+            int existingIndex = GlobalVariables.customRefAsm.FindIndex(item =>
+                string.Equals(Path.GetFileName(item), fileInfo.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (existingIndex >= 0)
+            {
+                string existingPath = GlobalVariables.customRefAsm[existingIndex];
+                if (existingPath.Contains(@"\netstandard", StringComparison.OrdinalIgnoreCase) &&
+                    !file.Contains(@"\netstandard", StringComparison.OrdinalIgnoreCase))
+                {
+                    GlobalVariables.customRefAsm[existingIndex] = file;
+                }
+
+                return;
+            }
+
+            GlobalVariables.customRefAsm.Add(file);
         }
 
 

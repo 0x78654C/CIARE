@@ -171,7 +171,6 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
             int itemNum = selectedItem - firstItem;
             selectedItem = -1;
             Invalidate(new Rectangle(0, itemNum * ItemHeight, Width, (itemNum + 1) * ItemHeight + 1));
-            Update();
             OnSelectedItemChanged(EventArgs.Empty);
         }
 
@@ -199,7 +198,6 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
         {
             if (startText == null || startText.Length == 0) return;
             string originalStartText = startText;
-            startText = startText.ToLower();
             int bestIndex = -1;
             int bestQuality = -1;
             // Qualities: 0 = match start
@@ -210,19 +208,18 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
             for (int i = 0; i < completionData.Length; ++i)
             {
                 string itemText = completionData[i].Text;
-                string lowerText = itemText.ToLower();
-                if (lowerText.StartsWith(startText))
+                if (itemText.StartsWith(startText, StringComparison.OrdinalIgnoreCase))
                 {
                     double priority = completionData[i].Priority;
                     int quality;
-                    if (lowerText == startText)
+                    if (string.Equals(itemText, startText, StringComparison.OrdinalIgnoreCase))
                     {
                         if (itemText == originalStartText)
                             quality = 3;
                         else
                             quality = 2;
                     }
-                    else if (itemText.StartsWith(originalStartText))
+                    else if (itemText.StartsWith(originalStartText, StringComparison.Ordinal))
                     {
                         quality = 1;
                     }

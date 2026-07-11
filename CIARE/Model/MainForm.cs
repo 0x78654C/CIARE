@@ -177,6 +177,7 @@ namespace CIARE
         private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private const int WorkspaceCompletionMethodLimit = 300;
         private const int RoslynCompletionSourceFileLimit = 300;
+        private static readonly TimeSpan RoslynCompletionCacheLifetime = TimeSpan.FromSeconds(5);
         private static readonly string[] CompletionImplicitUsingNamespaces =
         {
             "System",
@@ -188,6 +189,8 @@ namespace CIARE
             "System.Threading.Tasks"
         };
         private readonly object _completionDataLock = new object();
+        private readonly object _roslynCompletionCacheLock = new object();
+        private RoslynCompletionProjectSnapshot _roslynCompletionProjectSnapshot;
         private int _completionWorkspaceVersion;
         private string _completionWorkspaceKey = string.Empty;
         private string _completionFileKey = string.Empty;
@@ -1979,6 +1982,20 @@ namespace CIARE
                     }
                 });
             });
+        }
+
+        public void RefreshStandaloneReferenceContext()
+        {
+            RealTimeChecker.InvalidateReferenceCache();
+
+            if (InvokeRequired)
+            {
+                TryBeginInvoke(RefreshStandaloneReferenceContext);
+                return;
+            }
+
+            ReloadRef();
+            ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
         }
 
         private bool ShouldUseProjectPackageCompletionReferences(string projectPath)
@@ -6292,13 +6309,21 @@ namespace CIARE
         internal ArrayList GetRoslynMemberCompletionData(string code, int caretOffset, string expressionText,
             string currentFilePath)
         {
+            return GetRoslynMemberCompletionData(code, caretOffset, expressionText, currentFilePath,
+                CancellationToken.None);
+        }
+
+        internal ArrayList GetRoslynMemberCompletionData(string code, int caretOffset, string expressionText,
+            string currentFilePath, CancellationToken cancellationToken)
+        {
             var result = new ArrayList();
             if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
                 return result;
 
             try
             {
-                var context = BuildRoslynCompletionContext(code, currentFilePath);
+                cancellationToken.ThrowIfCancellationRequested();
+                var context = BuildRoslynCompletionContext(code, currentFilePath, cancellationToken);
                 if (context == null)
                     return result;
 
@@ -6334,6 +6359,10 @@ namespace CIARE
                     string.Empty,
                     staticOnly,
                     instanceOnly: !staticOnly);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch
             {
@@ -6382,13 +6411,21 @@ namespace CIARE
         internal ArrayList GetRoslynCtrlSpaceCompletionData(string code, int caretOffset, string prefix,
             string currentFilePath)
         {
+            return GetRoslynCtrlSpaceCompletionData(code, caretOffset, prefix, currentFilePath,
+                CancellationToken.None);
+        }
+
+        internal ArrayList GetRoslynCtrlSpaceCompletionData(string code, int caretOffset, string prefix,
+            string currentFilePath, CancellationToken cancellationToken)
+        {
             var result = new ArrayList();
             if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
                 return result;
 
             try
             {
-                var context = BuildRoslynCompletionContext(code, currentFilePath);
+                cancellationToken.ThrowIfCancellationRequested();
+                var context = BuildRoslynCompletionContext(code, currentFilePath, cancellationToken);
                 if (context == null)
                     return result;
 
@@ -6399,6 +6436,10 @@ namespace CIARE
                     staticOnly: false,
                     instanceOnly: false);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch
             {
             }
@@ -6408,23 +6449,31 @@ namespace CIARE
 
         private RoslynCompletionContext BuildRoslynCompletionContext(string code)
         {
-            return BuildRoslynCompletionContext(code, GetActiveEditorFilePath());
+            return BuildRoslynCompletionContext(code, GetActiveEditorFilePath(), CancellationToken.None);
         }
 
-        private RoslynCompletionContext BuildRoslynCompletionContext(string code, string currentFilePath)
+        private RoslynCompletionContext BuildRoslynCompletionContext(string code, string currentFilePath,
+            CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             string projectPath = GetCompletionProjectPath(currentFilePath);
             var parseOptions = BuildCompletionParseOptions();
-            SyntaxTree activeTree;
-            var syntaxTrees = BuildRoslynCompletionSyntaxTrees(code, currentFilePath, projectPath,
-                parseOptions, out activeTree);
-            if (activeTree == null)
-                return null;
+            string activePath = string.IsNullOrWhiteSpace(currentFilePath) ? DummyFileName : currentFilePath;
+            SyntaxTree activeTree = CSharpSyntaxTree.ParseText(code ?? string.Empty, parseOptions,
+                path: activePath, cancellationToken: cancellationToken);
+            RoslynCompletionProjectSnapshot projectSnapshot = GetRoslynCompletionProjectSnapshot(
+                currentFilePath, projectPath, parseOptions, cancellationToken);
+            var syntaxTrees = new List<SyntaxTree>(projectSnapshot.SyntaxTrees.Count + 1)
+            {
+                activeTree
+            };
+            syntaxTrees.AddRange(projectSnapshot.SyntaxTrees);
 
+            cancellationToken.ThrowIfCancellationRequested();
             var compilation = CSharpCompilation.Create(
                 "__CiareCompletion",
                 syntaxTrees,
-                BuildCompletionReferences(projectPath),
+                projectSnapshot.References,
                 new CSharpCompilationOptions(
                     OutputKind.DynamicallyLinkedLibrary,
                     allowUnsafe: GlobalVariables.OUnsafeCode));
@@ -6437,19 +6486,66 @@ namespace CIARE
                 compilation.GetSemanticModel(activeTree, true));
         }
 
-        private List<SyntaxTree> BuildRoslynCompletionSyntaxTrees(string code, string currentFilePath,
-            string projectPath, CSharpParseOptions parseOptions, out SyntaxTree activeTree)
+        private RoslynCompletionProjectSnapshot GetRoslynCompletionProjectSnapshot(
+            string currentFilePath, string projectPath, CSharpParseOptions parseOptions,
+            CancellationToken cancellationToken)
         {
-            string activePath = string.IsNullOrWhiteSpace(currentFilePath) ? DummyFileName : currentFilePath;
-            activeTree = CSharpSyntaxTree.ParseText(code ?? string.Empty, parseOptions, path: activePath);
-            var syntaxTrees = new List<SyntaxTree> { activeTree };
+            string cacheKey = BuildRoslynCompletionCacheKey(currentFilePath, projectPath, parseOptions);
+            DateTime now = DateTime.UtcNow;
+            lock (_roslynCompletionCacheLock)
+            {
+                if (_roslynCompletionProjectSnapshot != null &&
+                    string.Equals(_roslynCompletionProjectSnapshot.CacheKey, cacheKey,
+                        StringComparison.Ordinal) &&
+                    now - _roslynCompletionProjectSnapshot.CreatedUtc < RoslynCompletionCacheLifetime)
+                {
+                    return _roslynCompletionProjectSnapshot;
+                }
 
+                cancellationToken.ThrowIfCancellationRequested();
+                List<SyntaxTree> syntaxTrees = BuildRoslynCompletionProjectSyntaxTrees(
+                    currentFilePath, projectPath, parseOptions, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                List<MetadataReference> references = BuildCompletionReferences(projectPath).ToList();
+                cancellationToken.ThrowIfCancellationRequested();
+                _roslynCompletionProjectSnapshot = new RoslynCompletionProjectSnapshot(
+                    cacheKey, now, syntaxTrees, references);
+                return _roslynCompletionProjectSnapshot;
+            }
+        }
+
+        private static string BuildRoslynCompletionCacheKey(string currentFilePath, string projectPath,
+            CSharpParseOptions parseOptions)
+        {
+            long projectWriteTicks = 0;
+            try
+            {
+                if (!string.IsNullOrEmpty(projectPath) && File.Exists(projectPath))
+                    projectWriteTicks = File.GetLastWriteTimeUtc(projectPath).Ticks;
+            }
+            catch
+            {
+            }
+
+            return string.Join("|",
+                NormalizeCompletionPath(currentFilePath),
+                NormalizeCompletionPath(projectPath),
+                projectWriteTicks.ToString(),
+                parseOptions.LanguageVersion.ToString(),
+                GlobalVariables.Framework ?? string.Empty);
+        }
+
+        private List<SyntaxTree> BuildRoslynCompletionProjectSyntaxTrees(string currentFilePath,
+            string projectPath, CSharpParseOptions parseOptions, CancellationToken cancellationToken)
+        {
+            var syntaxTrees = new List<SyntaxTree>();
             var projectPaths = GetCompletionProjectPaths(projectPath);
-            AddRoslynCompletionGlobalUsings(syntaxTrees, projectPaths, parseOptions);
+            AddRoslynCompletionGlobalUsings(syntaxTrees, projectPaths, parseOptions, cancellationToken);
             foreach (string completionProjectPath in projectPaths)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 syntaxTrees.AddRange(RealTimeChecker.BuildProjectGeneratedXamlSyntaxTrees(
-                    completionProjectPath, parseOptions, CancellationToken.None,
+                    completionProjectPath, parseOptions, cancellationToken,
                     useTypedSyntheticFields: true));
             }
 
@@ -6467,6 +6563,7 @@ namespace CIARE
             {
                 foreach (string filePath in GetWorkspaceCsFiles(sourceFolder))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     string normalizedFile = NormalizeCompletionPath(filePath);
                     if (string.IsNullOrEmpty(normalizedFile) || !seenSourceFiles.Add(normalizedFile))
                         continue;
@@ -6474,7 +6571,7 @@ namespace CIARE
                     if (++sourceFileCount > RoslynCompletionSourceFileLimit)
                         return syntaxTrees;
 
-                    AddRoslynCompletionSyntaxTree(syntaxTrees, filePath, parseOptions);
+                    AddRoslynCompletionSyntaxTree(syntaxTrees, filePath, parseOptions, cancellationToken);
                 }
             }
 
@@ -6482,16 +6579,19 @@ namespace CIARE
         }
 
         private static void AddRoslynCompletionGlobalUsings(List<SyntaxTree> syntaxTrees,
-            IList<string> projectPaths, CSharpParseOptions parseOptions)
+            IList<string> projectPaths, CSharpParseOptions parseOptions,
+            CancellationToken cancellationToken)
         {
             var addedGeneratedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (string projectPath in projectPaths)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string globalUsingsPath = FindProjectGlobalUsingsFile(projectPath);
                 if (!string.IsNullOrEmpty(globalUsingsPath) &&
                     addedGeneratedFiles.Add(NormalizeCompletionPath(globalUsingsPath)))
                 {
-                    AddRoslynCompletionSyntaxTree(syntaxTrees, globalUsingsPath, parseOptions);
+                    AddRoslynCompletionSyntaxTree(syntaxTrees, globalUsingsPath, parseOptions,
+                        cancellationToken);
                     continue;
                 }
 
@@ -6510,15 +6610,20 @@ namespace CIARE
         }
 
         private static void AddRoslynCompletionSyntaxTree(List<SyntaxTree> syntaxTrees,
-            string filePath, CSharpParseOptions parseOptions)
+            string filePath, CSharpParseOptions parseOptions, CancellationToken cancellationToken)
         {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!File.Exists(filePath))
                     return;
 
                 syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(filePath),
-                    parseOptions, path: filePath));
+                    parseOptions, path: filePath, cancellationToken: cancellationToken));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch
             {
@@ -8185,6 +8290,23 @@ namespace CIARE
             public CompilationUnitSyntax Root { get; }
             public CSharpCompilation Compilation { get; }
             public SemanticModel SemanticModel { get; }
+        }
+
+        private sealed class RoslynCompletionProjectSnapshot
+        {
+            public RoslynCompletionProjectSnapshot(string cacheKey, DateTime createdUtc,
+                List<SyntaxTree> syntaxTrees, List<MetadataReference> references)
+            {
+                CacheKey = cacheKey;
+                CreatedUtc = createdUtc;
+                SyntaxTrees = syntaxTrees;
+                References = references;
+            }
+
+            public string CacheKey { get; }
+            public DateTime CreatedUtc { get; }
+            public List<SyntaxTree> SyntaxTrees { get; }
+            public List<MetadataReference> References { get; }
         }
 
         private sealed class WorkspaceCompletionItem

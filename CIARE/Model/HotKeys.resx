@@ -132,7 +132,7 @@ CTRL + Z         : Undo last modification.
 CTRL + Y         : Redo last modification.
 CTRL + Delete    : Delete word to the right.
 CTRL + Backspace : Delete word to the left.
-CTRL + D         : Delete current line.
+CTRL + D         : Duplicate current line.
 CTRL + Shift + D : Delete from cursor to end of line.
 CTRL + X         : Cut selection.
 CTRL + C         : Copy selection.

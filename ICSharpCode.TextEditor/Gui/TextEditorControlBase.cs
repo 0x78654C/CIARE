@@ -585,7 +585,7 @@ namespace ICSharpCode.TextEditor
 			
 			editactions[Keys.Delete | Keys.Control] = new DeleteWord();
 			editactions[Keys.Back | Keys.Control]   = new WordBackspace();
-			editactions[Keys.D | Keys.Control]      = new DeleteLine();
+			editactions[Keys.D | Keys.Control]      = new DuplicateLine();
 			editactions[Keys.D | Keys.Shift | Keys.Control]      = new DeleteToLineEnd();
 			
 			editactions[Keys.B | Keys.Control]      = new GotoMatchingBrace();

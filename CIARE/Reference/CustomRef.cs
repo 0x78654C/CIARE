@@ -157,15 +157,10 @@ namespace CIARE.Reference
                         {
                             lstRef.Items.Add(item);
                             if (!GlobalVariables.customRefList.Contains(libFile))
-                            {
                                 GlobalVariables.customRefList.Add(libFile);
-                                if (!File.Exists(pathNugetFile))
-                                    File.WriteAllText(pathNugetFile, "");
 
-                                var libsFile = File.ReadAllText(pathNugetFile);
-                                if (!libsFile.Contains(lib) && !GlobalVariables.customRefList.Contains(lib))
-                                    File.AppendAllText(pathNugetFile, $"{lib}\n");
-                            }
+
+                            AddNuGetPackageDataFileReference(pathNugetFile, lib);
                         }
                         else
                             s_isInList = true;
@@ -187,6 +182,26 @@ namespace CIARE.Reference
                 // Ignore 
             }
         }
+
+        private static void AddNuGetPackageDataFileReference(string pathNugetFile, string lib)
+        {
+            if (string.IsNullOrWhiteSpace(pathNugetFile) || string.IsNullOrWhiteSpace(lib))
+                return;
+
+            try
+            {
+                if (!File.Exists(pathNugetFile))
+                    File.WriteAllText(pathNugetFile, "");
+
+                var libsFile = File.ReadAllText(pathNugetFile);
+                if (!libsFile.Contains(lib))
+                    File.AppendAllText(pathNugetFile, $"{lib}\n");
+            }
+            catch
+            {
+            }
+        }
+
         /// <summary>
         /// Populate the listview with downloaded nuget packages.
         /// </summary>

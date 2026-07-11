@@ -1117,6 +1117,8 @@ namespace CIARE.Roslyn
             var activeNuGetReferencePaths = includeStandaloneNuGetReferences
                 ? ReadActivePersistedNuGetReferencePaths()
                 : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (includeStandaloneNuGetReferences)
+                AddActiveInMemoryNuGetReferencePaths(activeNuGetReferencePaths);
 
             var paths = new List<string>();
             AddStoredReferencePaths(paths, GlobalVariables.customRefList);
@@ -1179,6 +1181,34 @@ namespace CIARE.Roslyn
             }
 
             return paths;
+        }
+
+        private static void AddActiveInMemoryNuGetReferencePaths(HashSet<string> paths)
+        {
+            if (paths == null)
+                return;
+
+            AddActiveInMemoryNuGetReferencePaths(paths, GlobalVariables.customRefAsm);
+        }
+
+        private static void AddActiveInMemoryNuGetReferencePaths(HashSet<string> paths,
+            IEnumerable<string> storedReferences)
+        {
+            if (storedReferences == null)
+                return;
+
+            foreach (var storedReference in storedReferences)
+            {
+                string path = GetStoredReferencePath(storedReference);
+                if (string.IsNullOrWhiteSpace(path) ||
+                    !File.Exists(path) ||
+                    !IsDownloadedNuGetReference(path))
+                {
+                    continue;
+                }
+
+                paths.Add(NormalizePath(path));
+            }
         }
 
         private static HashSet<string> GetActiveNuGetPackageNames()
