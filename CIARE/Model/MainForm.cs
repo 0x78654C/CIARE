@@ -8445,20 +8445,12 @@ namespace CIARE
                 // Capture all UI-thread state before going async.
                 string activeFilePath = GetActiveEditorFilePath();
                 var projectPaths = GetFileExplorerUsageProjectPaths();
-                if (projectPaths.Count == 0)
-                {
-                    ShowFindUsagesMessage("Open a C# project in File Explorer before finding usages.");
-                    return;
-                }
-
-                if (!projectPaths.Any(projectPath => ProjectContainsSourceFile(projectPath, activeFilePath)))
-                {
-                    ShowFindUsagesMessage("The active C# file is not part of a project opened in File Explorer.");
-                    return;
-                }
-
                 var activeTab = CollectActiveUsageTabInfo();
-                var projectFolders = GetCompletionSourceFolders(projectPaths);
+                bool activeFileIsInProject = projectPaths.Any(
+                    projectPath => ProjectContainsSourceFile(projectPath, activeFilePath));
+                var projectFolders = activeFileIsInProject
+                    ? GetCompletionSourceFolders(projectPaths)
+                    : new List<string>();
 
                 List<UsageLocation> usages = await Task.Run(() =>
                 {
