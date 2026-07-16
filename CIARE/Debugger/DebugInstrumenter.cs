@@ -46,13 +46,20 @@ namespace CIARE.Debugger
         internal static string BridgeSource => $@"
 internal static class {BridgeTypeName}
 {{
-    internal static global::System.Action<int> HitHandler;
+    internal static global::System.Func<int, bool> ShouldPauseHandler;
+    internal static global::System.Action<int, string[], string[], object[]> PauseHandler;
 
-    internal static void Hit(int sequencePoint)
+    internal static bool ShouldPause(int sequencePoint)
     {{
-        global::System.Action<int> handler = HitHandler;
+        global::System.Func<int, bool> handler = ShouldPauseHandler;
+        return handler != null && handler(sequencePoint);
+    }}
+
+    internal static void Pause(int sequencePoint, string[] names, string[] types, object[] values)
+    {{
+        global::System.Action<int, string[], string[], object[]> handler = PauseHandler;
         if (handler != null)
-            handler(sequencePoint);
+            handler(sequencePoint, names, types, values);
     }}
 }}";
 
@@ -66,8 +73,20 @@ internal static class {BridgeTypeName}
                 code ?? string.Empty,
                 parseOptions ?? CSharpParseOptions.Default,
                 filePath ?? string.Empty);
+            return Instrument(tree, null, firstSequencePointId);
+        }
+
+        internal static DebugInstrumentationResult Instrument(
+            SyntaxTree tree,
+            SemanticModel semanticModel,
+            int firstSequencePointId = 1)
+        {
+            if (tree == null)
+                throw new ArgumentNullException(nameof(tree));
+
             CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
-            var rewriter = new SequencePointRewriter(filePath, firstSequencePointId);
+            var rewriter = new SequencePointRewriter(
+                tree.FilePath, firstSequencePointId, semanticModel);
             CompilationUnitSyntax rewritten = (CompilationUnitSyntax)rewriter.Visit(root);
             return new DebugInstrumentationResult(rewritten.ToFullString(), rewriter.SequencePoints);
         }
@@ -76,12 +95,15 @@ internal static class {BridgeTypeName}
         {
             private readonly string _filePath;
             private readonly List<DebugSequencePoint> _sequencePoints = new List<DebugSequencePoint>();
+            private readonly SemanticModel _semanticModel;
             private int _nextSequencePointId;
 
-            public SequencePointRewriter(string filePath, int firstSequencePointId)
+            public SequencePointRewriter(string filePath, int firstSequencePointId,
+                SemanticModel semanticModel)
             {
                 _filePath = filePath ?? string.Empty;
                 _nextSequencePointId = firstSequencePointId;
+                _semanticModel = semanticModel;
             }
 
             public IReadOnlyList<DebugSequencePoint> SequencePoints => _sequencePoints;
@@ -229,11 +251,129 @@ internal static class {BridgeTypeName}
                 int line = source.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
                 _sequencePoints.Add(new DebugSequencePoint(id, _filePath, line));
 
+                IReadOnlyList<VariableCapture> variables = GetAssignedVariables(source);
+                string names = CreateStringArray(variables.Select(variable => variable.Name));
+                string types = CreateStringArray(variables.Select(variable => variable.TypeName));
+                string values = variables.Count == 0
+                    ? "global::System.Array.Empty<object>()"
+                    : "new object[] { " + string.Join(", ", variables.Select(variable =>
+                        $"(object)({variable.Expression})")) + " }";
                 StatementSyntax point = SyntaxFactory.ParseStatement(
-                    $"global::{BridgeTypeName}.Hit({id});");
+                    $"if (global::{BridgeTypeName}.ShouldPause({id})) " +
+                    $"global::{BridgeTypeName}.Pause({id}, {names}, {types}, {values});");
                 return moveLeadingTrivia
                     ? point.WithLeadingTrivia(source.GetLeadingTrivia())
                     : point;
+            }
+
+            private IReadOnlyList<VariableCapture> GetAssignedVariables(StatementSyntax source)
+            {
+                if (_semanticModel == null || source.SyntaxTree != _semanticModel.SyntaxTree)
+                    return Array.Empty<VariableCapture>();
+
+                try
+                {
+                    DataFlowAnalysis flow = _semanticModel.AnalyzeDataFlow(source);
+                    if (flow == null || !flow.Succeeded)
+                        return Array.Empty<VariableCapture>();
+
+                    var assigned = new HashSet<ISymbol>(
+                        flow.DefinitelyAssignedOnEntry, SymbolEqualityComparer.Default);
+                    return _semanticModel.LookupSymbols(source.SpanStart)
+                        .Where(symbol => symbol is ILocalSymbol || symbol is IParameterSymbol)
+                        .Where(symbol => IsReadableAndAssigned(symbol, assigned))
+                        .GroupBy(symbol => symbol.Name, StringComparer.Ordinal)
+                        .Select(group => group.First())
+                        .OrderBy(symbol => symbol.Name, StringComparer.OrdinalIgnoreCase)
+                        .Select(CreateVariableCapture)
+                        .Where(variable => variable != null)
+                        .ToList();
+                }
+                catch (ArgumentException)
+                {
+                    return Array.Empty<VariableCapture>();
+                }
+                catch (InvalidOperationException)
+                {
+                    return Array.Empty<VariableCapture>();
+                }
+            }
+
+            private static bool IsReadableAndAssigned(ISymbol symbol, HashSet<ISymbol> assigned)
+            {
+                ITypeSymbol type;
+                if (symbol is ILocalSymbol local)
+                {
+                    type = local.Type;
+                    if (!assigned.Contains(local))
+                        return false;
+                }
+                else if (symbol is IParameterSymbol parameter)
+                {
+                    type = parameter.Type;
+                    if (parameter.RefKind == RefKind.Out && !assigned.Contains(parameter))
+                        return false;
+                }
+                else
+                {
+                    return false;
+                }
+
+                return type != null &&
+                    type.TypeKind != TypeKind.Error &&
+                    type.TypeKind != TypeKind.Pointer &&
+                    type.TypeKind != TypeKind.FunctionPointer &&
+                    !type.IsRefLikeType &&
+                    type.SpecialType != SpecialType.System_TypedReference;
+            }
+
+            private static VariableCapture CreateVariableCapture(ISymbol symbol)
+            {
+                ITypeSymbol type = symbol is ILocalSymbol local
+                    ? local.Type
+                    : (symbol as IParameterSymbol)?.Type;
+                if (type == null)
+                    return null;
+
+                string expression = EscapeIdentifier(symbol.Name);
+                string typeName = type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                return new VariableCapture(symbol.Name, typeName, expression);
+            }
+
+            private static string EscapeIdentifier(string name)
+            {
+                if (string.IsNullOrEmpty(name))
+                    return name;
+                return SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None ||
+                    SyntaxFacts.GetContextualKeywordKind(name) != SyntaxKind.None
+                    ? "@" + name
+                    : name;
+            }
+
+            private static string CreateStringArray(IEnumerable<string> values)
+            {
+                string[] items = values
+                    .Select(value => SyntaxFactory.LiteralExpression(
+                        SyntaxKind.StringLiteralExpression,
+                        SyntaxFactory.Literal(value ?? string.Empty)).ToFullString())
+                    .ToArray();
+                return items.Length == 0
+                    ? "global::System.Array.Empty<string>()"
+                    : "new string[] { " + string.Join(", ", items) + " }";
+            }
+
+            private sealed class VariableCapture
+            {
+                public VariableCapture(string name, string typeName, string expression)
+                {
+                    Name = name;
+                    TypeName = typeName;
+                    Expression = expression;
+                }
+
+                public string Name { get; }
+                public string TypeName { get; }
+                public string Expression { get; }
             }
         }
     }

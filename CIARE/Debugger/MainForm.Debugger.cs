@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -34,6 +35,8 @@ namespace CIARE
         private ToolStripMenuItem _debugStepOverItem;
         private ToolStripMenuItem _debugStepOutItem;
         private ToolStripMenuItem _debugStatusItem;
+        private TabPage _debugLocalsTabPage;
+        private ListView _debugLocalsList;
 
         private void InitializeDebugger()
         {
@@ -79,9 +82,53 @@ namespace CIARE
             menuStrip1.Layout += PositionDebuggerRunButton;
             menuStrip1.PerformLayout();
             PositionDebuggerRunButton(menuStrip1, null);
+            InitializeDebuggerLocals();
             fullScreenToolStripMenuItem.Text = "Full Screen            ( Shift + Alt + Enter )";
             toolTip1.SetToolTip(runCodePb, "Start / continue debugging ( F5 )");
+            ApplyDebuggerTheme(GlobalVariables.darkColor);
             UpdateDebuggerUi();
+        }
+
+        private void InitializeDebuggerLocals()
+        {
+            _debugLocalsList = new ListView
+            {
+                BorderStyle = BorderStyle.None,
+                Dock = DockStyle.Fill,
+                Font = new Font("Consolas", 10.5F),
+                FullRowSelect = true,
+                GridLines = false,
+                HeaderStyle = ColumnHeaderStyle.Nonclickable,
+                HideSelection = false,
+                ShowItemToolTips = true,
+                UseCompatibleStateImageBehavior = false,
+                View = View.Details
+            };
+            _debugLocalsList.Columns.Add("Name", 220, HorizontalAlignment.Left);
+            _debugLocalsList.Columns.Add("Value", 620, HorizontalAlignment.Left);
+            _debugLocalsList.Columns.Add("Type", 280, HorizontalAlignment.Left);
+            _debugLocalsList.Resize += (sender, args) => ResizeDebuggerLocalsColumns();
+
+            _debugLocalsTabPage = new TabPage("Locals")
+            {
+                UseVisualStyleBackColor = false
+            };
+            _debugLocalsTabPage.Controls.Add(_debugLocalsList);
+            outputTabControl.TabPages.Add(_debugLocalsTabPage);
+            ResizeDebuggerLocalsColumns();
+        }
+
+        private void ResizeDebuggerLocalsColumns()
+        {
+            if (_debugLocalsList == null || _debugLocalsList.Columns.Count < 3)
+                return;
+
+            int available = Math.Max(240, _debugLocalsList.ClientSize.Width - 4);
+            int nameWidth = Math.Min(240, Math.Max(120, available / 5));
+            int typeWidth = Math.Min(320, Math.Max(160, available / 4));
+            _debugLocalsList.Columns[0].Width = nameWidth;
+            _debugLocalsList.Columns[2].Width = typeWidth;
+            _debugLocalsList.Columns[1].Width = Math.Max(100, available - nameWidth - typeWidth);
         }
 
         private void PositionDebuggerRunButton(object sender, LayoutEventArgs args)
@@ -181,6 +228,7 @@ namespace CIARE
             if (_debugSession?.State == DebugSessionState.Paused)
             {
                 ClearCurrentStatementMarker();
+                ClearDebuggerLocals();
                 _debugSession.Resume(DebugCommand.Continue);
                 return;
             }
@@ -195,6 +243,7 @@ namespace CIARE
             if (_debugSession?.State == DebugSessionState.Paused)
             {
                 ClearCurrentStatementMarker();
+                ClearDebuggerLocals();
                 _debugSession.Resume(command);
                 return;
             }
@@ -223,6 +272,7 @@ namespace CIARE
                     outputTabControl.SelectedTab = outputTabPage;
                 OutputWindowManage.ShowOutputWindow(splitContainer1, outputRBT);
                 outputRBT.Text = "Debugger: preparing source and symbols..." + Environment.NewLine;
+                ClearDebuggerLocals();
 
                 CSharpCompilation compilation = CreateDebugCompilation(editor.Text);
                 Dictionary<string, string> sourceOverrides = GetOpenSourceOverrides();
@@ -355,6 +405,7 @@ namespace CIARE
             RunOnUiThread(() =>
             {
                 ShowCurrentStatement(args.SequencePoint);
+                ShowDebuggerLocals(args.Variables);
                 string reason = args.Reason == DebugPauseReason.Breakpoint ? "breakpoint" : "step";
                 AppendDebuggerOutput($"Paused ({reason}) at {args.SequencePoint.FilePath}:" +
                     $"{args.SequencePoint.Line} [thread {args.ThreadId}]" + Environment.NewLine);
@@ -375,6 +426,7 @@ namespace CIARE
                     return;
 
                 ClearCurrentStatementMarker();
+                ClearDebuggerLocals();
                 if (!string.IsNullOrWhiteSpace(args.ErrorMessage))
                     AppendDebuggerOutput("Debugger error:" + Environment.NewLine + args.ErrorMessage +
                         Environment.NewLine);
@@ -470,6 +522,7 @@ namespace CIARE
         private void StopDebugging()
         {
             ClearCurrentStatementMarker();
+            ClearDebuggerLocals();
             _debugSession?.Stop();
             UpdateDebuggerUi();
         }
@@ -478,6 +531,7 @@ namespace CIARE
         {
             _debugSession?.Stop();
             ClearCurrentStatementMarker();
+            ClearDebuggerLocals();
         }
 
         private void ApplyDebuggerTheme(bool dark)
@@ -485,17 +539,159 @@ namespace CIARE
             if (_debugMenu == null)
                 return;
 
-            Color backColor = dark ? GlobalVariables.formBgColor : SystemColors.Window;
-            Color foreColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
-            _debugMenu.BackColor = backColor;
-            _debugMenu.ForeColor = foreColor;
-            _debugMenu.DropDown.BackColor = backColor;
-            _debugMenu.DropDown.ForeColor = foreColor;
+            // Clone the neighboring Compile menu palette so Debug participates in the
+            // exact same renderer, hover colors, and theme changes as the designer menus.
+            Color menuBackColor = compileToolStripMenuItem.BackColor;
+            Color menuForeColor = compileToolStripMenuItem.ForeColor;
+            Color itemBackColor = compileToexeCtrlShiftBToolStripMenuItem.BackColor;
+            Color itemForeColor = compileToexeCtrlShiftBToolStripMenuItem.ForeColor;
+            _debugMenu.BackColor = menuBackColor;
+            _debugMenu.ForeColor = menuForeColor;
+            _debugMenu.DropDown.BackColor = compileToolStripMenuItem.DropDown.BackColor;
+            _debugMenu.DropDown.ForeColor = compileToolStripMenuItem.DropDown.ForeColor;
+            _debugMenu.DropDown.Renderer = menuStrip1.Renderer;
             foreach (ToolStripItem item in _debugMenu.DropDownItems)
             {
-                item.BackColor = backColor;
-                item.ForeColor = foreColor;
+                item.BackColor = itemBackColor;
+                item.ForeColor = itemForeColor;
+                if (item is ToolStripSeparator separator)
+                {
+                    separator.Paint -= RenderToolStripSeparator.RenderToolStripSeparator_PaintDark;
+                    separator.Paint -= RenderToolStripSeparator.RenderToolStripSeparator_PaintLight;
+                    separator.Paint += dark
+                        ? RenderToolStripSeparator.RenderToolStripSeparator_PaintDark
+                        : RenderToolStripSeparator.RenderToolStripSeparator_PaintLight;
+                }
             }
+
+            Color localsBackColor = dark ? GlobalVariables.controlBgColor : SystemColors.Window;
+            Color localsForeColor = dark ? Color.FromArgb(192, 215, 207) : Color.Black;
+            if (_debugLocalsTabPage != null)
+                _debugLocalsTabPage.BackColor = localsBackColor;
+            if (_debugLocalsList != null)
+            {
+                _debugLocalsList.BackColor = localsBackColor;
+                _debugLocalsList.ForeColor = localsForeColor;
+            }
+        }
+
+        private void ShowDebuggerLocals(IReadOnlyList<DebugVariableValue> variables)
+        {
+            if (_debugLocalsList == null || _debugLocalsList.IsDisposed)
+                return;
+
+            _debugLocalsList.BeginUpdate();
+            try
+            {
+                _debugLocalsList.Items.Clear();
+                foreach (DebugVariableValue variable in variables ?? Array.Empty<DebugVariableValue>())
+                {
+                    string value = FormatDebuggerValue(variable.Value);
+                    var item = new ListViewItem(variable.Name);
+                    item.SubItems.Add(value);
+                    item.SubItems.Add(variable.TypeName);
+                    item.ToolTipText = $"{variable.Name} = {value}";
+                    _debugLocalsList.Items.Add(item);
+                }
+
+                if (_debugLocalsList.Items.Count == 0)
+                {
+                    var emptyItem = new ListViewItem("No assigned variables are in scope.");
+                    emptyItem.SubItems.Add(string.Empty);
+                    emptyItem.SubItems.Add(string.Empty);
+                    _debugLocalsList.Items.Add(emptyItem);
+                }
+            }
+            finally
+            {
+                _debugLocalsList.EndUpdate();
+            }
+
+            OutputWindowManage.ShowOutputWindow(splitContainer1, outputRBT);
+            if (_debugLocalsTabPage != null)
+                outputTabControl.SelectedTab = _debugLocalsTabPage;
+        }
+
+        private void ClearDebuggerLocals()
+        {
+            if (_debugLocalsList == null || _debugLocalsList.IsDisposed)
+                return;
+            _debugLocalsList.Items.Clear();
+        }
+
+        private static string FormatDebuggerValue(object value)
+        {
+            return FormatDebuggerValue(value, 0);
+        }
+
+        private static string FormatDebuggerValue(object value, int depth)
+        {
+            if (value == null)
+                return "null";
+            if (value is string text)
+                return "\"" + EscapeDebuggerText(text) + "\"";
+            if (value is char character)
+                return "'" + EscapeDebuggerText(character.ToString()) + "'";
+            if (value is bool boolean)
+                return boolean ? "true" : "false";
+            if (value is Array array)
+            {
+                if (depth > 0)
+                    return $"{{{array.GetType().GetElementType()?.Name ?? "item"}[{array.Length}]}}";
+
+                var entries = new List<string>();
+                int count = 0;
+                foreach (object entry in array)
+                {
+                    if (count++ == 8)
+                    {
+                        entries.Add("...");
+                        break;
+                    }
+                    entries.Add(FormatDebuggerValue(entry, depth + 1));
+                }
+                return $"{{Length = {array.Length}}} [" + string.Join(", ", entries) + "]";
+            }
+
+            Type valueType = value.GetType();
+            if (valueType.IsEnum)
+                return value.ToString();
+            if (value is IFormattable formattable &&
+                (valueType.IsPrimitive || value is decimal || value is DateTime ||
+                 value is DateTimeOffset || value is TimeSpan || value is Guid))
+            {
+                return formattable.ToString(null, CultureInfo.InvariantCulture);
+            }
+
+            try
+            {
+                string display = value.ToString();
+                if (string.IsNullOrEmpty(display) || display == valueType.FullName)
+                    return "{" + valueType.Name + "}";
+                return LimitDebuggerText(display);
+            }
+            catch (Exception exception)
+            {
+                return $"<{exception.GetType().Name}: value unavailable>";
+            }
+        }
+
+        private static string EscapeDebuggerText(string value)
+        {
+            return LimitDebuggerText((value ?? string.Empty)
+                .Replace("\\", "\\\\")
+                .Replace("\r", "\\r")
+                .Replace("\n", "\\n")
+                .Replace("\t", "\\t")
+                .Replace("\"", "\\\""));
+        }
+
+        private static string LimitDebuggerText(string value)
+        {
+            const int maximumLength = 512;
+            return value != null && value.Length > maximumLength
+                ? value.Substring(0, maximumLength) + "..."
+                : value ?? string.Empty;
         }
 
         private void RunWithoutDebugging()

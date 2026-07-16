@@ -50,6 +50,20 @@ namespace CIARE.Debugger
         public int Line { get; }
     }
 
+    internal sealed class DebugVariableValue
+    {
+        public DebugVariableValue(string name, string typeName, object value)
+        {
+            Name = name ?? string.Empty;
+            TypeName = typeName ?? string.Empty;
+            Value = value;
+        }
+
+        public string Name { get; }
+        public string TypeName { get; }
+        public object Value { get; }
+    }
+
     internal sealed class DebugPreparedEventArgs : EventArgs
     {
         public DebugPreparedEventArgs(IEnumerable<DebugSequencePoint> sequencePoints)
@@ -63,18 +77,21 @@ namespace CIARE.Debugger
     internal sealed class DebugPausedEventArgs : EventArgs
     {
         public DebugPausedEventArgs(DebugSequencePoint sequencePoint, int stackDepth,
-            int threadId, DebugPauseReason reason)
+            int threadId, DebugPauseReason reason, IEnumerable<DebugVariableValue> variables)
         {
             SequencePoint = sequencePoint;
             StackDepth = stackDepth;
             ThreadId = threadId;
             Reason = reason;
+            Variables = new ReadOnlyCollection<DebugVariableValue>(
+                (variables ?? Array.Empty<DebugVariableValue>()).ToList());
         }
 
         public DebugSequencePoint SequencePoint { get; }
         public int StackDepth { get; }
         public int ThreadId { get; }
         public DebugPauseReason Reason { get; }
+        public IReadOnlyList<DebugVariableValue> Variables { get; }
     }
 
     internal sealed class DebugSessionEndedEventArgs : EventArgs
@@ -109,6 +126,7 @@ namespace CIARE.Debugger
         private DebugCommand _command = DebugCommand.Continue;
         private int _currentPointId = -1;
         private int _currentStackDepth;
+        private DebugPauseReason _currentPauseReason = DebugPauseReason.Step;
         private int _resumePointId = -1;
         private int _resumeStackDepth;
         private int _skipBreakpointPointId = -1;
@@ -271,9 +289,13 @@ namespace CIARE.Debugger
                 _debuggeeAssembly = assembly;
 
                 Type bridgeType = assembly.GetType(DebugInstrumenter.BridgeTypeName, throwOnError: true);
-                FieldInfo hitHandler = bridgeType.GetField("HitHandler",
+                FieldInfo shouldPauseHandler = bridgeType.GetField("ShouldPauseHandler",
                     BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-                hitHandler.SetValue(null, new Action<int>(OnSequencePoint));
+                FieldInfo pauseHandler = bridgeType.GetField("PauseHandler",
+                    BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                shouldPauseHandler.SetValue(null, new Func<int, bool>(ShouldPauseAtSequencePoint));
+                pauseHandler.SetValue(null,
+                    new Action<int, string[], string[], object[]>(PauseAtSequencePoint));
 
                 MethodInfo entryPoint = assembly.EntryPoint;
                 if (entryPoint == null)
@@ -290,7 +312,8 @@ namespace CIARE.Debugger
                 if (result is Task task)
                     task.GetAwaiter().GetResult();
 
-                hitHandler.SetValue(null, null);
+                shouldPauseHandler.SetValue(null, null);
+                pauseHandler.SetValue(null, null);
             }
             catch (TargetInvocationException exception) when (
                 exception.InnerException?.GetBaseException() is DebuggeeStoppedException)
@@ -335,8 +358,8 @@ namespace CIARE.Debugger
             out List<DebugSequencePoint> allPoints)
         {
             allPoints = new List<DebugSequencePoint>();
-            var rewrittenTrees = new List<SyntaxTree>();
-            int nextPointId = 1;
+            var sourceTrees = new List<SyntaxTree>();
+            var instrumentedTrees = new HashSet<SyntaxTree>();
             CSharpParseOptions bridgeParseOptions = null;
 
             foreach (SyntaxTree tree in compilation.SyntaxTrees)
@@ -348,19 +371,37 @@ namespace CIARE.Debugger
                 string source = openSourceOverrides.TryGetValue(pathKey, out string currentSource)
                     ? currentSource
                     : tree.GetText().ToString();
+                SyntaxTree sourceTree = CSharpSyntaxTree.ParseText(source, parseOptions, filePath);
+                sourceTrees.Add(sourceTree);
 
-                if (!ShouldInstrumentTree(filePath, openSourceOverrides.ContainsKey(pathKey)))
+                if (ShouldInstrumentTree(filePath, openSourceOverrides.ContainsKey(pathKey)))
+                    instrumentedTrees.Add(sourceTree);
+            }
+
+            CSharpCompilation analysisCompilation = compilation
+                .RemoveAllSyntaxTrees()
+                .AddSyntaxTrees(sourceTrees);
+            var rewrittenTrees = new List<SyntaxTree>(sourceTrees.Count + 1);
+            int nextPointId = 1;
+
+            foreach (SyntaxTree sourceTree in sourceTrees)
+            {
+                if (!instrumentedTrees.Contains(sourceTree))
                 {
-                    rewrittenTrees.Add(CSharpSyntaxTree.ParseText(source, parseOptions, filePath));
+                    rewrittenTrees.Add(sourceTree);
                     continue;
                 }
 
                 DebugInstrumentationResult result = DebugInstrumenter.Instrument(
-                    source, parseOptions, filePath, nextPointId);
+                    sourceTree,
+                    analysisCompilation.GetSemanticModel(sourceTree, ignoreAccessibility: true),
+                    nextPointId);
                 allPoints.AddRange(result.SequencePoints);
                 if (result.SequencePoints.Count > 0)
                     nextPointId = result.SequencePoints[result.SequencePoints.Count - 1].Id + 1;
-                rewrittenTrees.Add(CSharpSyntaxTree.ParseText(result.Code, parseOptions, filePath));
+                rewrittenTrees.Add(CSharpSyntaxTree.ParseText(
+                    result.Code, sourceTree.Options as CSharpParseOptions,
+                    sourceTree.FilePath));
             }
 
             rewrittenTrees.Add(CSharpSyntaxTree.ParseText(
@@ -385,10 +426,10 @@ namespace CIARE.Debugger
                 normalized.IndexOf("\\obj\\", StringComparison.OrdinalIgnoreCase) < 0;
         }
 
-        private void OnSequencePoint(int sequencePointId)
+        private bool ShouldPauseAtSequencePoint(int sequencePointId)
         {
-            DebugPausedEventArgs pauseArgs = null;
             bool waitForOtherPausedThread = false;
+            bool shouldCapture = false;
 
             lock (_syncRoot)
             {
@@ -407,10 +448,10 @@ namespace CIARE.Debugger
                     {
                         _currentPointId = sequencePointId;
                         _currentStackDepth = stackDepth;
+                        _currentPauseReason = reason;
                         _state = DebugSessionState.Paused;
                         _resumeGate.Reset();
-                        pauseArgs = new DebugPausedEventArgs(point, stackDepth,
-                            Environment.CurrentManagedThreadId, reason);
+                        shouldCapture = true;
                     }
                 }
             }
@@ -419,7 +460,35 @@ namespace CIARE.Debugger
             {
                 _resumeGate.Wait();
                 ThrowIfStopRequested();
-                return;
+                return false;
+            }
+
+            return shouldCapture;
+        }
+
+        private void PauseAtSequencePoint(int sequencePointId, string[] names,
+            string[] types, object[] values)
+        {
+            DebugPausedEventArgs pauseArgs;
+            lock (_syncRoot)
+            {
+                if (_stopRequested)
+                    throw new DebuggeeStoppedException();
+                if (_state != DebugSessionState.Paused || _currentPointId != sequencePointId ||
+                    !_sequencePoints.TryGetValue(sequencePointId, out DebugSequencePoint point))
+                {
+                    return;
+                }
+
+                int variableCount = Math.Min(
+                    names?.Length ?? 0,
+                    Math.Min(types?.Length ?? 0, values?.Length ?? 0));
+                var variables = new List<DebugVariableValue>(variableCount);
+                for (int index = 0; index < variableCount; index++)
+                    variables.Add(new DebugVariableValue(names[index], types[index], values[index]));
+
+                pauseArgs = new DebugPausedEventArgs(point, _currentStackDepth,
+                    Environment.CurrentManagedThreadId, _currentPauseReason, variables);
             }
 
             if (pauseArgs == null)
