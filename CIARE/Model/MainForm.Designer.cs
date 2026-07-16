@@ -654,7 +654,7 @@ namespace CIARE
             // 
             label2.AutoSize = true;
             label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
-            label2.Location = new System.Drawing.Point(343, 2);
+            label2.Location = new System.Drawing.Point(397, 2);
             label2.Margin = new Padding(4, 0, 4, 0);
             label2.Name = "label2";
             label2.Size = new System.Drawing.Size(13, 18);
@@ -665,7 +665,7 @@ namespace CIARE
             // 
             label3.AutoSize = true;
             label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
-            label3.Location = new System.Drawing.Point(395, 2);
+            label3.Location = new System.Drawing.Point(460, 2);
             label3.Margin = new Padding(4, 0, 4, 0);
             label3.Name = "label3";
             label3.Size = new System.Drawing.Size(13, 18);

@@ -4,6 +4,8 @@ CIARE 3.2.0 expands the editor from primarily single-file workflows into a more 
 
 ## Highlights
 
+- Added a built-in source debugger with editor breakpoints, continue, stop, step over, step into, and step out.
+- Added current-statement highlighting, breakpoint validation, project-aware source instrumentation, and standard Visual Studio debugger shortcuts.
 - Create new console, class library, and Windows Forms projects directly in CIARE.
 - Create solutions, add projects to existing solutions, and choose the target framework and Native AOT option.
 - Manage files, folders, project references, and the startup project from the file explorer.

@@ -50,15 +50,28 @@ namespace ICSharpCode.TextEditor
             {
                 return;
             }
-            // paint background
-            var highlight = Util.RegistryManagement.RegKey_Read("HKEY_CURRENT_USER\\SOFTWARE\\CIARE", "highlight");
-            var brush = new SolidBrush(Color.FromArgb(255, 51, 51, 51));
-            if (highlight == "C#-Dark")
-                g.FillRectangle(brush, new Rectangle(drawingPosition.X, rect.Top, drawingPosition.Width, rect.Height));
-            else
+            // Keep the breakpoint gutter distinct from the editor without hard-coding one
+            // particular syntax theme. This also fixes dark themes other than C#-Dark
+            // receiving a bright white icon bar.
+            Color editorBackground = textArea.Document.HighlightingStrategy
+                .GetColorFor("Default").BackgroundColor;
+            bool isDark = editorBackground.GetBrightness() < 0.5f;
+            Color gutterBackground = Blend(
+                editorBackground,
+                isDark ? Color.White : Color.Black,
+                isDark ? 0.08f : 0.04f);
+            Color gutterBorder = Blend(
+                editorBackground,
+                isDark ? Color.White : Color.Black,
+                isDark ? 0.22f : 0.16f);
+
+            using (Brush backgroundBrush = new SolidBrush(gutterBackground))
+            using (Pen borderPen = new Pen(gutterBorder))
             {
-                g.FillRectangle(SystemBrushes.ControlLightLight, new Rectangle(drawingPosition.X, rect.Top, drawingPosition.Width - 1, rect.Height));
-                g.DrawLine(SystemPens.GrayText, base.drawingPosition.Right - 1, rect.Top, base.drawingPosition.Right - 1, rect.Bottom);
+                g.FillRectangle(backgroundBrush,
+                    new Rectangle(drawingPosition.X, rect.Top, drawingPosition.Width - 1, rect.Height));
+                g.DrawLine(borderPen, drawingPosition.Right - 1, rect.Top,
+                    drawingPosition.Right - 1, rect.Bottom);
             }
 
             // paint icons
@@ -278,6 +291,16 @@ namespace ICSharpCode.TextEditor
         }
 
         #endregion
+
+        static Color Blend(Color source, Color target, float amount)
+        {
+            amount = Math.Max(0f, Math.Min(1f, amount));
+            return Color.FromArgb(
+                source.A,
+                (int)Math.Round(source.R + (target.R - source.R) * amount),
+                (int)Math.Round(source.G + (target.G - source.G) * amount),
+                (int)Math.Round(source.B + (target.B - source.B) * amount));
+        }
 
         static bool IsLineInsideRegion(int top, int bottom, int regionTop, int regionBottom)
         {

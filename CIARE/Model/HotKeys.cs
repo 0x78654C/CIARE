@@ -36,8 +36,17 @@ CTRL + E         : Show / Hide file explorer.
 CTRL + Left Click: Go to definition.
 Shift + F12      : Find usages.
 
+---------------- Debug --------------------
+F5               : Start debugging / continue.
+CTRL + F5        : Run current code without debugging.
+SHIFT + F5       : Stop debugging.
+F9               : Toggle breakpoint at the current line.
+CTRL+SHIFT+F9    : Delete all breakpoints.
+F10              : Step over.
+F11              : Step into.
+SHIFT + F11      : Step out.
+
 ---------------- Compile ------------------
-F5               : Run current code.
 CTRL + B         : Compile code from current tab to binary. (.dll/.exe)
 CTRL + Shift + B : Publish code from current tab to binary. (.dll/.exe)
 CTRL + L         : Add command line arguments.
@@ -49,7 +58,7 @@ CTRL + Shift + W : Split window horizontally.
 CTRL + U         : Switch between split window areas.
 CTRL + K         : Show / Hide output window.
 CTRL + E         : Show / Hide file explorer.
-F11              : Toggle full screen.
+SHIFT+ALT+ENTER  : Toggle full screen.
 
 ------------- Tabs Management -------------
 CTRL + Tab       : Add new tab.

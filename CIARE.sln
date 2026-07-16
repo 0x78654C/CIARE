@@ -4,6 +4,8 @@ VisualStudioVersion = 17.3.32825.248
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CIARE", "CIARE\CIARE.csproj", "{97740883-D1DF-43E6-9BEA-F4639907687C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CIARE.Debugger.Tests", "CIARE.Debugger.Tests\CIARE.Debugger.Tests.csproj", "{B39B0B32-162B-4E4B-BD41-1D23AEC35F0E}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{48188228-85F8-40D0-9443-BAFABD1681C7}"
 	ProjectSection(SolutionItems) = preProject
 		NRefactory\Project\NRefactory.csproj = NRefactory\Project\NRefactory.csproj
@@ -116,6 +118,14 @@ Global
 		{EF23D7A0-9BEE-4B00-B446-3A00387BE891}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EF23D7A0-9BEE-4B00-B446-3A00387BE891}.Release|x64.ActiveCfg = Release|Any CPU
 		{EF23D7A0-9BEE-4B00-B446-3A00387BE891}.Release|x64.Build.0 = Release|Any CPU
+		{B39B0B32-162B-4E4B-BD41-1D23AEC35F0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B39B0B32-162B-4E4B-BD41-1D23AEC35F0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B39B0B32-162B-4E4B-BD41-1D23AEC35F0E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B39B0B32-162B-4E4B-BD41-1D23AEC35F0E}.Debug|x64.Build.0 = Debug|Any CPU
+		{B39B0B32-162B-4E4B-BD41-1D23AEC35F0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B39B0B32-162B-4E4B-BD41-1D23AEC35F0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B39B0B32-162B-4E4B-BD41-1D23AEC35F0E}.Release|x64.ActiveCfg = Release|Any CPU
+		{B39B0B32-162B-4E4B-BD41-1D23AEC35F0E}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

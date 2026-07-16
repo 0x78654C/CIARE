@@ -51,6 +51,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using CIARE.Properties;
+using CIARE.Debugger;
 using VBFileSystem = Microsoft.VisualBasic.FileIO.FileSystem;
 using VBRecycleOption = Microsoft.VisualBasic.FileIO.RecycleOption;
 using VBUIOption = Microsoft.VisualBasic.FileIO.UIOption;
@@ -232,6 +233,7 @@ namespace CIARE
             autoStartFile.CheckSetAtiveFormState();
             autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
+            InitializeDebugger();
             ConfigureErrorsListView();
             DoubleBuffered = true;
             SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
@@ -309,6 +311,7 @@ namespace CIARE
             linesPositionLbl.Text = string.Empty;
             SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
             HookEditorAskAI(SelectedEditor.GetSelectedEditor());
+            ConfigureDebuggerEditor(SelectedEditor.GetSelectedEditor());
         }
 
         /// <summary>
@@ -4958,10 +4961,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void runCodePb_Click(object sender, EventArgs e)
         {
-            RealTimeChecker.Cancel(SelectedEditor.GetSelectedEditor(), typeCheckLbl, errorsLV, errorsTabPage, warningsCheckLbl);
-            if (outputTabControl.SelectedTab == errorsTabPage)
-                outputTabControl.SelectedTab = outputTabPage;
-            RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
+            StartOrContinueDebugging();
         }
 
         /// <summary>
@@ -5470,9 +5470,31 @@ namespace CIARE
                     FindUsagesAtCaret();
                     return true;
                 case Keys.F5:
-                    if (outputTabControl.SelectedTab == errorsTabPage)
-                        outputTabControl.SelectedTab = outputTabPage;
-                    RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
+                    StartOrContinueDebugging();
+                    return true;
+                case Keys.F5 | Keys.Control:
+                    RunWithoutDebugging();
+                    return true;
+                case Keys.F5 | Keys.Shift:
+                    StopDebugging();
+                    return true;
+                case Keys.F9:
+                    ToggleBreakpointAtCaret();
+                    return true;
+                case Keys.F9 | Keys.Control | Keys.Shift:
+                    DeleteAllBreakpoints();
+                    return true;
+                case Keys.F10:
+                    StepDebugging(DebugCommand.StepOver);
+                    return true;
+                case Keys.F11:
+                    StepDebugging(DebugCommand.StepInto);
+                    return true;
+                case Keys.F11 | Keys.Shift:
+                    StepDebugging(DebugCommand.StepOut);
+                    return true;
+                case Keys.Enter | Keys.Shift | Keys.Alt:
+                    ToggleFullScreen();
                     return true;
                 case Keys.T | Keys.Control:
                     FileManage.LoadCSTemplate(SelectedEditor.GetSelectedEditor());
@@ -5526,9 +5548,6 @@ namespace CIARE
                     if (editorRef != null)
                         ScheduleCurrentTypeCheck(editorRef);
                     return true;
-                case Keys.F11:
-                    ToggleFullScreen();
-                    return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
@@ -5560,6 +5579,7 @@ namespace CIARE
                 ApplyTabControlDarkMode(EditorTabControl, darkBg);
                 ApplyTabControlDarkMode(outputTabControl, darkBg);
                 ApplyFileExplorerTheme(highlight);
+                ApplyDebuggerTheme(true);
                 return;
             }
             GlobalVariables.darkColor = false;
@@ -5570,6 +5590,7 @@ namespace CIARE
             ApplyTabControlDarkMode(EditorTabControl, SystemColors.Window);
             ApplyTabControlDarkMode(outputTabControl, SystemColors.Window);
             ApplyFileExplorerTheme(highlight);
+            ApplyDebuggerTheme(false);
         }
 
         /// <summary>
@@ -5777,6 +5798,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            ShutdownDebugger();
             // Store tab text of current opened tab.
             var toolTipText = EditorTabControl.SelectedTab.ToolTipText.Trim();
             if (toolTipText.StartsWith("Add Tab"))

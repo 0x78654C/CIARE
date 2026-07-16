@@ -2,6 +2,7 @@
 using System.Runtime.Versioning;
 using System.Text;
 using System.Windows.Forms;
+using System;
 
 namespace CIARE.Utils
 {
@@ -16,12 +17,37 @@ namespace CIARE.Utils
 
         public override void Write(char value)
         {
-            textbox.Text += value;
+            Append(value.ToString());
         }
 
         public override void Write(string value)
         {
-            textbox.Text += value;
+            Append(value);
+        }
+
+        private void Append(string value)
+        {
+            if (string.IsNullOrEmpty(value) || textbox == null || textbox.IsDisposed)
+                return;
+
+            if (textbox.InvokeRequired)
+            {
+                try
+                {
+                    textbox.BeginInvoke(new Action<string>(Append), value);
+                }
+                catch (InvalidOperationException)
+                {
+                }
+                return;
+            }
+
+            if (textbox is RichTextBox richTextBox)
+                richTextBox.AppendText(value);
+            else if (textbox is TextBoxBase textBox)
+                textBox.AppendText(value);
+            else
+                textbox.Text += value;
         }
 
         public override Encoding Encoding
