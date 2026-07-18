@@ -40,7 +40,7 @@
 ### Compilation & Execution
 - Compile and run C# code in memory using Roslyn
 - Debug C# source with editor breakpoints, continue, step over, step into, and step out
-- Inspect assigned parameters and local variables in the theme-aware Locals tab while paused
+- Inspect in-scope assigned parameters, local variables, and accessible fields in the theme-aware Locals tab; expand objects and paged arrays only when needed
 - Compile code to binary files (`.exe` or `.dll`)
 - Publish code to binary files (`.exe` or `.dll`)
 - Native AOT publish option
