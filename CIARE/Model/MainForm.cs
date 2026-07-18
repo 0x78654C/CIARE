@@ -4838,7 +4838,9 @@ namespace CIARE
             ThemeManager.LoadExternalThemes();
             InitializeFileExplorerPane();
             Initiliaze();
-            Console.SetOut(new ControlWriter(outputRBT));
+            var consoleWriter = new ControlWriter(outputRBT);
+            Console.SetOut(consoleWriter);
+            Console.SetError(consoleWriter);
             InitializeEditor.GenerateLiveSessionId();
             InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
             CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);

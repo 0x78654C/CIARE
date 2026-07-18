@@ -541,12 +541,25 @@ namespace CIARE.Debugger
             foreach (DebugSourceBreakpoint breakpoint in _requestedBreakpoints)
             {
                 string path = NormalizePath(breakpoint.FilePath);
-                DebugSequencePoint point = _sequencePoints.Values
-                    .Where(candidate => candidate.Line == breakpoint.Line &&
-                        string.Equals(NormalizePath(candidate.FilePath), path,
-                            StringComparison.OrdinalIgnoreCase))
+                DebugSequencePoint[] filePoints = _sequencePoints.Values
+                    .Where(candidate => string.Equals(
+                        NormalizePath(candidate.FilePath), path,
+                        StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+                DebugSequencePoint point = filePoints
+                    .Where(candidate => candidate.Line == breakpoint.Line)
                     .OrderBy(candidate => candidate.Id)
-                    .FirstOrDefault();
+                    .FirstOrDefault()
+                    ?? filePoints
+                        .Where(candidate => candidate.Line > breakpoint.Line)
+                        .OrderBy(candidate => candidate.Line)
+                        .ThenBy(candidate => candidate.Id)
+                        .FirstOrDefault()
+                    ?? filePoints
+                        .Where(candidate => candidate.Line < breakpoint.Line)
+                        .OrderByDescending(candidate => candidate.Line)
+                        .ThenBy(candidate => candidate.Id)
+                        .FirstOrDefault();
                 if (point != null)
                     _breakpointPointIds.Add(point.Id);
             }

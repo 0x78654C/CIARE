@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 using CIARE.Debugger;
@@ -37,6 +38,69 @@ namespace CIARE
         private ToolStripMenuItem _debugStatusItem;
         private TabPage _debugLocalsTabPage;
         private ListView _debugLocalsList;
+
+        private sealed class DebuggerValueNode
+        {
+            public DebuggerValueNode(string name, string typeName, object value, int depth)
+            {
+                Name = name ?? string.Empty;
+                TypeName = typeName ?? string.Empty;
+                Value = value;
+                Depth = depth;
+            }
+
+            public string Name { get; }
+            public string TypeName { get; }
+            public object Value { get; set; }
+            public int Depth { get; }
+            public bool Expanded { get; set; }
+        }
+
+        private sealed class DebuggerArrayRange
+        {
+            public DebuggerArrayRange(Array array, int start, int count)
+            {
+                Array = array;
+                Start = start;
+                Count = count;
+            }
+
+            public Array Array { get; }
+            public int Start { get; }
+            public int Count { get; }
+        }
+
+        private sealed class DebuggerStaticMembers
+        {
+            public DebuggerStaticMembers(Type type)
+            {
+                Type = type;
+            }
+
+            public Type Type { get; }
+        }
+
+        private sealed class DebuggerUnavailableValue
+        {
+            public DebuggerUnavailableValue(string message)
+            {
+                Message = message ?? "Value unavailable";
+            }
+
+            public string Message { get; }
+        }
+
+        private sealed class DebuggerDeferredProperty
+        {
+            public DebuggerDeferredProperty(object target, PropertyInfo property)
+            {
+                Target = target;
+                Property = property;
+            }
+
+            public object Target { get; }
+            public PropertyInfo Property { get; }
+        }
 
         private void InitializeDebugger()
         {
@@ -108,6 +172,7 @@ namespace CIARE
             _debugLocalsList.Columns.Add("Value", 620, HorizontalAlignment.Left);
             _debugLocalsList.Columns.Add("Type", 280, HorizontalAlignment.Left);
             _debugLocalsList.Resize += (sender, args) => ResizeDebuggerLocalsColumns();
+            _debugLocalsList.ItemActivate += DebuggerLocalsItemActivate;
 
             _debugLocalsTabPage = new TabPage("Locals")
             {
@@ -229,6 +294,7 @@ namespace CIARE
             {
                 ClearCurrentStatementMarker();
                 ClearDebuggerLocals();
+                outputTabControl.SelectedTab = outputTabPage;
                 _debugSession.Resume(DebugCommand.Continue);
                 return;
             }
@@ -244,6 +310,7 @@ namespace CIARE
             {
                 ClearCurrentStatementMarker();
                 ClearDebuggerLocals();
+                outputTabControl.SelectedTab = outputTabPage;
                 _debugSession.Resume(command);
                 return;
             }
@@ -268,8 +335,7 @@ namespace CIARE
             {
                 ConfigureDebuggerEditor(editor);
                 RealTimeChecker.Cancel(editor, typeCheckLbl, errorsLV, errorsTabPage, warningsCheckLbl);
-                if (outputTabControl.SelectedTab == errorsTabPage)
-                    outputTabControl.SelectedTab = outputTabPage;
+                outputTabControl.SelectedTab = outputTabPage;
                 OutputWindowManage.ShowOutputWindow(splitContainer1, outputRBT);
                 outputRBT.Text = "Debugger: preparing source and symbols..." + Environment.NewLine;
                 ClearDebuggerLocals();
@@ -380,17 +446,21 @@ namespace CIARE
         {
             RunOnUiThread(() =>
             {
-                var executableLines = new HashSet<string>(args.SequencePoints.Select(point =>
-                    MakeDebuggerLocationKey(point.FilePath, point.Line)),
-                    StringComparer.OrdinalIgnoreCase);
                 int breakpointCount = 0;
                 foreach (EditorDocument document in GetOpenEditorDocuments())
                 {
                     foreach (BreakpointBookmark breakpoint in document.Editor.Document.BookmarkManager.Marks
                         .OfType<BreakpointBookmark>())
                     {
-                        breakpoint.IsHealthy = executableLines.Contains(
-                            MakeDebuggerLocationKey(document.FilePath, breakpoint.LineNumber + 1));
+                        DebugSequencePoint resolvedPoint = ResolveDebuggerBreakpoint(
+                            args.SequencePoints, document.FilePath, breakpoint.LineNumber + 1);
+                        breakpoint.IsHealthy = resolvedPoint != null;
+                        if (resolvedPoint != null &&
+                            resolvedPoint.Line != breakpoint.LineNumber + 1)
+                        {
+                            breakpoint.Location = new TextLocation(0,
+                                Math.Max(0, resolvedPoint.Line - 1));
+                        }
                         breakpointCount++;
                     }
                     document.Editor.Refresh();
@@ -398,6 +468,31 @@ namespace CIARE
                 AppendDebuggerOutput($"Debugger: {args.SequencePoints.Count} sequence points, " +
                     $"{breakpointCount} breakpoint(s)." + Environment.NewLine);
             });
+        }
+
+        private static DebugSequencePoint ResolveDebuggerBreakpoint(
+            IEnumerable<DebugSequencePoint> sequencePoints, string filePath, int requestedLine)
+        {
+            string normalizedPath = NormalizeDebuggerPath(filePath);
+            DebugSequencePoint[] filePoints = sequencePoints
+                .Where(point => string.Equals(
+                    NormalizeDebuggerPath(point.FilePath), normalizedPath,
+                    StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            return filePoints
+                .Where(point => point.Line == requestedLine)
+                .OrderBy(point => point.Id)
+                .FirstOrDefault()
+                ?? filePoints
+                    .Where(point => point.Line > requestedLine)
+                    .OrderBy(point => point.Line)
+                    .ThenBy(point => point.Id)
+                    .FirstOrDefault()
+                ?? filePoints
+                    .Where(point => point.Line < requestedLine)
+                    .OrderByDescending(point => point.Line)
+                    .ThenBy(point => point.Id)
+                    .FirstOrDefault();
         }
 
         private void DebugSessionPaused(object sender, DebugPausedEventArgs args)
@@ -427,6 +522,7 @@ namespace CIARE
 
                 ClearCurrentStatementMarker();
                 ClearDebuggerLocals();
+                outputTabControl.SelectedTab = outputTabPage;
                 if (!string.IsNullOrWhiteSpace(args.ErrorMessage))
                     AppendDebuggerOutput("Debugger error:" + Environment.NewLine + args.ErrorMessage +
                         Environment.NewLine);
@@ -523,6 +619,7 @@ namespace CIARE
         {
             ClearCurrentStatementMarker();
             ClearDebuggerLocals();
+            outputTabControl.SelectedTab = outputTabPage;
             _debugSession?.Stop();
             UpdateDebuggerUi();
         }
@@ -586,12 +683,15 @@ namespace CIARE
                 _debugLocalsList.Items.Clear();
                 foreach (DebugVariableValue variable in variables ?? Array.Empty<DebugVariableValue>())
                 {
-                    string value = FormatDebuggerValue(variable.Value);
-                    var item = new ListViewItem(variable.Name);
-                    item.SubItems.Add(value);
-                    item.SubItems.Add(variable.TypeName);
-                    item.ToolTipText = $"{variable.Name} = {value}";
-                    _debugLocalsList.Items.Add(item);
+                    object value = variable.Value;
+                    if (value is Type globalType && variable.Name.StartsWith(
+                        "Globals (", StringComparison.Ordinal))
+                    {
+                        value = new DebuggerStaticMembers(globalType);
+                    }
+                    var node = new DebuggerValueNode(
+                        variable.Name, variable.TypeName, value, 0);
+                    _debugLocalsList.Items.Add(CreateDebuggerValueItem(node));
                 }
 
                 if (_debugLocalsList.Items.Count == 0)
@@ -619,6 +719,307 @@ namespace CIARE
             _debugLocalsList.Items.Clear();
         }
 
+        private void DebuggerLocalsItemActivate(object sender, EventArgs args)
+        {
+            if (_debugLocalsList?.SelectedItems.Count != 1 ||
+                !(_debugLocalsList.SelectedItems[0].Tag is DebuggerValueNode node))
+            {
+                return;
+            }
+
+            ListViewItem item = _debugLocalsList.SelectedItems[0];
+            if (node.Expanded)
+                CollapseDebuggerValue(item, node);
+            else
+                ExpandDebuggerValue(item, node);
+        }
+
+        private ListViewItem CreateDebuggerValueItem(DebuggerValueNode node)
+        {
+            string value = FormatDebuggerValue(node.Value);
+            var item = new ListViewItem(GetDebuggerNodeName(node));
+            item.SubItems.Add(value);
+            item.SubItems.Add(node.TypeName);
+            item.ToolTipText = $"{node.Name} = {value}";
+            item.Tag = node;
+            return item;
+        }
+
+        private static string GetDebuggerNodeName(DebuggerValueNode node)
+        {
+            string indent = new string(' ', node.Depth * 3);
+            string marker = CanExpandDebuggerValue(node.Value)
+                ? node.Expanded ? "▼ " : "▶ "
+                : "  ";
+            return indent + marker + node.Name;
+        }
+
+        private void ExpandDebuggerValue(ListViewItem item, DebuggerValueNode node)
+        {
+            if (node.Value is DebuggerDeferredProperty deferred)
+            {
+                try
+                {
+                    node.Value = deferred.Property.GetValue(deferred.Target);
+                }
+                catch (Exception exception)
+                {
+                    Exception root = exception is TargetInvocationException &&
+                        exception.InnerException != null
+                        ? exception.InnerException.GetBaseException()
+                        : exception.GetBaseException();
+                    node.Value = new DebuggerUnavailableValue(
+                        root.GetType().Name + ": " + root.Message);
+                }
+                UpdateDebuggerValueItem(item, node);
+            }
+
+            if (!CanExpandDebuggerValue(node.Value))
+                return;
+
+            IReadOnlyList<DebuggerValueNode> children = CreateDebuggerChildren(node);
+            if (children.Count == 0)
+                return;
+            node.Expanded = true;
+            UpdateDebuggerValueItem(item, node);
+
+            _debugLocalsList.BeginUpdate();
+            try
+            {
+                int insertIndex = item.Index + 1;
+                foreach (DebuggerValueNode child in children)
+                    _debugLocalsList.Items.Insert(insertIndex++, CreateDebuggerValueItem(child));
+            }
+            finally
+            {
+                _debugLocalsList.EndUpdate();
+            }
+        }
+
+        private void CollapseDebuggerValue(ListViewItem item, DebuggerValueNode node)
+        {
+            _debugLocalsList.BeginUpdate();
+            try
+            {
+                int index = item.Index + 1;
+                while (index < _debugLocalsList.Items.Count &&
+                    _debugLocalsList.Items[index].Tag is DebuggerValueNode child &&
+                    child.Depth > node.Depth)
+                {
+                    _debugLocalsList.Items.RemoveAt(index);
+                }
+                node.Expanded = false;
+                UpdateDebuggerValueItem(item, node);
+            }
+            finally
+            {
+                _debugLocalsList.EndUpdate();
+            }
+        }
+
+        private static void UpdateDebuggerValueItem(ListViewItem item, DebuggerValueNode node)
+        {
+            string value = FormatDebuggerValue(node.Value);
+            item.Text = GetDebuggerNodeName(node);
+            item.SubItems[1].Text = value;
+            item.ToolTipText = $"{node.Name} = {value}";
+        }
+
+        private static IReadOnlyList<DebuggerValueNode> CreateDebuggerChildren(
+            DebuggerValueNode parent)
+        {
+            if (parent.Value is DebuggerStaticMembers staticMembers)
+                return CreateDebuggerStaticChildren(staticMembers.Type, parent.Depth + 1);
+
+            if (parent.Value is DebuggerArrayRange range)
+                return CreateDebuggerArrayItems(range.Array, range.Start, range.Count, parent.Depth + 1);
+
+            if (parent.Value is Array array)
+            {
+                const int pageSize = 100;
+                if (array.Length <= pageSize)
+                    return CreateDebuggerArrayItems(array, 0, array.Length, parent.Depth + 1);
+
+                var ranges = new List<DebuggerValueNode>();
+                for (int start = 0; start < array.Length; start += pageSize)
+                {
+                    int count = Math.Min(pageSize, array.Length - start);
+                    ranges.Add(new DebuggerValueNode(
+                        $"[{start}..{start + count - 1}]",
+                        array.GetType().GetElementType()?.Name + "[]",
+                        new DebuggerArrayRange(array, start, count),
+                        parent.Depth + 1));
+                }
+                return ranges;
+            }
+
+            object target = parent.Value;
+            if (target == null)
+                return Array.Empty<DebuggerValueNode>();
+
+            Type targetType = target.GetType();
+            var children = new List<DebuggerValueNode>();
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public |
+                BindingFlags.NonPublic;
+
+            foreach (FieldInfo field in targetType.GetFields(flags)
+                .Where(field => !field.IsStatic)
+                .OrderBy(field => field.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                string name = GetDebuggerFieldName(field.Name);
+                if (!names.Add(name))
+                    continue;
+                object fieldValue;
+                try
+                {
+                    fieldValue = field.GetValue(target);
+                }
+                catch (Exception exception)
+                {
+                    fieldValue = new DebuggerUnavailableValue(exception.GetBaseException().Message);
+                }
+                children.Add(new DebuggerValueNode(
+                    name, GetDebuggerTypeName(field.FieldType), fieldValue, parent.Depth + 1));
+            }
+
+            foreach (PropertyInfo property in targetType.GetProperties(flags)
+                .Where(property => property.GetMethod != null &&
+                    !property.GetMethod.IsStatic && property.GetIndexParameters().Length == 0)
+                .OrderBy(property => property.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                if (!names.Add(property.Name))
+                    continue;
+                children.Add(new DebuggerValueNode(
+                    property.Name,
+                    GetDebuggerTypeName(property.PropertyType),
+                    new DebuggerDeferredProperty(target, property),
+                    parent.Depth + 1));
+            }
+
+            return children;
+        }
+
+        private static IReadOnlyList<DebuggerValueNode> CreateDebuggerStaticChildren(
+            Type targetType, int depth)
+        {
+            var children = new List<DebuggerValueNode>();
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            const BindingFlags flags = BindingFlags.Static | BindingFlags.Public |
+                BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
+
+            foreach (FieldInfo field in targetType.GetFields(flags)
+                .Where(field => field.IsStatic && !field.IsSpecialName)
+                .OrderBy(field => field.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                string name = GetDebuggerFieldName(field.Name);
+                if (!names.Add(name))
+                    continue;
+                object fieldValue;
+                try
+                {
+                    fieldValue = field.GetValue(null);
+                }
+                catch (Exception exception)
+                {
+                    fieldValue = new DebuggerUnavailableValue(exception.GetBaseException().Message);
+                }
+                children.Add(new DebuggerValueNode(
+                    name, GetDebuggerTypeName(field.FieldType), fieldValue, depth));
+            }
+
+            foreach (PropertyInfo property in targetType.GetProperties(flags)
+                .Where(property => property.GetMethod != null &&
+                    property.GetMethod.IsStatic && property.GetIndexParameters().Length == 0)
+                .OrderBy(property => property.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                if (!names.Add(property.Name))
+                    continue;
+                children.Add(new DebuggerValueNode(
+                    property.Name,
+                    GetDebuggerTypeName(property.PropertyType),
+                    new DebuggerDeferredProperty(null, property),
+                    depth));
+            }
+
+            return children;
+        }
+
+        private static IReadOnlyList<DebuggerValueNode> CreateDebuggerArrayItems(
+            Array array, int start, int count, int depth)
+        {
+            var items = new List<DebuggerValueNode>(count);
+            Type elementType = array.GetType().GetElementType();
+            for (int offset = start; offset < start + count; offset++)
+            {
+                int[] indices = GetDebuggerArrayIndices(array, offset);
+                object value;
+                try
+                {
+                    value = array.GetValue(indices);
+                }
+                catch (Exception exception)
+                {
+                    value = new DebuggerUnavailableValue(exception.GetBaseException().Message);
+                }
+                items.Add(new DebuggerValueNode(
+                    "[" + string.Join(",", indices) + "]",
+                    GetDebuggerTypeName(elementType), value, depth));
+            }
+            return items;
+        }
+
+        private static int[] GetDebuggerArrayIndices(Array array, int flatIndex)
+        {
+            var indices = new int[array.Rank];
+            for (int dimension = array.Rank - 1; dimension >= 0; dimension--)
+            {
+                int length = array.GetLength(dimension);
+                indices[dimension] = array.GetLowerBound(dimension) + flatIndex % length;
+                flatIndex /= length;
+            }
+            return indices;
+        }
+
+        private static string GetDebuggerFieldName(string fieldName)
+        {
+            const string backingFieldSuffix = ">k__BackingField";
+            return fieldName != null && fieldName.StartsWith("<", StringComparison.Ordinal) &&
+                fieldName.EndsWith(backingFieldSuffix, StringComparison.Ordinal)
+                ? fieldName.Substring(1, fieldName.Length - backingFieldSuffix.Length - 1)
+                : fieldName ?? string.Empty;
+        }
+
+        private static string GetDebuggerTypeName(Type type)
+        {
+            return type?.FullName ?? type?.Name ?? string.Empty;
+        }
+
+        private static bool CanExpandDebuggerValue(object value)
+        {
+            if (value == null || value is DebuggerUnavailableValue)
+                return false;
+            if (value is DebuggerDeferredProperty || value is DebuggerArrayRange)
+                return true;
+            if (value is DebuggerStaticMembers)
+                return true;
+            if (value is Array array)
+                return array.Length > 0;
+            return !IsSimpleDebuggerValue(value);
+        }
+
+        private static bool IsSimpleDebuggerValue(object value)
+        {
+            if (value == null || value is string || value is char || value is bool ||
+                value is decimal || value is DateTime || value is DateTimeOffset ||
+                value is TimeSpan || value is Guid || value is DateOnly || value is TimeOnly)
+            {
+                return true;
+            }
+            Type type = value.GetType();
+            return type.IsPrimitive || type.IsEnum;
+        }
+
         private static string FormatDebuggerValue(object value)
         {
             return FormatDebuggerValue(value, 0);
@@ -626,6 +1027,14 @@ namespace CIARE
 
         private static string FormatDebuggerValue(object value, int depth)
         {
+            if (value is DebuggerUnavailableValue unavailable)
+                return "<" + unavailable.Message + ">";
+            if (value is DebuggerDeferredProperty)
+                return "<not evaluated>";
+            if (value is DebuggerStaticMembers staticMembers)
+                return "{" + staticMembers.Type.FullName + " static members}";
+            if (value is DebuggerArrayRange range)
+                return $"{{{range.Count} items}}";
             if (value == null)
                 return "null";
             if (value is string text)
@@ -636,21 +1045,9 @@ namespace CIARE
                 return boolean ? "true" : "false";
             if (value is Array array)
             {
-                if (depth > 0)
-                    return $"{{{array.GetType().GetElementType()?.Name ?? "item"}[{array.Length}]}}";
-
-                var entries = new List<string>();
-                int count = 0;
-                foreach (object entry in array)
-                {
-                    if (count++ == 8)
-                    {
-                        entries.Add("...");
-                        break;
-                    }
-                    entries.Add(FormatDebuggerValue(entry, depth + 1));
-                }
-                return $"{{Length = {array.Length}}} [" + string.Join(", ", entries) + "]";
+                return $"{{{array.GetType().GetElementType()?.Name ?? "item"}" +
+                    $"[{string.Join(",", Enumerable.Range(0, array.Rank)
+                        .Select(array.GetLength))}]}}";
             }
 
             Type valueType = value.GetType();
@@ -658,22 +1055,12 @@ namespace CIARE
                 return value.ToString();
             if (value is IFormattable formattable &&
                 (valueType.IsPrimitive || value is decimal || value is DateTime ||
-                 value is DateTimeOffset || value is TimeSpan || value is Guid))
+                 value is DateTimeOffset || value is TimeSpan || value is Guid ||
+                 value is DateOnly || value is TimeOnly))
             {
                 return formattable.ToString(null, CultureInfo.InvariantCulture);
             }
-
-            try
-            {
-                string display = value.ToString();
-                if (string.IsNullOrEmpty(display) || display == valueType.FullName)
-                    return "{" + valueType.Name + "}";
-                return LimitDebuggerText(display);
-            }
-            catch (Exception exception)
-            {
-                return $"<{exception.GetType().Name}: value unavailable>";
-            }
+            return "{" + (valueType.FullName ?? valueType.Name) + "}";
         }
 
         private static string EscapeDebuggerText(string value)
@@ -702,8 +1089,7 @@ namespace CIARE
             if (editor == null)
                 return;
             RealTimeChecker.Cancel(editor, typeCheckLbl, errorsLV, errorsTabPage, warningsCheckLbl);
-            if (outputTabControl.SelectedTab == errorsTabPage)
-                outputTabControl.SelectedTab = outputTabPage;
+            outputTabControl.SelectedTab = outputTabPage;
             RoslynRun.RunCode(outputRBT, runCodePb, editor, splitContainer1, true);
         }
 

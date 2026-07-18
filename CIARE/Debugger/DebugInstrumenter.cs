@@ -279,15 +279,46 @@ internal static class {BridgeTypeName}
 
                     var assigned = new HashSet<ISymbol>(
                         flow.DefinitelyAssignedOnEntry, SymbolEqualityComparer.Default);
-                    return _semanticModel.LookupSymbols(source.SpanStart)
+                    var variables = _semanticModel.LookupSymbols(source.SpanStart)
                         .Where(symbol => symbol is ILocalSymbol || symbol is IParameterSymbol)
                         .Where(symbol => IsReadableAndAssigned(symbol, assigned))
-                        .GroupBy(symbol => symbol.Name, StringComparer.Ordinal)
-                        .Select(group => group.First())
-                        .OrderBy(symbol => symbol.Name, StringComparer.OrdinalIgnoreCase)
                         .Select(CreateVariableCapture)
                         .Where(variable => variable != null)
+                        .GroupBy(variable => variable.Expression, StringComparer.Ordinal)
+                        .Select(group => group.First())
+                        .OrderBy(variable => variable.SortOrder)
+                        .ThenBy(variable => variable.Name, StringComparer.OrdinalIgnoreCase)
                         .ToList();
+
+                    IMethodSymbol method = _semanticModel.GetEnclosingSymbol(source.SpanStart)
+                        as IMethodSymbol;
+                    INamedTypeSymbol containingType = method?.ContainingType;
+                    if (method != null && !method.IsStatic && containingType != null &&
+                        !containingType.IsRefLikeType &&
+                        (!containingType.IsValueType ||
+                         method.MethodKind != MethodKind.Constructor))
+                    {
+                        variables.Add(new VariableCapture(
+                            "this",
+                            containingType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
+                            "this",
+                            2));
+                    }
+
+                    if (containingType != null && !containingType.IsImplicitlyDeclared &&
+                        containingType.TypeKind != TypeKind.Error)
+                    {
+                        string sourceTypeName = containingType.ToDisplayString(
+                            SymbolDisplayFormat.FullyQualifiedFormat);
+                        variables.Add(new VariableCapture(
+                            $"Globals ({containingType.Name})",
+                            "static " + containingType.ToDisplayString(
+                                SymbolDisplayFormat.MinimallyQualifiedFormat),
+                            $"typeof({sourceTypeName})",
+                            3));
+                    }
+
+                    return variables;
                 }
                 catch (ArgumentException)
                 {
@@ -299,7 +330,8 @@ internal static class {BridgeTypeName}
                 }
             }
 
-            private static bool IsReadableAndAssigned(ISymbol symbol, HashSet<ISymbol> assigned)
+            private static bool IsReadableAndAssigned(ISymbol symbol,
+                HashSet<ISymbol> assigned)
             {
                 ITypeSymbol type;
                 if (symbol is ILocalSymbol local)
@@ -335,9 +367,11 @@ internal static class {BridgeTypeName}
                 if (type == null)
                     return null;
 
+                string name = symbol.Name;
                 string expression = EscapeIdentifier(symbol.Name);
+                int sortOrder = symbol is IParameterSymbol ? 0 : 1;
                 string typeName = type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-                return new VariableCapture(symbol.Name, typeName, expression);
+                return new VariableCapture(name, typeName, expression, sortOrder);
             }
 
             private static string EscapeIdentifier(string name)
@@ -364,16 +398,19 @@ internal static class {BridgeTypeName}
 
             private sealed class VariableCapture
             {
-                public VariableCapture(string name, string typeName, string expression)
+                public VariableCapture(string name, string typeName, string expression,
+                    int sortOrder)
                 {
                     Name = name;
                     TypeName = typeName;
                     Expression = expression;
+                    SortOrder = sortOrder;
                 }
 
                 public string Name { get; }
                 public string TypeName { get; }
                 public string Expression { get; }
+                public int SortOrder { get; }
             }
         }
     }
