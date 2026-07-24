@@ -6355,7 +6355,10 @@ namespace CIARE
                     return result;
 
                 AddRoslynSymbolsToCompletionData(result,
-                    GetRoslynTypeMembers(typeSymbol, staticOnly),
+                    context.SemanticModel.LookupSymbols(
+                        position,
+                        typeSymbol,
+                        includeReducedExtensionMethods: !staticOnly),
                     string.Empty,
                     staticOnly,
                     instanceOnly: !staticOnly);
@@ -6977,27 +6980,6 @@ namespace CIARE
                                          normalizedExpression, StringComparison.Ordinal))
                 .OrderByDescending(expression => expression.Span.End)
                 .FirstOrDefault();
-        }
-
-        private static IEnumerable<ISymbol> GetRoslynTypeMembers(ITypeSymbol typeSymbol, bool staticOnly)
-        {
-            if (typeSymbol == null)
-                yield break;
-
-            if (staticOnly)
-            {
-                foreach (var member in typeSymbol.GetMembers())
-                    yield return member;
-                yield break;
-            }
-
-            for (INamedTypeSymbol current = typeSymbol as INamedTypeSymbol;
-                current != null;
-                current = current.BaseType)
-            {
-                foreach (var member in current.GetMembers())
-                    yield return member;
-            }
         }
 
         private static void AddRoslynSymbolsToCompletionData(ArrayList result, IEnumerable<ISymbol> symbols,
