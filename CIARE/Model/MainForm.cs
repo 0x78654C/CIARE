@@ -6355,7 +6355,10 @@ namespace CIARE
                     return result;
 
                 AddRoslynSymbolsToCompletionData(result,
-                    GetRoslynTypeMembers(typeSymbol, staticOnly),
+                    context.SemanticModel.LookupSymbols(
+                        position,
+                        typeSymbol,
+                        includeReducedExtensionMethods: !staticOnly),
                     string.Empty,
                     staticOnly,
                     instanceOnly: !staticOnly);
@@ -6977,27 +6980,6 @@ namespace CIARE
                                          normalizedExpression, StringComparison.Ordinal))
                 .OrderByDescending(expression => expression.Span.End)
                 .FirstOrDefault();
-        }
-
-        private static IEnumerable<ISymbol> GetRoslynTypeMembers(ITypeSymbol typeSymbol, bool staticOnly)
-        {
-            if (typeSymbol == null)
-                yield break;
-
-            if (staticOnly)
-            {
-                foreach (var member in typeSymbol.GetMembers())
-                    yield return member;
-                yield break;
-            }
-
-            for (INamedTypeSymbol current = typeSymbol as INamedTypeSymbol;
-                current != null;
-                current = current.BaseType)
-            {
-                foreach (var member in current.GetMembers())
-                    yield return member;
-            }
         }
 
         private static void AddRoslynSymbolsToCompletionData(ArrayList result, IEnumerable<ISymbol> symbols,
@@ -8445,20 +8427,12 @@ namespace CIARE
                 // Capture all UI-thread state before going async.
                 string activeFilePath = GetActiveEditorFilePath();
                 var projectPaths = GetFileExplorerUsageProjectPaths();
-                if (projectPaths.Count == 0)
-                {
-                    ShowFindUsagesMessage("Open a C# project in File Explorer before finding usages.");
-                    return;
-                }
-
-                if (!projectPaths.Any(projectPath => ProjectContainsSourceFile(projectPath, activeFilePath)))
-                {
-                    ShowFindUsagesMessage("The active C# file is not part of a project opened in File Explorer.");
-                    return;
-                }
-
                 var activeTab = CollectActiveUsageTabInfo();
-                var projectFolders = GetCompletionSourceFolders(projectPaths);
+                bool activeFileIsInProject = projectPaths.Any(
+                    projectPath => ProjectContainsSourceFile(projectPath, activeFilePath));
+                var projectFolders = activeFileIsInProject
+                    ? GetCompletionSourceFolders(projectPaths)
+                    : new List<string>();
 
                 List<UsageLocation> usages = await Task.Run(() =>
                 {

@@ -116,7 +116,10 @@ namespace CIARE.Roslyn
                     ms.Close();
                 }
                 MethodInfo myMethod = assembly.EntryPoint;
-                myMethod.Invoke(null, new object[] { s_commandLineArguments });
+                object[] entryPointArguments = myMethod.GetParameters().Length == 0
+                    ? Array.Empty<object>()
+                    : new object[] { s_commandLineArguments };
+                myMethod.Invoke(null, entryPointArguments);
                 s_stopWatch.Stop();
                 s_timeSpan = s_stopWatch.Elapsed;
                 if (richTextBox.Text.EndsWith("\n"))
