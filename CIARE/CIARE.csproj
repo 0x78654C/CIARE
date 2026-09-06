@@ -23,6 +23,8 @@
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Compilation uses Roslyn directly; system.codedom breaks configuration loading on .NET 10. -->
+    <RoslynRegisterInConfig>false</RoslynRegisterInConfig>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>

@@ -830,6 +830,7 @@ namespace CIARE
             progressBar.Size = new System.Drawing.Size(265, 10);
             progressBar.Style = ProgressBarStyle.Marquee;
             progressBar.TabIndex = 1;
+            progressBar.Visible = false;
             // 
             // MainForm
             // 

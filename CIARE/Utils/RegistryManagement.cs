@@ -38,7 +38,7 @@ namespace CIARE.Utils
         /// <param name="keyValue"></param>
         public static void RegKey_WriteSubkey(string keyName, string subKeyName, string subKeyValue)
         {
-            RegistryKey rk = Registry.CurrentUser.OpenSubKey
+            using RegistryKey rk = Registry.CurrentUser.OpenSubKey
             (keyName, true);
             rk.SetValue(subKeyName, subKeyValue);
         }
@@ -70,11 +70,10 @@ namespace CIARE.Utils
 
         public static void RegKey_CreateKey(string keyName, string subKeyName, string subKeyValue)
         {
-            RegistryKey key = Registry.CurrentUser.CreateSubKey
+            using RegistryKey key = Registry.CurrentUser.CreateSubKey
             (keyName);
 
             key.SetValue(subKeyName, subKeyValue);
-            key.Close();
         }
 
         /// <summary>

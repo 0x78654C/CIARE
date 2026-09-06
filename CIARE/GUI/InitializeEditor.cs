@@ -75,26 +75,24 @@ namespace CIARE.GUI
             string regWindowSize = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _windowSize);
             string regWindowSizemax = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _windowSizeMax);
             if (regWindowSizemax.Length == 0)
-                RegistryManagement.RegKey_CreateKey(regKeyName, _windowSize, "False");
-            if (regWindowSize.Length > 0)
+                RegistryManagement.RegKey_CreateKey(regKeyName, _windowSizeMax, "False");
+
+            string[] splitValue = regWindowSize.Split('|');
+            if (splitValue.Length != 2 ||
+                !int.TryParse(splitValue[0], out int regWidth) || regWidth <= 0 ||
+                !int.TryParse(splitValue[1], out int regHeight) || regHeight <= 0)
             {
-                string[] splitValue = regWindowSize.Split('|');
-                int regWidth = Int32.Parse(splitValue[0]);
-                int regHeight = Int32.Parse(splitValue[1]);
-                if (regWindowSizemax == "True")
-                {
-                    form.WindowState = FormWindowState.Maximized;
-                }
-                else
-                {
-                    form.Width = regWidth;
-                    form.Height = regHeight;
-                }
-                return;
+                regWidth = 1225;
+                regHeight = 786;
+                RegistryManagement.RegKey_CreateKey(regKeyName, _windowSize, "1225|786");
             }
 
-            //Predefined value on first run.
-            RegistryManagement.RegKey_CreateKey(regKeyName, _windowSize, "1225|786");
+            // Set both dimensions together, including the restore size of a maximized window.
+            Size workingSize = Screen.FromControl(form).WorkingArea.Size;
+            form.Size = new Size(Math.Max(form.MinimumSize.Width, Math.Min(regWidth, workingSize.Width)),
+                Math.Max(form.MinimumSize.Height, Math.Min(regHeight, workingSize.Height)));
+            if (regWindowSizemax == "True")
+                form.WindowState = FormWindowState.Maximized;
         }
 
         /// <summary>
@@ -128,17 +126,11 @@ namespace CIARE.GUI
             string regHighlight = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", _regName);
             if (regHighlight.Length > 0)
             {
-                if (IsDarkTheme(regHighlight))
-                {
-                    GlobalVariables.darkColor = true;
-                    MainForm.Instance.SetHighLighter(SelectedEditor.GetSelectedEditor(), regHighlight);
-                }
-                textEditor.SetHighlighting(regHighlight);
+                MainForm.Instance.SetHighLighter(textEditor, regHighlight, persistSetting: false);
                 return;
             }
             RegistryManagement.RegKey_CreateKey(regKeyName, _regName, _defaultHighLight);
-            GlobalVariables.darkColor = true;
-            MainForm.Instance.SetHighLighter(SelectedEditor.GetSelectedEditor(), _defaultHighLight);
+            MainForm.Instance.SetHighLighter(textEditor, _defaultHighLight, persistSetting: false);
         }
 
 

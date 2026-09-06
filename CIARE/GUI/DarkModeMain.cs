@@ -57,6 +57,8 @@ namespace CIARE.GUI
             }
             foreach (var toolStripSeparator in toolStripSeparatorList)
             {
+                toolStripSeparator.Paint -= RenderToolStripSeparator.RenderToolStripSeparator_PaintLight;
+                toolStripSeparator.Paint -= RenderToolStripSeparator.RenderToolStripSeparator_PaintDark;
                 toolStripSeparator.Paint += RenderToolStripSeparator.RenderToolStripSeparator_PaintDark;
             }
         }
