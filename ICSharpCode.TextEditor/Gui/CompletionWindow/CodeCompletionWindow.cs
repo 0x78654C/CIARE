@@ -108,10 +108,9 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 			SetLocation();
 			
 			if (declarationViewWindow == null) {
-				declarationViewWindow = new DeclarationViewWindow(parentForm);
+				declarationViewWindow = new DeclarationViewWindow(this);
 			}
 			SetDeclarationViewLocation();
-			declarationViewWindow.ShowDeclarationViewWindow();
 			declarationViewWindow.MouseMove += ControlMouseMove;
 			control.Focus();
 			CodeCompletionListViewSelectedItemChanged(this, EventArgs.Empty);

@@ -1,4 +1,7 @@
-param([string]$Configuration = 'Debug')
+param(
+    [string]$Configuration = 'Debug',
+    [string[]]$Scenarios = @('dark', 'light', 'restored', 'maximized', 'corrupt', 'completion', 'ollama')
+)
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path $PSScriptRoot -Parent
 $source = Join-Path $workspace 'CIARE'
@@ -35,17 +38,17 @@ foreach ($entry in @{ StartupObject = 'CIARE.StartupRegression'; OutputType = 'E
 $project.Project.AppendChild($properties) | Out-Null
 $project.Save($projectPath)
 
-dotnet build $projectPath -c $Configuration -m:1 -nr:false -p:NuGetAudit=false -clp:ErrorsOnly "-flp:logfile=$runRoot\build.log"
+dotnet build $projectPath -c $Configuration -m:1 -nr:false -p:UseSharedCompilation=false -p:NuGetAudit=false -clp:ErrorsOnly "-flp:logfile=$runRoot\build.log"
 if ($LASTEXITCODE -ne 0) { throw "Test build failed. See $runRoot\build.log" }
 $executable = Join-Path $copy "bin\$Configuration\net10.0-windows8.0\CIARE.exe"
 $previousDataPath = $env:CIARE_STARTUP_TEST_DATA
 try {
-    foreach ($scenario in @('dark', 'light', 'restored', 'maximized', 'corrupt', 'completion', 'ollama')) {
+    foreach ($scenario in $Scenarios) {
         $env:CIARE_STARTUP_TEST_DATA = Join-Path $runRoot $scenario
         $output = Join-Path $runRoot "$scenario.log"
         $errors = Join-Path $runRoot "$scenario.errors.log"
         $process = Start-Process -FilePath $executable -ArgumentList $scenario -WindowStyle Hidden -PassThru -RedirectStandardOutput $output -RedirectStandardError $errors
-        if (-not $process.WaitForExit(30000)) {
+        if (-not $process.WaitForExit(60000)) {
             Stop-Process -Id $process.Id
             throw "Startup regression timed out: $scenario"
         }

@@ -23,6 +23,9 @@ namespace CIARE.GUI
 		CodeCompletionWindow codeCompletionWindow;
 		System.Windows.Forms.Timer automaticCompletionTimer;
 		CancellationTokenSource completionRequestCancellation;
+		CodeCompletionProvider.CompletionRequest pendingCompletionRequest;
+		int pendingCompletionEndOffset;
+		bool pendingCompletionDot;
 		int completionRequestVersion;
 		char pendingAutomaticCompletionKey;
 		string pendingDefinitionWord;
@@ -60,6 +63,9 @@ namespace CIARE.GUI
 			CodeCompletionKeyHandler h = new CodeCompletionKeyHandler(mainForm, editor);
 
 			editor.ActiveTextAreaControl.TextArea.KeyEventHandler += h.TextAreaKeyEventHandler;
+			editor.Document.DocumentAboutToBeChanged += h.CompletionDocumentAboutToBeChanged;
+			editor.ActiveTextAreaControl.TextArea.LostFocus += h.CompletionEditorLostFocus;
+			editor.ActiveTextAreaControl.TextArea.DoProcessDialogKey += h.CompletionDialogKey;
 				editor.ActiveTextAreaControl.TextArea.MouseDown += h.TextAreaMouseDown;
 				editor.ActiveTextAreaControl.TextArea.MouseUp += h.TextAreaMouseUp;
 
@@ -87,6 +93,8 @@ namespace CIARE.GUI
 				// handle it
 				if (codeCompletionWindow.ProcessKeyEvent(key))
 					return true;
+				if (codeCompletionWindow != null)
+					return false;
 			}
 			if (key == '.')
 			{
@@ -111,6 +119,13 @@ namespace CIARE.GUI
 
 		void ScheduleAutomaticCompletionWindow(char key)
 		{
+			// Results for the existing prefix also cover an appended identifier.
+			// Restarting here starves the popup while the user keeps typing.
+			if (pendingCompletionRequest != null &&
+				editor.ActiveTextAreaControl.Caret.Offset == pendingCompletionEndOffset &&
+				!editor.ActiveTextAreaControl.TextArea.SelectionManager.HasSomethingSelected)
+				return;
+
 			pendingAutomaticCompletionKey = key;
 			CancelCompletionWorker();
 			if (automaticCompletionTimer == null)
@@ -176,6 +191,9 @@ namespace CIARE.GUI
 			var cancellation = new CancellationTokenSource();
 			CancellationToken cancellationToken = cancellation.Token;
 			completionRequestCancellation = cancellation;
+			pendingCompletionRequest = request;
+			pendingCompletionEndOffset = request.CaretOffset;
+			pendingCompletionDot = dotTypedAfterRequest;
 			int requestVersion = ++completionRequestVersion;
 
 			Task.Run(() =>
@@ -199,7 +217,10 @@ namespace CIARE.GUI
 				}, cancellationToken)
 				.ContinueWith(task =>
 				{
-					if (task.IsCanceled || task.IsFaulted || cancellationToken.IsCancellationRequested ||
+					// Observe failures and marshal cleanup as well as successful results.
+					if (task.IsFaulted)
+						System.Diagnostics.Debug.WriteLine(task.Exception);
+					if (cancellationToken.IsCancellationRequested ||
 						editor.IsDisposed || !editor.IsHandleCreated)
 					{
 						return;
@@ -209,7 +230,8 @@ namespace CIARE.GUI
 					{
 						editor.BeginInvoke(new MethodInvoker(delegate
 						{
-							CompleteCompletionRequest(completionDataProvider, request, task.Result,
+							CompleteCompletionRequest(completionDataProvider, request,
+								task.Status == TaskStatus.RanToCompletion ? task.Result : null,
 								closeWhenCaretAtBeginning, dotTypedAfterRequest, cancellation,
 								cancellationToken, requestVersion);
 						}));
@@ -240,29 +262,39 @@ namespace CIARE.GUI
 					return;
 
 				int caretOffset = textArea.Caret.Offset;
+				if (caretOffset != pendingCompletionEndOffset ||
+					textArea.Document.TextLength != request.RawCode.Length + caretOffset - request.CaretOffset ||
+					!string.Equals(request.CurrentFilePath, mainForm.GetActiveEditorFilePathForCompletion(),
+						StringComparison.OrdinalIgnoreCase))
+					return;
+
 				int startOffset;
 				if (dotTypedAfterRequest)
 				{
-					if (caretOffset != request.CaretOffset + 1 ||
+					if (caretOffset < request.CaretOffset + 1 ||
 						request.CaretOffset >= textArea.Document.TextLength ||
 						textArea.Document.GetCharAt(request.CaretOffset) != '.')
 					{
 						return;
 					}
 
-					startOffset = caretOffset;
+					startOffset = request.CaretOffset + 1;
 				}
 				else
 				{
 					string currentWord = GetCurrentWord(textArea);
-					if (caretOffset != request.CaretOffset ||
-						!string.Equals(currentWord, completionDataProvider.PreSelection, StringComparison.Ordinal))
+					if (caretOffset < request.CaretOffset ||
+						!currentWord.StartsWith(completionDataProvider.PreSelection, StringComparison.Ordinal) ||
+						caretOffset - currentWord.Length != request.CaretOffset - completionDataProvider.PreSelection.Length)
 					{
 						return;
 					}
 
 					startOffset = Math.Max(0, caretOffset - currentWord.Length);
 				}
+				if (caretOffset > startOffset)
+					completionDataProvider = new CodeCompletionProvider(mainForm,
+						textArea.Document.GetText(startOffset, caretOffset - startOffset));
 
 				codeCompletionWindow = CodeCompletionWindow.ShowCompletionWindow(
 					mainForm, editor, completionDataProvider, completionData, startOffset, caretOffset,
@@ -278,6 +310,7 @@ namespace CIARE.GUI
 				if (completionRequestCancellation == cancellation)
 				{
 					completionRequestCancellation = null;
+					pendingCompletionRequest = null;
 					cancellation.Dispose();
 				}
 			}
@@ -293,12 +326,46 @@ namespace CIARE.GUI
 		{
 			var cancellation = completionRequestCancellation;
 			completionRequestCancellation = null;
+			pendingCompletionRequest = null;
 			if (cancellation != null)
 			{
 				cancellation.Cancel();
 				cancellation.Dispose();
 			}
 			completionRequestVersion++;
+		}
+
+		void CompletionDocumentAboutToBeChanged(object sender, ICSharpCode.TextEditor.Document.DocumentEventArgs e)
+		{
+			if (pendingCompletionRequest == null)
+				return;
+
+			if (e.Offset == pendingCompletionEndOffset && e.Length <= 0 && !string.IsNullOrEmpty(e.Text))
+			{
+				bool initialDot = pendingCompletionDot &&
+					pendingCompletionEndOffset == pendingCompletionRequest.CaretOffset && e.Text == ".";
+				if (initialDot || e.Text.All(IsAutomaticCompletionTrigger))
+				{
+					pendingCompletionEndOffset += e.Text.Length;
+					return;
+				}
+			}
+			// Changes to the receiver, surrounding code, or an existing prefix make
+			// the captured semantic context stale.
+			CancelPendingCompletionRequest();
+		}
+
+		void CompletionEditorLostFocus(object sender, EventArgs e)
+		{
+			CancelPendingCompletionRequest();
+		}
+
+		bool CompletionDialogKey(Keys keyData)
+		{
+			if (keyData == Keys.Escape || keyData == Keys.Left || keyData == Keys.Right ||
+				keyData == Keys.Up || keyData == Keys.Down || keyData == Keys.Home || keyData == Keys.End)
+				CancelPendingCompletionRequest();
+			return false;
 		}
 
 		static bool IsAutomaticCompletionTrigger(char key)
@@ -873,6 +940,7 @@ namespace CIARE.GUI
 		void EditorDisposed(object sender, EventArgs e)
 		{
 			CancelPendingCompletionRequest();
+			editor.Document.DocumentAboutToBeChanged -= CompletionDocumentAboutToBeChanged;
 			if (automaticCompletionTimer != null)
 			{
 				automaticCompletionTimer.Tick -= AutomaticCompletionTimerTick;

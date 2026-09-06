@@ -62,15 +62,6 @@ namespace CIARE
     public partial class MainForm : Form
     {
 
-        protected override CreateParams CreateParams
-        {
-            get
-            {
-                CreateParams cp = base.CreateParams;
-                cp.ExStyle |= 0x02000000; // WS_EX_COMPOSITED reduces flicker on resize and redraws.
-                return cp;
-            }
-        }
         public HubConnection hubConnection;
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
@@ -233,6 +224,8 @@ namespace CIARE
             autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
             ConfigureErrorsListView();
+            // Buffer individual surfaces. Compositing the entire HWND tree delays
+            // editor paints while child controls hold a graphics context.
             DoubleBuffered = true;
             SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             UpdateStyles();
@@ -1387,11 +1380,6 @@ namespace CIARE
                 textAreaControl.VScrollBar.Visible = true;
             if (!textAreaControl.HScrollBar.Visible)
                 textAreaControl.HScrollBar.Visible = true;
-            if (editor.Visible && textAreaControl.Width > 0 && textAreaControl.Height > 0)
-            {
-                textAreaControl.ResizeTextArea();
-                textAreaControl.AdjustScrollBars();
-            }
         }
 
         private void QueueEditorLayoutRefresh()
@@ -1403,8 +1391,10 @@ namespace CIARE
             if (!isLoaded || _refreshingEditorLayoutBounds)
                 return;
             EnsureEditorLayoutRefreshTimer();
-            _editorLayoutRefreshTimer.Stop();
-            _editorLayoutRefreshTimer.Start();
+            // Keep servicing layout during a continuous resize instead of waiting
+            // for a pause in size events. Docking already updates the child bounds.
+            if (!_editorLayoutRefreshTimer.Enabled)
+                _editorLayoutRefreshTimer.Start();
         }
 
         private void EnsureEditorLayoutRefreshTimer()
@@ -1414,7 +1404,7 @@ namespace CIARE
 
             _editorLayoutRefreshTimer = new System.Windows.Forms.Timer(components)
             {
-                Interval = 50
+                Interval = 16
             };
             _editorLayoutRefreshTimer.Tick += OnEditorLayoutRefreshTimer;
         }
@@ -6518,20 +6508,8 @@ namespace CIARE
                 path: activePath, cancellationToken: cancellationToken);
             RoslynCompletionProjectSnapshot projectSnapshot = GetRoslynCompletionProjectSnapshot(
                 currentFilePath, projectPath, parseOptions, cancellationToken);
-            var syntaxTrees = new List<SyntaxTree>(projectSnapshot.SyntaxTrees.Count + 1)
-            {
-                activeTree
-            };
-            syntaxTrees.AddRange(projectSnapshot.SyntaxTrees);
-
             cancellationToken.ThrowIfCancellationRequested();
-            var compilation = CSharpCompilation.Create(
-                "__CiareCompletion",
-                syntaxTrees,
-                projectSnapshot.References,
-                new CSharpCompilationOptions(
-                    OutputKind.DynamicallyLinkedLibrary,
-                    allowUnsafe: GlobalVariables.OUnsafeCode));
+            var compilation = projectSnapshot.WithActiveTree(activeTree);
 
             var root = activeTree.GetCompilationUnitRoot();
             return new RoslynCompletionContext(
@@ -6587,6 +6565,7 @@ namespace CIARE
                 NormalizeCompletionPath(projectPath),
                 projectWriteTicks.ToString(),
                 parseOptions.LanguageVersion.ToString(),
+                GlobalVariables.OUnsafeCode.ToString(),
                 GlobalVariables.Framework ?? string.Empty);
         }
 
@@ -7012,6 +6991,17 @@ namespace CIARE
 
             int lookupPosition = Math.Max(0, Math.Min(caretOffset - 1, root.FullSpan.End));
             SyntaxToken token = root.FindToken(lookupPosition);
+            string normalizedExpression = NormalizeCompletionExpression(expressionText);
+            // Requests capture the receiver before the new dot is inserted. In
+            // "System.Console" the existing member access is the receiver itself,
+            // so returning its left side would suggest members of System.
+            var receiver = token.Parent?.AncestorsAndSelf().OfType<ExpressionSyntax>()
+                .FirstOrDefault(expression => expression.Span.End <= caretOffset &&
+                    string.Equals(NormalizeCompletionExpression(expression.ToString()),
+                        normalizedExpression, StringComparison.Ordinal));
+            if (receiver != null)
+                return receiver;
+
             var memberAccess = token.Parent?.AncestorsAndSelf()
                 .OfType<MemberAccessExpressionSyntax>()
                 .Where(access => access.OperatorToken.SpanStart <= lookupPosition &&
@@ -7021,7 +7011,6 @@ namespace CIARE
             if (memberAccess != null)
                 return memberAccess.Expression;
 
-            string normalizedExpression = NormalizeCompletionExpression(expressionText);
             if (string.IsNullOrEmpty(normalizedExpression))
                 return null;
 
@@ -8328,19 +8317,36 @@ namespace CIARE
 
         private sealed class RoslynCompletionProjectSnapshot
         {
+            private readonly object compilationLock = new object();
+            private CSharpCompilation compilation;
+            private SyntaxTree activeTree;
+
             public RoslynCompletionProjectSnapshot(string cacheKey, DateTime createdUtc,
                 List<SyntaxTree> syntaxTrees, List<MetadataReference> references)
             {
                 CacheKey = cacheKey;
                 CreatedUtc = createdUtc;
-                SyntaxTrees = syntaxTrees;
-                References = references;
+                compilation = CSharpCompilation.Create("__CiareCompletion", syntaxTrees, references,
+                    new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                        allowUnsafe: GlobalVariables.OUnsafeCode));
+            }
+
+            public CSharpCompilation WithActiveTree(SyntaxTree tree)
+            {
+                lock (compilationLock)
+                {
+                    // Preserve metadata bindings and unchanged project syntax trees
+                    // across keystrokes; Roslyn compilations are immutable snapshots.
+                    compilation = activeTree == null
+                        ? compilation.AddSyntaxTrees(tree)
+                        : compilation.ReplaceSyntaxTree(activeTree, tree);
+                    activeTree = tree;
+                    return compilation;
+                }
             }
 
             public string CacheKey { get; }
             public DateTime CreatedUtc { get; }
-            public List<SyntaxTree> SyntaxTrees { get; }
-            public List<MetadataReference> References { get; }
         }
 
         private sealed class WorkspaceCompletionItem
@@ -9705,7 +9711,6 @@ namespace CIARE
         {
             if (sender is TextEditorControl editor)
             {
-                ConfigureEditorScrollBars(editor);
                 if (editor.secondaryTextArea != null)
                     SplitEditorWindow.SetSplitWindowSize(editor, GlobalVariables.splitWindowPosition);
             }

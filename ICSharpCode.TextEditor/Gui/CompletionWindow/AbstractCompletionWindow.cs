@@ -20,6 +20,7 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 		protected Size              drawingSize;
 		Rectangle workingScreen;
 		Form parentForm;
+		TextAreaControl subscribedTextAreaControl;
 		
 		protected AbstractCompletionWindow(Form parentForm, TextEditorControl control)
 		{
@@ -120,11 +121,12 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 				parentForm.LocationChanged += new EventHandler(this.ParentFormLocationChanged);
 			}
 			
-			control.ActiveTextAreaControl.VScrollBar.ValueChanged     += new EventHandler(ParentFormLocationChanged);
-			control.ActiveTextAreaControl.HScrollBar.ValueChanged     += new EventHandler(ParentFormLocationChanged);
-			control.ActiveTextAreaControl.TextArea.DoProcessDialogKey += new DialogKeyProcessor(ProcessTextAreaKey);
-			control.ActiveTextAreaControl.Caret.PositionChanged       += new EventHandler(CaretOffsetChanged);
-			control.ActiveTextAreaControl.TextArea.LostFocus          += new EventHandler(this.TextEditorLostFocus);
+			subscribedTextAreaControl = control.ActiveTextAreaControl;
+			subscribedTextAreaControl.VScrollBar.ValueChanged     += new EventHandler(ParentFormLocationChanged);
+			subscribedTextAreaControl.HScrollBar.ValueChanged     += new EventHandler(ParentFormLocationChanged);
+			subscribedTextAreaControl.TextArea.DoProcessDialogKey += new DialogKeyProcessor(ProcessTextAreaKey);
+			subscribedTextAreaControl.Caret.PositionChanged       += new EventHandler(CaretOffsetChanged);
+			subscribedTextAreaControl.TextArea.LostFocus          += new EventHandler(this.TextEditorLostFocus);
 			control.Resize += new EventHandler(ParentFormLocationChanged);
 			
 			foreach (Control c in Controls) {
@@ -166,29 +168,29 @@ namespace ICSharpCode.TextEditor.Gui.CompletionWindow
 			}
 		}
 		
-		protected override void OnClosed(EventArgs e)
+		protected override void Dispose(bool disposing)
 		{
-			base.OnClosed(e);
-			
-			// take out the inserted methods
-			parentForm.LocationChanged -= new EventHandler(ParentFormLocationChanged);
-			
-			foreach (Control c in Controls) {
-				c.MouseMove -= ControlMouseMove;
+			if (disposing) {
+				// Editors can dispose the popup directly. Closed is not raised on that
+				// path, so release subscriptions here, including for split editors.
+				if (parentForm != null)
+					parentForm.LocationChanged -= ParentFormLocationChanged;
+				control.Resize -= ParentFormLocationChanged;
+				if (subscribedTextAreaControl != null) {
+					if (subscribedTextAreaControl.VScrollBar != null)
+						subscribedTextAreaControl.VScrollBar.ValueChanged -= ParentFormLocationChanged;
+					if (subscribedTextAreaControl.HScrollBar != null)
+						subscribedTextAreaControl.HScrollBar.ValueChanged -= ParentFormLocationChanged;
+					TextArea textArea = subscribedTextAreaControl.TextArea;
+					if (textArea != null) {
+						textArea.LostFocus -= TextEditorLostFocus;
+						textArea.Caret.PositionChanged -= CaretOffsetChanged;
+						textArea.DoProcessDialogKey -= ProcessTextAreaKey;
+					}
+					subscribedTextAreaControl = null;
+				}
 			}
-			
-			if (control.ActiveTextAreaControl.VScrollBar != null) {
-				control.ActiveTextAreaControl.VScrollBar.ValueChanged -= new EventHandler(ParentFormLocationChanged);
-			}
-			if (control.ActiveTextAreaControl.HScrollBar != null) {
-				control.ActiveTextAreaControl.HScrollBar.ValueChanged -= new EventHandler(ParentFormLocationChanged);
-			}
-			
-			control.ActiveTextAreaControl.TextArea.LostFocus          -= new EventHandler(this.TextEditorLostFocus);
-			control.ActiveTextAreaControl.Caret.PositionChanged       -= new EventHandler(CaretOffsetChanged);
-			control.ActiveTextAreaControl.TextArea.DoProcessDialogKey -= new DialogKeyProcessor(ProcessTextAreaKey);
-			control.Resize -= new EventHandler(ParentFormLocationChanged);
-			Dispose();
+			base.Dispose(disposing);
 		}
 		
 		protected override void OnMouseMove(MouseEventArgs e)

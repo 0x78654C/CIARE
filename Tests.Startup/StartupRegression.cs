@@ -1,6 +1,8 @@
 using CIARE.GUI;
 using CIARE.Utils;
 using ICSharpCode.TextEditor;
+using ICSharpCode.TextEditor.Document;
+using ICSharpCode.TextEditor.Gui.CompletionWindow;
 using Microsoft.VisualBasic.ApplicationServices;
 using Microsoft.Win32;
 using System;
@@ -11,6 +13,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Windows.Forms;
@@ -182,7 +185,13 @@ internal static class StartupRegression
 
         string savedBeforeResize = (string)settings.GetValue("windowSize");
         for (int width = 951; width <= 970; width++)
+        {
             form.Width = width;
+            Assert(firstEditor.Bounds == firstPage.DisplayRectangle, "Editor fills tab during continuous resize");
+            var areaControl = firstEditor.ActiveTextAreaControl;
+            Assert(areaControl.TextArea.Right == areaControl.ClientSize.Width - areaControl.VScrollBar.Width,
+                "Text surface and scrollbar stay aligned during resize");
+        }
         Assert((string)settings.GetValue("windowSize") == savedBeforeResize, "Resize persistence is deferred");
         Pump(450);
         Assert((string)settings.GetValue("windowSize") == "970|650", "Final resize persisted");
@@ -211,6 +220,11 @@ internal static class StartupRegression
         Program.NewInstanceHandler(null, new StartupNextInstanceEventArgs(Array.AsReadOnly(new[] { "CIARE.exe" }), true));
         Assert(form.EditorTabControl.SelectedTab == firstPage, "Second launch without a file preserves active tab");
 
+        if (scenario == "dark")
+            CheckEditorScrolling(firstEditor);
+        if (scenario == "completion")
+            CheckCompletionWhileTyping(form, firstEditor);
+
         // Dispose without invoking file-saving prompts; only test fixture files have been opened.
         form.Dispose();
         Invoke(form, "ParseStep");
@@ -221,6 +235,146 @@ internal static class StartupRegression
 
     private static T GetField<T>(MainForm form, string name) =>
         (T)typeof(MainForm).GetField(name, PrivateInstance).GetValue(form);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetGuiResources(IntPtr process, uint flags);
+
+    private static void CheckEditorScrolling(TextEditorControl editor)
+    {
+        editor.Text = string.Join(Environment.NewLine,
+            Enumerable.Range(0, 1000).Select(index => $"\tConsole.WriteLine(\"Line {index}\");"));
+        var area = editor.ActiveTextAreaControl;
+        area.Caret.Position = new TextLocation(10, 0);
+        area.TextArea.Refresh();
+        var view = area.TextArea.TextView;
+        int expectedX = view.GetDrawingXPos(0, 10);
+        using var process = Process.GetCurrentProcess();
+        uint resourcesBefore = GetGuiResources(process.Handle, 0);
+        var elapsed = Stopwatch.StartNew();
+        for (int index = 0; index < 1000; index++)
+            Assert(view.GetDrawingXPos(0, 10) == expectedX, "Repeated position measurement stays stable");
+        uint resourcesAfter = GetGuiResources(process.Handle, 0);
+        Assert(resourcesAfter <= resourcesBefore + 8, "Position measurement releases GDI resources immediately");
+        for (int index = 1; index <= 100; index++)
+        {
+            area.VScrollBar.Value = index * view.FontHeight;
+            area.TextArea.Update();
+            Assert(view.FirstVisibleLine == index, "Scroll viewport follows the scrollbar");
+        }
+        area.HScrollBar.Value = 3;
+        Assert(view.GetDrawingXPos(0, 10) == expectedX - 3 * view.WideSpaceWidth,
+            "Horizontal scrolling keeps text coordinates aligned");
+        editor.EnableFolding = true;
+        editor.Document.FoldingManager.UpdateFoldings(new List<FoldMarker>
+        {
+            new FoldMarker(editor.Document, 10, 0, 20, 0, FoldType.Unspecified, "...", true)
+        });
+        area.VScrollBar.Value = 11 * view.FontHeight + 2;
+        area.TextArea.Refresh();
+        Assert(view.FirstVisibleLine == 21 && view.VisibleLineDrawingRemainder == 2,
+            "Scrolling past a collapsed block preserves logical lines and pixel offset");
+        Console.Error.WriteLine($"Scroll/measurement regression: {elapsed.ElapsedMilliseconds} ms; GDI {resourcesBefore} -> {resourcesAfter}");
+    }
+
+    private static void CheckCompletionWhileTyping(MainForm form, TextEditorControl editor)
+    {
+        var gate = (SemaphoreSlim)typeof(CodeCompletionKeyHandler)
+            .GetField("CompletionGenerationLock", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+        var area = editor.ActiveTextAreaControl.TextArea;
+
+        void Prepare(string code)
+        {
+            foreach (var popup in form.OwnedForms.OfType<CodeCompletionWindow>().ToArray())
+                popup.Close();
+            editor.Text = code;
+            area.Caret.Position = editor.Document.OffsetToPosition(editor.Document.TextLength);
+            form.Activate();
+            area.Focus();
+            Assert(area.Focused, "Completion editor has focus");
+        }
+
+        void CheckPopup(string expected, string expectedCode)
+        {
+            var elapsed = Stopwatch.StartNew();
+            CodeCompletionWindow popup;
+            while ((popup = form.OwnedForms.OfType<CodeCompletionWindow>().FirstOrDefault()) == null &&
+                elapsed.ElapsedMilliseconds < 15000)
+                Pump(10);
+            Assert(popup != null, "Suggestions appear while the prefix continues to grow");
+            var list = popup.Controls.OfType<CodeCompletionListView>().Single();
+            if (list.SelectedCompletionData?.Text != expected)
+            {
+                var items = (ICompletionData[])typeof(CodeCompletionListView).GetField("completionData", PrivateInstance).GetValue(list);
+                Console.Error.WriteLine("Completion items: " + string.Join(", ", items.Take(40).Select(item => item.Text)));
+            }
+            Assert(list.SelectedCompletionData?.Text == expected,
+                $"Suggestions select the latest typed prefix: expected {expected}, got {list.SelectedCompletionData?.Text ?? "<none>"}; code={editor.Text}; caret={area.Caret.Offset}");
+            popup.ProcessKeyEvent('\t');
+            Assert(editor.Text == expectedCode, "Completion replaces the entire current prefix once");
+            Console.Error.WriteLine($"Completion {expected}: {elapsed.ElapsedMilliseconds} ms after releasing worker");
+        }
+
+        Prepare("System.Console");
+        Assert(gate.Wait(1000), "Completion worker can be delayed for member typing test");
+        try
+        {
+            area.SimulateKeyPress('.');
+            foreach (char ch in "WriteL") area.SimulateKeyPress(ch);
+            Pump(30);
+        }
+        finally { gate.Release(); }
+        CheckPopup("WriteLine", "System.Console.WriteLine");
+
+        Prepare("using System;\n\n");
+        Assert(gate.Wait(1000), "Completion worker can be delayed for automatic typing test");
+        try
+        {
+            area.SimulateKeyPress('C');
+            Pump(30);
+            foreach (char ch in "onso") area.SimulateKeyPress(ch);
+            Pump(30);
+        }
+        finally { gate.Release(); }
+        CheckPopup("Console", "using System;\n\nConsole");
+
+        Prepare("System.Console");
+        Assert(gate.Wait(1000), "Completion worker can be delayed for cancellation test");
+        try
+        {
+            area.SimulateKeyPress('.');
+            editor.Document.Insert(0, "// changed context ");
+            Pump(30);
+        }
+        finally { gate.Release(); }
+        Pump(200);
+        Assert(!form.OwnedForms.OfType<CodeCompletionWindow>().Any(), "Stale suggestions are discarded after surrounding edits");
+
+        Prepare("System.Console");
+        Assert(gate.Wait(1000), "Completion worker can be delayed for Escape test");
+        try
+        {
+            area.SimulateKeyPress('.');
+            area.ExecuteDialogKey(Keys.Escape);
+        }
+        finally { gate.Release(); }
+        Pump(200);
+        Assert(!form.OwnedForms.OfType<CodeCompletionWindow>().Any(), "Escape dismisses pending suggestions");
+
+        Prepare("System.Console.");
+        var disposablePopup = CodeCompletionWindow.ShowCompletionWindow(form, editor,
+            new CodeCompletionProvider(form),
+            new ICompletionData[] { new DefaultCompletionData("WriteLine", "Writes a line.", 1) },
+            area.Caret.Offset, area.Caret.Offset, true, true);
+        disposablePopup.Dispose();
+        area.Caret.Column--;
+        editor.Width++;
+        Assert(!form.OwnedForms.OfType<CodeCompletionWindow>().Any(), "Disposed popup detaches from caret and resize events");
+
+        // Leave a popup and its declaration visible for the owner's disposal test.
+        CodeCompletionWindow.ShowCompletionWindow(form, editor, new CodeCompletionProvider(form),
+            new ICompletionData[] { new DefaultCompletionData("WriteLine", "Writes a line.", 1) },
+            area.Caret.Offset, area.Caret.Offset, true, true);
+    }
 
     private static void Invoke(MainForm form, string name) =>
         typeof(MainForm).GetMethod(name, PrivateInstance).Invoke(form, null);
