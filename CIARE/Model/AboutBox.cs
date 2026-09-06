@@ -56,7 +56,7 @@ namespace CIARE
                 return version;
 
             return parsedVersion.Build >= 0
-                ? string.Format("{0}.{1}.{2}", parsedVersion.Major, parsedVersion.Minor, parsedVersion.Build)
+                ? string.Format("{0}.{1}.{2}.{3}", parsedVersion.Major, parsedVersion.Minor, parsedVersion.Build,parsedVersion.Revision)
                 : string.Format("{0}.{1}", parsedVersion.Major, parsedVersion.Minor);
         }
 
