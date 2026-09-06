@@ -94,10 +94,9 @@ namespace CIARE.GUI
         {
             var tabCount = tabControl.TabCount;
             var lastIndex = tabControl.SelectedIndex;
-            if (lastIndex == 0)
+            if (lastIndex == 0 || (tabCount > 0 && tabControl.GetTabRect(0).Contains(e.Location)))
             {
-                tabControl.TabPages.Insert(tabCount, $"New Page               ");
-                tabControl.SelectedIndex = lastIndex + tabCount;
+                AddNewTab(tabControl);
             }
             else
                 CloseTabEvent(tabControl, SelectedEditor.GetSelectedEditor(), e);
@@ -290,11 +289,16 @@ namespace CIARE.GUI
                 {
                     if (!isNotNew)
                     {
-                        tabControl.SelectedIndex = index;
-                        var tabCount = tabControl.TabCount;
-                        var lastIndex = tabControl.SelectedIndex;
-                        tabControl.TabPages.Insert(tabCount, $"New Page              ");
-                        tabControl.SelectedIndex = lastIndex + tabCount;
+                        var page = new TabPage("New Page              ")
+                        {
+                            BackColor = GlobalVariables.darkColor ? GlobalVariables.controlBgColor : SystemColors.Window,
+                            UseVisualStyleBackColor = false,
+                            Padding = Padding.Empty,
+                            Margin = Padding.Empty
+                        };
+                        tabControl.TabPages.Add(page);
+                        // Keep the existing document visible until the new page is ready.
+                        tabControl.SelectedTab = page;
                     }
                 });
             }

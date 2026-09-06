@@ -205,6 +205,9 @@ namespace CIARE
         private const long UsageFastReadMaxFileBytes = 256L * 1024L;
         private const long UsageDocumentCacheMaxFileBytes = 1024L * 1024L;
         private bool _completionRegistryInitialized;
+        private int _completionTextVersion;
+        private int _lastParsedTextVersion = -1;
+        private int _lastParsedScopeVersion = -1;
         private static readonly PropertyInfo DoubleBufferedProperty =
             typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -5211,7 +5214,11 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void textEditorControl1_TextChanged(object sender, EventArgs e)  => TextDataChangedAction();
+        private void textEditorControl1_TextChanged(object sender, EventArgs e)
+        {
+            Interlocked.Increment(ref _completionTextVersion);
+            TextDataChangedAction();
+        }
 
         /// <summary>
         /// Function for check if text is changed in editor.
@@ -6048,6 +6055,7 @@ namespace CIARE
 
             string code = null;
             CompletionScopeSnapshot completionScope = default;
+            int textVersion = 0;
             try
             {
                 Invoke(new System.Windows.Forms.MethodInvoker(delegate
@@ -6055,8 +6063,14 @@ namespace CIARE
                     if (IsDisposed || Disposing || EditorTabControl.SelectedIndex <= 0)
                         return;
 
-                    code = SelectedEditor.GetSelectedEditor()?.Text;
                     completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
+                    textVersion = Volatile.Read(ref _completionTextVersion);
+                    // Standalone buffers cannot change outside this editor. Avoid
+                    // copying and reparsing their text every two seconds while idle.
+                    if (string.IsNullOrEmpty(completionScope.WorkspaceFolder) &&
+                        textVersion == _lastParsedTextVersion && completionScope.Version == _lastParsedScopeVersion)
+                        return;
+                    code = SelectedEditor.GetSelectedEditor()?.Text;
                 }));
             }
             catch (InvalidOperationException) when (IsDisposed || Disposing || !IsHandleCreated)
@@ -6090,6 +6104,8 @@ namespace CIARE
                 _workspaceCompletionClasses.AddRange(workspaceCompletionClasses);
                 _topLevelLocalFunctions.Clear();
                 _topLevelLocalFunctions.AddRange(topLevelFunctions);
+                _lastParsedTextVersion = textVersion;
+                _lastParsedScopeVersion = completionScope.Version;
             }
         }
 
@@ -9788,6 +9804,13 @@ namespace CIARE
         /// <param name="e"></param>
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
+            if (isLoaded && e.TabPageIndex == 0 && EditorTabControl.TabCount > 1)
+            {
+                // The plus header is an action, never an empty document page.
+                // Its mouse handler creates and selects the actual editor tab.
+                e.Cancel = true;
+                return;
+            }
             if (Instance == null || e.TabPage == null || e.TabPageIndex <= 0)
                 return;
 
@@ -9795,24 +9818,33 @@ namespace CIARE
             selectedEditor = e.TabPage.Controls.OfType<TextEditorControl>().FirstOrDefault();
             if (selectedEditor == null)
             {
-                selectedEditor = new TextEditorControl();
-                ConfigureEditorTabPageLayout(e.TabPage);
-                SetDesignEditor(ref selectedEditor);
-                e.TabPage.Controls.Add(selectedEditor);
-                InitializeEditorSettings(selectedEditor, e.TabPageIndex);
+                e.TabPage.SuspendLayout();
+                try
+                {
+                    selectedEditor = new TextEditorControl { Visible = false };
+                    ConfigureEditorTabPageLayout(e.TabPage);
+                    SetDesignEditor(ref selectedEditor);
+                    e.TabPage.Controls.Add(selectedEditor);
+                    InitializeEditorSettings(selectedEditor, e.TabPageIndex);
+                }
+                finally
+                {
+                    e.TabPage.ResumeLayout(true);
+                }
+                selectedEditor.Visible = true;
             }
             QueueEditorLayoutRefresh();
 
-            string titleTab = EditorTabControl.SelectedTab.Text.Trim();
-            string filePath = EditorTabControl.SelectedTab.ToolTipText.Trim();
+            string titleTab = e.TabPage.Text.Trim();
+            string filePath = e.TabPage.ToolTipText.Trim();
 
             if (isLoaded)
             {
                 try
                 {
-                    GlobalVariables.textAreaFirst = SelectedEditor.GetSelectedEditor().primaryTextArea;
-                    GlobalVariables.textAreaSecond = SelectedEditor.GetSelectedEditor().secondaryTextArea;
-                    InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, SelectedEditor.GetSelectedEditor());
+                    GlobalVariables.textAreaFirst = selectedEditor.primaryTextArea;
+                    GlobalVariables.textAreaSecond = selectedEditor.secondaryTextArea;
+                    InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, selectedEditor);
                 }
                 catch
                 {
@@ -9858,6 +9890,7 @@ namespace CIARE
         private void EditorTabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (!isLoaded) return;
+            Interlocked.Increment(ref _completionTextVersion);
             try
             {
                 var editor = SelectedEditor.GetSelectedEditor();
@@ -9886,7 +9919,7 @@ namespace CIARE
             dynamicTextEdtior.Name = $"textEditorControl{tabCount}";
             dynamicTextEdtior.Anchor = AnchorStyles.None;
             dynamicTextEdtior.Dock = DockStyle.Fill;
-            dynamicTextEdtior.BackColor = SystemColors.Window;
+            dynamicTextEdtior.BackColor = GetEditorSurfaceBackColor();
             dynamicTextEdtior.BorderStyle = BorderStyle.FixedSingle;
             dynamicTextEdtior.Font = new Font("Consolas", 10F);
             dynamicTextEdtior.Highlighting = null;

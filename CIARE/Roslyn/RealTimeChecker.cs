@@ -31,6 +31,7 @@ namespace CIARE.Roslyn
         private static readonly object _lock = new object();
         private static CheckRequest _pendingCheck;
         private static int _requestVersion;
+        private static long _checkDueTime;
         private static readonly SemaphoreSlim CheckGate = new(1, 1);
 
         private sealed record CheckRequest(string Code, TextEditorControl Editor, Label StatusLabel,
@@ -116,6 +117,7 @@ namespace CIARE.Roslyn
                 _requestVersion++;
                 _pendingCheck = new CheckRequest(code, editor, statusLabel, errorsLV, errorsTabPage,
                     warningsLabel, workspaceFolder, currentFilePath, useProjectReferences);
+                _checkDueTime = Environment.TickCount64 + DebounceMs;
                 _debounceTimer ??= new System.Threading.Timer(_ => RunPendingCheck(),
                     null, Timeout.Infinite, Timeout.Infinite);
                 _debounceTimer.Change(DebounceMs, Timeout.Infinite);
@@ -175,6 +177,12 @@ namespace CIARE.Roslyn
             int version;
             lock (_lock)
             {
+                long remaining = _checkDueTime - Environment.TickCount64;
+                if (_pendingCheck != null && remaining > 0)
+                {
+                    _debounceTimer?.Change((int)remaining, Timeout.Infinite);
+                    return;
+                }
                 request = _pendingCheck;
                 _pendingCheck = null;
                 if (request == null) return;
@@ -1113,7 +1121,8 @@ namespace CIARE.Roslyn
             foreach (var assemblyPath in assemblyPaths
                 .Where(r => !string.IsNullOrEmpty(r)
                          && !string.Equals(r, entryLocation, StringComparison.OrdinalIgnoreCase)
-                         && File.Exists(r)))
+                         && File.Exists(r))
+                .Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 if (TryCreateMetadataReference(assemblyPath, out var reference))
                     references.Add(reference);

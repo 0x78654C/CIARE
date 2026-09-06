@@ -65,13 +65,22 @@ namespace ICSharpCode.SharpDevelop.Dom
 
         public IProjectContent load(Assembly assembly)
         {
-            try
+            if (assembly == null) return null;
+            lock (contents)
             {
-                return new ReflectionProjectContent(assembly, this);
-            }
-            catch
-            {
-                return null;
+                if (contents.TryGetValue(assembly.FullName, out var existing))
+                    return existing;
+                try
+                {
+                    var content = new ReflectionProjectContent(assembly, this);
+                    contents[assembly.FullName] = content;
+                    contents[assembly.Location] = content;
+                    return content;
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
@@ -83,8 +92,9 @@ namespace ICSharpCode.SharpDevelop.Dom
             List<IProjectContent> list;
             lock (contents)
             {
-                list = new List<IProjectContent>(contents.Values);
+                list = contents.Values.Distinct().ToList();
                 contents.Clear();
+                mscorlibContent = null;
             }
             // dispose outside the lock
             foreach (IProjectContent pc in list)

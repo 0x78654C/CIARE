@@ -159,6 +159,29 @@ internal static class StartupRegression
 
         var firstPage = form.EditorTabControl.SelectedTab;
         var firstEditor = SelectedEditor.GetSelectedEditor();
+        bool exposedAddPage = false;
+        form.EditorTabControl.SelectedIndexChanged += (_, _) =>
+            exposedAddPage |= form.EditorTabControl.SelectedIndex == 0;
+        bool sawReadyEditor = false;
+        form.EditorTabControl.ControlAdded += (_, args) =>
+        {
+            if (args.Control is not TabPage page) return;
+            page.ControlAdded += (_, childArgs) =>
+            {
+                if (childArgs.Control is not TextEditorControl child) return;
+                child.VisibleChanged += (_, _) =>
+                {
+                    if (!child.Visible) return;
+                    Assert(child.BackColor == (GlobalVariables.darkColor ? GlobalVariables.controlBgColor : SystemColors.Window),
+                        "A new editor has its final background before first visibility");
+                    Assert(!page.UseVisualStyleBackColor && page.BackColor == child.BackColor,
+                        "New page and editor backgrounds match before first visibility");
+                    Assert(child.Font.Name == "Consolas" && child.Dock == DockStyle.Fill,
+                        "A new editor has its font and layout before first visibility");
+                    sawReadyEditor = true;
+                };
+            };
+        };
         form.Size = new Size(950, 650);
         int paletteChanges = 0;
         form.outputRBT.BackColorChanged += (_, _) => paletteChanges++;
@@ -167,6 +190,8 @@ internal static class StartupRegression
         Assert(form.Size == new Size(950, 650), "Adding a tab preserves current size");
         Assert(!GetField<SplitContainer>(form, "splitContainer1").Panel2Collapsed, "Adding a tab preserves output visibility");
         Assert(paletteChanges == 0, "Adding a tab does not repaint form palette");
+        Assert(!exposedAddPage, "Opening a tab never displays the empty plus page");
+        Assert(sawReadyEditor, "Observed the prepared editor on first display");
         form.EditorTabControl.SelectedTab = firstPage;
         form.EditorTabControl.TabPages.Remove(addedPage);
         addedPage.Dispose();
@@ -174,6 +199,32 @@ internal static class StartupRegression
         form.EditorTabControl.SelectedTab = firstPage;
         Assert(ReferenceEquals(SelectedEditor.GetSelectedEditor(), firstEditor), "Existing editor survives tab removal and insertion");
         Assert(ReferenceEquals(form.selectedEditor, firstEditor), "Save target follows active editor");
+        Font originalFont = firstEditor.Font;
+        var otherPage = form.EditorTabControl.TabPages.Cast<TabPage>().Last();
+        var switching = Stopwatch.StartNew();
+        for (int index = 0; index < 20; index++)
+        {
+            form.EditorTabControl.SelectedTab = otherPage;
+            form.EditorTabControl.SelectedTab = firstPage;
+        }
+        Assert(ReferenceEquals(originalFont, firstEditor.Font), "Switching tabs preserves the existing font and render metrics");
+        Assert(!exposedAddPage, "Switching tabs never selects an empty page");
+        Console.Error.WriteLine($"Forty tab switches: {switching.ElapsedMilliseconds} ms");
+        if (scenario == "dark")
+        {
+            int beforeAdd = form.EditorTabControl.TabCount;
+            form.EditorTabControl.SelectedIndex = 0;
+            Assert(form.EditorTabControl.SelectedTab == firstPage, "The plus header keeps the document visible");
+            Rectangle plusBounds = form.EditorTabControl.GetTabRect(0);
+            TabControllerManage.CloseTab(form.EditorTabControl, new MouseEventArgs(MouseButtons.Left, 1,
+                plusBounds.Left + plusBounds.Width / 2, plusBounds.Top + plusBounds.Height / 2, 0));
+            Assert(form.EditorTabControl.TabCount == beforeAdd + 1 && !exposedAddPage,
+                "Clicking plus opens exactly one prepared editor without a blank page");
+            var plusPage = form.EditorTabControl.SelectedTab;
+            form.EditorTabControl.SelectedTab = firstPage;
+            form.EditorTabControl.TabPages.Remove(plusPage);
+            plusPage.Dispose();
+        }
         foreach (TabPage page in form.EditorTabControl.TabPages)
         {
             if (form.EditorTabControl.TabPages.IndexOf(page) == 0) continue;
@@ -277,8 +328,44 @@ internal static class StartupRegression
                 Console.Error.WriteLine($"Diagnostics run {iteration}: {elapsed.ElapsedMilliseconds} ms; rows={rows.Items.Count}");
             }
             Report("diagnostics");
+            Assert(rows.Items.Cast<ListViewItem>().All(item => item.Tag is not Microsoft.CodeAnalysis.Diagnostic),
+                "Diagnostic rows do not retain compiler objects");
+            Assert(typeof(RealTimeChecker).GetField("_pendingCheck", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null) == null,
+                "Completed diagnostics release the queued source snapshot");
+            Assert(typeof(RealTimeChecker).GetField("_cts", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null) == null,
+                "Completed diagnostics release the cancellation source");
+            var snapshot = GetField<object>(form, "_roslynCompletionProjectSnapshot");
+            var compilation = (Microsoft.CodeAnalysis.CSharp.CSharpCompilation)snapshot.GetType()
+                .GetField("compilation", PrivateInstance).GetValue(snapshot);
+            var platformRefs = (IEnumerable<Microsoft.CodeAnalysis.MetadataReference>)typeof(RealTimeChecker)
+                .GetField("_platformRefs", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            var byPath = platformRefs.ToDictionary(reference => reference.Display, StringComparer.OrdinalIgnoreCase);
+            Assert(compilation.References.Where(reference => byPath.ContainsKey(reference.Display))
+                .All(reference => ReferenceEquals(reference, byPath[reference.Display])),
+                "Completion and diagnostics share the same metadata images");
+
+            var gate = (SemaphoreSlim)typeof(RealTimeChecker).GetField("CheckGate", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            Assert(gate.Wait(1000), "Diagnostics worker is idle after applying results");
+            try
+            {
+                RealTimeChecker.ScheduleCheck(code, editor, status, rows, null, warnings);
+                Pump(900);
+                status.Text = "pending";
+                RealTimeChecker.ScheduleCheck(string.Empty, editor, status, rows, null, warnings);
+                Pump(900);
+            }
+            finally { gate.Release(); }
+            var clearWait = Stopwatch.StartNew();
+            while (status.Text == "pending" && clearWait.ElapsedMilliseconds < 3000) Pump(10);
+            Assert(status.Text.Length == 0 && warnings.Text.Length == 0 && rows.Items.Count == 0,
+                "The latest empty document supersedes old diagnostics and clears their UI");
         }
         RealTimeChecker.Cancel();
+        Invoke(form, "ParseStep");
+        object parsedUnit = GetField<object>(form, "lastCompilationUnit");
+        Invoke(form, "ParseStep");
+        Assert(ReferenceEquals(parsedUnit, GetField<object>(form, "lastCompilationUnit")),
+            "Idle standalone editors reuse the previous completion parse");
         Report("released");
     }
 

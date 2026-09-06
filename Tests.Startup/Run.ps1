@@ -1,6 +1,6 @@
 param(
     [string]$Configuration = 'Debug',
-    [string[]]$Scenarios = @('dark', 'light', 'restored', 'maximized', 'corrupt', 'completion', 'ollama')
+    [string[]]$Scenarios = @('dark', 'light', 'restored', 'maximized', 'corrupt', 'completion', 'ollama', 'memory')
 )
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path $PSScriptRoot -Parent
