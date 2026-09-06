@@ -29,6 +29,13 @@ namespace CIARE.Roslyn
         private static System.Threading.Timer _debounceTimer;
         private static CancellationTokenSource _cts;
         private static readonly object _lock = new object();
+        private static CheckRequest _pendingCheck;
+        private static int _requestVersion;
+        private static readonly SemaphoreSlim CheckGate = new(1, 1);
+
+        private sealed record CheckRequest(string Code, TextEditorControl Editor, Label StatusLabel,
+            ListView ErrorsList, TabPage ErrorsTab, Label WarningsLabel,
+            string WorkspaceFolder, string FilePath, bool UseProjectReferences);
 
         private static readonly Color ErrorColor = Color.Red;
         private static readonly Color WarningColor = Color.Orange;
@@ -105,11 +112,13 @@ namespace CIARE.Roslyn
         {
             lock (_lock)
             {
-                _debounceTimer?.Dispose();
-                _debounceTimer = new System.Threading.Timer(
-                    _ => RunCheck(code, editor, statusLabel, errorsLV, errorsTabPage, warningsLabel,
-                        workspaceFolder, currentFilePath, useProjectReferences),
-                    null, DebounceMs, Timeout.Infinite);
+                _cts?.Cancel();
+                _requestVersion++;
+                _pendingCheck = new CheckRequest(code, editor, statusLabel, errorsLV, errorsTabPage,
+                    warningsLabel, workspaceFolder, currentFilePath, useProjectReferences);
+                _debounceTimer ??= new System.Threading.Timer(_ => RunPendingCheck(),
+                    null, Timeout.Infinite, Timeout.Infinite);
+                _debounceTimer.Change(DebounceMs, Timeout.Infinite);
             }
         }
 
@@ -123,8 +132,9 @@ namespace CIARE.Roslyn
             {
                 _debounceTimer?.Dispose();
                 _debounceTimer = null;
+                _pendingCheck = null;
+                _requestVersion++;
                 _cts?.Cancel();
-                _cts?.Dispose();
                 _cts = null;
             }
 
@@ -158,56 +168,94 @@ namespace CIARE.Roslyn
             }
         }
 
-        private static void RunCheck(string code, TextEditorControl editor, Label statusLabel,
-            ListView errorsLV, TabPage errorsTabPage, Label warningsLabel,
-            string workspaceFolder, string currentFilePath, bool useProjectReferences)
+        private static void RunPendingCheck()
         {
+            CheckRequest request;
             CancellationTokenSource cts;
+            int version;
             lock (_lock)
             {
-                var old = _cts;
-                old?.Cancel();
-                old?.Dispose();
+                request = _pendingCheck;
+                _pendingCheck = null;
+                if (request == null) return;
+                version = _requestVersion;
+                _cts?.Cancel();
                 cts = new CancellationTokenSource();
                 _cts = cts;
             }
 
-            Task.Run(() =>
+            CancellationToken token = cts.Token;
+            Task.Run(async () =>
             {
+                bool entered = false;
                 try
                 {
-                    if (cts.IsCancellationRequested) return;
+                    // Cancel superseded analysis immediately and avoid overlapping
+                    // compilations while Roslyn unwinds the cancelled request.
+                    await CheckGate.WaitAsync(token).ConfigureAwait(false);
+                    entered = true;
+                    token.ThrowIfCancellationRequested();
 
-                    if (string.IsNullOrWhiteSpace(code))
+                    if (string.IsNullOrWhiteSpace(request.Code))
                     {
-                        ClearMarkersAndStatus(editor, statusLabel, warningsLabel);
-                        ClearErrorsPanel(errorsLV, errorsTabPage);
+                        PostCheckResult(request.Editor, version, token, () =>
+                        {
+                            request.Editor.Document.MarkerStrategy.RemoveAll(_ => true);
+                            InvalidateEditorTextArea(request.Editor);
+                            UpdateErrorLabel(request.StatusLabel, 0);
+                            UpdateWarningLabel(request.WarningsLabel, 0);
+                            ClearErrorsPanel(request.ErrorsList, request.ErrorsTab);
+                        });
                         return;
                     }
 
-                    var diagnostics = GetDiagnostics(code, cts.Token, workspaceFolder, currentFilePath,
-                        useProjectReferences);
-                    if (cts.IsCancellationRequested) return;
+                    var diagnostics = GetDiagnostics(request.Code, token, request.WorkspaceFolder,
+                        request.FilePath, request.UseProjectReferences);
+                    token.ThrowIfCancellationRequested();
 
                     var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
                     var warnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToList();
 
-                    editor.BeginInvoke((Action)(() =>
+                    PostCheckResult(request.Editor, version, token, () =>
                     {
-                        if (cts.IsCancellationRequested) return;
-                        ApplyMarkers(editor, errors, warnings);
-                        UpdateErrorLabel(statusLabel, errors.Count);
-                        UpdateWarningLabel(warningsLabel, warnings.Count);
-                        UpdateErrorsPanel(errorsLV, errorsTabPage, errors, warnings);
-                    }));
+                        ApplyMarkers(request.Editor, errors, warnings);
+                        UpdateErrorLabel(request.StatusLabel, errors.Count);
+                        UpdateWarningLabel(request.WarningsLabel, warnings.Count);
+                        UpdateErrorsPanel(request.ErrorsList, request.ErrorsTab, errors, warnings);
+                    });
                 }
                 catch (OperationCanceledException) { }
                 catch (Exception ex)
                 {
-                    if (cts.IsCancellationRequested) return;
-                    ShowCheckerFailure(editor, statusLabel, warningsLabel, errorsLV, errorsTabPage, ex);
+                    if (token.IsCancellationRequested) return;
+                    ShowCheckerFailure(request.Editor, request.StatusLabel, request.WarningsLabel,
+                        request.ErrorsList, request.ErrorsTab, ex, version, token);
                 }
-            }, cts.Token);
+                finally
+                {
+                    if (entered) CheckGate.Release();
+                    lock (_lock)
+                    {
+                        if (ReferenceEquals(_cts, cts)) _cts = null;
+                        cts.Dispose();
+                    }
+                }
+            });
+        }
+
+        private static void PostCheckResult(TextEditorControl editor, int version,
+            CancellationToken token, Action apply)
+        {
+            if (editor.IsDisposed || !editor.IsHandleCreated || token.IsCancellationRequested) return;
+            try
+            {
+                editor.BeginInvoke((Action)(() =>
+                {
+                    if (!editor.IsDisposed && !token.IsCancellationRequested &&
+                        version == Volatile.Read(ref _requestVersion)) apply();
+                }));
+            }
+            catch (InvalidOperationException) { }
         }
 
         private static List<Diagnostic> GetDiagnostics(string code, CancellationToken ct,
@@ -1272,7 +1320,7 @@ namespace CIARE.Roslyn
 
             try
             {
-                reference = MetadataReference.CreateFromFile(filePath);
+                reference = SharedMetadataReferences.Get(filePath);
                 return true;
             }
             catch
@@ -2702,7 +2750,7 @@ namespace CIARE.Roslyn
         }
 
         private static void ShowCheckerFailure(TextEditorControl editor, Label statusLabel, Label warningsLabel,
-            ListView errorsLV, TabPage errorsTabPage, Exception exception)
+            ListView errorsLV, TabPage errorsTabPage, Exception exception, int version, CancellationToken token)
         {
             if (editor == null || editor.IsDisposed || !editor.IsHandleCreated)
                 return;
@@ -2710,7 +2758,7 @@ namespace CIARE.Roslyn
             try
             {
                 string message = exception.GetBaseException()?.Message ?? exception.Message;
-                editor.BeginInvoke((Action)(() =>
+                PostCheckResult(editor, version, token, () =>
                 {
                     editor.Document.MarkerStrategy.RemoveAll(_ => true);
                     InvalidateEditorTextArea(editor);
@@ -2739,7 +2787,7 @@ namespace CIARE.Roslyn
                     errorsLV.EndUpdate();
 
                     SetErrorsTabTitle(errorsTabPage, "Errors (1)");
-                }));
+                });
             }
             catch
             {
@@ -2765,7 +2813,8 @@ namespace CIARE.Roslyn
                 item.SubItems.Add(line > 0 ? line.ToString() : string.Empty);
                 item.SubItems.Add(d.Id);
                 item.SubItems.Add(d.GetMessage());
-                item.Tag = d;
+                // The visible strings and line number are sufficient for navigation.
+                // Retaining Diagnostic here also retains its syntax tree and symbols.
                 errorsLV.Items.Add(item);
             }
 

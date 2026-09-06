@@ -9,52 +9,57 @@ namespace CIARE.GUI
     [SupportedOSPlatform("windows")]
     public class DarkTabControl : TabControl
     {
-        private const int WM_PAINT = 0x000F;
-        private const int WM_ERASEBKGND = 0x0014;
-
         public DarkTabControl()
         {
-            SetStyle(ControlStyles.AllPaintingInWmPaint |
+            // TabControl's native WM_PAINT bypasses WinForms double buffering.
+            // Paint the complete strip (including its border) in one buffer.
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
                      ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.ResizeRedraw, true);
             DoubleBuffered = true;
+            DrawMode = TabDrawMode.OwnerDrawFixed;
             UpdateStyles();
         }
 
-        protected override void WndProc(ref Message m)
+        protected override void OnPaintBackground(PaintEventArgs e)
         {
-            if (m.Msg == WM_ERASEBKGND)
-            {
-                using (Graphics g = Graphics.FromHdc(m.WParam))
-                {
-                    Color background = GlobalVariables.darkColor ? GlobalVariables.formBgColor : BackColor;
-                    using (SolidBrush brush = new SolidBrush(background))
-                        g.FillRectangle(brush, ClientRectangle);
-                }
-                m.Result = (IntPtr)1;
-                return;
-            }
-
-            base.WndProc(ref m);
-
-            // After the system has drawn everything (including calling DrawItem),
-            // overdraw the OS-drawn light border around the page content area.
-            if (m.Msg == WM_PAINT && GlobalVariables.darkColor)
-                OverdrawPageBorder();
+            Color background = GlobalVariables.darkColor ? GlobalVariables.formBgColor : BackColor;
+            using var brush = new SolidBrush(background);
+            e.Graphics.FillRectangle(brush, e.ClipRectangle);
         }
 
-        private void OverdrawPageBorder()
+        protected override void OnPaint(PaintEventArgs e)
         {
-            if (TabCount == 0) return;
-            using (Graphics g = Graphics.FromHwnd(Handle))
+            for (int index = 0; index < TabCount; index++)
             {
-                int tabStripBottom = GetTabRect(0).Bottom;
-
-                // Cover the system-drawn border around the tab page content area.
-                Rectangle pageRect = new Rectangle(0, tabStripBottom, Width - 1, Height - tabStripBottom - 1);
-                using (Pen pen = new Pen(GlobalVariables.TabSelectedColor))
-                    g.DrawRectangle(pen, pageRect);
+                if (index != SelectedIndex) PaintTab(e, index);
             }
+            if (SelectedIndex >= 0) PaintTab(e, SelectedIndex);
+
+            if (TabCount > 0)
+            {
+                var border = DisplayRectangle;
+                border.Inflate(1, 1);
+                using var pen = new Pen(GlobalVariables.darkColor
+                    ? GlobalVariables.TabSelectedColor : SystemColors.ControlDark);
+                e.Graphics.DrawRectangle(pen, border);
+            }
+            base.OnPaint(e);
+        }
+
+        private void PaintTab(PaintEventArgs e, int index)
+        {
+            Rectangle bounds = GetTabRect(index);
+            if (!bounds.IntersectsWith(e.ClipRectangle)) return;
+            DrawItemState state = index == SelectedIndex ? DrawItemState.Selected : DrawItemState.None;
+            if (Focused && index == SelectedIndex) state |= DrawItemState.Focus;
+            OnDrawItem(new DrawItemEventArgs(e.Graphics, Font, bounds, index, state));
+        }
+
+        protected override void OnSelectedIndexChanged(EventArgs e)
+        {
+            base.OnSelectedIndexChanged(e);
+            Invalidate();
         }
     }
 }

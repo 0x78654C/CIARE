@@ -1,5 +1,6 @@
 using CIARE.GUI;
 using CIARE.Utils;
+using CIARE.Roslyn;
 using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Document;
 using ICSharpCode.TextEditor.Gui.CompletionWindow;
@@ -59,7 +60,7 @@ internal static class StartupRegression
     {
         using var settings = Registry.CurrentUser.CreateSubKey(GlobalVariables.registryPath);
         settings.SetValue("highlight", scenario == "light" ? "C#-Light" : "C#-Dark");
-        settings.SetValue("OCodeCompletion", (scenario == "completion").ToString());
+        settings.SetValue("OCodeCompletion", (scenario == "completion" || scenario == "memory").ToString());
         settings.SetValue("OStartUp", "False");
         settings.SetValue("windowSize", scenario == "corrupt" ? "broken|size|value" : "1000|700");
         if (scenario != "corrupt")
@@ -144,7 +145,7 @@ internal static class StartupRegression
         else
             Assert(form.Size == normalSize, "Saved size restored");
 
-        Assert(MainForm.pcRegistry != null == (scenario == "completion"), "Completion setting honored for first editor");
+        Assert(MainForm.pcRegistry != null == (scenario == "completion" || scenario == "memory"), "Completion setting honored for first editor");
         if (files.Count > 0)
         {
             Assert(form.EditorTabControl.TabCount == files.Count + 1, "All saved tabs restored");
@@ -224,6 +225,8 @@ internal static class StartupRegression
             CheckEditorScrolling(firstEditor);
         if (scenario == "completion")
             CheckCompletionWhileTyping(form, firstEditor);
+        if (scenario == "memory")
+            MeasureAnalysisMemory(form, firstEditor);
 
         // Dispose without invoking file-saving prompts; only test fixture files have been opened.
         form.Dispose();
@@ -235,6 +238,49 @@ internal static class StartupRegression
 
     private static T GetField<T>(MainForm form, string name) =>
         (T)typeof(MainForm).GetField(name, PrivateInstance).GetValue(form);
+
+    private static void MeasureAnalysisMemory(MainForm form, TextEditorControl editor)
+    {
+        // Full collections are confined to this measurement harness to distinguish
+        // retained analysis data from allocations waiting for a normal collection.
+        void Report(string phase)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            using var process = Process.GetCurrentProcess();
+            Console.Error.WriteLine($"MEMORY {phase}: managed={GC.GetTotalMemory(false) / 1048576d:F1} MiB; private={process.PrivateMemorySize64 / 1048576d:F1} MiB; assemblies={AppDomain.CurrentDomain.GetAssemblies().Length}");
+        }
+
+        Pump(4000);
+        Report("loaded");
+        CheckCompletionWhileTyping(form, editor);
+        foreach (var popup in form.OwnedForms.OfType<CodeCompletionWindow>().ToArray()) popup.Close();
+        Report("completion");
+
+        var rows = new ListView();
+        using var status = new Label();
+        using var warnings = new Label();
+        using (rows)
+        {
+            string code = "using System; class Example {\n" + string.Join("\n", Enumerable.Range(0, 600)
+                .Select(index => $"void M{index}() {{ int unused; Missing{index}(); }}")) + "\n}";
+            editor.Text = code;
+            Pump(250); // Let the form's text-change debounce run before scheduling our check.
+            for (int iteration = 0; iteration < 3; iteration++)
+            {
+                rows.Items.Clear();
+                var elapsed = Stopwatch.StartNew();
+                RealTimeChecker.ScheduleCheck(code, editor, status, rows, null, warnings);
+                while (rows.Items.Count == 0 && elapsed.ElapsedMilliseconds < 15000) Pump(10);
+                Assert(rows.Items.Count >= 600, $"Diagnostics complete for the memory workload: rows={rows.Items.Count}, status={status.Text}");
+                Console.Error.WriteLine($"Diagnostics run {iteration}: {elapsed.ElapsedMilliseconds} ms; rows={rows.Items.Count}");
+            }
+            Report("diagnostics");
+        }
+        RealTimeChecker.Cancel();
+        Report("released");
+    }
 
     [DllImport("user32.dll")]
     private static extern uint GetGuiResources(IntPtr process, uint flags);

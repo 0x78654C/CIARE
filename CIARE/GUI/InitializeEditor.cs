@@ -145,7 +145,9 @@ namespace CIARE.GUI
             string sizeFont = RegistryManagement.RegKey_Read($"HKEY_CURRENT_USER\\{regKeyName}", regSubKey);
             if (sizeFont.Length > 0)
             {
-                textEditor.Font = new Font("Consolas", float.Parse(sizeFont), FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)));
+                if (float.TryParse(sizeFont, out float size) && float.IsFinite(size) && size > 0 &&
+                    (textEditor.Font.Name != "Consolas" || Math.Abs(textEditor.Font.SizeInPoints - size) > 0.01f))
+                    textEditor.Font = new Font("Consolas", size, FontStyle.Regular, GraphicsUnit.Point, ((byte)(0)));
                 return;
             }
             RegistryManagement.RegKey_CreateKey(GlobalVariables.registryPath, regSubKey, "9.75");

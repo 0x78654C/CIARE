@@ -6927,7 +6927,7 @@ namespace CIARE
                     return;
                 }
 
-                references.Add(MetadataReference.CreateFromFile(referencePath));
+                references.Add(SharedMetadataReferences.Get(referencePath));
             }
             catch
             {
@@ -9226,7 +9226,7 @@ namespace CIARE
                         foreach (var referencePath in trusted.Split(Path.PathSeparator))
                         {
                             if (!string.IsNullOrEmpty(referencePath) && File.Exists(referencePath))
-                                _usagePlatformReferences.Add(MetadataReference.CreateFromFile(referencePath));
+                                _usagePlatformReferences.Add(SharedMetadataReferences.Get(referencePath));
                         }
                     }
                 }
@@ -9244,7 +9244,7 @@ namespace CIARE
                             var parts = customReference.Split('|');
                             string referencePath = parts.Length >= 2 ? parts[1] : customReference;
                             if (!string.IsNullOrEmpty(referencePath) && File.Exists(referencePath))
-                                _usageCustomReferences.Add(MetadataReference.CreateFromFile(referencePath));
+                                _usageCustomReferences.Add(SharedMetadataReferences.Get(referencePath));
                         }
                         catch { }
                     }
