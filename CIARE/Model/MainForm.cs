@@ -61,6 +61,16 @@ namespace CIARE
     [SupportedOSPlatform("windows")]
     public partial class MainForm : Form
     {
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                cp.ExStyle |= 0x02000000; // WS_EX_COMPOSITED reduces flicker on resize and redraws.
+                return cp;
+            }
+        }
         public HubConnection hubConnection;
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
