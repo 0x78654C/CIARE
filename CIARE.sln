@@ -28,6 +28,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CopilotInt", "CopilotInt\Co
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodexInt", "CodexInt\CodexInt.csproj", "{EF23D7A0-9BEE-4B00-B446-3A00387BE891}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoUpdater", "AutoUpdater\AutoUpdater.csproj", "{03D131F7-6E11-41C5-9187-B1DDA3544E37}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,6 +38,14 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{03D131F7-6E11-41C5-9187-B1DDA3544E37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03D131F7-6E11-41C5-9187-B1DDA3544E37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03D131F7-6E11-41C5-9187-B1DDA3544E37}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{03D131F7-6E11-41C5-9187-B1DDA3544E37}.Debug|x64.Build.0 = Debug|Any CPU
+		{03D131F7-6E11-41C5-9187-B1DDA3544E37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03D131F7-6E11-41C5-9187-B1DDA3544E37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03D131F7-6E11-41C5-9187-B1DDA3544E37}.Release|x64.ActiveCfg = Release|Any CPU
+		{03D131F7-6E11-41C5-9187-B1DDA3544E37}.Release|x64.Build.0 = Release|Any CPU
 		{97740883-D1DF-43E6-9BEA-F4639907687C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{97740883-D1DF-43E6-9BEA-F4639907687C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{97740883-D1DF-43E6-9BEA-F4639907687C}.Debug|x64.ActiveCfg = Debug|x64

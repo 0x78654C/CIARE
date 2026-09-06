@@ -18,6 +18,12 @@
 
 ## ✨ Features
 
+### Updates
+- Automatic GitHub release checks with an update prompt and matching x64/x86 package selection
+- **Help → Check for updates…** for manual checks
+- Built-in graphical installer with verified ZIP downloads, progress, file backup, rollback, and restart
+- [Build and publish application ZIPs](AutoUpdater/README.md)
+
 ### Editor
 - Open / Save files
 - Search and replace text

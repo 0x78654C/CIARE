@@ -76,6 +76,8 @@ internal static class StartupRegression
         }
         var elapsed = Stopwatch.StartNew();
         using var form = new MainForm { ShowInTaskbar = false, Opacity = 0 };
+        form.InitializeUpdateMenu();
+        var updateMenu = form.helpToolStripMenuItem.DropDownItems["checkForUpdatesToolStripMenuItem"];
         typeof(MainForm).GetField("s_args", PrivateInstance).SetValue(form, string.Empty);
 
         var files = new List<string>();
@@ -101,6 +103,8 @@ internal static class StartupRegression
             Assert(form.isLoaded, "Startup completed before first visibility");
             Assert(form.EditorTabControl.SelectedIndex > 0, "Editor selected before first visibility");
             Assert(GlobalVariables.darkColor == (scenario != "light"), "Theme ready before first visibility");
+            Assert(updateMenu.BackColor == form.aboutToolStripMenuItem.BackColor
+                && updateMenu.ForeColor == form.aboutToolStripMenuItem.ForeColor, "Update command matches Help colors before first visibility");
             Assert(!form.progressBar.Visible, "AI progress indicator is hidden at startup");
             Assert(GetField<TreeView>(form, "_fileExplorerTree").BackColor ==
                 (scenario == "light" ? SystemColors.Window : GlobalVariables.controlBgColor),
@@ -258,8 +262,12 @@ internal static class StartupRegression
         {
             form.SetHighLighter(firstEditor, "C#-Light");
             Assert(!GlobalVariables.darkColor && form.BackColor == SystemColors.Window, "Light theme applies");
+            Assert(updateMenu.BackColor == SystemColors.Window && updateMenu.ForeColor == Color.Black,
+                "Update command follows light theme changes");
             form.SetHighLighter(firstEditor, "C#-Dark");
             Assert(GlobalVariables.darkColor && form.BackColor == GlobalVariables.formBgColor, "Dark theme applies");
+            Assert(updateMenu.BackColor == form.aboutToolStripMenuItem.BackColor
+                && updateMenu.ForeColor == form.aboutToolStripMenuItem.ForeColor, "Update command follows dark theme changes");
         }
         object paintKey = typeof(ToolStripItem).GetFields(BindingFlags.Static | BindingFlags.NonPublic)
             .Single(field => field.Name.Contains("paint", StringComparison.OrdinalIgnoreCase)).GetValue(null);
@@ -278,6 +286,8 @@ internal static class StartupRegression
             CheckCompletionWhileTyping(form, firstEditor);
         if (scenario == "memory")
             MeasureAnalysisMemory(form, firstEditor);
+        if (scenario == "dark")
+            CheckCancelledUpdateClose(form);
 
         // Dispose without invoking file-saving prompts; only test fixture files have been opened.
         form.Dispose();
@@ -289,6 +299,62 @@ internal static class StartupRegression
 
     private static T GetField<T>(MainForm form, string name) =>
         (T)typeof(MainForm).GetField(name, PrivateInstance).GetValue(form);
+
+    private static void CheckCancelledUpdateClose(MainForm form)
+    {
+        var pages = form.EditorTabControl.TabPages.Cast<TabPage>().Skip(1).Take(2).ToArray();
+        Assert(pages.Length == 2, "Two documents available for update close test");
+        foreach (var page in pages)
+        {
+            page.Text = "*unsaved-update.cs";
+            page.Controls.OfType<TextEditorControl>().Single().Text = "// keep my changes";
+        }
+        int prompts = 0;
+        bool cancelSaveAs = false;
+        uint thread = GetCurrentThreadId();
+        using var answer = new System.Windows.Forms.Timer { Interval = 50 };
+        answer.Tick += (_, _) => EnumThreadWindows(thread, (handle, _) =>
+        {
+            var className = new System.Text.StringBuilder(128);
+            GetClassName(handle, className, className.Capacity);
+            if (className.ToString() == "#32770")
+            {
+                prompts++;
+                // Cancel the first document; a buggy loop would continue and discard the second.
+                int command = cancelSaveAs ? (prompts == 1 ? 6 : 2) : (prompts == 1 ? 2 : 7);
+                SendDialogCommand(handle, 0x0111, new IntPtr(command), IntPtr.Zero);
+            }
+            return true;
+        }, IntPtr.Zero);
+        answer.Start();
+        form.Close();
+        answer.Stop();
+        Assert(prompts == 1, "Cancel stops the close sequence before later unsaved documents");
+        Assert(!form.IsDisposed && form.Visible, "Cancelling an update close keeps CIARE open");
+        Assert(pages.All(page => page.Controls.OfType<TextEditorControl>().Single().Text == "// keep my changes"),
+            "Cancelling an update close preserves all unsaved text");
+        cancelSaveAs = true;
+        prompts = 0;
+        pages[0].Text = "New Page 99";
+        form.EditorTabControl.SelectedTab = pages[0];
+        GlobalVariables.openedFilePath = string.Empty;
+        GlobalVariables.savedFile = true; // A previous save must not make a cancelled save look successful.
+        answer.Start();
+        form.Close();
+        answer.Stop();
+        Assert(prompts == 2, "Save followed by Cancel in Save As stops the close sequence");
+        Assert(!form.IsDisposed && !GlobalVariables.savedFile, "A cancelled Save As keeps CIARE open");
+    }
+
+    private delegate bool ThreadWindowCallback(IntPtr handle, IntPtr parameter);
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll")]
+    private static extern bool EnumThreadWindows(uint thread, ThreadWindowCallback callback, IntPtr parameter);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetClassName(IntPtr handle, System.Text.StringBuilder name, int length);
+    [DllImport("user32.dll", EntryPoint = "SendMessageW")]
+    private static extern IntPtr SendDialogCommand(IntPtr handle, uint message, IntPtr wParam, IntPtr lParam);
 
     private static void MeasureAnalysisMemory(MainForm form, TextEditorControl editor)
     {

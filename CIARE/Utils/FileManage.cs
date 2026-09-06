@@ -113,6 +113,7 @@ MessageBoxIcon.Warning);
         /// <param name="data"></param>
         public static void SaveFile(string data)
         {
+            GlobalVariables.savedFile = false;
             s_saveFileDialog.Filter = "C# Files (*.cs)|*.cs|Text Files (*.txt)|*.txt|All Files (*.*)|*.*";
             s_saveFileDialog.Title = $"Save As... :";
             GlobalVariables.savedFileNoMD5Check = true;
@@ -285,6 +286,7 @@ MessageBoxIcon.Warning);
         /// <param name="checkAll"></param>
         public static void ManageUnsavedData(TextEditorControl textEditorControl, int selectedIndex = 0, bool checkAll = false)
         {
+            GlobalVariables.noClear = false;
             DialogResult dr = DialogResult.No;
             int countTabs = 0;
             foreach (TabPage tab in MainForm.Instance.EditorTabControl.TabPages)
@@ -304,6 +306,8 @@ MessageBoxIcon.Warning);
             MessageBoxIcon.Warning);
                         MainForm.Instance.EditorTabControl.SelectTab(tab);
                         DialogResultAction(dr, textEditorControl);
+                        if (GlobalVariables.noClear)
+                            return;
                     }
                 }
                 else
@@ -329,7 +333,13 @@ MessageBoxIcon.Warning);
         private static void DialogResultAction(DialogResult dialogResult, TextEditorControl textEditorControl)
         {
             if (dialogResult == DialogResult.Yes)
+            {
                 SaveToFileDialog();
+                // A cancelled Save As or a failed save must keep the document open.
+                string title = MainForm.Instance.EditorTabControl.SelectedTab.Text;
+                GlobalVariables.noClear = title.StartsWith("*") || title.Contains("New Page");
+                return;
+            }
             if (dialogResult == DialogResult.Cancel)
                 GlobalVariables.noClear = true;
             else

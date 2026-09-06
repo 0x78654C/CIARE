@@ -8,6 +8,8 @@ The runner builds an isolated copy under `.tmp`, substitutes dedicated test data
 
 Checks cover first visibility, pane sizes, dark/light themes, restored tabs, maximized and corrupt window settings, completion enabled/disabled, Ollama settings, tab creation/removal, caret subscriptions, resize persistence, fullscreen, repeated theme changes, second-launch arguments, and completion during disposal.
 
+The dark scenario also cancels the normal close sequence with two unsaved documents and verifies that CIARE stays open with both documents intact, including when Save As is cancelled after choosing to save. This covers the save prompt used when handing off to the updater. Isolated startup tests do not enable production GitHub checks.
+
 Editor regressions also check bounds during continuous resizing, scrolling and immediate GDI resource release, suggestions during continued typing (including after a dot), completion insertion, and cancellation after surrounding edits or Escape. Completion tests deliberately hold the worker until more characters have been typed so they do not depend on machine speed.
 
 First-open checks verify that a new page never exposes the empty plus page and that its editor has its final colors, font, and layout before becoming visible. Repeated tab switches must preserve the existing font instance.
