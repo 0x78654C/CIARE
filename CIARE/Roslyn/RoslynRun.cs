@@ -21,6 +21,7 @@ using CIARE.Utils.OpenAISettings;
 using CIARE.Utils.Options;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using System.Threading.Tasks;
 
 namespace CIARE.Roslyn
 {
@@ -514,6 +515,33 @@ namespace CIARE.Roslyn
             {
                 RichExtColor.ErrorDisplay(logOutput, $"ERROR: {e.Message}");
             }
+        }
+
+        internal static Task<ProcessRunResult> BuildSingleProjectAsync(string projectPath)
+        {
+            if (!File.Exists(projectPath) || !string.Equals(Path.GetExtension(projectPath), ".csproj", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("Select an existing C# project.", nameof(projectPath));
+
+            // Capture configuration/platform before moving the build off the UI thread.
+            ProjectBuildCommand command = CreateSingleProjectBuildCommand(projectPath,
+                BuildTargetPrefersFullFrameworkMsBuild(projectPath));
+            ProjectBuildCommand fallback = CreateSingleProjectBuildCommand(projectPath, true);
+            string workingDirectory = Path.GetDirectoryName(projectPath);
+            return Task.Run(() =>
+            {
+                ProcessRunResult result = RunBuildCommand(command, workingDirectory);
+                if (!command.UsesFullFrameworkMsBuild && RequiresFullFrameworkMsBuild(result.Output) &&
+                    fallback.UsesFullFrameworkMsBuild)
+                    result = RunBuildCommand(fallback, workingDirectory);
+                return result;
+            });
+        }
+
+        private static ProjectBuildCommand CreateSingleProjectBuildCommand(string projectPath, bool preferFullFrameworkMsBuild)
+        {
+            ProjectBuildCommand command = CreateBuildCommand(projectPath, false, preferFullFrameworkMsBuild, string.Empty);
+            return new ProjectBuildCommand(command.ProcessName,
+                command.Arguments + " /p:BuildProjectReferences=false", command.DisplayName, command.UsesFullFrameworkMsBuild);
         }
 
         private static void BuildExistingProject(string projectPath, RichTextBox logOutput, bool publish)

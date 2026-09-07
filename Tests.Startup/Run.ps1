@@ -15,6 +15,7 @@ Get-ChildItem -LiteralPath $source -Force |
     Copy-Item -Destination $copy -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'StartupRegression.cs') -Destination $copy
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ResourceRegression.cs') -Destination $copy
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ProjectBuildRegression.cs') -Destination $copy
 $globalsPath = Join-Path $copy 'Utils\GlobalVariables.cs'
 $globals = [IO.File]::ReadAllText($globalsPath)
 $globals = [regex]::Replace($globals, '(?m)^        public static readonly string userProfileDirectory = .*;\r?$',
@@ -22,6 +23,12 @@ $globals = [regex]::Replace($globals, '(?m)^        public static readonly strin
 $globals = $globals.Replace('"SOFTWARE\\CIARE"', '"SOFTWARE\\CIARE.StartupTests\\' + (Split-Path $runRoot -Leaf) + '"')
 $globals = $globals.Replace('@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run"', 'registryPath + "\\Run"')
 [IO.File]::WriteAllText($globalsPath, $globals)
+
+# Older baseline builds persist reflection metadata; keep that cache isolated too.
+$mainPath = Join-Path $copy 'Model\MainForm.cs'
+$mainText = [IO.File]::ReadAllText($mainPath).Replace('Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion")',
+    'Path.Combine(GlobalVariables.userProfileDirectory, "CompletionCache")')
+[IO.File]::WriteAllText($mainPath, $mainText)
 
 $projectPath = Join-Path $copy 'CIARE.csproj'
 [xml]$project = Get-Content -LiteralPath $projectPath -Raw

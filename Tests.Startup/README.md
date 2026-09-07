@@ -16,7 +16,7 @@ First-open checks verify that a new page never exposes the empty plus page and t
 
 File-opening checks also verify that command-line/file-association tabs have their file text, caption and editor bounds ready on first visibility, and release their temporary initial-text reference. Restored-session checks retain all documents and the saved active tab. Loading and completion timing are unchanged.
 
-The `memory` scenario exercises completion and 1,200 diagnostics, reports managed/private memory and elapsed times, verifies shared metadata and released request state, and checks that cancelled diagnostics cannot replace newer results. Full garbage collections run only inside this measurement harness; the app does not force collections or trim its working set.
+The `memory` scenario exercises completion and 1,200 diagnostics, reports managed/private memory and elapsed times, verifies shared metadata and released request state, and checks that cancelled diagnostics cannot replace newer results. The measurement harness uses full collections to distinguish retained objects; these memory changes add no forced collections or working-set trimming.
 
 Run the typing and idle resource comparison in Release:
 
@@ -25,3 +25,11 @@ Run the typing and idle resource comparison in Release:
 ```
 
 The `resources` scenario warms completion references, measures an idle project and edits, then types member and ordinary prefixes in small and 10,000-line documents. It verifies that unchanged completion units are reused, external source/global-using changes are detected, framework and Roslyn fallback suggestions remain available, and cancelled context scans stop. CPU and memory measurements are in `resources.errors.log`; timing includes the hidden UI message loop and background analysis. `resources-baseline` runs the same workload with assertions for the new reuse/cancellation behavior disabled. See [ResourceResults.md](ResourceResults.md) for the comparison and its limits.
+
+The `retention` scenario measures framework metadata and ordinary/member suggestions without requiring keyboard focus. It records managed, private and working-set memory before and after test-only GC, tests a 10,000-line document, and verifies immutable member tables, concurrent first access, correct return types and extension methods. `retention-baseline` skips assertions specific to the new metadata implementation. Numeric suffixes allow repeated fresh-process measurements in a single run. Older baselines' disk metadata caches are redirected into isolated test data.
+
+The `project-build` scenario invokes the explorer command with another project selected as startup and another file active. It verifies that modified project files are saved, unrelated edits stay unsaved, referenced projects are not built, configuration and output paths are respected, the UI responds during compilation, and failed builds restore the command.
+
+```powershell
+& .\Tests.Startup\Run.ps1 -Configuration Release -Scenarios @('retention', 'project-build')
+```

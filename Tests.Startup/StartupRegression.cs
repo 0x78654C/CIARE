@@ -60,7 +60,7 @@ internal static class StartupRegression
     {
         using var settings = Registry.CurrentUser.CreateSubKey(GlobalVariables.registryPath);
         settings.SetValue("highlight", scenario == "light" ? "C#-Light" : "C#-Dark");
-        settings.SetValue("OCodeCompletion", (scenario == "completion" || scenario == "memory" || scenario.StartsWith("resources")).ToString());
+        settings.SetValue("OCodeCompletion", (scenario == "completion" || scenario == "memory" || scenario.StartsWith("resources") || scenario.StartsWith("retention")).ToString());
         settings.SetValue("OStartUp", "False");
         settings.SetValue("windowSize", scenario == "corrupt" ? "broken|size|value" : "1000|700");
         if (scenario != "corrupt")
@@ -123,6 +123,16 @@ internal static class StartupRegression
         elapsed.Stop();
         Assert(visibleEvents == 1, "Main form shown once");
         Assert(form.isLoaded, "Main form loaded");
+        if (scenario == "project-build")
+        {
+            ProjectBuildRegression.Run(form, Assert);
+            return;
+        }
+        if (scenario.StartsWith("retention"))
+        {
+            ResourceRegression.RunRetention(form, Assert, !scenario.StartsWith("retention-baseline"));
+            return;
+        }
         if (scenario.StartsWith("resources"))
         {
             ResourceRegression.Run(form, Assert, validateReuse: scenario != "resources-baseline");

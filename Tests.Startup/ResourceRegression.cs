@@ -18,6 +18,80 @@ internal static class ResourceRegression
 {
     private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
 
+    public static void RunRetention(MainForm form, Action<bool, string> assert, bool validateChanges)
+    {
+        WaitUntil(() => ((HashSet<string>)typeof(MainForm).GetField("_alreadyLoaded", Private).GetValue(form)).Count > 0, 20000);
+        Pump(2200);
+        ReportMemory("references ready");
+        RunCompletionWorkload(form, assert);
+        Pump(1500);
+        ReportMemory("completion retained");
+        ReportCompletionMetadata();
+        if (validateChanges)
+        {
+            var content = new ICSharpCode.SharpDevelop.Dom.DefaultProjectContent();
+            var unit = new ICSharpCode.SharpDevelop.Dom.DefaultCompilationUnit(content);
+            var type = new ICSharpCode.SharpDevelop.Dom.ReflectionLayer.ReflectionClass(unit,
+                typeof(System.Text.StringBuilder), typeof(System.Text.StringBuilder).FullName, null);
+            type.Freeze();
+            var reads = Enumerable.Range(0, 8).Select(_ => System.Threading.Tasks.Task.Run(() => type.Methods)).ToArray();
+            System.Threading.Tasks.Task.WaitAll(reads);
+            assert(reads.All(task => ReferenceEquals(task.Result, reads[0].Result)), "Concurrent requests share one member table");
+            assert(type.Methods.IsReadOnly && type.Methods.All(method => method.IsFrozen), "Lazily created metadata remains immutable");
+            assert(type.Properties.Single(property => property.Name == "Length").ReturnType.FullyQualifiedName == "System.Int32",
+                "Reflection return types use type names instead of assembly names");
+            var extensionType = new ICSharpCode.SharpDevelop.Dom.ReflectionLayer.ReflectionClass(unit,
+                typeof(Enumerable), typeof(Enumerable).FullName, null);
+            extensionType.Freeze();
+            assert(extensionType.HasExtensionMethods && extensionType.Methods.Any(method => method.Name == "Select" && method.IsExtensionMethod),
+                "Extension methods remain discoverable before members are initialized");
+        }
+        RealTimeChecker.Cancel();
+    }
+
+    private static void RunCompletionWorkload(MainForm form, Action<bool, string> assert)
+    {
+        using var process = Process.GetCurrentProcess();
+        foreach (var (source, expected) in new[] {
+            ("using System; class C { void M() { Console", "WriteLine"),
+            ("using System.Text; class C { void M() { var s = new StringBuilder(); s", "Append"),
+            ("using System.Collections.Generic; class C { void M() { var l = new List<string>(); l", "Add"),
+            ("using System.Linq; class C { void M() { var l = new int[0]; l", "Select"),
+            ("class C { void M() { System.Windows.Forms.Form", "ActiveForm") })
+        {
+            for (int iteration = 0; iteration < 3; iteration++)
+            {
+                var request = new CodeCompletionProvider.CompletionRequest {
+                    RawCode = source, CurrentFilePath = string.Empty, CaretOffset = source.Length,
+                    CaretLine = 0, CaretColumn = source.Length, CharacterTyped = '.'
+                };
+                var cpu = process.TotalProcessorTime;
+                var elapsed = Stopwatch.StartNew();
+                var result = new CodeCompletionProvider(form).GenerateCompletionData(request, CancellationToken.None);
+                Console.Error.WriteLine($"RETENTION {expected} {iteration}: wall={elapsed.ElapsedMilliseconds} ms; CPU={(process.TotalProcessorTime - cpu).TotalMilliseconds:F0} ms");
+                assert(result.Any(item => item.Text == expected), "Completion still resolves " + expected);
+            }
+        }
+        string largePrefix = "using System; class Large {\n" + string.Join("\n", Enumerable.Range(0, 2500)
+            .Select(i => $"int M{i}()\n{{\nreturn {i};\n}}")) + "\nvoid Editing() { Conso";
+        foreach (string source in new[] { "using System; class C { void M() { Conso", largePrefix })
+        {
+            for (int iteration = 0; iteration < 3; iteration++)
+            {
+                int line = source.Count(ch => ch == '\n');
+                var request = new CodeCompletionProvider.CompletionRequest {
+                    RawCode = source, CurrentFilePath = string.Empty, CaretOffset = source.Length,
+                    CaretLine = line, CaretColumn = source.Length - source.LastIndexOf('\n') - 1, CharacterTyped = 'o'
+                };
+                var cpu = process.TotalProcessorTime;
+                var elapsed = Stopwatch.StartNew();
+                var result = new CodeCompletionProvider(form, "Conso").GenerateCompletionData(request, CancellationToken.None);
+                Console.Error.WriteLine($"RETENTION ordinary {line + 1} lines {iteration}: wall={elapsed.ElapsedMilliseconds} ms; CPU={(process.TotalProcessorTime - cpu).TotalMilliseconds:F0} ms");
+                assert(result.Any(item => item.Text == "Console"), "Ordinary suggestions remain available for " + (line + 1) + " lines");
+            }
+        }
+    }
+
     public static void Run(MainForm form, Action<bool, string> assert, bool validateReuse = true)
     {
         string folder = Path.Combine(GlobalVariables.userProfileDirectory, "ResourceProject");
@@ -120,9 +194,12 @@ internal static class ResourceRegression
     private static void ReportCompletionMetadata()
     {
         var classes = MainForm.myProjectContent.ReferencedContents.SelectMany(pc => pc.Classes).ToArray();
-        int methods = 0, parameters = 0, incorrectTypeNames = 0;
+        int methods = 0, parameters = 0, incorrectTypeNames = 0, initialized = 0;
         foreach (var type in classes)
         {
+            object lazy = type.GetType().GetField("members", Private)?.GetValue(type);
+            if (lazy != null && !(bool)lazy.GetType().GetProperty("IsValueCreated").GetValue(lazy)) continue;
+            initialized++;
             foreach (var method in type.Methods)
             {
                 methods++;
@@ -130,7 +207,7 @@ internal static class ResourceRegression
                 if (method.ReturnType?.FullyQualifiedName.Contains(", Version=") == true) incorrectTypeNames++;
             }
         }
-        Console.Error.WriteLine($"RESOURCE framework metadata: types={classes.Length}; methods={methods}; parameters={parameters}; incorrect return names={incorrectTypeNames}");
+        Console.Error.WriteLine($"RESOURCE framework metadata: types={classes.Length}; initialized={initialized}; methods={methods}; parameters={parameters}; incorrect return names={incorrectTypeNames}");
     }
 
     private static void MeasureSuggestions(MainForm form, string code, string label, Action<bool, string> assert)

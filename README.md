@@ -51,6 +51,7 @@
 - Build options: Debug / Release — AnyCPU / x64
 - Target desired framework (.NET 6, .NET 7, .NET 8, .NET 9, .NET 10)
 - Smart Build Target Detection — auto-detects the nearest `.sln` or `.csproj` relative to the active file; no manual project configuration needed
+- **Build Project** — right-click a `.csproj` or its project folder to build just that project with the selected configuration and platform. Changed files in that project are saved, and results appear in Output. Referenced projects are not rebuilt, so required reference outputs must already exist.
 - Set command line parameters
 - Show runtime (ms) for compile and execution
 - Enable / disable compiler warning messages

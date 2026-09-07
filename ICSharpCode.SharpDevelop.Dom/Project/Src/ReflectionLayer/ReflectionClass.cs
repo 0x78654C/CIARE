@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -20,7 +21,42 @@ namespace ICSharpCode.SharpDevelop.Dom.ReflectionLayer
 			BindingFlags.DeclaredOnly |
 			BindingFlags.Public;
 		
-		void InitMembers(Type type)
+		readonly Type reflectedType;
+		readonly Lazy<ReflectedMembers> members;
+		readonly Lazy<bool> hasExtensionMethods;
+
+		sealed class ReflectedMembers
+		{
+			public IList<IField> Fields;
+			public IList<IProperty> Properties;
+			public IList<IMethod> Methods;
+			public IList<IEvent> Events;
+		}
+
+		public override IList<IField> Fields => members.Value.Fields;
+		public override IList<IProperty> Properties => members.Value.Properties;
+		public override IList<IMethod> Methods => members.Value.Methods;
+		public override IList<IEvent> Events => members.Value.Events;
+		public override bool HasExtensionMethods => hasExtensionMethods.Value;
+
+		bool FindExtensionMethods()
+		{
+			if (members.IsValueCreated)
+				return members.Value.Methods.Any(method => method.IsExtensionMethod);
+			// Extension lookup must not create every member of every imported type.
+			foreach (MethodInfo method in reflectedType.GetMethods(flags & ~BindingFlags.Instance)) {
+				if (!method.IsStatic || method.IsSpecialName ||
+				    !(method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly)) continue;
+				foreach (CustomAttributeData attribute in method.CustomAttributes) {
+					string name = attribute.AttributeType.FullName;
+					if (name == "System.Runtime.CompilerServices.ExtensionAttribute" || name == "Boo.Lang.ExtensionAttribute")
+						return true;
+				}
+			}
+			return false;
+		}
+
+		void InitNestedTypes(Type type)
 		{
 			foreach (Type nestedType in type.GetNestedTypes(flags)) {
 				// We cannot use nestedType.IsVisible - that only checks for public types,
@@ -30,36 +66,48 @@ namespace ICSharpCode.SharpDevelop.Dom.ReflectionLayer
 					InnerClasses.Add(new ReflectionClass(CompilationUnit, nestedType, name, this));
 				}
 			}
-			
+		}
+
+		ReflectedMembers InitMembers()
+		{
+			Type type = reflectedType;
+			var fields = new List<IField>();
+			var properties = new List<IProperty>();
+			var methods = new List<IMethod>();
+			var events = new List<IEvent>();
 			foreach (FieldInfo field in type.GetFields(flags)) {
 				if (!field.IsPublic && !field.IsFamily && !field.IsFamilyOrAssembly) continue;
 				if (!field.IsSpecialName) {
-					Fields.Add(new ReflectionField(field, this));
+					fields.Add(new ReflectionField(field, this));
 				}
 			}
 			
 			foreach (PropertyInfo propertyInfo in type.GetProperties(flags)) {
 				ReflectionProperty prop = new ReflectionProperty(propertyInfo, this);
 				if (prop.IsPublic || prop.IsProtected)
-					Properties.Add(prop);
+					properties.Add(prop);
 			}
 			
 			foreach (ConstructorInfo constructorInfo in type.GetConstructors(flags)) {
 				if (!constructorInfo.IsPublic && !constructorInfo.IsFamily && !constructorInfo.IsFamilyOrAssembly) continue;
-				Methods.Add(new ReflectionMethod(constructorInfo, this));
+				methods.Add(new ReflectionMethod(constructorInfo, this));
 			}
 			
 			foreach (MethodInfo methodInfo in type.GetMethods(flags)) {
 				if (!methodInfo.IsPublic && !methodInfo.IsFamily && !methodInfo.IsFamilyOrAssembly) continue;
 				if (!methodInfo.IsSpecialName) {
-					Methods.Add(new ReflectionMethod(methodInfo, this));
+					methods.Add(new ReflectionMethod(methodInfo, this));
 				}
 			}
-			this.AddDefaultConstructorIfRequired = (this.ClassType == ClassType.Struct || this.ClassType == ClassType.Enum);
 			
 			foreach (EventInfo eventInfo in type.GetEvents(flags)) {
-				Events.Add(new ReflectionEvent(eventInfo, this));
+				events.Add(new ReflectionEvent(eventInfo, this));
 			}
+			// Publish fully frozen lists once; readers never see partial initialization.
+			return new ReflectedMembers {
+				Fields = FreezeList(fields), Properties = FreezeList(properties),
+				Methods = FreezeList(methods), Events = FreezeList(events)
+			};
 		}
 		
 		static bool IsDelegate(Type type)
@@ -146,6 +194,9 @@ namespace ICSharpCode.SharpDevelop.Dom.ReflectionLayer
 		
 		public ReflectionClass(ICompilationUnit compilationUnit, Type type, string fullName, IClass declaringType) : base(compilationUnit, declaringType)
 		{
+			reflectedType = type;
+			members = new Lazy<ReflectedMembers>(InitMembers, true);
+			hasExtensionMethods = new Lazy<bool>(FindExtensionMethods, true);
 			FullyQualifiedName = SplitTypeParameterCountFromReflectionName(fullName);
 			
 			try {
@@ -215,7 +266,8 @@ namespace ICSharpCode.SharpDevelop.Dom.ReflectionLayer
 				BaseTypes.Add(ReflectionReturnType.Create(this, iface, false));
 			}
 			
-			InitMembers(type);
+			this.AddDefaultConstructorIfRequired = (this.ClassType == ClassType.Struct || this.ClassType == ClassType.Enum);
+			InitNestedTypes(type);
 		}
 		
 		internal static void AddConstraintsFromType(ITypeParameter tp, Type type)
