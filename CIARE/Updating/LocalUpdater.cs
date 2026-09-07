@@ -37,8 +37,7 @@ internal static class LocalUpdater
         }
         catch
         {
-            // The destination is always the new GUID directory created above, never the installation.
-            try { Directory.Delete(destination, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            UpdateCleanup.RemoveCopy(destination);
             throw;
         }
     }, cancellationToken);

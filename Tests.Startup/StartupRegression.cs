@@ -280,6 +280,9 @@ internal static class StartupRegression
         Program.NewInstanceHandler(null, new StartupNextInstanceEventArgs(Array.AsReadOnly(new[] { "CIARE.exe" }), true));
         Assert(form.EditorTabControl.SelectedTab == firstPage, "Second launch without a file preserves active tab");
 
+        CheckFileTabFirstDisplay(form);
+        form.EditorTabControl.SelectedTab = firstPage;
+
         if (scenario == "dark")
             CheckEditorScrolling(firstEditor);
         if (scenario == "completion")
@@ -299,6 +302,42 @@ internal static class StartupRegression
 
     private static T GetField<T>(MainForm form, string name) =>
         (T)typeof(MainForm).GetField(name, PrivateInstance).GetValue(form);
+
+    private static void CheckFileTabFirstDisplay(MainForm form)
+    {
+        foreach (bool cli in new[] { true, false })
+        {
+            string path = Path.Combine(GlobalVariables.userProfileDirectory, cli ? "first-display-cli.txt" : "first-display-file.txt");
+            const string content = "File content must be present on the first visible frame.\r\nSecond line.";
+            File.WriteAllText(path, content);
+            bool sawEditor = false;
+            bool readyOnFirstDisplay = false;
+            ControlEventHandler added = (_, args) =>
+            {
+                if (args.Control is not TabPage page) return;
+                page.ControlAdded += (_, childArgs) =>
+                {
+                    if (childArgs.Control is not TextEditorControl editor) return;
+                    editor.VisibleChanged += (_, _) =>
+                    {
+                        if (!editor.Visible || sawEditor) return;
+                        sawEditor = true;
+                        readyOnFirstDisplay = editor.Text == content && page.Text.Trim() == Path.GetFileName(path)
+                            && editor.Bounds == page.DisplayRectangle;
+                    };
+                };
+            };
+            form.EditorTabControl.ControlAdded += added;
+            try
+            {
+                FileManage.OpenFileFromArgs(cli ? "cli|" + path : path, form.EditorTabControl);
+                Assert(sawEditor && readyOnFirstDisplay, "File text, caption and layout are ready before its first display: " + cli);
+                Assert(form.EditorTabControl.SelectedTab.ToolTipText == path, "Opened file retains its path");
+                Assert(((EditorTabPage)form.EditorTabControl.SelectedTab).InitialText == null, "Initial file text is released after editor preparation");
+            }
+            finally { form.EditorTabControl.ControlAdded -= added; }
+        }
+    }
 
     private static void CheckCancelledUpdateClose(MainForm form)
     {

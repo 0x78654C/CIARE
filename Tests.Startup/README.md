@@ -14,4 +14,6 @@ Editor regressions also check bounds during continuous resizing, scrolling and i
 
 First-open checks verify that a new page never exposes the empty plus page and that its editor has its final colors, font, and layout before becoming visible. Repeated tab switches must preserve the existing font instance.
 
+File-opening checks also verify that command-line/file-association tabs have their file text, caption and editor bounds ready on first visibility, and release their temporary initial-text reference. Restored-session checks retain all documents and the saved active tab. Loading and completion timing are unchanged.
+
 The `memory` scenario exercises completion and 1,200 diagnostics, reports managed/private memory and elapsed times, verifies shared metadata and released request state, and checks that cancelled diagnostics cannot replace newer results. Full garbage collections run only inside this measurement harness; the app does not force collections or trim its working set.

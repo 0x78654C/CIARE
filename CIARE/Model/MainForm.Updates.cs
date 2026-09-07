@@ -70,6 +70,7 @@ public partial class MainForm
             window.Summary.Text = $"Install {update.Package.Name}. You can save your open work before CIARE closes.";
             window.Status.Text = "Ready when you are";
             using var downloadCancellation = CancellationTokenSource.CreateLinkedTokenSource(_updateLifetime.Token);
+            var preparationToken = downloadCancellation.Token;
             string updaterPath = null;
             window.Secondary.Click += (_, _) => window.Close();
             window.FormClosing += (_, _) => downloadCancellation.Cancel();
@@ -77,17 +78,19 @@ public partial class MainForm
             {
                 window.Primary.Enabled = false;
                 window.Secondary.Text = "Cancel";
+                string preparedPath = null;
                 try
                 {
                     window.Heading.Text = "Preparing your update";
                     window.Status.Text = "Preparing to install the release ZIP…";
-                    string path = await LocalUpdater.PrepareAsync(AppContext.BaseDirectory, downloadCancellation.Token);
-                    downloadCancellation.Token.ThrowIfCancellationRequested();
-                    updaterPath = path;
+                    preparedPath = await LocalUpdater.PrepareAsync(AppContext.BaseDirectory, preparationToken);
+                    preparationToken.ThrowIfCancellationRequested();
+                    updaterPath = preparedPath;
+                    preparedPath = null;
                     window.DialogResult = DialogResult.OK;
                     window.Close();
                 }
-                catch (OperationCanceledException) when (downloadCancellation.IsCancellationRequested) { }
+                catch (OperationCanceledException) when (preparationToken.IsCancellationRequested) { }
                 catch (Exception ex)
                 {
                     if (window.IsDisposed) return;
@@ -99,9 +102,24 @@ public partial class MainForm
                     window.Primary.Enabled = true;
                     window.Secondary.Text = "Close";
                 }
+                finally
+                {
+                    if (preparedPath != null) UpdateCleanup.RemoveCopy(Path.GetDirectoryName(preparedPath));
+                }
             };
-            if (window.ShowDialog(this) == DialogResult.OK && updaterPath != null)
-                await LaunchUpdaterAsync(updaterPath, installed, update);
+            try
+            {
+                if (window.ShowDialog(this) == DialogResult.OK && updaterPath != null)
+                {
+                    string executable = updaterPath;
+                    updaterPath = null; // LaunchUpdaterAsync now owns cleanup, including a failed launch.
+                    await LaunchUpdaterAsync(executable, installed, update);
+                }
+            }
+            finally
+            {
+                if (updaterPath != null) UpdateCleanup.RemoveCopy(Path.GetDirectoryName(updaterPath));
+            }
         }
         catch (OperationCanceledException) when (_updateLifetime.IsCancellationRequested) { }
         catch (Exception ex)
@@ -116,34 +134,46 @@ public partial class MainForm
 
     private async Task LaunchUpdaterAsync(string executable, Version installed, UpdateRelease release)
     {
-        string session = "Local\\CIARE.Update." + Guid.NewGuid().ToString("N");
-        using var ready = new EventWaitHandle(false, EventResetMode.ManualReset, session + ".ready");
-        using var cancelled = new EventWaitHandle(false, EventResetMode.ManualReset, session + ".cancel");
-        using var parent = Process.GetCurrentProcess();
-        var start = new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable) };
-        start.ArgumentList.Add("--apply-update");
-        foreach (string argument in new[] { "--install-dir", AppContext.BaseDirectory, "--parent-pid", parent.Id.ToString(),
-            "--parent-start", parent.StartTime.ToUniversalTime().Ticks.ToString(), "--session", session,
-            "--current-version", installed.ToString(), "--version", release.Version.ToString(), "--arch", release.Architecture })
-            start.ArgumentList.Add(argument);
-        using var updater = Process.Start(start) ?? throw new IOException("The updater could not be started.");
-        bool handoff = false;
+        Process updater = null;
         try
         {
-            var started = Stopwatch.StartNew();
-            while (!ready.WaitOne(0))
+            string session = "Local\\CIARE.Update." + Guid.NewGuid().ToString("N");
+            using var ready = new EventWaitHandle(false, EventResetMode.ManualReset, session + ".ready");
+            using var cancelled = new EventWaitHandle(false, EventResetMode.ManualReset, session + ".cancel");
+            using var parent = Process.GetCurrentProcess();
+            var start = new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable) };
+            start.ArgumentList.Add("--apply-update");
+            foreach (string argument in new[] { "--install-dir", AppContext.BaseDirectory, "--parent-pid", parent.Id.ToString(),
+                "--parent-start", parent.StartTime.ToUniversalTime().Ticks.ToString(), "--session", session,
+                "--current-version", installed.ToString(), "--version", release.Version.ToString(), "--arch", release.Architecture })
+                start.ArgumentList.Add(argument);
+            updater = Process.Start(start) ?? throw new IOException("The updater could not be started.");
+            _ = UpdateCleanup.ObserveExitAsync(Path.GetDirectoryName(executable), updater.Id);
+            bool handoff = false;
+            try
             {
-                if (updater.HasExited || started.Elapsed > TimeSpan.FromSeconds(45))
-                    throw new IOException("The updater did not become ready. CIARE has been kept open.");
-                await Task.Delay(100, _updateLifetime.Token);
+                var started = Stopwatch.StartNew();
+                while (!ready.WaitOne(0))
+                {
+                    if (updater.HasExited || started.Elapsed > TimeSpan.FromSeconds(45))
+                        throw new IOException("The updater did not become ready. CIARE has been kept open.");
+                    await Task.Delay(100, _updateLifetime.Token);
+                }
+                if (IsDisposed || Disposing) return;
+                Close(); // Existing unsaved-work prompts can cancel this close.
+                handoff = IsDisposed || Disposing;
             }
-            if (IsDisposed || Disposing) return;
-            Close(); // Existing unsaved-work prompts can cancel this close.
-            handoff = IsDisposed || Disposing;
+            finally
+            {
+                if (!handoff) cancelled.Set();
+            }
         }
         finally
         {
-            if (!handoff) cancelled.Set();
+            // The updater starts its C# cleanup worker when it closes.
+            // Also cover failures before its entry point could run (including Process.Start).
+            if (updater == null || updater.HasExited) UpdateCleanup.RemoveCopy(Path.GetDirectoryName(executable));
+            updater?.Dispose();
         }
     }
 }

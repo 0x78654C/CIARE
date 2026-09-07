@@ -824,13 +824,10 @@ MessageBoxIcon.Information);
                 GlobalVariables.openedFileName = fileInfo.Name;
                 using (var reader = new StreamReader(file))
                 {
-                    TabControllerManage.AddNewTab(tabControl);
+                    TabControllerManage.AddNewTab(tabControl, initialText: reader.ReadToEnd(), filePath: file);
                     tabControl.Invoke(delegate
                     {
-                        SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
                         MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
-                        tabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
-                        tabControl.SelectedTab.ToolTipText = file;
                         SetFileMD5(fileInfo.FullName);
                         if (GlobalVariables.OStartUp)
                         {
@@ -853,13 +850,9 @@ MessageBoxIcon.Information);
                 MainForm.Instance.RefreshTopMost();
                 isTabPresent = SetEditorTabArgs(tabControl, data);
                 if (isTabPresent) return;
-                TabControllerManage.AddNewTab(tabControl);
-                SelectedEditor.GetSelectedEditor().Clear();
-                SelectedEditor.GetSelectedEditor().Text = File.ReadAllText(data);
-                var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
+                TabControllerManage.AddNewTab(tabControl, initialText: File.ReadAllText(data), filePath: fileInfo.FullName);
+                var previousTabPath = string.Empty;
                 MainForm.Instance.Text = $"{fileInfo.Name} : {GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
-                MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
-                MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = fileInfo.FullName;
                 GlobalVariables.openedFilePath = fileInfo.FullName;
                 GlobalVariables.openedFileName = fileInfo.Name;
                 if (GlobalVariables.OStartUp)

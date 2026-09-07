@@ -19,6 +19,8 @@ The installer downloads the approved release ZIP from GitHub, verifies its SHA-2
 
 The installation folder must be writable and other CIARE windows using it must be closed. If rollback itself fails, the installer reports the retained `.ciare-update-*/backup` path. A machine shutdown during installation can require manual recovery.
 
+Temporary application files and the downloaded ZIP live in `%TEMP%\CIARE-Updates\<unique-id>`. The ZIP (including an incomplete `.partial` download) is removed when the operation finishes. When the updater closes after success, cancellation or an error, it starts the bundled C# cleanup worker from the installation folder. The worker waits for the updater to exit, then removes its entire private folder, retrying locked files for up to one minute. CIARE also watches for updater exit while the editor remains open, and removes copies that were prepared but never launched. No PowerShell or scripts are used for cleanup. `CIARE.UpdateCleanup.exe` and its runtime files are included inside the normal application ZIP; there is no separate download or release asset. Unpacking and rollback files live in `<CIARE installation>\.ciare-update-<unique-id>` and are removed when installation or successful rollback finishes; a failed rollback retains its recovery backup.
+
 ## Build release ZIPs
 
 Run on Windows with the .NET 10 SDK:

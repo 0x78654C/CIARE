@@ -7,9 +7,10 @@ public static class UpdaterApplication
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
+        UpdateOptions options = null;
         try
         {
-            var options = UpdateOptions.Parse(args);
+            options = UpdateOptions.Parse(args);
             // Keep one updater per installation, including when several CIARE processes are open.
             string key = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
                 System.Text.Encoding.UTF8.GetBytes(options.InstallDirectory.ToUpperInvariant())));
@@ -21,6 +22,19 @@ public static class UpdaterApplication
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "CIARE Update", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            // Run the bundled C# cleaner from the installation only after all file replacement is done.
+            if (options != null && CIARE.Updating.UpdateCleanup.IsPrivateDirectory(AppContext.BaseDirectory))
+            {
+                try
+                {
+                    using var current = System.Diagnostics.Process.GetCurrentProcess();
+                    CIARE.Updating.UpdateCleanup.ScheduleAfterExit(AppContext.BaseDirectory, current, options.InstallDirectory);
+                }
+                catch (Exception ex) { System.Diagnostics.Trace.TraceWarning("CIARE updater cleanup: {0}", ex); }
+            }
         }
     }
 }

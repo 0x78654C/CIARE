@@ -34,12 +34,17 @@ internal static class Program
             Catalog();
             Network().GetAwaiter().GetResult();
             LocalCopy().GetAwaiter().GetResult();
+            DeferredCleanup().GetAwaiter().GetResult();
             Packages();
             RenderWindow();
             Handoff(cancel: true);
             Handoff(cancel: false);
             Handoff(cancel: false, packageVersion: "3.2.3.1");
-            if (args.Length == 2 && args[0] == "--application") BundledStartup(args[1]);
+            if (args.Length == 2 && args[0] == "--application")
+            {
+                BundledStartup(args[1]);
+                BundledStartup(args[1], terminate: true);
+            }
             Console.WriteLine($"PASS: {_checks} updater checks. Artifacts: {_root}");
             return 0;
         }
@@ -173,6 +178,48 @@ internal static class Program
         bool cancelled = false;
         try { await LocalUpdater.PrepareAsync(source, cancellation.Token); } catch (OperationCanceledException) { cancelled = true; }
         Assert(cancelled, "Local updater preparation can be cancelled");
+        Reject(() => UpdateCleanup.RemoveCopy(source), "Cleanup refuses the installed application directory");
+        Reject(() => UpdateCleanup.RemoveCopy(Path.Combine(Path.GetTempPath(), "CIARE-Updates")), "Cleanup refuses the shared updates root");
+        UpdateCleanup.RemoveCopy(copy);
+        Assert(!Directory.Exists(copy) && File.Exists(Path.Combine(source, "CIARE.exe")), "An unlaunched updater copy is cleaned without touching the installation");
+    }
+
+    private static async Task DeferredCleanup()
+    {
+        string executable = await LocalUpdater.PrepareAsync(Installation("cleanup"), CancellationToken.None);
+        string copy = Path.GetDirectoryName(executable);
+        string zip = Path.Combine(copy, "package.zip");
+        File.WriteAllText(zip, "download");
+        File.SetAttributes(zip, FileAttributes.ReadOnly);
+        File.WriteAllText(zip + ".partial", "incomplete download");
+        string session = "Local\\CIARE.CleanupTest." + Guid.NewGuid().ToString("N");
+        using var exit = new EventWaitHandle(false, EventResetMode.ManualReset, session);
+        var start = new ProcessStartInfo(Path.Combine(AppContext.BaseDirectory, "Tests.Updater.exe"))
+        { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden };
+        start.ArgumentList.Add("--wait-parent");
+        start.ArgumentList.Add(session);
+        using var owner = Process.Start(start);
+        try
+        {
+            using (var locked = new FileStream(executable, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                UpdateCleanup.ScheduleAfterExit(copy, owner, AppContext.BaseDirectory);
+                await Task.Delay(1500);
+                Assert(!owner.HasExited && File.Exists(zip), "Deferred cleanup preserves every file while the updater is running");
+                exit.Set();
+                Assert(owner.WaitForExit(5000), "Cleanup fixture process exits");
+                await Task.Delay(1500);
+                Assert(Directory.Exists(copy), "A locked file is retained for a cleanup retry");
+            }
+            Assert(SpinWait.SpinUntil(() => !Directory.Exists(copy), TimeSpan.FromSeconds(15)),
+                "Cleanup retries after exit and removes runtime files, read-only ZIPs and partial downloads");
+        }
+        finally
+        {
+            exit.Set();
+            owner.WaitForExit(5000);
+            UpdateCleanup.RemoveCopy(copy);
+        }
     }
 
     private static string Installation(string name)
@@ -358,13 +405,16 @@ internal static class Program
         }
     }
 
-    private static void BundledStartup(string applicationDirectory)
+    private static void BundledStartup(string applicationDirectory, bool terminate = false)
     {
         string executable = LocalUpdater.PrepareAsync(applicationDirectory, CancellationToken.None).GetAwaiter().GetResult();
-        string install = Installation("bundled-parent");
+        string copy = Path.GetDirectoryName(executable);
+        string install = Installation(terminate ? "bundled-terminated-parent" : "bundled-parent");
         foreach (string extension in new[] { ".exe", ".dll", ".deps.json", ".runtimeconfig.json" })
             File.Copy(Path.Combine(AppContext.BaseDirectory, "Tests.Updater" + extension), Path.Combine(install, "Tests.Updater" + extension));
         File.Copy(Path.Combine(install, "Tests.Updater.exe"), Path.Combine(install, "CIARE.exe"), true);
+        foreach (string file in Directory.EnumerateFiles(applicationDirectory, "CIARE.UpdateCleanup.*"))
+            File.Copy(file, Path.Combine(install, Path.GetFileName(file)));
         string session = "Local\\CIARE.Update." + Guid.NewGuid().ToString("N");
         using var ready = new EventWaitHandle(false, EventResetMode.ManualReset, session + ".ready");
         using var cancelled = new EventWaitHandle(true, EventResetMode.ManualReset, session + ".cancel");
@@ -381,9 +431,14 @@ internal static class Program
             "--current-version", "3.2.2.1", "--version", "3.2.3", "--arch", Environment.Is64BitProcess ? "x64" : "x86" })
             start.ArgumentList.Add(argument);
         using var updater = Process.Start(start);
+        // Match the editor's C# exit observer for abnormal termination while the parent stays open.
+        if (terminate) _ = UpdateCleanup.ObserveExitAsync(copy, updater.Id);
         try
         {
             Assert(ready.WaitOne(TimeSpan.FromSeconds(20)), "The copied CIARE executable starts its bundled installer before editor startup");
+            Assert(Directory.Exists(copy), "The real updater retains its private copy while running");
+            File.WriteAllText(Path.Combine(copy, "cleanup-test.zip.partial"), "interrupted download fixture");
+            if (terminate) { updater.Kill(); updater.WaitForExit(5000); }
             var timer = Stopwatch.StartNew();
             while (!updater.HasExited && timer.Elapsed < TimeSpan.FromSeconds(5))
             {
@@ -396,15 +451,19 @@ internal static class Program
                 }, IntPtr.Zero);
                 Thread.Sleep(100);
             }
-            Assert(updater.HasExited && updater.ExitCode == 0,
+            Assert(updater.HasExited && (terminate || updater.ExitCode == 0),
                 "The real bundled installer closes cleanly after cancellation: " + (updater.HasExited ? updater.ExitCode.ToString() : "still running"));
             Assert(!parent.HasExited && !File.Exists(Path.Combine(install, "CIARE.dll")), "Bundled installer cancellation preserves the running installation");
+            Assert(SpinWait.SpinUntil(() => !Directory.Exists(copy), TimeSpan.FromSeconds(15)),
+                terminate ? "The real updater copy and partial download are cleaned after process termination"
+                    : "The real updater copy and partial download are cleaned after cancellation and exit");
         }
         finally
         {
             exit.Set();
             parent.WaitForExit(5000);
             if (!updater.HasExited) { updater.Kill(); updater.WaitForExit(5000); }
+            UpdateCleanup.RemoveCopy(copy);
         }
     }
 

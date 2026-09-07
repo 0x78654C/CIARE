@@ -54,7 +54,9 @@ internal sealed class UpdaterForm : UpdateWindow
     private async Task RunUpdateAsync()
     {
         bool installed = false;
-        string zip = Path.Combine(Path.GetTempPath(), "CIARE-package-" + Guid.NewGuid().ToString("N") + ".zip");
+        string downloadDirectory = UpdateCleanup.IsPrivateDirectory(AppContext.BaseDirectory)
+            ? AppContext.BaseDirectory : Path.GetTempPath();
+        string zip = Path.Combine(downloadDirectory, "CIARE-package-" + Guid.NewGuid().ToString("N") + ".zip");
         try
         {
             _cancellation.Token.ThrowIfCancellationRequested();

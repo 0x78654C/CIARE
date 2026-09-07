@@ -15,6 +15,9 @@ foreach ($architecture in $Architectures) {
     dotnet publish (Join-Path $PSScriptRoot 'CIARE\CIARE.csproj') -c Release -r "win-$architecture" --self-contained false -o $publish -m:1 -nr:false -p:UseSharedCompilation=false -p:PublishSingleFile=false -p:NuGetAudit=false -clp:ErrorsOnly
     if ($LASTEXITCODE -ne 0) { throw "CIARE publish failed for $architecture" }
     if (-not (Test-Path -LiteralPath (Join-Path $publish 'CIARE.Updater.dll'))) { throw 'The bundled installer is missing from the application output.' }
+    foreach ($file in @('CIARE.UpdateCleanup.exe', 'CIARE.UpdateCleanup.dll', 'CIARE.UpdateCleanup.runtimeconfig.json')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $publish $file))) { throw "The bundled C# cleanup worker is missing: $file" }
+    }
     $asset = Join-Path $output "CIARE_v$version-$architecture.zip"
     Compress-Archive -Path (Join-Path $publish '*') -DestinationPath $asset -Force
     Get-FileHash -LiteralPath $asset -Algorithm SHA256 | Select-Object Path, Hash

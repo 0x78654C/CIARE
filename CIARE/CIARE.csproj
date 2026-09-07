@@ -80,6 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AutoUpdater\AutoUpdater.csproj" />
+    <ProjectReference Include="..\UpdateCleanup\UpdateCleanup.csproj" />
     <ProjectReference Include="..\..\CIARE\OpenAI.Api.Client\OpenAI.Api.Client.csproj" />
     <ProjectReference Include="..\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\ICSharpCode.SharpDevelop.Dom\Project\ICSharpCode.SharpDevelop.Dom.csproj" />

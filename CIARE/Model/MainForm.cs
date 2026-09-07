@@ -9826,6 +9826,12 @@ namespace CIARE
                     SetDesignEditor(ref selectedEditor);
                     e.TabPage.Controls.Add(selectedEditor);
                     InitializeEditorSettings(selectedEditor, e.TabPageIndex);
+                    if (e.TabPage is EditorTabPage filePage && filePage.InitialText != null)
+                    {
+                        string initialText = filePage.InitialText;
+                        filePage.InitialText = null;
+                        selectedEditor.Text = initialText;
+                    }
                 }
                 finally
                 {
