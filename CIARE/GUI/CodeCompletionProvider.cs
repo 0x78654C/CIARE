@@ -128,13 +128,16 @@ namespace CIARE.GUI
 			string rawCode = request.RawCode;
 			string completionCode = PrepareCodeForMemberCompletion(request);
             bool insideInterpolationExpression = request.CharacterTyped == '.' &&
-                IsInsideInterpolationExpression(rawCode, request.CaretOffset);
+                IsInsideInterpolationExpression(rawCode, request.CaretOffset, cancellationToken);
             Dom.ExpressionResult expression = FindExpression(completionCode, request.CaretOffset,
 				request.CaretLine, request.CaretColumn);
 			cancellationToken.ThrowIfCancellationRequested();
+			// Share one prepared snapshot between the parser and resolver.
+			string resolverCode = mainForm.PrepareCodeForNRefactoryCompletion(completionCode, request.CurrentFilePath,
+				out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine, cancellationToken);
 			if (!request.UsingDirectiveDotCompletion)
 			{
-				mainForm.RefreshActiveCompletionUnit(completionCode, request.CurrentFilePath);
+				mainForm.RefreshPreparedActiveCompletionUnit(resolverCode, request.CurrentFilePath, cancellationToken);
 			}
 			cancellationToken.ThrowIfCancellationRequested();
 			mainForm.ResetCompletionWorkspaceIfInactive(request.CurrentFilePath);
@@ -145,8 +148,6 @@ namespace CIARE.GUI
 				// For top-level statement files the code has no class/method context, so the
 				// NRefactory resolver cannot find a scope.  Wrap the code before passing it to
 				// the resolver and adjust the caret line accordingly.
-				string resolverCode = mainForm.PrepareCodeForNRefactoryCompletion(completionCode, request.CurrentFilePath,
-					out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine);
 				int caretLine = request.CaretLine + 1 + prefixLineOffset;
 				int caretCol  = request.CaretColumn + 1;
 				if (wrapLineOffset > 0 && caretLine >= bodyStartLine)
@@ -252,14 +253,16 @@ namespace CIARE.GUI
 			}
 			return true;
 		}
-        static bool IsInsideInterpolationExpression(string code, int caretOffset)
+        static bool IsInsideInterpolationExpression(string code, int caretOffset, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(code))
+                return false;
+            if (code.AsSpan(0, Math.Clamp(caretOffset, 0, code.Length)).IndexOf('$') < 0)
                 return false;
 
             try
             {
-                var root = CSharpSyntaxTree.ParseText(code).GetRoot();
+                var root = CSharpSyntaxTree.ParseText(code, cancellationToken: cancellationToken).GetRoot(cancellationToken);
                 if (root.FullSpan.IsEmpty)
                     return false;
 
@@ -277,6 +280,7 @@ namespace CIARE.GUI
                 return caretOffset >= interpolation.OpenBraceToken.Span.End &&
                     caretOffset <= expressionEnd;
             }
+            catch (OperationCanceledException) { throw; }
             catch
             {
                 return false;

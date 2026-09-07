@@ -60,7 +60,7 @@ internal static class StartupRegression
     {
         using var settings = Registry.CurrentUser.CreateSubKey(GlobalVariables.registryPath);
         settings.SetValue("highlight", scenario == "light" ? "C#-Light" : "C#-Dark");
-        settings.SetValue("OCodeCompletion", (scenario == "completion" || scenario == "memory").ToString());
+        settings.SetValue("OCodeCompletion", (scenario == "completion" || scenario == "memory" || scenario.StartsWith("resources")).ToString());
         settings.SetValue("OStartUp", "False");
         settings.SetValue("windowSize", scenario == "corrupt" ? "broken|size|value" : "1000|700");
         if (scenario != "corrupt")
@@ -123,6 +123,11 @@ internal static class StartupRegression
         elapsed.Stop();
         Assert(visibleEvents == 1, "Main form shown once");
         Assert(form.isLoaded, "Main form loaded");
+        if (scenario.StartsWith("resources"))
+        {
+            ResourceRegression.Run(form, Assert, validateReuse: scenario != "resources-baseline");
+            return;
+        }
         if (scenario == "ollama")
             Assert(GlobalVariables.aiTypeVar == "Ollama(Local)" && GlobalVariables.modelOllamaVar == "test-model",
                 "Ollama settings restored without requiring a local CLI");
@@ -448,6 +453,17 @@ internal static class StartupRegression
             Assert(compilation.References.Where(reference => byPath.ContainsKey(reference.Display))
                 .All(reference => ReferenceEquals(reference, byPath[reference.Display])),
                 "Completion and diagnostics share the same metadata images");
+
+            int previousRows = rows.Items.Count;
+            string previousStatus = status.Text;
+            RealTimeChecker.ScheduleCheck(code, editor, status, rows, null, warnings);
+            editor.Document.Insert(editor.Document.TextLength, "\n");
+            Assert(typeof(RealTimeChecker).GetField("_pendingCheck", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null) == null,
+                "Typing immediately discards queued diagnostics before the editor refresh debounce");
+            Assert(rows.Items.Count == previousRows && status.Text == previousStatus,
+                "Cancelling stale analysis preserves displayed diagnostics until the replacement is ready");
+            Pump(250);
+            RealTimeChecker.Cancel();
 
             var gate = (SemaphoreSlim)typeof(RealTimeChecker).GetField("CheckGate", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
             Assert(gate.Wait(1000), "Diagnostics worker is idle after applying results");

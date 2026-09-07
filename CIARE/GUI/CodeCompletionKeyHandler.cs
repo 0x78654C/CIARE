@@ -198,13 +198,12 @@ namespace CIARE.GUI
 
 			Task.Run(() =>
 				{
-					if (IsCompletionSuppressedContext(request.RawCode, request.CaretOffset))
-						return Array.Empty<ICompletionData>();
-
 					CompletionGenerationLock.Wait(cancellationToken);
 					try
 					{
 						cancellationToken.ThrowIfCancellationRequested();
+						if (IsCompletionSuppressedContext(request.RawCode, request.CaretOffset, cancellationToken))
+							return Array.Empty<ICompletionData>();
 						ICompletionData[] result = completionDataProvider.GenerateCompletionData(request,
 							cancellationToken);
 						cancellationToken.ThrowIfCancellationRequested();
@@ -394,7 +393,7 @@ namespace CIARE.GUI
 				textArea.Document.GetCharAt(offset - 1) == '/';
 		}
 
-		static bool IsCompletionSuppressedContext(string text, int offset)
+		internal static bool IsCompletionSuppressedContext(string text, int offset, CancellationToken cancellationToken = default)
 		{
 			if (string.IsNullOrEmpty(text))
 			{
@@ -407,7 +406,9 @@ namespace CIARE.GUI
 				return true;
 			}
 
-            if (TryGetInterpolationSuppression(text, offset, out bool interpolationSuppressed))
+            // Avoid an entire syntax tree for the common case with no interpolation.
+            if (text.AsSpan(0, offset).IndexOf('$') >= 0 &&
+                TryGetInterpolationSuppression(text, offset, cancellationToken, out bool interpolationSuppressed))
             {
                 return interpolationSuppressed;
             }
@@ -422,6 +423,7 @@ namespace CIARE.GUI
 
 			for (int i = 0; i < offset; i++)
 			{
+				if ((i & 1023) == 0) cancellationToken.ThrowIfCancellationRequested();
 				char ch = text[i];
 				char next = i + 1 < offset ? text[i + 1] : '\0';
 
@@ -540,12 +542,12 @@ namespace CIARE.GUI
 			return inString || inVerbatimString || inRawString || inChar || inLineComment || inBlockComment;
 		}
 
-        static bool TryGetInterpolationSuppression(string text, int offset, out bool suppressed)
+        static bool TryGetInterpolationSuppression(string text, int offset, CancellationToken cancellationToken, out bool suppressed)
         {
             suppressed = false;
             try
             {
-                SyntaxNode root = CSharpSyntaxTree.ParseText(text).GetRoot();
+                SyntaxNode root = CSharpSyntaxTree.ParseText(text, cancellationToken: cancellationToken).GetRoot(cancellationToken);
                 if (root.FullSpan.IsEmpty)
                     return false;
 
@@ -573,6 +575,7 @@ namespace CIARE.GUI
                     token.IsKind(SyntaxKind.InterpolatedStringTextToken);
                 return true;
             }
+            catch (OperationCanceledException) { throw; }
             catch
             {
                 return false;

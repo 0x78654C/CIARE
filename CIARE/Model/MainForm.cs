@@ -1578,6 +1578,7 @@ namespace CIARE
 
         private void OnFileExplorerWatcherEvent(object sender, FileSystemEventArgs e)
         {
+            InvalidateCompletionSourceFile(e.FullPath);
             string parentDir = Path.GetDirectoryName(e.FullPath);
             if (!string.IsNullOrEmpty(parentDir))
                 ScheduleExplorerRefresh(parentDir);
@@ -1588,12 +1589,15 @@ namespace CIARE
 
         private void OnFileExplorerWatcherChanged(object sender, FileSystemEventArgs e)
         {
+            InvalidateCompletionSourceFile(e.FullPath);
             if (ShouldRefreshExplorerNuGetPackages(e.FullPath))
                 ScheduleExplorerNuGetRefresh();
         }
 
         private void OnFileExplorerWatcherRenamed(object sender, RenamedEventArgs e)
         {
+            InvalidateCompletionSourceFile(e.OldFullPath);
+            InvalidateCompletionSourceFile(e.FullPath);
             string parentDir = Path.GetDirectoryName(e.FullPath);
             if (!string.IsNullOrEmpty(parentDir))
                 ScheduleExplorerRefresh(parentDir);
@@ -5216,6 +5220,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void textEditorControl1_TextChanged(object sender, EventArgs e)
         {
+            RealTimeChecker.InvalidatePendingCheck();
             Interlocked.Increment(ref _completionTextVersion);
             TextDataChangedAction();
         }
@@ -6050,10 +6055,18 @@ namespace CIARE
 
         void ParseStep()
         {
+            if (!Monitor.TryEnter(_completionParseLock)) return;
+            try { ParseCompletionStep(); }
+            finally { Monitor.Exit(_completionParseLock); }
+        }
+
+        private void ParseCompletionStep()
+        {
             if (IsDisposed || Disposing || !IsHandleCreated)
                 return;
 
             string code = null;
+            TextEditorControl editor = null;
             CompletionScopeSnapshot completionScope = default;
             int textVersion = 0;
             try
@@ -6065,12 +6078,7 @@ namespace CIARE
 
                     completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
                     textVersion = Volatile.Read(ref _completionTextVersion);
-                    // Standalone buffers cannot change outside this editor. Avoid
-                    // copying and reparsing their text every two seconds while idle.
-                    if (string.IsNullOrEmpty(completionScope.WorkspaceFolder) &&
-                        textVersion == _lastParsedTextVersion && completionScope.Version == _lastParsedScopeVersion)
-                        return;
-                    code = SelectedEditor.GetSelectedEditor()?.Text;
+                    editor = SelectedEditor.GetSelectedEditor();
                 }));
             }
             catch (InvalidOperationException) when (IsDisposed || Disposing || !IsHandleCreated)
@@ -6078,8 +6086,31 @@ namespace CIARE
                 // The form can close between checking its handle and invoking the UI thread.
                 return;
             }
-            if (code == null)
+            if (editor == null)
                 return;
+
+            bool hasStamp = TryGetCompletionSourceStamp(completionScope, out ulong sourceStamp);
+            int sourceVersion = Volatile.Read(ref _completionSourceVersion);
+            bool sameWorkspace = hasStamp && _hasParsedSourceStamp && sourceStamp == _lastParsedSourceStamp
+                && sourceVersion == _lastParsedSourceVersion && completionScope.Version == _lastParsedScopeVersion;
+            if (sameWorkspace && textVersion == _lastParsedTextVersion)
+                return;
+            // An unchanged document needs no full-text allocation on each idle poll.
+            try
+            {
+                Invoke(new System.Windows.Forms.MethodInvoker(() =>
+                {
+                    if (editor.IsDisposed || editor != SelectedEditor.GetSelectedEditor() ||
+                        !IsCompletionScopeCurrent(completionScope))
+                        return;
+                    textVersion = Volatile.Read(ref _completionTextVersion);
+                    code = editor.Text;
+                }));
+            }
+            catch (InvalidOperationException) when (IsDisposed || Disposing || !IsHandleCreated) { return; }
+            if (code == null) return;
+            if (!sameWorkspace)
+                ClearCompletionGlobalUsingsCache();
 
             var workspaceCompletionClasses = new List<WorkspaceCompletionClass>();
             AddRoslynCompletionClasses(workspaceCompletionClasses, code, completionScope.CurrentFilePath);
@@ -6091,7 +6122,8 @@ namespace CIARE
                 return;
 
             SetActiveCompletionCompilationUnit(activeCompilationUnit, completionScope.CurrentFilePath);
-            ParseWorkspaceFilesForCompletion(completionScope, workspaceCompletionClasses);
+            if (!sameWorkspace)
+                ParseWorkspaceFilesForCompletion(completionScope, workspaceCompletionClasses);
             if (!IsCompletionScopeCurrent(completionScope))
                 return;
 
@@ -6100,12 +6132,19 @@ namespace CIARE
                 if (!IsCompletionScopeCurrent(completionScope))
                     return;
 
-                _workspaceCompletionClasses.Clear();
+                if (sameWorkspace)
+                    _workspaceCompletionClasses.RemoveAll(item => string.Equals(item.FilePath,
+                        completionScope.CurrentFilePath, StringComparison.OrdinalIgnoreCase));
+                else
+                    _workspaceCompletionClasses.Clear();
                 _workspaceCompletionClasses.AddRange(workspaceCompletionClasses);
                 _topLevelLocalFunctions.Clear();
                 _topLevelLocalFunctions.AddRange(topLevelFunctions);
                 _lastParsedTextVersion = textVersion;
                 _lastParsedScopeVersion = completionScope.Version;
+                _lastParsedSourceStamp = sourceStamp;
+                _lastParsedSourceVersion = sourceVersion;
+                _hasParsedSourceStamp = hasStamp;
             }
         }
 
@@ -6118,9 +6157,19 @@ namespace CIARE
         {
             if (!GlobalVariables.OCodeCompletion || myProjectContent == null)
                 return;
+            string preparedCode = PrepareCodeForNRefactoryCompletion(code ?? string.Empty, currentFilePath,
+                out _, out _, out _);
+            RefreshPreparedActiveCompletionUnit(preparedCode, currentFilePath, CancellationToken.None);
+        }
+
+        internal void RefreshPreparedActiveCompletionUnit(string preparedCode, string currentFilePath,
+            CancellationToken cancellationToken)
+        {
+            if (!GlobalVariables.OCodeCompletion || myProjectContent == null)
+                return;
 
             CompletionScopeSnapshot completionScope = RefreshCompletionScope(currentFilePath);
-            SetActiveCompletionCompilationUnit(ParseCompletionCompilationUnit(code, completionScope.CurrentFilePath),
+            SetActiveCompletionCompilationUnit(ParsePreparedCompletionCompilationUnit(preparedCode, cancellationToken),
                 completionScope.CurrentFilePath);
         }
 
@@ -6128,6 +6177,13 @@ namespace CIARE
         {
             string parsedCode = PrepareCodeForNRefactoryCompletion(code ?? string.Empty, currentFilePath,
                 out _, out _, out _);
+            return ParsePreparedCompletionCompilationUnit(parsedCode, CancellationToken.None);
+        }
+
+        private Dom.ICompilationUnit ParsePreparedCompletionCompilationUnit(string parsedCode,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             NRefactory.SupportedLanguage supportedLanguage = IsVisualBasic
                 ? NRefactory.SupportedLanguage.VBNet
                 : NRefactory.SupportedLanguage.CSharp;
@@ -6137,6 +6193,7 @@ namespace CIARE
             {
                 parser.ParseMethodBodies = false;
                 parser.Parse();
+                cancellationToken.ThrowIfCancellationRequested();
                 return ConvertCompilationUnit(parser.CompilationUnit);
             }
         }
@@ -6166,6 +6223,7 @@ namespace CIARE
             public string CurrentFilePath;
             public string WorkspaceFolder;
             public List<string> SourceFolders;
+            public List<string> ProjectPaths;
             public string WorkspaceKey;
             public string FileKey;
             public int Version;
@@ -6201,6 +6259,7 @@ namespace CIARE
                 CurrentFilePath = currentFilePath,
                 WorkspaceFolder = workspaceFolder,
                 SourceFolders = sourceFolders,
+                ProjectPaths = projectPaths,
                 WorkspaceKey = workspaceKey,
                 FileKey = fileKey,
                 Version = Volatile.Read(ref _completionWorkspaceVersion)
@@ -7754,8 +7813,10 @@ namespace CIARE
         }
 
         internal string PrepareCodeForNRefactoryCompletion(string code, string filePath,
-            out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine)
+            out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine,
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             prefixLineOffset = 0;
             wrapLineOffset = 0;
             bodyStartLine = 1;
@@ -7772,12 +7833,23 @@ namespace CIARE
             }
 
             return WrapTopLevelStatementsForNRefactory(ConvertFileScopedNamespace(codeWithGlobalUsings),
-                out wrapLineOffset, out bodyStartLine);
+                out wrapLineOffset, out bodyStartLine, cancellationToken);
         }
 
         private string GetProjectGlobalUsingsForCompletion(string sourceFilePath)
         {
-            return ReadGlobalUsingsAsRegularDirectives(GetCompletionProjectPath(sourceFilePath));
+            string projectPath = GetCompletionProjectPath(sourceFilePath);
+            if (string.IsNullOrEmpty(projectPath)) return string.Empty;
+            lock (_completionGlobalUsingsLock)
+            {
+                int version = Volatile.Read(ref _completionSourceVersion);
+                if (_completionGlobalUsings.TryGetValue(projectPath, out var entry) && entry.Version == version)
+                    return entry.Text;
+                string text = ReadGlobalUsingsAsRegularDirectives(projectPath);
+                if (_completionGlobalUsings.Count >= 16) _completionGlobalUsings.Clear();
+                _completionGlobalUsings[projectPath] = (version, text);
+                return text;
+            }
         }
 
         private string GetCompletionProjectPath(string sourceFilePath)
@@ -7940,7 +8012,8 @@ namespace CIARE
         /// (i.e. the first line that will be shifted by <paramref name="lineOffset"/>).
         /// </param>
         /// <returns>Wrapped code, or the original code unchanged when no wrapping is needed.</returns>
-        internal static string WrapTopLevelStatementsForNRefactory(string code, out int lineOffset, out int bodyStartLine)
+        internal static string WrapTopLevelStatementsForNRefactory(string code, out int lineOffset, out int bodyStartLine,
+            CancellationToken cancellationToken = default)
         {
             lineOffset = 0;
             bodyStartLine = 1;
@@ -7950,8 +8023,8 @@ namespace CIARE
 
             try
             {
-                var tree = CSharpSyntaxTree.ParseText(code);
-                var root = tree.GetCompilationUnitRoot();
+                var tree = CSharpSyntaxTree.ParseText(code, cancellationToken: cancellationToken);
+                var root = tree.GetCompilationUnitRoot(cancellationToken);
                 if (!root.Members.OfType<GlobalStatementSyntax>().Any())
                     return code;
 
@@ -7972,6 +8045,7 @@ namespace CIARE
                 lineOffset = 2; // "class __TopLevel__ {\n" + "void __Main__() {\n"
                 return head + "class __TopLevel__ {\nvoid __Main__() {" + body + "\n}\n}";
             }
+            catch (OperationCanceledException) { throw; }
             catch
             {
                 return code;

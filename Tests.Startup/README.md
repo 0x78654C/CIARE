@@ -17,3 +17,11 @@ First-open checks verify that a new page never exposes the empty plus page and t
 File-opening checks also verify that command-line/file-association tabs have their file text, caption and editor bounds ready on first visibility, and release their temporary initial-text reference. Restored-session checks retain all documents and the saved active tab. Loading and completion timing are unchanged.
 
 The `memory` scenario exercises completion and 1,200 diagnostics, reports managed/private memory and elapsed times, verifies shared metadata and released request state, and checks that cancelled diagnostics cannot replace newer results. Full garbage collections run only inside this measurement harness; the app does not force collections or trim its working set.
+
+Run the typing and idle resource comparison in Release:
+
+```powershell
+& .\Tests.Startup\Run.ps1 -Configuration Release -Scenarios @('resources')
+```
+
+The `resources` scenario warms completion references, measures an idle project and edits, then types member and ordinary prefixes in small and 10,000-line documents. It verifies that unchanged completion units are reused, external source/global-using changes are detected, framework and Roslyn fallback suggestions remain available, and cancelled context scans stop. CPU and memory measurements are in `resources.errors.log`; timing includes the hidden UI message loop and background analysis. `resources-baseline` runs the same workload with assertions for the new reuse/cancellation behavior disabled. See [ResourceResults.md](ResourceResults.md) for the comparison and its limits.

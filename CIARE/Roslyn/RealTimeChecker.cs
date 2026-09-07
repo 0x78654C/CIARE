@@ -125,6 +125,20 @@ namespace CIARE.Roslyn
         }
 
         /// <summary>
+        /// Discard outdated analysis immediately, before the editor's refresh debounce.
+        /// </summary>
+        internal static void InvalidatePendingCheck()
+        {
+            lock (_lock)
+            {
+                _requestVersion++;
+                _pendingCheck = null;
+                _debounceTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+                _cts?.Cancel();
+            }
+        }
+
+        /// <summary>
         /// Cancel any pending or running check and clear all markers.
         /// </summary>
         public static void Cancel(TextEditorControl editor = null, Label statusLabel = null,
