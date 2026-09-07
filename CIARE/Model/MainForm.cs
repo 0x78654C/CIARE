@@ -127,6 +127,7 @@ namespace CIARE
         private ToolStripMenuItem _fileExplorerAddProjectReferenceMenuItem;
         private ToolStripMenuItem _fileExplorerRemoveProjectReferenceMenuItem;
         private ToolStripMenuItem _fileExplorerSetStartupProjectMenuItem;
+        private ToolStripMenuItem _fileExplorerBuildProjectMenuItem;
         private ToolStripMenuItem _fileExplorerNewFileMenuItem;
         private ToolStripMenuItem _fileExplorerNewFolderMenuItem;
         private ToolStripSeparator _fileExplorerProjectSeparator;
@@ -499,6 +500,9 @@ namespace CIARE
             };
             _fileExplorerSetStartupProjectMenuItem.Click += fileExplorerSetStartupProjectMenuItem_Click;
 
+            _fileExplorerBuildProjectMenuItem = new ToolStripMenuItem { Text = "Build Project" };
+            _fileExplorerBuildProjectMenuItem.Click += fileExplorerBuildProjectMenuItem_Click;
+
             _fileExplorerNewFileMenuItem = new ToolStripMenuItem
             {
                 Text = "New C# File..."
@@ -525,6 +529,7 @@ namespace CIARE
 
             _fileExplorerContextMenu = new ContextMenuStrip(components);
             _fileExplorerContextMenu.Opening += fileExplorerContextMenu_Opening;
+            _fileExplorerContextMenu.Items.Add(_fileExplorerBuildProjectMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectReferenceMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerRemoveProjectReferenceMenuItem);
@@ -2529,6 +2534,8 @@ namespace CIARE
             bool canAddProjectToSolution = hasSolutionContext &&
                 IsAddProjectToSolutionContext(path, solutionPath);
             bool hasProjectContext = !string.IsNullOrEmpty(projectPath);
+            _fileExplorerBuildProjectMenuItem.Visible = !string.IsNullOrEmpty(GetExplorerBuildProjectPath(path));
+            _fileExplorerBuildProjectMenuItem.Enabled = !_explorerProjectBuildRunning;
             bool hasProjectReferenceCandidates = hasProjectContext &&
                 ProjectReferenceManager.GetReferenceableProjects(projectPath, solutionPath,
                     _fileExplorerRootPath).Count > 0;
@@ -4926,11 +4933,7 @@ namespace CIARE
                 return;
 
             pcRegistry = new Dom.ProjectContentRegistry();
-            string completionCachePath = Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion");
-            if (!Directory.Exists(completionCachePath))
-                Directory.CreateDirectory(completionCachePath);
-
-            pcRegistry.ActivatePersistence(completionCachePath);
+            // Persisted DOM tables eagerly recreate every member and defeat lazy metadata.
             _completionRegistryInitialized = true;
         }
 
