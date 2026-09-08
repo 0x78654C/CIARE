@@ -169,8 +169,13 @@ namespace CIARE.Utils.OpenAISettings
             CancelProgressBar();
             GlobalVariables.aiQuestion = "";
             GlobalVariables.aiResponse = outPut;
-            AiResponse aiResponse = new AiResponse();
-            aiResponse.Show();
+            if (!string.IsNullOrEmpty(outPut))
+            {
+                AiResponse aiResponse = new AiResponse();
+                aiResponse.Show();
+            }
+            else
+                GlobalVariables.aiResponse = "";
         }
 
         /// <summary>

@@ -61,15 +61,7 @@ namespace CIARE
     [SupportedOSPlatform("windows")]
     public partial class MainForm : Form
     {
-        //protected override CreateParams CreateParams
-        //{
-        //    get
-        //    {
-        //        CreateParams cp = base.CreateParams;
-        //        cp.ExStyle |= 0x02000000; // WS_EX_COMPOSITED reduces flicker on resize and redraws.
-        //        return cp;
-        //    }
-        //}
+
         public HubConnection hubConnection;
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
@@ -87,8 +79,8 @@ namespace CIARE
         private string s_args = SplitArguments.GetCommandLineArgs();
         private ApiConnectionEvents _apiConnectionEvents;
         public TextEditorControl selectedEditor;
-        TextEditorControl dynamicTextEdtior;
-        private int _countTabs = 0;
+        private string _appliedTheme;
+        private System.Windows.Forms.Timer _windowPlacementSaveTimer;
         private bool _isFullScreen = false;
         private FormBorderStyle _savedBorderStyle;
         private FormWindowState _savedWindowState;
@@ -102,7 +94,6 @@ namespace CIARE
         private const int FileExplorerNuGetMinHeight = 90;
         private const int FileExplorerTreeMinHeight = 120;
         private const int FileExplorerLayoutApplyMaxAttempts = 20;
-        private const int FileExplorerLayoutApplyStabilizeAttempts = 4;
         private const int FileExplorerLayoutApplyInterval = 50;
         private const string FileExplorerLoadingTag = "__loading__";
         private const string FileExplorerPathKey = "fileExplorerPath";
@@ -136,6 +127,7 @@ namespace CIARE
         private ToolStripMenuItem _fileExplorerAddProjectReferenceMenuItem;
         private ToolStripMenuItem _fileExplorerRemoveProjectReferenceMenuItem;
         private ToolStripMenuItem _fileExplorerSetStartupProjectMenuItem;
+        private ToolStripMenuItem _fileExplorerBuildProjectMenuItem;
         private ToolStripMenuItem _fileExplorerNewFileMenuItem;
         private ToolStripMenuItem _fileExplorerNewFolderMenuItem;
         private ToolStripSeparator _fileExplorerProjectSeparator;
@@ -214,6 +206,9 @@ namespace CIARE
         private const long UsageFastReadMaxFileBytes = 256L * 1024L;
         private const long UsageDocumentCacheMaxFileBytes = 1024L * 1024L;
         private bool _completionRegistryInitialized;
+        private int _completionTextVersion;
+        private int _lastParsedTextVersion = -1;
+        private int _lastParsedScopeVersion = -1;
         private static readonly PropertyInfo DoubleBufferedProperty =
             typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -233,6 +228,8 @@ namespace CIARE
             autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
             ConfigureErrorsListView();
+            // Buffer individual surfaces. Compositing the entire HWND tree delays
+            // editor paints while child controls hold a graphics context.
             DoubleBuffered = true;
             SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             UpdateStyles();
@@ -285,30 +282,21 @@ namespace CIARE
         }
 
         /// <summary>
-        /// Initiliaze settings for dynamic text edtior.
+        /// Initialize settings once for each new editor.
         /// </summary>
-        /// <param name="index"></param>
-        private void Initiliaze(int index = 1)
+        private void InitializeEditorSettings(TextEditorControl editor, int index)
         {
-            EditorTabControl.SelectedIndex = index;
-            int selectedTab = EditorTabControl.SelectedIndex;
-            int countTabs = EditorTabControl.TabCount - 1;
-            Control ctrl = EditorTabControl.Controls[countTabs].Controls[0];
-            selectedEditor = ctrl as TextEditorControl;
-            selectedEditor.TextEditorProperties.StoreZoomSize = true;
-            selectedEditor.TextEditorProperties.RegPath = GlobalVariables.registryPath;
-            InitializeEditor.ReadEditorWindowSize(this, GlobalVariables.registryPath);
-            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, selectedEditor);
-            InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, selectedEditor);
-            InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
-            InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
-            FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
-            LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
+            editor.TextEditorProperties.StoreZoomSize = true;
+            editor.TextEditorProperties.RegPath = GlobalVariables.registryPath;
+            InitializeEditor.ReadEditorHighlight(GlobalVariables.registryPath, editor);
+            InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, editor);
+            editor.EnableFolding = GlobalVariables.OFoldingCode;
+            editor.ShowLineNumbers = GlobalVariables.OLineNumber;
             SetCodeCompletion(index);
             linesCountLbl.Text = string.Empty;
             linesPositionLbl.Text = string.Empty;
-            SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
-            HookEditorAskAI(SelectedEditor.GetSelectedEditor());
+            editor.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
+            HookEditorAskAI(editor);
         }
 
         /// <summary>
@@ -512,6 +500,9 @@ namespace CIARE
             };
             _fileExplorerSetStartupProjectMenuItem.Click += fileExplorerSetStartupProjectMenuItem_Click;
 
+            _fileExplorerBuildProjectMenuItem = new ToolStripMenuItem { Text = "Build Project" };
+            _fileExplorerBuildProjectMenuItem.Click += fileExplorerBuildProjectMenuItem_Click;
+
             _fileExplorerNewFileMenuItem = new ToolStripMenuItem
             {
                 Text = "New C# File..."
@@ -538,6 +529,7 @@ namespace CIARE
 
             _fileExplorerContextMenu = new ContextMenuStrip(components);
             _fileExplorerContextMenu.Opening += fileExplorerContextMenu_Opening;
+            _fileExplorerContextMenu.Items.Add(_fileExplorerBuildProjectMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectReferenceMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerRemoveProjectReferenceMenuItem);
@@ -641,7 +633,6 @@ namespace CIARE
             _fileExplorerShowButton.Click += (sender, args) => ToggleFileExplorer(true);
             _editorWorkspacePanel.Controls.Add(_fileExplorerShowButton);
             _editorWorkspacePanel.Resize += (sender, args) => PositionFileExplorerShowButton();
-            Shown += (sender, args) => QueueFileExplorerLayoutApply();
 
             EnableBufferedPainting(
                 splitContainer1,
@@ -661,13 +652,8 @@ namespace CIARE
             splitContainer1.Panel1.Controls.Add(_editorWorkspacePanel);
             splitContainer1.Panel1.ResumeLayout();
             EditorTabControl.ResumeLayout();
-            BeginInvoke((Action)(() =>
-            {
-                ApplyEditorExplorerMinimumWidths();
-                QueueFileExplorerLayoutApply();
-                PositionFileExplorerShowButton();
-                QueueEditorLayoutRefresh();
-            }));
+            ApplyEditorExplorerMinimumWidths();
+            PositionFileExplorerShowButton();
 
             ApplyFileExplorerTheme();
         }
@@ -960,7 +946,7 @@ namespace CIARE
 
         private void SchedulePendingFileExplorerLayoutApply()
         {
-            if (IsDisposed || !IsHandleCreated)
+            if (!isLoaded || IsDisposed || !IsHandleCreated)
                 return;
 
             EnsureFileExplorerLayoutApplyTimer();
@@ -1002,18 +988,19 @@ namespace CIARE
             if (!CanApplyFileExplorerLayoutValues())
             {
                 _fileExplorerLayoutApplyAttempts++;
-                SchedulePendingFileExplorerLayoutApply();
+                if (_fileExplorerLayoutApplyAttempts < FileExplorerLayoutApplyMaxAttempts)
+                    SchedulePendingFileExplorerLayoutApply();
                 return;
             }
 
             ApplyEditorExplorerMinimumWidths();
-            ApplyFileExplorerLayoutValues();
+            if (!IsFileExplorerLayoutApplied())
+                ApplyFileExplorerLayoutValues();
             PositionFileExplorerShowButton();
             QueueEditorLayoutRefresh();
 
             _fileExplorerLayoutApplyAttempts++;
-            if (_fileExplorerLayoutApplyAttempts < FileExplorerLayoutApplyStabilizeAttempts ||
-                !IsFileExplorerLayoutApplied())
+            if (!IsFileExplorerLayoutApplied())
             {
                 if (_fileExplorerLayoutApplyAttempts < FileExplorerLayoutApplyMaxAttempts)
                 {
@@ -1038,6 +1025,9 @@ namespace CIARE
             if (splitWidth <= _editorExplorerSplitContainer.SplitterWidth)
                 return false;
 
+            if (_editorExplorerSplitContainer.Panel2Collapsed)
+                return true;
+
             if (_fileExplorerContentSplitContainer == null || _fileExplorerContentSplitContainer.IsDisposed)
                 return true;
 
@@ -1052,6 +1042,9 @@ namespace CIARE
         {
             if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
                 return false;
+
+            if (_editorExplorerSplitContainer.Panel2Collapsed)
+                return true;
 
             if (!_editorExplorerSplitContainer.Panel2Collapsed)
             {
@@ -1395,11 +1388,6 @@ namespace CIARE
                 textAreaControl.VScrollBar.Visible = true;
             if (!textAreaControl.HScrollBar.Visible)
                 textAreaControl.HScrollBar.Visible = true;
-            if (editor.Visible && textAreaControl.Width > 0 && textAreaControl.Height > 0)
-            {
-                textAreaControl.ResizeTextArea();
-                textAreaControl.AdjustScrollBars();
-            }
         }
 
         private void QueueEditorLayoutRefresh()
@@ -1408,9 +1396,13 @@ namespace CIARE
                 return;
 
             _pendingEditorLayoutRefresh = true;
+            if (!isLoaded || _refreshingEditorLayoutBounds)
+                return;
             EnsureEditorLayoutRefreshTimer();
-            _editorLayoutRefreshTimer.Stop();
-            _editorLayoutRefreshTimer.Start();
+            // Keep servicing layout during a continuous resize instead of waiting
+            // for a pause in size events. Docking already updates the child bounds.
+            if (!_editorLayoutRefreshTimer.Enabled)
+                _editorLayoutRefreshTimer.Start();
         }
 
         private void EnsureEditorLayoutRefreshTimer()
@@ -1420,7 +1412,7 @@ namespace CIARE
 
             _editorLayoutRefreshTimer = new System.Windows.Forms.Timer(components)
             {
-                Interval = 50
+                Interval = 16
             };
             _editorLayoutRefreshTimer.Tick += OnEditorLayoutRefreshTimer;
         }
@@ -1591,6 +1583,7 @@ namespace CIARE
 
         private void OnFileExplorerWatcherEvent(object sender, FileSystemEventArgs e)
         {
+            InvalidateCompletionSourceFile(e.FullPath);
             string parentDir = Path.GetDirectoryName(e.FullPath);
             if (!string.IsNullOrEmpty(parentDir))
                 ScheduleExplorerRefresh(parentDir);
@@ -1601,12 +1594,15 @@ namespace CIARE
 
         private void OnFileExplorerWatcherChanged(object sender, FileSystemEventArgs e)
         {
+            InvalidateCompletionSourceFile(e.FullPath);
             if (ShouldRefreshExplorerNuGetPackages(e.FullPath))
                 ScheduleExplorerNuGetRefresh();
         }
 
         private void OnFileExplorerWatcherRenamed(object sender, RenamedEventArgs e)
         {
+            InvalidateCompletionSourceFile(e.OldFullPath);
+            InvalidateCompletionSourceFile(e.FullPath);
             string parentDir = Path.GetDirectoryName(e.FullPath);
             if (!string.IsNullOrEmpty(parentDir))
                 ScheduleExplorerRefresh(parentDir);
@@ -2538,6 +2534,8 @@ namespace CIARE
             bool canAddProjectToSolution = hasSolutionContext &&
                 IsAddProjectToSolutionContext(path, solutionPath);
             bool hasProjectContext = !string.IsNullOrEmpty(projectPath);
+            _fileExplorerBuildProjectMenuItem.Visible = !string.IsNullOrEmpty(GetExplorerBuildProjectPath(path));
+            _fileExplorerBuildProjectMenuItem.Enabled = !_explorerProjectBuildRunning;
             bool hasProjectReferenceCandidates = hasProjectContext &&
                 ProjectReferenceManager.GetReferenceableProjects(projectPath, solutionPath,
                     _fileExplorerRootPath).Count > 0;
@@ -3717,7 +3715,7 @@ namespace CIARE
 
         private void ScheduleCurrentTypeCheck(TextEditorControl editor, string code = null)
         {
-            if (editor == null)
+            if (!isLoaded || editor == null)
                 return;
 
             string filePath = GetActiveEditorFilePath();
@@ -4775,7 +4773,7 @@ namespace CIARE
             if (_fileExplorerPanel == null)
                 return;
 
-            var theme = ThemeManager.GetCompletionThemeColors(highlight);
+            var theme = ThemeManager.GetCompletionThemeColors(highlight ?? _appliedTheme);
             bool dark = GlobalVariables.darkColor;
             Color backColor = dark ? theme.BackColor : SystemColors.Window;
             Color headerColor = dark ? theme.RowAlternateColor : SystemColors.Control;
@@ -4828,71 +4826,93 @@ namespace CIARE
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            this.Hide();
             Instance = this;
-            this.Text = $"CIARE {GlobalVariables.versionName}";
-            TabControllerManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
-            ThemeManager.LoadExternalThemes();
-            InitializeFileExplorerPane();
-            Initiliaze();
-            Console.SetOut(new ControlWriter(outputRBT));
-            InitializeEditor.GenerateLiveSessionId();
-            InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
-            CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
-            StartFilesOS.CheckOSStartFile(GlobalVariables.registryPath);
-            StartFilesOS.CheckWinLoginState(GlobalVariables.registryPath);
-            BuildConfig.CheckConfig(GlobalVariables.registryPath);
-            BuildConfig.CheckPlatform(GlobalVariables.registryPath);
-            TargetFramework.CheckFramework(GlobalVariables.registryPath);
-            LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
-            OpenAISetting.CheckOpenAIData(GlobalVariables.registryPath);
-            UnsafeCode.CheckUnsafeStatus(GlobalVariables.registryPath);
-            Publish.CheckPublishStatus(GlobalVariables.registryPath);
-            if (GlobalVariables.OStartUp)
-                TabControllerManage.ReadTabs(EditorTabControl, SelectedEditor.GetSelectedEditor(), GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
-            else
-                TabControllerManage.CleanStoredTabs(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
-            this.Show();
-            myProjectContent = new Dom.DefaultProjectContent();
-            myProjectContent.Language = CurrentLanguageProperties;
-            _apiConnectionEvents = new ApiConnectionEvents();
-            linesCountLbl.Text = string.Empty;
-            linesPositionLbl.Text = string.Empty;
-            SelectedEditor.GetSelectedEditor().ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
-
-            //File open via parameters(Open with option..)
-            string arg = ReadArgs(s_args);
-            FileManage.OpenFileFromArgs(arg, EditorTabControl);
-            //----------------------------------
-
-            if (!GlobalVariables.isCLIOpen)
+            SuspendLayout();
+            splitContainer1.SuspendLayout();
+            EditorTabControl.SuspendLayout();
+            try
             {
-                InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
+                this.Text = $"CIARE {GlobalVariables.versionName}";
+                TabControllerManage.CleanFileSizeStoreFile(GlobalVariables.tabsFilePath);
+                ThemeManager.LoadExternalThemes();
+                InitializeEditor.ReadEditorWindowSize(this, GlobalVariables.registryPath);
+                InitializeEditor.ReadOutputWindowState(GlobalVariables.registryPath, splitContainer1);
+                InitializeEditor.WinLoginState(GlobalVariables.registryPath, GlobalVariables.OWinLogin, out GlobalVariables.OWinLoginState);
+                CodeCompletion.CheckCodeCompletion(GlobalVariables.registryPath);
+                myProjectContent = new Dom.DefaultProjectContent { Language = CurrentLanguageProperties };
+                _apiConnectionEvents = new ApiConnectionEvents();
+                EditorTabControl.SelectedIndex = 1;
+                FoldingCode.CheckFoldingCodeStatus(GlobalVariables.registryPath);
+                LineNumber.CheckLineNumberStatus(GlobalVariables.registryPath);
+                InitializeFileExplorerPane();
+                Console.SetOut(new ControlWriter(outputRBT));
+                InitializeEditor.GenerateLiveSessionId();
+                InitializeEditor.CleanNugetFolder(GlobalVariables.downloadNugetPath);
+                StartFilesOS.CheckOSStartFile(GlobalVariables.registryPath);
+                StartFilesOS.CheckWinLoginState(GlobalVariables.registryPath);
+                BuildConfig.CheckConfig(GlobalVariables.registryPath);
+                BuildConfig.CheckPlatform(GlobalVariables.registryPath);
+                TargetFramework.CheckFramework(GlobalVariables.registryPath);
+                LiveShare.CheckApiLiveShare(GlobalVariables.registryPath);
+                OpenAISetting.CheckOpenAIData(GlobalVariables.registryPath);
+                UnsafeCode.CheckUnsafeStatus(GlobalVariables.registryPath);
+                Publish.CheckPublishStatus(GlobalVariables.registryPath);
+                if (GlobalVariables.OStartUp)
+                    TabControllerManage.ReadTabs(EditorTabControl, SelectedEditor.GetSelectedEditor(), GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+                else
+                    TabControllerManage.CleanStoredTabs(GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll);
+                linesCountLbl.Text = string.Empty;
+                linesPositionLbl.Text = string.Empty;
+
+                //File open via parameters(Open with option..)
+                string arg = ReadArgs(s_args);
+                FileManage.OpenFileFromArgs(arg, EditorTabControl);
+                //----------------------------------
+
+                if (!GlobalVariables.isCLIOpen)
+                {
+                    InitializeEditor.GetTabIndexPosLine(GlobalVariables.registryPath, GlobalVariables.OlastTabPosition, EditorTabControl);
+                }
+                else
+                {
+                    TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, GlobalVariables.openedFilePath);
+                }
+                // Get last opened tab MD5.
+                if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
+                    GlobalVariables.openedFileMD5 = FileHash.GetFileHash(SelectedEditor.GetSelectedEditor().Text);
+
+                if (GlobalVariables.darkColor)
+                {
+                    FrmColorMod.EnableDarkTitleBar(this.Handle);
+                    FrmColorMod.EnableDarkTitleBar(EditorTabControl.Handle);
+                }
+
+                RestoreFileExplorerState();
             }
-            else
+            finally
             {
-                TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, GlobalVariables.openedFilePath);
+                EditorTabControl.ResumeLayout(true);
+                splitContainer1.ResumeLayout(true);
+                ResumeLayout(true);
             }
+
+            // Restore pane sizes before the first paint, once their parents have final bounds.
+            ApplyEditorExplorerMinimumWidths();
+            ApplyFileExplorerLayoutValues();
+            PositionFileExplorerShowButton();
+            RefreshEditorLayoutBounds();
             isLoaded = true;
-            ReloadRef();
-
-            // Get last opened tab MD5.
-            if (!string.IsNullOrEmpty(SelectedEditor.GetSelectedEditor().Text))
-                GlobalVariables.openedFileMD5 = FileHash.GetFileHash(SelectedEditor.GetSelectedEditor().Text);
-
-            if (GlobalVariables.darkColor)
-            {
-                FrmColorMod.EnableDarkTitleBar(this.Handle);
-                FrmColorMod.EnableDarkTitleBar(EditorTabControl.Handle);
-            }
-
-            // Run initial type check so errors are underlined from the first load.
-            RestoreFileExplorerState();
             QueueFileExplorerLayoutApply();
-            QueueEditorLayoutRefresh();
-            var startEditor = SelectedEditor.GetSelectedEditor();
-            if (startEditor != null && !string.IsNullOrWhiteSpace(startEditor.Text))
-                ScheduleCurrentTypeCheck(startEditor);
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            if (IsDisposed || Disposing)
+                return;
+
+            ReloadRef();
+            QueueEditorTextRefresh();
         }
 
         private void SetCodeCompletion(int index)
@@ -4904,7 +4924,6 @@ namespace CIARE
                 ToolTipProvider.Attach(this, SelectedEditor.GetSelectedEditor(index));
 
                 EnsureCompletionRegistry();
-                SelectedEditor.GetSelectedEditor(index).ActiveTextAreaControl.Refresh();
             }
         }
 
@@ -4914,11 +4933,7 @@ namespace CIARE
                 return;
 
             pcRegistry = new Dom.ProjectContentRegistry();
-            string completionCachePath = Path.Combine(Path.GetTempPath(), "CSharpCodeCompletion");
-            if (!Directory.Exists(completionCachePath))
-                Directory.CreateDirectory(completionCachePath);
-
-            pcRegistry.ActivatePersistence(completionCachePath);
+            // Persisted DOM tables eagerly recreate every member and defeat lazy metadata.
             _completionRegistryInitialized = true;
         }
 
@@ -5206,7 +5221,12 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void textEditorControl1_TextChanged(object sender, EventArgs e)  => TextDataChangedAction();
+        private void textEditorControl1_TextChanged(object sender, EventArgs e)
+        {
+            RealTimeChecker.InvalidatePendingCheck();
+            Interlocked.Increment(ref _completionTextVersion);
+            TextDataChangedAction();
+        }
 
         /// <summary>
         /// Function for check if text is changed in editor.
@@ -5221,7 +5241,7 @@ namespace CIARE
 
         private void QueueEditorTextRefresh()
         {
-            if (EditorTabControl == null || EditorTabControl.IsDisposed || IsDisposed)
+            if (!isLoaded || EditorTabControl == null || EditorTabControl.IsDisposed || IsDisposed)
                 return;
 
             _pendingEditorTextRefresh = true;
@@ -5343,9 +5363,12 @@ namespace CIARE
         {
             if (!_isFullScreen)
             {
+                _windowPlacementSaveTimer?.Stop();
+                SaveWindowPlacement();
                 _savedBorderStyle = this.FormBorderStyle;
                 _savedWindowState = this.WindowState;
                 _markStartFileChkVisible = markStartFileChk.Visible;
+                _isFullScreen = true;
 
                 this.WindowState = FormWindowState.Normal;
                 this.FormBorderStyle = FormBorderStyle.None;
@@ -5363,7 +5386,6 @@ namespace CIARE
                 markStartFileChk.Visible = false;
 
                 fullScreenToolStripMenuItem.Checked = true;
-                _isFullScreen = true;
             }
             else
             {
@@ -5384,6 +5406,7 @@ namespace CIARE
                 fullScreenToolStripMenuItem.Checked = false;
                 _isFullScreen = false;
             }
+            QueueEditorLayoutRefresh();
         }
 
         private void fullScreenToolStripMenuItem_Click(object sender, EventArgs e) => ToggleFullScreen();
@@ -5534,13 +5557,20 @@ namespace CIARE
         }
         #endregion
 
-        public void SetHighLighter(TextEditorControl textEditorControl, string highlight)
+        public void SetHighLighter(TextEditorControl textEditorControl, string highlight, bool persistSetting = true)
         {
+            highlight = highlight ?? string.Empty;
             if (highlight.Length > 0)
             {
                 textEditorControl.SetHighlighting(highlight);
-                RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlight);
+                if (persistSetting)
+                    RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, "highlight", highlight);
             }
+            // New tabs inherit the existing form palette without repainting every control.
+            if (!persistSetting && string.Equals(_appliedTheme, highlight, StringComparison.Ordinal))
+                return;
+
+            _appliedTheme = highlight;
             var theme = CIARE.GUI.ThemeManager.GetCompletionThemeColors(highlight);
             ICSharpCode.TextEditor.Gui.CompletionWindow.CodeCompletionListView.ActiveTheme = theme;
             ICSharpCode.TextEditor.Gui.CompletionWindow.DeclarationViewWindow.ThemeBackColor = theme.BackColor;
@@ -5794,6 +5824,9 @@ namespace CIARE
             else
                 e.Cancel = false;
 
+            _windowPlacementSaveTimer?.Stop();
+            SaveWindowPlacement();
+
             if (_editorLayoutRefreshTimer != null)
             {
                 _editorLayoutRefreshTimer.Stop();
@@ -5847,6 +5880,9 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_Activated(object sender, EventArgs e)
         {
+            if (!isLoaded)
+                return;
+
             try
             {
                 FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath, GlobalVariables.savedFileNoMD5Check);
@@ -5975,11 +6011,15 @@ namespace CIARE
         /// </summary>
         public void ReloadRef()
         {
+            if (!isLoaded || Disposing || IsDisposed)
+                return;
+
             if (GlobalVariables.OCodeCompletion)
             {
                 if (parserThread != null && parserThread.IsAlive)
                     return;
 
+                EnsureCompletionRegistry();
                 parserThread = new Thread(ParserThread);
                 parserThread.IsBackground = true;
                 parserThread.Start();
@@ -6018,13 +6058,63 @@ namespace CIARE
 
         void ParseStep()
         {
+            if (!Monitor.TryEnter(_completionParseLock)) return;
+            try { ParseCompletionStep(); }
+            finally { Monitor.Exit(_completionParseLock); }
+        }
+
+        private void ParseCompletionStep()
+        {
+            if (IsDisposed || Disposing || !IsHandleCreated)
+                return;
+
             string code = null;
+            TextEditorControl editor = null;
             CompletionScopeSnapshot completionScope = default;
-            Invoke(new System.Windows.Forms.MethodInvoker(delegate
+            int textVersion = 0;
+            try
             {
-                code = SelectedEditor.GetSelectedEditor().Text;
-                completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
-            }));
+                Invoke(new System.Windows.Forms.MethodInvoker(delegate
+                {
+                    if (IsDisposed || Disposing || EditorTabControl.SelectedIndex <= 0)
+                        return;
+
+                    completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
+                    textVersion = Volatile.Read(ref _completionTextVersion);
+                    editor = SelectedEditor.GetSelectedEditor();
+                }));
+            }
+            catch (InvalidOperationException) when (IsDisposed || Disposing || !IsHandleCreated)
+            {
+                // The form can close between checking its handle and invoking the UI thread.
+                return;
+            }
+            if (editor == null)
+                return;
+
+            bool hasStamp = TryGetCompletionSourceStamp(completionScope, out ulong sourceStamp);
+            int sourceVersion = Volatile.Read(ref _completionSourceVersion);
+            bool sameWorkspace = hasStamp && _hasParsedSourceStamp && sourceStamp == _lastParsedSourceStamp
+                && sourceVersion == _lastParsedSourceVersion && completionScope.Version == _lastParsedScopeVersion;
+            if (sameWorkspace && textVersion == _lastParsedTextVersion)
+                return;
+            // An unchanged document needs no full-text allocation on each idle poll.
+            try
+            {
+                Invoke(new System.Windows.Forms.MethodInvoker(() =>
+                {
+                    if (editor.IsDisposed || editor != SelectedEditor.GetSelectedEditor() ||
+                        !IsCompletionScopeCurrent(completionScope))
+                        return;
+                    textVersion = Volatile.Read(ref _completionTextVersion);
+                    code = editor.Text;
+                }));
+            }
+            catch (InvalidOperationException) when (IsDisposed || Disposing || !IsHandleCreated) { return; }
+            if (code == null) return;
+            if (!sameWorkspace)
+                ClearCompletionGlobalUsingsCache();
+
             var workspaceCompletionClasses = new List<WorkspaceCompletionClass>();
             AddRoslynCompletionClasses(workspaceCompletionClasses, code, completionScope.CurrentFilePath);
             var topLevelFunctions = new List<WorkspaceCompletionItem>();
@@ -6035,7 +6125,8 @@ namespace CIARE
                 return;
 
             SetActiveCompletionCompilationUnit(activeCompilationUnit, completionScope.CurrentFilePath);
-            ParseWorkspaceFilesForCompletion(completionScope, workspaceCompletionClasses);
+            if (!sameWorkspace)
+                ParseWorkspaceFilesForCompletion(completionScope, workspaceCompletionClasses);
             if (!IsCompletionScopeCurrent(completionScope))
                 return;
 
@@ -6044,10 +6135,19 @@ namespace CIARE
                 if (!IsCompletionScopeCurrent(completionScope))
                     return;
 
-                _workspaceCompletionClasses.Clear();
+                if (sameWorkspace)
+                    _workspaceCompletionClasses.RemoveAll(item => string.Equals(item.FilePath,
+                        completionScope.CurrentFilePath, StringComparison.OrdinalIgnoreCase));
+                else
+                    _workspaceCompletionClasses.Clear();
                 _workspaceCompletionClasses.AddRange(workspaceCompletionClasses);
                 _topLevelLocalFunctions.Clear();
                 _topLevelLocalFunctions.AddRange(topLevelFunctions);
+                _lastParsedTextVersion = textVersion;
+                _lastParsedScopeVersion = completionScope.Version;
+                _lastParsedSourceStamp = sourceStamp;
+                _lastParsedSourceVersion = sourceVersion;
+                _hasParsedSourceStamp = hasStamp;
             }
         }
 
@@ -6060,9 +6160,19 @@ namespace CIARE
         {
             if (!GlobalVariables.OCodeCompletion || myProjectContent == null)
                 return;
+            string preparedCode = PrepareCodeForNRefactoryCompletion(code ?? string.Empty, currentFilePath,
+                out _, out _, out _);
+            RefreshPreparedActiveCompletionUnit(preparedCode, currentFilePath, CancellationToken.None);
+        }
+
+        internal void RefreshPreparedActiveCompletionUnit(string preparedCode, string currentFilePath,
+            CancellationToken cancellationToken)
+        {
+            if (!GlobalVariables.OCodeCompletion || myProjectContent == null)
+                return;
 
             CompletionScopeSnapshot completionScope = RefreshCompletionScope(currentFilePath);
-            SetActiveCompletionCompilationUnit(ParseCompletionCompilationUnit(code, completionScope.CurrentFilePath),
+            SetActiveCompletionCompilationUnit(ParsePreparedCompletionCompilationUnit(preparedCode, cancellationToken),
                 completionScope.CurrentFilePath);
         }
 
@@ -6070,6 +6180,13 @@ namespace CIARE
         {
             string parsedCode = PrepareCodeForNRefactoryCompletion(code ?? string.Empty, currentFilePath,
                 out _, out _, out _);
+            return ParsePreparedCompletionCompilationUnit(parsedCode, CancellationToken.None);
+        }
+
+        private Dom.ICompilationUnit ParsePreparedCompletionCompilationUnit(string parsedCode,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             NRefactory.SupportedLanguage supportedLanguage = IsVisualBasic
                 ? NRefactory.SupportedLanguage.VBNet
                 : NRefactory.SupportedLanguage.CSharp;
@@ -6079,6 +6196,7 @@ namespace CIARE
             {
                 parser.ParseMethodBodies = false;
                 parser.Parse();
+                cancellationToken.ThrowIfCancellationRequested();
                 return ConvertCompilationUnit(parser.CompilationUnit);
             }
         }
@@ -6108,6 +6226,7 @@ namespace CIARE
             public string CurrentFilePath;
             public string WorkspaceFolder;
             public List<string> SourceFolders;
+            public List<string> ProjectPaths;
             public string WorkspaceKey;
             public string FileKey;
             public int Version;
@@ -6143,6 +6262,7 @@ namespace CIARE
                 CurrentFilePath = currentFilePath,
                 WorkspaceFolder = workspaceFolder,
                 SourceFolders = sourceFolders,
+                ProjectPaths = projectPaths,
                 WorkspaceKey = workspaceKey,
                 FileKey = fileKey,
                 Version = Volatile.Read(ref _completionWorkspaceVersion)
@@ -6466,20 +6586,8 @@ namespace CIARE
                 path: activePath, cancellationToken: cancellationToken);
             RoslynCompletionProjectSnapshot projectSnapshot = GetRoslynCompletionProjectSnapshot(
                 currentFilePath, projectPath, parseOptions, cancellationToken);
-            var syntaxTrees = new List<SyntaxTree>(projectSnapshot.SyntaxTrees.Count + 1)
-            {
-                activeTree
-            };
-            syntaxTrees.AddRange(projectSnapshot.SyntaxTrees);
-
             cancellationToken.ThrowIfCancellationRequested();
-            var compilation = CSharpCompilation.Create(
-                "__CiareCompletion",
-                syntaxTrees,
-                projectSnapshot.References,
-                new CSharpCompilationOptions(
-                    OutputKind.DynamicallyLinkedLibrary,
-                    allowUnsafe: GlobalVariables.OUnsafeCode));
+            var compilation = projectSnapshot.WithActiveTree(activeTree);
 
             var root = activeTree.GetCompilationUnitRoot();
             return new RoslynCompletionContext(
@@ -6535,6 +6643,7 @@ namespace CIARE
                 NormalizeCompletionPath(projectPath),
                 projectWriteTicks.ToString(),
                 parseOptions.LanguageVersion.ToString(),
+                GlobalVariables.OUnsafeCode.ToString(),
                 GlobalVariables.Framework ?? string.Empty);
         }
 
@@ -6896,7 +7005,7 @@ namespace CIARE
                     return;
                 }
 
-                references.Add(MetadataReference.CreateFromFile(referencePath));
+                references.Add(SharedMetadataReferences.Get(referencePath));
             }
             catch
             {
@@ -6960,6 +7069,17 @@ namespace CIARE
 
             int lookupPosition = Math.Max(0, Math.Min(caretOffset - 1, root.FullSpan.End));
             SyntaxToken token = root.FindToken(lookupPosition);
+            string normalizedExpression = NormalizeCompletionExpression(expressionText);
+            // Requests capture the receiver before the new dot is inserted. In
+            // "System.Console" the existing member access is the receiver itself,
+            // so returning its left side would suggest members of System.
+            var receiver = token.Parent?.AncestorsAndSelf().OfType<ExpressionSyntax>()
+                .FirstOrDefault(expression => expression.Span.End <= caretOffset &&
+                    string.Equals(NormalizeCompletionExpression(expression.ToString()),
+                        normalizedExpression, StringComparison.Ordinal));
+            if (receiver != null)
+                return receiver;
+
             var memberAccess = token.Parent?.AncestorsAndSelf()
                 .OfType<MemberAccessExpressionSyntax>()
                 .Where(access => access.OperatorToken.SpanStart <= lookupPosition &&
@@ -6969,7 +7089,6 @@ namespace CIARE
             if (memberAccess != null)
                 return memberAccess.Expression;
 
-            string normalizedExpression = NormalizeCompletionExpression(expressionText);
             if (string.IsNullOrEmpty(normalizedExpression))
                 return null;
 
@@ -7697,8 +7816,10 @@ namespace CIARE
         }
 
         internal string PrepareCodeForNRefactoryCompletion(string code, string filePath,
-            out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine)
+            out int prefixLineOffset, out int wrapLineOffset, out int bodyStartLine,
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             prefixLineOffset = 0;
             wrapLineOffset = 0;
             bodyStartLine = 1;
@@ -7715,12 +7836,23 @@ namespace CIARE
             }
 
             return WrapTopLevelStatementsForNRefactory(ConvertFileScopedNamespace(codeWithGlobalUsings),
-                out wrapLineOffset, out bodyStartLine);
+                out wrapLineOffset, out bodyStartLine, cancellationToken);
         }
 
         private string GetProjectGlobalUsingsForCompletion(string sourceFilePath)
         {
-            return ReadGlobalUsingsAsRegularDirectives(GetCompletionProjectPath(sourceFilePath));
+            string projectPath = GetCompletionProjectPath(sourceFilePath);
+            if (string.IsNullOrEmpty(projectPath)) return string.Empty;
+            lock (_completionGlobalUsingsLock)
+            {
+                int version = Volatile.Read(ref _completionSourceVersion);
+                if (_completionGlobalUsings.TryGetValue(projectPath, out var entry) && entry.Version == version)
+                    return entry.Text;
+                string text = ReadGlobalUsingsAsRegularDirectives(projectPath);
+                if (_completionGlobalUsings.Count >= 16) _completionGlobalUsings.Clear();
+                _completionGlobalUsings[projectPath] = (version, text);
+                return text;
+            }
         }
 
         private string GetCompletionProjectPath(string sourceFilePath)
@@ -7883,7 +8015,8 @@ namespace CIARE
         /// (i.e. the first line that will be shifted by <paramref name="lineOffset"/>).
         /// </param>
         /// <returns>Wrapped code, or the original code unchanged when no wrapping is needed.</returns>
-        internal static string WrapTopLevelStatementsForNRefactory(string code, out int lineOffset, out int bodyStartLine)
+        internal static string WrapTopLevelStatementsForNRefactory(string code, out int lineOffset, out int bodyStartLine,
+            CancellationToken cancellationToken = default)
         {
             lineOffset = 0;
             bodyStartLine = 1;
@@ -7893,8 +8026,8 @@ namespace CIARE
 
             try
             {
-                var tree = CSharpSyntaxTree.ParseText(code);
-                var root = tree.GetCompilationUnitRoot();
+                var tree = CSharpSyntaxTree.ParseText(code, cancellationToken: cancellationToken);
+                var root = tree.GetCompilationUnitRoot(cancellationToken);
                 if (!root.Members.OfType<GlobalStatementSyntax>().Any())
                     return code;
 
@@ -7915,6 +8048,7 @@ namespace CIARE
                 lineOffset = 2; // "class __TopLevel__ {\n" + "void __Main__() {\n"
                 return head + "class __TopLevel__ {\nvoid __Main__() {" + body + "\n}\n}";
             }
+            catch (OperationCanceledException) { throw; }
             catch
             {
                 return code;
@@ -8276,19 +8410,36 @@ namespace CIARE
 
         private sealed class RoslynCompletionProjectSnapshot
         {
+            private readonly object compilationLock = new object();
+            private CSharpCompilation compilation;
+            private SyntaxTree activeTree;
+
             public RoslynCompletionProjectSnapshot(string cacheKey, DateTime createdUtc,
                 List<SyntaxTree> syntaxTrees, List<MetadataReference> references)
             {
                 CacheKey = cacheKey;
                 CreatedUtc = createdUtc;
-                SyntaxTrees = syntaxTrees;
-                References = references;
+                compilation = CSharpCompilation.Create("__CiareCompletion", syntaxTrees, references,
+                    new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                        allowUnsafe: GlobalVariables.OUnsafeCode));
+            }
+
+            public CSharpCompilation WithActiveTree(SyntaxTree tree)
+            {
+                lock (compilationLock)
+                {
+                    // Preserve metadata bindings and unchanged project syntax trees
+                    // across keystrokes; Roslyn compilations are immutable snapshots.
+                    compilation = activeTree == null
+                        ? compilation.AddSyntaxTrees(tree)
+                        : compilation.ReplaceSyntaxTree(activeTree, tree);
+                    activeTree = tree;
+                    return compilation;
+                }
             }
 
             public string CacheKey { get; }
             public DateTime CreatedUtc { get; }
-            public List<SyntaxTree> SyntaxTrees { get; }
-            public List<MetadataReference> References { get; }
         }
 
         private sealed class WorkspaceCompletionItem
@@ -9168,7 +9319,7 @@ namespace CIARE
                         foreach (var referencePath in trusted.Split(Path.PathSeparator))
                         {
                             if (!string.IsNullOrEmpty(referencePath) && File.Exists(referencePath))
-                                _usagePlatformReferences.Add(MetadataReference.CreateFromFile(referencePath));
+                                _usagePlatformReferences.Add(SharedMetadataReferences.Get(referencePath));
                         }
                     }
                 }
@@ -9186,7 +9337,7 @@ namespace CIARE
                             var parts = customReference.Split('|');
                             string referencePath = parts.Length >= 2 ? parts[1] : customReference;
                             if (!string.IsNullOrEmpty(referencePath) && File.Exists(referencePath))
-                                _usageCustomReferences.Add(MetadataReference.CreateFromFile(referencePath));
+                                _usageCustomReferences.Add(SharedMetadataReferences.Get(referencePath));
                         }
                         catch { }
                     }
@@ -9602,21 +9753,34 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_Resize(object sender, EventArgs e)
         {
-            if (this.WindowState == FormWindowState.Minimized)
+            if (!isLoaded || _isFullScreen || WindowState == FormWindowState.Minimized)
                 return;
 
-            if (this.WindowState != FormWindowState.Maximized)
+            if (_windowPlacementSaveTimer == null)
             {
-                InitializeEditor.SetEditorWindowSize(GlobalVariables.registryPath, this.Width, this.Height);
-                InitializeEditor.SetMaximizedWindowState(GlobalVariables.registryPath, false);
+                _windowPlacementSaveTimer = new System.Windows.Forms.Timer(components) { Interval = 250 };
+                _windowPlacementSaveTimer.Tick += (timerSender, args) =>
+                {
+                    _windowPlacementSaveTimer.Stop();
+                    SaveWindowPlacement();
+                };
             }
-            else
-            {
-                InitializeEditor.SetMaximizedWindowState(GlobalVariables.registryPath, true);
-            }
+            _windowPlacementSaveTimer.Stop();
+            _windowPlacementSaveTimer.Start();
             QueueEditorLayoutRefresh();
         }
 
+        private void SaveWindowPlacement()
+        {
+            if (!isLoaded || _isFullScreen || WindowState == FormWindowState.Minimized)
+                return;
+
+            Size normalSize = WindowState == FormWindowState.Normal ? Size : RestoreBounds.Size;
+            if (normalSize.Width > 0 && normalSize.Height > 0)
+                InitializeEditor.SetEditorWindowSize(GlobalVariables.registryPath, normalSize.Width, normalSize.Height);
+            InitializeEditor.SetMaximizedWindowState(GlobalVariables.registryPath,
+                WindowState == FormWindowState.Maximized);
+        }
 
         /// <summary>
         /// Mark file for auto start event on Windows reboot.
@@ -9640,7 +9804,6 @@ namespace CIARE
         {
             if (sender is TextEditorControl editor)
             {
-                ConfigureEditorScrollBars(editor);
                 if (editor.secondaryTextArea != null)
                     SplitEditorWindow.SetSplitWindowSize(editor, GlobalVariables.splitWindowPosition);
             }
@@ -9718,16 +9881,53 @@ namespace CIARE
         /// <param name="e"></param>
         private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
-            string titleTab = EditorTabControl.SelectedTab.Text.Trim();
-            string filePath = EditorTabControl.SelectedTab.ToolTipText.Trim();
+            if (isLoaded && e.TabPageIndex == 0 && EditorTabControl.TabCount > 1)
+            {
+                // The plus header is an action, never an empty document page.
+                // Its mouse handler creates and selects the actual editor tab.
+                e.Cancel = true;
+                return;
+            }
+            if (Instance == null || e.TabPage == null || e.TabPageIndex <= 0)
+                return;
+
+            // Tab counts also change on removal; only an empty page needs a new editor.
+            selectedEditor = e.TabPage.Controls.OfType<TextEditorControl>().FirstOrDefault();
+            if (selectedEditor == null)
+            {
+                e.TabPage.SuspendLayout();
+                try
+                {
+                    selectedEditor = new TextEditorControl { Visible = false };
+                    ConfigureEditorTabPageLayout(e.TabPage);
+                    SetDesignEditor(ref selectedEditor);
+                    e.TabPage.Controls.Add(selectedEditor);
+                    InitializeEditorSettings(selectedEditor, e.TabPageIndex);
+                    if (e.TabPage is EditorTabPage filePage && filePage.InitialText != null)
+                    {
+                        string initialText = filePage.InitialText;
+                        filePage.InitialText = null;
+                        selectedEditor.Text = initialText;
+                    }
+                }
+                finally
+                {
+                    e.TabPage.ResumeLayout(true);
+                }
+                selectedEditor.Visible = true;
+            }
+            QueueEditorLayoutRefresh();
+
+            string titleTab = e.TabPage.Text.Trim();
+            string filePath = e.TabPage.ToolTipText.Trim();
 
             if (isLoaded)
             {
                 try
                 {
-                    GlobalVariables.textAreaFirst = SelectedEditor.GetSelectedEditor().primaryTextArea;
-                    GlobalVariables.textAreaSecond = SelectedEditor.GetSelectedEditor().secondaryTextArea;
-                    InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, SelectedEditor.GetSelectedEditor());
+                    GlobalVariables.textAreaFirst = selectedEditor.primaryTextArea;
+                    GlobalVariables.textAreaSecond = selectedEditor.secondaryTextArea;
+                    InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, selectedEditor);
                 }
                 catch
                 {
@@ -9758,18 +9958,6 @@ namespace CIARE
             {
                 this.Text = $"CIARE {GlobalVariables.versionName}";
             }
-            var tabCount = this.EditorTabControl.TabCount;
-            if (tabCount != _countTabs)
-            {
-                _countTabs = tabCount;
-                dynamicTextEdtior = new TextEditorControl();
-                TabPage tabPage = EditorTabControl.TabPages[EditorTabControl.SelectedIndex];
-                ConfigureEditorTabPageLayout(tabPage);
-                SetDesignEditor(ref dynamicTextEdtior);
-                tabPage.Controls.Add(dynamicTextEdtior);
-                QueueEditorLayoutRefresh();
-                Initiliaze(EditorTabControl.SelectedIndex);
-            }
 
             //TODO: Will see in future if is needed
             // FileManage.CheckFileExternalEdited(GlobalVariables.tabsFilePath);
@@ -9785,6 +9973,7 @@ namespace CIARE
         private void EditorTabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (!isLoaded) return;
+            Interlocked.Increment(ref _completionTextVersion);
             try
             {
                 var editor = SelectedEditor.GetSelectedEditor();
@@ -9813,7 +10002,7 @@ namespace CIARE
             dynamicTextEdtior.Name = $"textEditorControl{tabCount}";
             dynamicTextEdtior.Anchor = AnchorStyles.None;
             dynamicTextEdtior.Dock = DockStyle.Fill;
-            dynamicTextEdtior.BackColor = SystemColors.Window;
+            dynamicTextEdtior.BackColor = GetEditorSurfaceBackColor();
             dynamicTextEdtior.BorderStyle = BorderStyle.FixedSingle;
             dynamicTextEdtior.Font = new Font("Consolas", 10F);
             dynamicTextEdtior.Highlighting = null;
@@ -9837,8 +10026,6 @@ namespace CIARE
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
             ConfigureEditorControlLayout(dynamicTextEdtior);
-            dynamicTextEdtior.Focus();
-            HookEditorAskAI(dynamicTextEdtior);
         }
 
         /// <summary>

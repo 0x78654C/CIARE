@@ -41,10 +41,26 @@ namespace ICSharpCode.SharpDevelop.Dom
 
 
         private static Dictionary<string, Assembly> _assemblies = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator)
+    .Where(IsFrameworkAssembly)
     .Select(e => IsManaged(e))
+    .Where(e => e.isManaged)
     .Select(e => new { e.name, e.assembly })
     .GroupBy(e => e.name)
     .ToDictionary(e => e.Key, e => e.First().assembly);
+
+        private static bool IsFrameworkAssembly(string path)
+        {
+            // Keep framework and explicitly added references in the legacy resolver.
+            // Roslyn already provides metadata for the application's internal dependencies.
+            string name = Path.GetFileNameWithoutExtension(path);
+            return name.StartsWith("System.", StringComparison.Ordinal) ||
+                name.StartsWith("Microsoft.Win32.", StringComparison.Ordinal) ||
+                name.StartsWith("Microsoft.VisualBasic", StringComparison.Ordinal) ||
+                name.StartsWith("Presentation", StringComparison.Ordinal) ||
+                name.StartsWith("UIAutomation", StringComparison.Ordinal) ||
+                name is "System" or "mscorlib" or "netstandard" or "Microsoft.CSharp" or "Accessibility" or
+                    "WindowsBase" or "WindowsFormsIntegration" or "ReachFramework" or "DirectWriteForwarder";
+        }
 
         public void LoadCustomAssembly(string assemblyName)
         {
@@ -65,13 +81,22 @@ namespace ICSharpCode.SharpDevelop.Dom
 
         public IProjectContent load(Assembly assembly)
         {
-            try
+            if (assembly == null) return null;
+            lock (contents)
             {
-                return new ReflectionProjectContent(assembly, this);
-            }
-            catch
-            {
-                return null;
+                if (contents.TryGetValue(assembly.FullName, out var existing))
+                    return existing;
+                try
+                {
+                    var content = new ReflectionProjectContent(assembly, this);
+                    contents[assembly.FullName] = content;
+                    contents[assembly.Location] = content;
+                    return content;
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
@@ -83,8 +108,9 @@ namespace ICSharpCode.SharpDevelop.Dom
             List<IProjectContent> list;
             lock (contents)
             {
-                list = new List<IProjectContent>(contents.Values);
+                list = contents.Values.Distinct().ToList();
                 contents.Clear();
+                mscorlibContent = null;
             }
             // dispose outside the lock
             foreach (IProjectContent pc in list)

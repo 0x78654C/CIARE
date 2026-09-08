@@ -54,6 +54,10 @@ namespace CIARE.GUI
                 MainForm.Instance.hotKeyToolStripMenuItem,
                 MainForm.Instance.fullScreenToolStripMenuItem
             };
+            // Help also contains commands added at runtime, such as the update checker.
+            foreach (ToolStripItem item in MainForm.Instance.helpToolStripMenuItem.DropDownItems)
+                if (item is ToolStripMenuItem menuItem && !listToosStripM.Contains(menuItem))
+                    listToosStripM.Add(menuItem);
             return listToosStripM;
         }
 
@@ -76,6 +80,9 @@ namespace CIARE.GUI
                 MainForm.Instance.compileStripSeparator1,
                 MainForm.Instance.viewSeparator1
             };
+            foreach (ToolStripItem item in MainForm.Instance.helpToolStripMenuItem.DropDownItems)
+                if (item is ToolStripSeparator separator && !listToosStripS.Contains(separator))
+                    listToosStripS.Add(separator);
             return listToosStripS;
         }
     }

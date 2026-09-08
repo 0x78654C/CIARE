@@ -23,6 +23,8 @@
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Compilation uses Roslyn directly; system.codedom breaks configuration loading on .NET 10. -->
+    <RoslynRegisterInConfig>false</RoslynRegisterInConfig>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
@@ -77,6 +79,8 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AutoUpdater\AutoUpdater.csproj" />
+    <ProjectReference Include="..\UpdateCleanup\UpdateCleanup.csproj" />
     <ProjectReference Include="..\..\CIARE\OpenAI.Api.Client\OpenAI.Api.Client.csproj" />
     <ProjectReference Include="..\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\ICSharpCode.SharpDevelop.Dom\Project\ICSharpCode.SharpDevelop.Dom.csproj" />
@@ -134,6 +138,12 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
   </ItemGroup>
   <ItemGroup>
+    <!-- This partial class contains update logic, not a second form designer. -->
+    <Compile Update="Model\MainForm.Updates.cs">
+      <SubType>Code</SubType>
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Remove="Model\MainForm.Updates.resx" />
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

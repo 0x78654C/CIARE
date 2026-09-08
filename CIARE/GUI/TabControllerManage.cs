@@ -11,6 +11,14 @@ using System.Windows.Forms;
 
 namespace CIARE.GUI
 {
+    // Keep a file's initial text only until the selecting handler prepares its hidden editor.
+    internal sealed class EditorTabPage : TabPage
+    {
+        internal string InitialText;
+
+        internal EditorTabPage(string caption) : base(caption) { }
+    }
+
     [SupportedOSPlatform("windows")]
     public class TabControllerManage
     {
@@ -94,10 +102,9 @@ namespace CIARE.GUI
         {
             var tabCount = tabControl.TabCount;
             var lastIndex = tabControl.SelectedIndex;
-            if (lastIndex == 0)
+            if (lastIndex == 0 || (tabCount > 0 && tabControl.GetTabRect(0).Contains(e.Location)))
             {
-                tabControl.TabPages.Insert(tabCount, $"New Page               ");
-                tabControl.SelectedIndex = lastIndex + tabCount;
+                AddNewTab(tabControl);
             }
             else
                 CloseTabEvent(tabControl, SelectedEditor.GetSelectedEditor(), e);
@@ -282,7 +289,8 @@ namespace CIARE.GUI
         /// <param name="tabControl"></param>
         /// <param name="textEditorControl"></param>
         /// <param name="e"></param>
-        public static void AddNewTab(TabControl tabControl, int index = 0, bool isNotNew = false)
+        public static void AddNewTab(TabControl tabControl, int index = 0, bool isNotNew = false,
+            string initialText = null, string filePath = null)
         {
             try
             {
@@ -290,11 +298,20 @@ namespace CIARE.GUI
                 {
                     if (!isNotNew)
                     {
-                        tabControl.SelectedIndex = index;
-                        var tabCount = tabControl.TabCount;
-                        var lastIndex = tabControl.SelectedIndex;
-                        tabControl.TabPages.Insert(tabCount, $"New Page              ");
-                        tabControl.SelectedIndex = lastIndex + tabCount;
+                        var page = new EditorTabPage(filePath == null ? "New Page              " : $"{Path.GetFileName(filePath)}               ")
+                        {
+                            InitialText = initialText,
+                            BackColor = GlobalVariables.darkColor ? GlobalVariables.controlBgColor : SystemColors.Window,
+                            UseVisualStyleBackColor = false,
+                            Padding = Padding.Empty,
+                            Margin = Padding.Empty
+                        };
+                        tabControl.TabPages.Add(page);
+                        // Keep the existing document visible until the new page is ready.
+                        tabControl.SelectedTab = page;
+                        // Preserve selection-time work: a new file gets its path after selection,
+                        // avoiding an extra disk hash/completion pass while the tab is constructed.
+                        if (filePath != null) page.ToolTipText = filePath;
                     }
                 });
             }
@@ -471,11 +488,8 @@ namespace CIARE.GUI
 
                         using (var reader = new StreamReader(item.Key))
                         {
-                            AddNewTab(tabControl);
-                            SelectedEditor.GetSelectedEditor().Text = reader.ReadToEnd();
+                            AddNewTab(tabControl, initialText: reader.ReadToEnd(), filePath: item.Key);
                             MainForm.Instance.Text = $"{fileInfo.Name} : {FileManage.GetFilePath(fileInfo.FullName)} - CIARE {GlobalVariables.versionName}";
-                            MainForm.Instance.EditorTabControl.SelectedTab.Text = $"{fileInfo.Name}               ";
-                            MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = item.Key;
                             var tabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
                             StoreFileMD5(item.Key, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabIndex);
                         }

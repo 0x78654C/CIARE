@@ -156,6 +156,7 @@ namespace ICSharpCode.TextEditor
 				g.SetClip(this.DrawingPosition);
 			}
 			
+			int firstPhysicalLine = FirstPhysicalLine;
 			for (int y = 0; y < (DrawingPosition.Height + VisibleLineDrawingRemainder) / fontHeight + 1; ++y) {
 				Rectangle lineRectangle = new Rectangle(DrawingPosition.X - horizontalDelta,
 				                                        DrawingPosition.Top + y * fontHeight - VisibleLineDrawingRemainder,
@@ -163,8 +164,7 @@ namespace ICSharpCode.TextEditor
 				                                        fontHeight);
 				
 				if (rect.IntersectsWith(lineRectangle)) {
-					int fvl = textArea.Document.GetVisibleLine(FirstVisibleLine);
-					int currentLine = textArea.Document.GetFirstLogicalLine(textArea.Document.GetVisibleLine(FirstVisibleLine) + y);
+					int currentLine = textArea.Document.GetFirstLogicalLine(firstPhysicalLine + y);
 					PaintDocumentLine(g, currentLine, lineRectangle);
 				}
 			}
@@ -991,7 +991,7 @@ namespace ICSharpCode.TextEditor
 			int column       = 0;
 			int tabIndent    = Document.TextEditorProperties.TabIndent;
 			float drawingPos;
-			Graphics g = textArea.CreateGraphics();
+			using Graphics g = textArea.CreateGraphics();
 			// if no folding is interresting
 			if (f == null || !(f.StartLine < logicalLine || f.StartLine == logicalLine && f.StartColumn < logicalColumn)) {
 				drawingPos = CountColumns(ref column, 0, logicalColumn, logicalLine, g);
@@ -1031,7 +1031,6 @@ namespace ICSharpCode.TextEditor
 				drawingPos += MeasureStringWidth(g, f.FoldText, TextEditorProperties.FontContainer.RegularFont);
 			}
 			drawingPos += CountColumns(ref column, foldEnd, logicalColumn, logicalLine, g);
-			g.Dispose();
 			return (int)(drawingPos - textArea.VirtualTop.X);
 		}
 		#endregion

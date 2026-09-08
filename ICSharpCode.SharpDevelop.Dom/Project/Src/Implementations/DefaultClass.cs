@@ -118,7 +118,7 @@ namespace ICSharpCode.SharpDevelop.Dom
 				return (CalculatedFlags & hasPublicOrInternalStaticMembersFlag) == hasPublicOrInternalStaticMembersFlag;
 			}
 		}
-		public bool HasExtensionMethods {
+		public virtual bool HasExtensionMethods {
 			get {
 				return (CalculatedFlags & hasExtensionMethodsFlag) == hasExtensionMethodsFlag;
 			}

@@ -1,5 +1,4 @@
 ﻿using CIARE.Utils.Encryption;
-using OllamaInt;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -29,8 +28,6 @@ namespace CIARE.Utils.Options
                 }
                 catch
                 {
-                    var clientOllama = new OllamaLLM();
-                    var isOllamaInstalled = clientOllama.IsOllamaInstalled();
                     if (!regAiType.StartsWith("Ollama"))
                     {
                         MessageBox.Show("Invalid AI key read. Please check your key!", "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -62,9 +59,8 @@ namespace CIARE.Utils.Options
             else
                 GlobalVariables.aiTypeVar = "OpenAI";
 
-            var client = new OllamaLLM();
-            var isOllama = client.IsOllamaInstalled();
-            if (regAiType.StartsWith("Ollama") && isOllama)
+            // Restoring settings must not launch a CLI process on the UI thread.
+            if (regAiType.StartsWith("Ollama"))
             {
                 GlobalVariables.modelOllamaVar = regOllamaAIModel;
                 GlobalVariables.aiTypeVar = regAiType;

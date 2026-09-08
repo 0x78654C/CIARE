@@ -1,6 +1,7 @@
 ﻿using CIARE.Utils;
 using Microsoft.VisualBasic.ApplicationServices;
 using System;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -17,15 +18,24 @@ namespace CIARE
         [STAThread]
         static void Main()
         {
+            string[] arguments = Environment.GetCommandLineArgs();
+            if (arguments.Length > 1 && arguments[1] == "--apply-update")
+            {
+                AutoUpdater.UpdaterApplication.Run(arguments.Skip(2).ToArray());
+                return;
+            }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            SingleInstanceApplication.Run(new MainForm(), NewInstanceHandler);
+            SingleInstanceApplication.Run(NewInstanceHandler);
         }
 
         public static void NewInstanceHandler(object sender, StartupNextInstanceEventArgs e)
         {
-            s_arg = $"cli|{e.CommandLine[1]}";
             e.BringToForeground = true;
+            if (e.CommandLine.Count < 2 || MainForm.Instance == null)
+                return;
+
+            s_arg = $"cli|{e.CommandLine[1]}";
             GlobalVariables.processArg = s_arg;
             FileManage.OpenFileFromArgs(s_arg, MainForm.Instance.EditorTabControl);
         }
@@ -37,10 +47,15 @@ namespace CIARE
                 base.IsSingleInstance = true;
             }
 
-            public static void Run(Form form, StartupNextInstanceEventHandler startupNextInstanceEventHandler)
+            protected override void OnCreateMainForm()
+            {
+                MainForm = new CIARE.MainForm();
+                ((CIARE.MainForm)MainForm).InitializeUpdates();
+            }
+
+            public static void Run(StartupNextInstanceEventHandler startupNextInstanceEventHandler)
             {
                 SingleInstanceApplication singleInstance = new SingleInstanceApplication();
-                singleInstance.MainForm = form;
                 singleInstance.StartupNextInstance += startupNextInstanceEventHandler;
                 singleInstance.Run(Environment.GetCommandLineArgs());
             }
