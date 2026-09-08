@@ -206,54 +206,57 @@ https://user-images.githubusercontent.com/13780514/223232524-22b1c5a3-795e-4735-
 
 ```
 ----------- File Management ---------------
-CTRL + N         : New file (clears current tab)
-CTRL + O         : Open file
-CTRL + S         : Save current file
-CTRL + Shift + S : Save As
-CTRL + T         : Load C# Main template
+CTRL + N         : Empty the current tab file and set it to a new page.
+CTRL + Shift + N : Create a new C# project or solution.
+CTRL + O         : Open file.
+CTRL + Shift + O : Open an existing .sln or .csproj project/solution.
+CTRL + S         : Save data to current file if changed.
+CTRL + Shift + S : Save data to a new file name or existing one.
+CTRL + T         : Load C# Main template.
 
 ------------ Editor Management ------------
-CTRL + Z         : Undo
-CTRL + Y         : Redo
-CTRL + Delete    : Delete word to the right
-CTRL + Backspace : Delete word to the left
-CTRL + D         : Duplicate current line
-CTRL + Shift + D : Delete from cursor to end of line
-CTRL + X         : Cut selection
-CTRL + C         : Copy selection
-CTRL + V         : Paste
-DEL              : Delete selection
-CTRL + F         : Find text
-CTRL + H         : Find and replace text
-CTRL + G         : Go to line number
-CTRL + A         : Select all
-CTRL + Shift + P : Ask AI (optionally with selected text)
-CTRL + E         : Show / Hide file explorer
-CTRL + Left Click: Go to definition
-Shift + F12      : Find usages
+CTRL + Z         : Undo last modification.
+CTRL + Y         : Redo last modification.
+CTRL + Delete    : Delete word to the right.
+CTRL + Backspace : Delete word to the left.
+CTRL + D         : Duplicate current line.
+CTRL + Shift + D : Delete from cursor to end of line.
+CTRL + X         : Cut selection.
+CTRL + C         : Copy selection.
+CTRL + V         : Paste selection.
+DEL              : Delete selection.
+CTRL + F         : Find text in current tab.
+CTRL + H         : Replace text in current tab.
+CTRL + G         : Go to line number in current tab.
+CTRL + A         : Select all text in current tab.
+CTRL + Shift + P : Ask AI with your current text or selection.
+CTRL + E         : Show / Hide file explorer.
+CTRL + Left Click: Go to definition.
+Shift + F12      : Find usages.
 
 ---------------- Compile ------------------
-F5               : Run current code
-CTRL + B         : Compile to binary (.dll/.exe)
-CTRL + Shift + B : Publish to binary (.dll/.exe)
-CTRL + L         : Set command line arguments
-CTRL + R         : Add reference / download from NuGet
+F5               : Run current code.
+CTRL + B         : Compile code from current tab to binary. (.dll/.exe)
+CTRL + Shift + B : Publish code from current tab to binary. (.dll/.exe)
+CTRL + L         : Add command line arguments.
+CTRL + R         : Add external reference or download from NuGet.
 
 ------------------ View -------------------
-CTRL + W         : Split window vertically
-CTRL + Shift + W : Split window horizontally
-CTRL + U         : Switch between split areas
-CTRL + K         : Show / Hide output window
-F11              : Toogle full screen
+CTRL + W         : Split window vertically.
+CTRL + Shift + W : Split window horizontally.
+CTRL + U         : Switch between split window areas.
+CTRL + K         : Show / Hide output window.
+CTRL + E         : Show / Hide file explorer.
+F11              : Toggle full screen.
 
 ------------- Tabs Management -------------
-CTRL + Tab       : Add new tab
-CTRL + Left      : Switch to left tab
-CTRL + Right     : Switch to right tab
+CTRL + Tab       : Add new tab.
+CTRL + Left      : Switch tabs to the left.
+CTRL + Right     : Switch tabs to the right.
 
 ----------- Live Share Management ---------
-CTRL + Q         : Open Live Share management window
+CTRL + Q         : Start live share management window.
 
 ------------ NuGet Search Window ----------
-SHIFT + F10      : Download selected NuGet package
+SHIFT + F10      : Download selected NuGet package.
 ```
