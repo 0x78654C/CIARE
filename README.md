@@ -200,8 +200,6 @@ https://user-images.githubusercontent.com/13780514/223232524-22b1c5a3-795e-4735-
 
 ![Menu](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_menu.png?raw=true)
 
-![Recursion](https://github.com/0x78654C/CIARE/blob/main/Media/ciare_recursion.png?raw=true)
-
 ---
 
 ## ⌨️ Hotkeys
