@@ -1,13 +1,13 @@
-using CIARE.GUI;
-using CIARE.Roslyn;
-using CIARE.Utils;
-using ICSharpCode.TextEditor;
 using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CIARE.GUI;
+using CIARE.Roslyn;
+using CIARE.Utils;
+using ICSharpCode.TextEditor;
 
 namespace CIARE;
 
