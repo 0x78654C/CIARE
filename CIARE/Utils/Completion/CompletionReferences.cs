@@ -9,26 +9,35 @@ using CIARE.Utils.NuGetManage;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Dom = ICSharpCode.SharpDevelop.Dom;
+using static global::CIARE.Utils.Completion.CompletionParsing;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
 
-namespace CIARE
+namespace CIARE.Utils.Completion
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class CompletionReferences
     {
+        private readonly MainForm _mainForm;
+
+        internal CompletionReferences(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         private readonly Dictionary<string, Dom.IProjectContent> _projectPackageCompletionContents
             = new Dictionary<string, Dom.IProjectContent>(StringComparer.OrdinalIgnoreCase);
 
-        private bool ShouldUseProjectPackageCompletionReferences(string projectPath)
+        internal bool ShouldUseProjectPackageCompletionReferences(string projectPath)
         {
             if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
                 return false;
 
-            string activeProjectPath = GetCompletionProjectPath(GetActiveEditorFilePath());
+            string activeProjectPath = _mainForm.CompletionSyntaxFeature.GetCompletionProjectPath(_mainForm.EditorFeature.GetActiveEditorFilePath());
             return !string.IsNullOrEmpty(activeProjectPath) &&
                 string.Equals(NormalizeCompletionPath(activeProjectPath),
                     NormalizeCompletionPath(projectPath), StringComparison.OrdinalIgnoreCase);
         }
 
-        private void RefreshProjectPackageCompletionReferences(string projectPath)
+        internal void RefreshProjectPackageCompletionReferences(string projectPath)
         {
             if (!GlobalVariables.OCodeCompletion || pcRegistry == null || myProjectContent == null)
                 return;
@@ -36,7 +45,7 @@ namespace CIARE
             var referencePaths = GetCompletionCompileReferencePaths(projectPath);
             var activeReferences = new HashSet<string>(referencePaths, StringComparer.OrdinalIgnoreCase);
 
-            lock (_completionDataLock)
+            lock (_mainForm.CompletionParsingFeature._completionDataLock)
             {
                 var removedReferences = _projectPackageCompletionContents.Keys
                     .Where(path => !activeReferences.Contains(path))
@@ -65,12 +74,12 @@ namespace CIARE
             }
         }
 
-        private void ClearProjectPackageCompletionReferences()
+        internal void ClearProjectPackageCompletionReferences()
         {
             if (myProjectContent == null)
                 return;
 
-            lock (_completionDataLock)
+            lock (_mainForm.CompletionParsingFeature._completionDataLock)
             {
                 foreach (var projectContent in _projectPackageCompletionContents.Values)
                 {
@@ -122,7 +131,7 @@ namespace CIARE
                 .ToList();
         }
 
-        private static IEnumerable<MetadataReference> BuildCompletionReferences(string projectPath)
+        internal static IEnumerable<MetadataReference> BuildCompletionReferences(string projectPath)
         {
             var references = new List<MetadataReference>();
             var referencePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

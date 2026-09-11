@@ -13,24 +13,33 @@ using CIARE.Utils.OpenAISettings;
 using ICSharpCode.TextEditor;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using static global::CIARE.Utils.Editor.EditorLayout;
+using static global::CIARE.Utils.Projects.ProjectContext;
 
-namespace CIARE
+namespace CIARE.Utils.Editor
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class Editor
     {
+        private readonly MainForm _mainForm;
+
+        internal Editor(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         public bool visibleSplitContainer = false;
         public bool visibleSplitContainerAutoHide = false;
-        private string _editFontSize = "editorFontSizeZoom";
+        internal string _editFontSize = "editorFontSizeZoom";
         public TextEditorControl selectedEditor;
-        BackgroundWorker worker;
+        internal BackgroundWorker worker;
         private string[] _filesDrag;
-        private bool _pendingEditorTextRefresh;
-        private System.Windows.Forms.Timer _editorTextRefreshTimer;
+        internal bool _pendingEditorTextRefresh;
+        internal System.Windows.Forms.Timer _editorTextRefreshTimer;
 
         /// <summary>
         /// Initialize settings once for each new editor.
         /// </summary>
-        private void InitializeEditorSettings(TextEditorControl editor, int index)
+        internal void InitializeEditorSettings(TextEditorControl editor, int index)
         {
             editor.TextEditorProperties.StoreZoomSize = true;
             editor.TextEditorProperties.RegPath = GlobalVariables.registryPath;
@@ -38,9 +47,9 @@ namespace CIARE
             InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, editor);
             editor.EnableFolding = GlobalVariables.OFoldingCode;
             editor.ShowLineNumbers = GlobalVariables.OLineNumber;
-            SetCodeCompletion(index);
-            linesCountLbl.Text = string.Empty;
-            linesPositionLbl.Text = string.Empty;
+            _mainForm.CompletionParsingFeature.SetCodeCompletion(index);
+            _mainForm.linesCountLbl.Text = string.Empty;
+            _mainForm.linesPositionLbl.Text = string.Empty;
             editor.ActiveTextAreaControl.Caret.PositionChanged += LinesManage.GetCaretPositon;
             HookEditorAskAI(editor);
         }
@@ -48,49 +57,49 @@ namespace CIARE
         /// <summary>
         /// Wire the "Ask AI" context-menu action for an editor instance.
         /// </summary>
-        private static void HookEditorAskAI(TextEditorControl editor)
+        private void HookEditorAskAI(TextEditorControl editor)
         {
             if (editor == null) return;
             var menu = editor.ActiveTextAreaControl.ContextMenuStrip as ICSharpCode.TextEditor.ContextMenu;
             if (menu != null)
             {
                 menu.AskAIAction = () => AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
-                menu.FindUsagesAction = () => Instance?.FindUsagesAtCaret();
+                menu.FindUsagesAction = () => _mainForm.FindUsagesFeature.FindUsagesAtCaret();
             }
         }
 
-        private void ScheduleCurrentTypeCheck(TextEditorControl editor, string code = null)
+        internal void ScheduleCurrentTypeCheck(TextEditorControl editor, string code = null)
         {
-            if (!isLoaded || editor == null)
+            if (!_mainForm.isLoaded || editor == null)
                 return;
 
             string filePath = GetActiveEditorFilePath();
             if (!IsCSharpFilePath(filePath))
             {
-                RealTimeChecker.Cancel(editor, typeCheckLbl, errorsLV, errorsTabPage, warningsCheckLbl);
+                RealTimeChecker.Cancel(editor, _mainForm.typeCheckLbl, _mainForm.errorsLV, _mainForm.errorsTabPage, _mainForm.warningsCheckLbl);
                 return;
             }
 
-            if (Directory.Exists(_fileExplorerRootPath) &&
-                !IsPathInsideFolder(filePath, _fileExplorerRootPath))
+            if (Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath) &&
+                !IsPathInsideFolder(filePath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath))
             {
-                InvalidateCompletionWorkspace();
-                ClearProjectPackageCompletionReferences();
+                _mainForm.CompletionWorkspaceFeature.InvalidateCompletionWorkspace();
+                _mainForm.CompletionReferencesFeature.ClearProjectPackageCompletionReferences();
             }
 
-            string workspaceFolder = GetActiveWorkspaceFolder();
+            string workspaceFolder = _mainForm.ProjectContextFeature.GetActiveWorkspaceFolder();
             bool useProjectReferences = !string.IsNullOrEmpty(workspaceFolder) &&
                 IsPathInsideFolder(filePath, workspaceFolder);
 
-            RealTimeChecker.ScheduleCheck(code ?? editor.Text, editor, typeCheckLbl, errorsLV, errorsTabPage,
-                warningsCheckLbl, workspaceFolder, filePath, useProjectReferences);
+            RealTimeChecker.ScheduleCheck(code ?? editor.Text, editor, _mainForm.typeCheckLbl, _mainForm.errorsLV, _mainForm.errorsTabPage,
+                _mainForm.warningsCheckLbl, workspaceFolder, filePath, useProjectReferences);
         }
 
-        private string GetActiveEditorFilePath()
+        internal string GetActiveEditorFilePath()
         {
             try
             {
-                string path = EditorTabControl.SelectedTab?.ToolTipText?.Trim();
+                string path = _mainForm.EditorTabControl.SelectedTab?.ToolTipText?.Trim();
                 return File.Exists(path) ? path : string.Empty;
             }
             catch
@@ -104,11 +113,11 @@ namespace CIARE
             return GetActiveEditorFilePath();
         }
 
-        private bool IsActiveUntitledEditorPage()
+        internal bool IsActiveUntitledEditorPage()
         {
             try
             {
-                TabPage selectedTab = EditorTabControl?.SelectedTab;
+                TabPage selectedTab = _mainForm.EditorTabControl?.SelectedTab;
                 if (selectedTab == null)
                     return false;
 
@@ -134,7 +143,7 @@ namespace CIARE
         private void textEditorControl1_TextChanged(object sender, EventArgs e)
         {
             RealTimeChecker.InvalidatePendingCheck();
-            Interlocked.Increment(ref _completionTextVersion);
+            Interlocked.Increment(ref _mainForm.CompletionParsingFeature._completionTextVersion);
             TextDataChangedAction();
         }
 
@@ -146,18 +155,18 @@ namespace CIARE
             QueueEditorTextRefresh();
 
             // Send live share data to api.
-            SendData();
+            _mainForm.LiveShareEventsFeature.SendData();
         }
 
-        private void QueueEditorTextRefresh()
+        internal void QueueEditorTextRefresh()
         {
-            if (!isLoaded || EditorTabControl == null || EditorTabControl.IsDisposed || IsDisposed)
+            if (!_mainForm.isLoaded || _mainForm.EditorTabControl == null || _mainForm.EditorTabControl.IsDisposed || _mainForm.IsDisposed)
                 return;
 
             _pendingEditorTextRefresh = true;
             if (_editorTextRefreshTimer == null)
             {
-                _editorTextRefreshTimer = new System.Windows.Forms.Timer(components)
+                _editorTextRefreshTimer = new System.Windows.Forms.Timer(_mainForm.components)
                 {
                     Interval = 200
                 };
@@ -168,7 +177,7 @@ namespace CIARE
             _editorTextRefreshTimer.Start();
         }
 
-        private void OnEditorTextRefreshTimer(object sender, EventArgs e)
+        internal void OnEditorTextRefreshTimer(object sender, EventArgs e)
         {
             _editorTextRefreshTimer?.Stop();
             if (!_pendingEditorTextRefresh)
@@ -180,7 +189,7 @@ namespace CIARE
                 return;
 
             string code = editor.Text;
-            var path = EditorTabControl.SelectedTab.ToolTipText;
+            var path = _mainForm.EditorTabControl.SelectedTab.ToolTipText;
             if (File.Exists(path))
             {
                 var md5Txt = FileHash.GetFileHash(code);
@@ -189,26 +198,26 @@ namespace CIARE
                 if (GlobalVariables.openedFileMD5 != md5Txt)
                 {
                     var title = $"*{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
-                    if (Text != title)
+                    if (_mainForm.Text != title)
                     {
-                        this.Text = title;
-                        string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
-                        EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
+                        _mainForm.Text = title;
+                        string curentTabTitle = _mainForm.EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
+                        _mainForm.EditorTabControl.SelectedTab.Text = $"*{curentTabTitle}";
                     }
                 }
                 else
                 {
                     var title = $"{GlobalVariables.openedFileName.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
-                    if (Text != title)
+                    if (_mainForm.Text != title)
                     {
-                        this.Text = title;
-                        string curentTabTitle = EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
-                        EditorTabControl.SelectedTab.Text = $"{curentTabTitle}";
+                        _mainForm.Text = title;
+                        string curentTabTitle = _mainForm.EditorTabControl.SelectedTab.Text.Replace("*", string.Empty);
+                        _mainForm.EditorTabControl.SelectedTab.Text = $"{curentTabTitle}";
                     }
                 }
             }
 
-            LinesManage.GetTotalLinesCount(linesCountLbl);
+            LinesManage.GetTotalLinesCount(_mainForm.linesCountLbl);
             editor.Document.FoldingManager.FoldingStrategy = new FoldingStrategy();
             editor.Document.FoldingManager.UpdateFoldings(null, null);
 
@@ -225,7 +234,7 @@ namespace CIARE
         {
             if (!visibleSplitContainerAutoHide)
             {
-                SplitContainerHideShow.HideSplitContainer(splitContainer1);
+                SplitContainerHideShow.HideSplitContainer(_mainForm.splitContainer1);
                 visibleSplitContainer = true;
             }
         }
@@ -234,10 +243,10 @@ namespace CIARE
         /// Set design for every new editor controler.
         /// </summary>
         /// <param name="dynamicTextEdtior"></param>
-        private void SetDesignEditor(ref TextEditorControl dynamicTextEdtior)
+        internal void SetDesignEditor(ref TextEditorControl dynamicTextEdtior)
         {
-            var tabCount = this.EditorTabControl.TabCount;
-            var tabIndex = this.EditorTabControl.SelectedIndex;
+            var tabCount = _mainForm.EditorTabControl.TabCount;
+            var tabIndex = _mainForm.EditorTabControl.SelectedIndex;
             dynamicTextEdtior.Name = $"textEditorControl{tabCount}";
             dynamicTextEdtior.Anchor = AnchorStyles.None;
             dynamicTextEdtior.Dock = DockStyle.Fill;
@@ -251,7 +260,7 @@ namespace CIARE
             dynamicTextEdtior.VRulerRow = 0;
             dynamicTextEdtior.TextChanged += textEditorControl1_TextChanged;
             dynamicTextEdtior.Enter += textEditorControl1_Enter;
-            dynamicTextEdtior.Resize += textEditorControl1_Resize;
+            dynamicTextEdtior.Resize += _mainForm.EditorLayoutFeature.textEditorControl1_Resize;
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.DragDrop += DynamicTextEdtior_DragDrop;
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.DragOver += DynamicTextEdtior_DragEnter;
             dynamicTextEdtior.ActiveTextAreaControl.TextArea.AllowDrop = true;
@@ -264,7 +273,7 @@ namespace CIARE
             dynamicTextEdtior.ActiveTextAreaControl.HorizontalScroll.Enabled = true;
             dynamicTextEdtior.TextEditorProperties.StoreZoomSize = true;
             dynamicTextEdtior.TextEditorProperties.RegPath = GlobalVariables.registryPath;
-            ConfigureEditorControlLayout(dynamicTextEdtior);
+            _mainForm.EditorLayoutFeature.ConfigureEditorControlLayout(dynamicTextEdtior);
         }
 
         /// <summary>
@@ -318,13 +327,13 @@ namespace CIARE
         /// <param name="e"></param>
         private void AddTabOnDop(object sender, DoWorkEventArgs e)
         {
-            this.Invoke(delegate
+            _mainForm.Invoke(delegate
             {
                 foreach (var file in _filesDrag)
                 {
                     var isFileOpenedInTab = TabControllerManage.IsFileOpenedInTab(MainForm.Instance.EditorTabControl, file);
                     if (isFileOpenedInTab) return;
-                    TabControllerManage.AddNewTab(EditorTabControl);
+                    TabControllerManage.AddNewTab(_mainForm.EditorTabControl);
                     FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), file);
                 }
             });

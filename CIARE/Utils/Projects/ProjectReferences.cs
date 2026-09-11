@@ -7,15 +7,24 @@ using CIARE.GUI;
 using CIARE.Roslyn;
 using CIARE.Utils;
 using Button = System.Windows.Forms.Button;
+using static global::CIARE.Utils.Projects.ProjectContext;
+using static global::CIARE.Utils.Projects.ProjectFiles;
 
-namespace CIARE
+namespace CIARE.Utils.Projects
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class ProjectReferences
     {
-        private void fileExplorerAddProjectMenuItem_Click(object sender, EventArgs e)
+        private readonly MainForm _mainForm;
+
+        internal ProjectReferences(MainForm mainForm)
         {
-            string contextPath = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
-            string solutionPath = GetSolutionPathFromExplorerPath(contextPath);
+            _mainForm = mainForm;
+        }
+        internal void fileExplorerAddProjectMenuItem_Click(object sender, EventArgs e)
+        {
+            string contextPath = (_mainForm.ExplorerFeature._fileExplorerContextNode ?? _mainForm.ExplorerFeature._fileExplorerTree?.SelectedNode)?.Tag as string;
+            string solutionPath = _mainForm.ProjectContextFeature.GetSolutionPathFromExplorerPath(contextPath);
             if (string.IsNullOrEmpty(solutionPath))
                 return;
 
@@ -24,47 +33,47 @@ namespace CIARE
 
             using (var dialog = new NewProject(solutionPath))
             {
-                if (dialog.ShowDialog(this) != DialogResult.OK)
+                if (dialog.ShowDialog(_mainForm) != DialogResult.OK)
                     return;
 
                 NewProjectResult project = dialog.CreatedProject;
                 if (project == null)
                     return;
 
-                _fileExplorerSolutionPath = solutionPath;
-                _fileExplorerStartupProjectPath =
+                _mainForm.ProjectContextFeature._fileExplorerSolutionPath = solutionPath;
+                _mainForm.StartupProjectFeature._fileExplorerStartupProjectPath =
                     SolutionStartupProjectStore.Ensure(solutionPath, project.ProjectFilePath);
 
                 string solutionDirectory = Path.GetDirectoryName(solutionPath);
                 string projectDirectory = Path.GetDirectoryName(project.ProjectFilePath);
                 if (!string.IsNullOrEmpty(solutionDirectory))
-                    RefreshAndExpandExplorerFolder(solutionDirectory);
+                    _mainForm.ExplorerTreeFeature.RefreshAndExpandExplorerFolder(solutionDirectory);
                 if (!string.IsNullOrEmpty(projectDirectory))
-                    RefreshAndExpandExplorerFolder(projectDirectory);
+                    _mainForm.ExplorerTreeFeature.RefreshAndExpandExplorerFolder(projectDirectory);
 
-                SelectExplorerPath(project.ProjectFilePath);
-                UpdateFileExplorerStartupProjectHighlight();
+                _mainForm.ExplorerTreeFeature.SelectExplorerPath(project.ProjectFilePath);
+                _mainForm.StartupProjectFeature.UpdateFileExplorerStartupProjectHighlight();
                 if (File.Exists(project.StarterFilePath))
-                    OpenFileFromExplorer(project.StarterFilePath);
+                    _mainForm.ExplorerTreeFeature.OpenFileFromExplorer(project.StarterFilePath);
 
-                InvalidateCompletionWorkspace();
+                _mainForm.CompletionWorkspaceFeature.InvalidateCompletionWorkspace();
                 RealTimeChecker.InvalidateReferenceCache();
-                RefreshProjectPackageContext(project.ProjectFilePath, restoreProject: true,
+                _mainForm.NuGetFeature.RefreshProjectPackageContext(project.ProjectFilePath, restoreProject: true,
                     showRestoreFailure: false);
-                ShowProjectStatus("Added project to solution", project.ProjectFilePath, solutionPath);
+                _mainForm.ProjectCommandsFeature.ShowProjectStatus("Added project to solution", project.ProjectFilePath, solutionPath);
             }
         }
 
-        private void fileExplorerAddProjectReferenceMenuItem_Click(object sender, EventArgs e)
+        internal void fileExplorerAddProjectReferenceMenuItem_Click(object sender, EventArgs e)
         {
-            string contextPath = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
-            string projectPath = GetProjectPathFromExplorerPath(contextPath);
+            string contextPath = (_mainForm.ExplorerFeature._fileExplorerContextNode ?? _mainForm.ExplorerFeature._fileExplorerTree?.SelectedNode)?.Tag as string;
+            string projectPath = _mainForm.ProjectContextFeature.GetProjectPathFromExplorerPath(contextPath);
             if (!IsProjectFilePath(projectPath))
                 return;
 
-            string solutionPath = GetSolutionPathFromExplorerPath(contextPath);
+            string solutionPath = _mainForm.ProjectContextFeature.GetSolutionPathFromExplorerPath(contextPath);
             var candidates = ProjectReferenceManager.GetReferenceableProjects(projectPath, solutionPath,
-                _fileExplorerRootPath);
+                _mainForm.ExplorerTreeFeature._fileExplorerRootPath);
             if (candidates.Count == 0)
             {
                 MessageBox.Show("No available project references were found in this solution.",
@@ -84,18 +93,18 @@ namespace CIARE
 
             string projectDirectory = Path.GetDirectoryName(projectPath);
             if (!string.IsNullOrEmpty(projectDirectory))
-                RefreshAndExpandExplorerFolder(projectDirectory);
+                _mainForm.ExplorerTreeFeature.RefreshAndExpandExplorerFolder(projectDirectory);
 
-            InvalidateCompletionWorkspace();
+            _mainForm.CompletionWorkspaceFeature.InvalidateCompletionWorkspace();
             RealTimeChecker.InvalidateReferenceCache();
-            RefreshProjectPackageContext(projectPath, restoreProject: false, showRestoreFailure: false);
-            ShowProjectStatus("Added project reference", projectPath, solutionPath, referencedProjectPath);
+            _mainForm.NuGetFeature.RefreshProjectPackageContext(projectPath, restoreProject: false, showRestoreFailure: false);
+            _mainForm.ProjectCommandsFeature.ShowProjectStatus("Added project reference", projectPath, solutionPath, referencedProjectPath);
         }
 
-        private void fileExplorerRemoveProjectReferenceMenuItem_Click(object sender, EventArgs e)
+        internal void fileExplorerRemoveProjectReferenceMenuItem_Click(object sender, EventArgs e)
         {
-            string contextPath = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
-            string projectPath = GetProjectPathFromExplorerPath(contextPath);
+            string contextPath = (_mainForm.ExplorerFeature._fileExplorerContextNode ?? _mainForm.ExplorerFeature._fileExplorerTree?.SelectedNode)?.Tag as string;
+            string projectPath = _mainForm.ProjectContextFeature.GetProjectPathFromExplorerPath(contextPath);
             if (!IsProjectFilePath(projectPath))
                 return;
 
@@ -126,12 +135,12 @@ namespace CIARE
 
             string projectDirectory = Path.GetDirectoryName(projectPath);
             if (!string.IsNullOrEmpty(projectDirectory))
-                RefreshAndExpandExplorerFolder(projectDirectory);
+                _mainForm.ExplorerTreeFeature.RefreshAndExpandExplorerFolder(projectDirectory);
 
-            InvalidateCompletionWorkspace();
+            _mainForm.CompletionWorkspaceFeature.InvalidateCompletionWorkspace();
             RealTimeChecker.InvalidateReferenceCache();
-            RefreshProjectPackageContext(projectPath, restoreProject: false, showRestoreFailure: false);
-            ShowProjectStatus("Removed project reference", projectPath, GetSolutionPathFromExplorerPath(contextPath),
+            _mainForm.NuGetFeature.RefreshProjectPackageContext(projectPath, restoreProject: false, showRestoreFailure: false);
+            _mainForm.ProjectCommandsFeature.ShowProjectStatus("Removed project reference", projectPath, _mainForm.ProjectContextFeature.GetSolutionPathFromExplorerPath(contextPath),
                 referencedProjectPath);
         }
 
@@ -175,7 +184,7 @@ namespace CIARE
                     HorizontalScrollbar = true
                 };
                 foreach (string candidate in candidateProjects)
-                    projectList.Items.Add(new ProjectReferenceListItem(candidate, _fileExplorerRootPath));
+                    projectList.Items.Add(new ProjectReferenceListItem(candidate, _mainForm.ExplorerTreeFeature._fileExplorerRootPath));
                 if (projectList.Items.Count > 0)
                     projectList.SelectedIndex = 0;
 
@@ -216,7 +225,7 @@ namespace CIARE
 
                 FrmColorMod.ToogleColorMode(dialog, GlobalVariables.darkColor);
 
-                if (dialog.ShowDialog(this) != DialogResult.OK)
+                if (dialog.ShowDialog(_mainForm) != DialogResult.OK)
                     return string.Empty;
 
                 return (projectList.SelectedItem as ProjectReferenceListItem)?.ProjectPath ?? string.Empty;

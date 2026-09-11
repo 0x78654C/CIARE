@@ -5,11 +5,18 @@ using CIARE.GUI;
 using CIARE.Utils;
 using ICSharpCode.TextEditor;
 
-namespace CIARE
+namespace CIARE.Utils.Window
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class WindowTheme
     {
-        private string _appliedTheme;
+        private readonly MainForm _mainForm;
+
+        internal WindowTheme(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
+        internal string _appliedTheme;
 
         public void SetHighLighter(TextEditorControl textEditorControl, string highlight, bool persistSetting = true)
         {
@@ -37,23 +44,23 @@ namespace CIARE
                 UpdateThemeColors(highlight);
                 var darkBg = GlobalVariables.controlBgColor;
                 var darkFg = Color.FromArgb(192, 215, 207);
-                DarkModeMain.SetDarkModeMain(this, outputRBT, groupBox1, label2, label3,
-                    menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator(), GlobalVariables.isVStheme);
-                errorsLV.BackColor = darkBg;
-                errorsLV.ForeColor = darkFg;
-                ApplyTabControlDarkMode(EditorTabControl, darkBg);
-                ApplyTabControlDarkMode(outputTabControl, darkBg);
-                ApplyFileExplorerTheme(highlight);
+                DarkModeMain.SetDarkModeMain(_mainForm, _mainForm.outputRBT, _mainForm.groupBox1, _mainForm.label2, _mainForm.label3,
+                    _mainForm.menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator(), GlobalVariables.isVStheme);
+                _mainForm.errorsLV.BackColor = darkBg;
+                _mainForm.errorsLV.ForeColor = darkFg;
+                ApplyTabControlDarkMode(_mainForm.EditorTabControl, darkBg);
+                ApplyTabControlDarkMode(_mainForm.outputTabControl, darkBg);
+                _mainForm.ExplorerFeature.ApplyFileExplorerTheme(highlight);
                 return;
             }
             GlobalVariables.darkColor = false;
-            LightModeMain.SetLightModeMain(this, outputRBT, groupBox1,
-                menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
-            errorsLV.BackColor = SystemColors.Window;
-            errorsLV.ForeColor = Color.Black;
-            ApplyTabControlDarkMode(EditorTabControl, SystemColors.Window);
-            ApplyTabControlDarkMode(outputTabControl, SystemColors.Window);
-            ApplyFileExplorerTheme(highlight);
+            LightModeMain.SetLightModeMain(_mainForm, _mainForm.outputRBT, _mainForm.groupBox1,
+                _mainForm.menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator());
+            _mainForm.errorsLV.BackColor = SystemColors.Window;
+            _mainForm.errorsLV.ForeColor = Color.Black;
+            ApplyTabControlDarkMode(_mainForm.EditorTabControl, SystemColors.Window);
+            ApplyTabControlDarkMode(_mainForm.outputTabControl, SystemColors.Window);
+            _mainForm.ExplorerFeature.ApplyFileExplorerTheme(highlight);
         }
 
         /// <summary>

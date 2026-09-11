@@ -6,23 +6,32 @@ using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Projects.ProjectFiles;
 
-namespace CIARE
+namespace CIARE.Utils.Projects
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class ProjectCommands
     {
-        private void newProjectStripMenuItem_Click(object sender, EventArgs e)
+        private readonly MainForm _mainForm;
+
+        internal ProjectCommands(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
+        internal void newProjectStripMenuItem_Click(object sender, EventArgs e)
         {
             using (var dialog = new NewProject())
             {
-                if (dialog.ShowDialog(this) != DialogResult.OK)
+                if (dialog.ShowDialog(_mainForm) != DialogResult.OK)
                     return;
 
                 OpenCreatedProject(dialog.CreatedProject);
             }
         }
 
-        private void openProjectStripMenuItem_Click(object sender, EventArgs e)
+        internal void openProjectStripMenuItem_Click(object sender, EventArgs e)
         {
             OpenProjectOrSolutionDialog();
         }
@@ -40,12 +49,12 @@ namespace CIARE
                 return;
 
             if (File.Exists(project.StarterFilePath))
-                OpenFileFromExplorer(project.StarterFilePath);
+                _mainForm.ExplorerTreeFeature.OpenFileFromExplorer(project.StarterFilePath);
 
             ShowProjectStatus("Created project", project.ProjectFilePath, project.SolutionFilePath);
         }
 
-        private void OpenProjectOrSolutionDialog()
+        internal void OpenProjectOrSolutionDialog()
         {
             using (var dialog = new OpenFileDialog())
             {
@@ -56,17 +65,17 @@ namespace CIARE
                 dialog.CheckPathExists = true;
                 dialog.InitialDirectory = GetInitialProjectDialogDirectory();
 
-                if (dialog.ShowDialog(this) == DialogResult.OK)
+                if (dialog.ShowDialog(_mainForm) == DialogResult.OK)
                     OpenProjectOrSolutionPath(dialog.FileName, showMessage: true);
             }
         }
 
         private string GetInitialProjectDialogDirectory()
         {
-            if (Directory.Exists(_fileExplorerRootPath))
-                return _fileExplorerRootPath;
+            if (Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath))
+                return _mainForm.ExplorerTreeFeature._fileExplorerRootPath;
 
-            string filePath = GetActiveEditorFilePath();
+            string filePath = _mainForm.EditorFeature.GetActiveEditorFilePath();
             if (File.Exists(filePath))
                 return Path.GetDirectoryName(filePath);
 
@@ -103,14 +112,14 @@ namespace CIARE
             string loadedSolutionPath = string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase)
                 ? filePath
                 : containingSolutionPath;
-            LoadFileExplorerFolder(folderPath, loadedSolutionPath);
-            ToggleFileExplorer(true);
+            _mainForm.ExplorerTreeFeature.LoadFileExplorerFolder(folderPath, loadedSolutionPath);
+            _mainForm.ExplorerLayoutFeature.ToggleFileExplorer(true);
 
             if (showMessage)
             {
                 string projectPath = string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase)
                     ? filePath
-                    : GetActivePackageProjectPath();
+                    : _mainForm.ProjectContextFeature.GetActivePackageProjectPath();
                 string solutionPath = string.Equals(extension, ".sln", StringComparison.OrdinalIgnoreCase)
                     ? filePath
                     : containingSolutionPath;
@@ -151,7 +160,7 @@ namespace CIARE
             return string.Empty;
         }
 
-        private static bool SolutionFileContainsProject(string solutionPath, string projectPath)
+        internal static bool SolutionFileContainsProject(string solutionPath, string projectPath)
         {
             if (!IsSolutionFilePath(solutionPath) || !IsProjectFilePath(projectPath))
                 return false;
@@ -189,11 +198,11 @@ namespace CIARE
             return false;
         }
 
-        private void ShowProjectStatus(string action, string projectPath, string solutionPath,
+        internal void ShowProjectStatus(string action, string projectPath, string solutionPath,
             string referencePath = null)
         {
-            if (outputTabControl.SelectedTab == errorsTabPage)
-                outputTabControl.SelectedTab = outputTabPage;
+            if (_mainForm.outputTabControl.SelectedTab == _mainForm.errorsTabPage)
+                _mainForm.outputTabControl.SelectedTab = _mainForm.outputTabPage;
 
             var lines = new List<string> { action + "." };
             if (!string.IsNullOrEmpty(solutionPath))
@@ -203,7 +212,7 @@ namespace CIARE
             if (!string.IsNullOrEmpty(referencePath))
                 lines.Add("Reference: " + referencePath);
 
-            outputRBT.Text = string.Join(Environment.NewLine, lines);
+            _mainForm.outputRBT.Text = string.Join(Environment.NewLine, lines);
         }
     }
 }

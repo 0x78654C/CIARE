@@ -7,26 +7,29 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Projects.ProjectContext;
 
-namespace CIARE
+namespace CIARE.Utils.Projects
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal static class ProjectFiles
     {
-        private static bool IsProjectFilePath(string filePath)
+        internal static bool IsProjectFilePath(string filePath)
         {
             return !string.IsNullOrWhiteSpace(filePath) &&
                 File.Exists(filePath) &&
                 string.Equals(Path.GetExtension(filePath), ".csproj", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsSolutionFilePath(string filePath)
+        internal static bool IsSolutionFilePath(string filePath)
         {
             return !string.IsNullOrWhiteSpace(filePath) &&
                 File.Exists(filePath) &&
                 string.Equals(Path.GetExtension(filePath), ".sln", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool ProjectContainsSourceFile(string projectPath, string sourceFilePath)
+        internal static bool ProjectContainsSourceFile(string projectPath, string sourceFilePath)
         {
             if (!IsProjectFilePath(projectPath) || !IsCSharpFilePath(sourceFilePath) || !File.Exists(sourceFilePath))
                 return false;
@@ -289,7 +292,7 @@ namespace CIARE
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         }
 
-        private static IEnumerable<string> ReadSolutionProjectFiles(string solutionPath)
+        internal static IEnumerable<string> ReadSolutionProjectFiles(string solutionPath)
         {
             if (!IsSolutionFilePath(solutionPath))
                 yield break;
@@ -325,7 +328,7 @@ namespace CIARE
             }
         }
 
-        private static int GetCommonPathLength(string filePath, string folderPath)
+        internal static int GetCommonPathLength(string filePath, string folderPath)
         {
             if (string.IsNullOrWhiteSpace(filePath) || string.IsNullOrWhiteSpace(folderPath))
                 return 0;

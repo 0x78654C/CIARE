@@ -20,7 +20,7 @@ internal static class ResourceRegression
 
     public static void RunRetention(MainForm form, Action<bool, string> assert, bool validateChanges)
     {
-        WaitUntil(() => ((HashSet<string>)typeof(MainForm).GetField("_alreadyLoaded", Private).GetValue(form)).Count > 0, 20000);
+        WaitUntil(() => ((HashSet<string>)form.CompletionParsingFeature.GetType().GetField("_alreadyLoaded", Private).GetValue(form.CompletionParsingFeature)).Count > 0, 20000);
         Pump(2200);
         ReportMemory("references ready");
         RunCompletionWorkload(form, assert);
@@ -103,25 +103,26 @@ internal static class ResourceRegression
                 string.Join("\n", Enumerable.Range(0, 60).Select(i => $"public static int M{i}() {{ int x = 0; for (int n = 0; n < 10; n++) x += n; return x; }}")) + "\n}");
         string active = Path.Combine(folder, "Active.cs");
         File.WriteAllText(active, "class Active { public int M() => Other0.M0(); }\n");
-        typeof(MainForm).GetMethod("LoadFileExplorerFolder", Private).Invoke(form, new object[] { folder, null });
+        form.ExplorerTreeFeature.LoadFileExplorerFolder(folder);
         FileManage.OpenFileFromArgs("cli|" + active, form.EditorTabControl);
         var editor = SelectedEditor.GetSelectedEditor();
         Pump(6500);
-        WaitUntil(() => ((HashSet<string>)typeof(MainForm).GetField("_alreadyLoaded", Private).GetValue(form)).Count > 0, 15000);
+        WaitUntil(() => ((HashSet<string>)form.CompletionParsingFeature.GetType().GetField("_alreadyLoaded", Private).GetValue(form.CompletionParsingFeature)).Count > 0, 15000);
         Pump(2200); // Exclude initial reference loading from the idle/typing measurement.
         assert(editor.Text.Contains("Other0.M0"), "Resource workload opens the project file");
         ReportMemory("project loaded");
         using var process = Process.GetCurrentProcess();
-        var unitField = typeof(MainForm).GetField("lastCompilationUnit", Private);
-        object unit = unitField.GetValue(form);
-        var workspaceUnits = (IDictionary)typeof(MainForm).GetField("_workspaceCompilationUnits", Private).GetValue(form);
+        var parsing = form.CompletionParsingFeature;
+        var unitField = parsing.GetType().GetField("lastCompilationUnit", Private);
+        object unit = unitField.GetValue(parsing);
+        var workspaceUnits = form.CompletionWorkspaceFeature._workspaceCompilationUnits;
         string other = Path.Combine(folder, "Other0.cs");
         object otherUnit = workspaceUnits[other];
         var cpu = process.TotalProcessorTime;
         var elapsed = Stopwatch.StartNew();
         Pump(6000);
-        Console.Error.WriteLine($"RESOURCE idle: wall={elapsed.ElapsedMilliseconds} ms; CPU={(process.TotalProcessorTime - cpu).TotalMilliseconds:F0} ms; reparsed={!ReferenceEquals(unit, unitField.GetValue(form))}");
-        if (validateReuse) assert(unit != null && ReferenceEquals(unit, unitField.GetValue(form)), "Idle projects retain their existing completion parse");
+        Console.Error.WriteLine($"RESOURCE idle: wall={elapsed.ElapsedMilliseconds} ms; CPU={(process.TotalProcessorTime - cpu).TotalMilliseconds:F0} ms; reparsed={!ReferenceEquals(unit, unitField.GetValue(parsing))}");
+        if (validateReuse) assert(unit != null && ReferenceEquals(unit, unitField.GetValue(parsing)), "Idle projects retain their existing completion parse");
         cpu = process.TotalProcessorTime;
         elapsed.Restart();
         for (int i = 0; i < 8; i++)
@@ -132,7 +133,7 @@ internal static class ResourceRegression
         Console.Error.WriteLine($"RESOURCE typing: wall={elapsed.ElapsedMilliseconds} ms; CPU={(process.TotalProcessorTime - cpu).TotalMilliseconds:F0} ms");
         Pump(2500);
         ReportMemory("after typing");
-        assert(!ReferenceEquals(unit, unitField.GetValue(form)), "Typing refreshes the active completion parse");
+        assert(!ReferenceEquals(unit, unitField.GetValue(parsing)), "Typing refreshes the active completion parse");
         if (validateReuse) assert(otherUnit != null && ReferenceEquals(otherUnit, workspaceUnits[other]), "Typing in the active editor reuses unchanged project units");
 
         var area = editor.ActiveTextAreaControl.TextArea;

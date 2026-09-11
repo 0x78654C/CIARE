@@ -5,16 +5,17 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace CIARE
+namespace CIARE.Utils.Projects
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal static class WorkspaceFiles
     {
         /// <summary>
         /// Walks up the directory tree from <paramref name="startDir"/> looking for a project
         /// root marker (.sln, .csproj, .git, .vs). Falls back to the parent directory of
         /// <paramref name="startDir"/> when no marker is found (so sibling folders are still included).
         /// </summary>
-        private static string FindWorkspaceRoot(string startDir)
+        internal static string FindWorkspaceRoot(string startDir)
         {
             if (string.IsNullOrEmpty(startDir)) return startDir;
             string dir = startDir;
@@ -39,7 +40,7 @@ namespace CIARE
             return string.IsNullOrEmpty(oneLevelUp) ? startDir : oneLevelUp;
         }
 
-        private static IEnumerable<string> GetWorkspaceCsFiles(string folder)
+        internal static IEnumerable<string> GetWorkspaceCsFiles(string folder)
         {
             var pending = new Stack<string>();
             pending.Push(folder);
@@ -79,7 +80,7 @@ namespace CIARE
             }
         }
 
-        private static bool DirectoryContainsProjectFile(string folder)
+        internal static bool DirectoryContainsProjectFile(string folder)
         {
             try
             {
@@ -91,7 +92,7 @@ namespace CIARE
             }
         }
 
-        private static bool DirectoryContainsSolutionFile(string folder)
+        internal static bool DirectoryContainsSolutionFile(string folder)
         {
             try
             {

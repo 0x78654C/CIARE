@@ -7,22 +7,29 @@ using CIARE.GUI;
 using CIARE.Utils;
 using ICSharpCode.TextEditor;
 
-namespace CIARE
+namespace CIARE.Utils.Editor
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class EditorLayout
     {
+        private readonly MainForm _mainForm;
+
+        internal EditorLayout(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         private bool _refreshingEditorLayoutBounds;
-        private bool _pendingEditorLayoutRefresh;
-        private System.Windows.Forms.Timer _editorLayoutRefreshTimer;
+        internal bool _pendingEditorLayoutRefresh;
+        internal System.Windows.Forms.Timer _editorLayoutRefreshTimer;
         private static readonly PropertyInfo DoubleBufferedProperty =
             typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static Color GetEditorSurfaceBackColor()
+        internal static Color GetEditorSurfaceBackColor()
         {
             return GlobalVariables.darkColor ? GlobalVariables.controlBgColor : SystemColors.Window;
         }
 
-        private static void EnableBufferedPainting(params Control[] controls)
+        internal static void EnableBufferedPainting(params Control[] controls)
         {
             foreach (Control control in controls)
             {
@@ -39,44 +46,44 @@ namespace CIARE
             }
         }
 
-        private void ConfigureEditorTabControlLayout(bool configureAllTabs = false)
+        internal void ConfigureEditorTabControlLayout(bool configureAllTabs = false)
         {
-            if (EditorTabControl == null)
+            if (_mainForm.EditorTabControl == null)
                 return;
 
-            EditorTabControl.SuspendLayout();
+            _mainForm.EditorTabControl.SuspendLayout();
             try
             {
-                if (EditorTabControl.Anchor != AnchorStyles.None)
-                    EditorTabControl.Anchor = AnchorStyles.None;
-                if (EditorTabControl.Dock != DockStyle.Fill)
-                    EditorTabControl.Dock = DockStyle.Fill;
-                if (EditorTabControl.Location != Point.Empty)
-                    EditorTabControl.Location = Point.Empty;
-                if (EditorTabControl.Margin != Padding.Empty)
-                    EditorTabControl.Margin = Padding.Empty;
+                if (_mainForm.EditorTabControl.Anchor != AnchorStyles.None)
+                    _mainForm.EditorTabControl.Anchor = AnchorStyles.None;
+                if (_mainForm.EditorTabControl.Dock != DockStyle.Fill)
+                    _mainForm.EditorTabControl.Dock = DockStyle.Fill;
+                if (_mainForm.EditorTabControl.Location != Point.Empty)
+                    _mainForm.EditorTabControl.Location = Point.Empty;
+                if (_mainForm.EditorTabControl.Margin != Padding.Empty)
+                    _mainForm.EditorTabControl.Margin = Padding.Empty;
 
                 Color editorSurfaceBackColor = GetEditorSurfaceBackColor();
-                if (EditorTabControl.BackColor != editorSurfaceBackColor)
-                    EditorTabControl.BackColor = editorSurfaceBackColor;
+                if (_mainForm.EditorTabControl.BackColor != editorSurfaceBackColor)
+                    _mainForm.EditorTabControl.BackColor = editorSurfaceBackColor;
 
                 if (configureAllTabs)
                 {
-                    foreach (TabPage tabPage in EditorTabControl.TabPages)
+                    foreach (TabPage tabPage in _mainForm.EditorTabControl.TabPages)
                         ConfigureEditorTabPageLayout(tabPage, editorSurfaceBackColor);
                 }
-                else if (EditorTabControl.SelectedTab != null)
+                else if (_mainForm.EditorTabControl.SelectedTab != null)
                 {
-                    ConfigureEditorTabPageLayout(EditorTabControl.SelectedTab, editorSurfaceBackColor);
+                    ConfigureEditorTabPageLayout(_mainForm.EditorTabControl.SelectedTab, editorSurfaceBackColor);
                 }
             }
             finally
             {
-                EditorTabControl.ResumeLayout(false);
+                _mainForm.EditorTabControl.ResumeLayout(false);
             }
         }
 
-        private void ConfigureEditorTabPageLayout(TabPage tabPage)
+        internal void ConfigureEditorTabPageLayout(TabPage tabPage)
         {
             ConfigureEditorTabPageLayout(tabPage, GetEditorSurfaceBackColor());
         }
@@ -104,7 +111,7 @@ namespace CIARE
             }
         }
 
-        private void ConfigureEditorControlLayout(TextEditorControl editor)
+        internal void ConfigureEditorControlLayout(TextEditorControl editor)
         {
             if (editor == null)
                 return;
@@ -136,13 +143,13 @@ namespace CIARE
                 textAreaControl.HScrollBar.Visible = true;
         }
 
-        private void QueueEditorLayoutRefresh()
+        internal void QueueEditorLayoutRefresh()
         {
-            if (EditorTabControl == null || EditorTabControl.IsDisposed || IsDisposed)
+            if (_mainForm.EditorTabControl == null || _mainForm.EditorTabControl.IsDisposed || _mainForm.IsDisposed)
                 return;
 
             _pendingEditorLayoutRefresh = true;
-            if (!isLoaded || _refreshingEditorLayoutBounds)
+            if (!_mainForm.isLoaded || _refreshingEditorLayoutBounds)
                 return;
             EnsureEditorLayoutRefreshTimer();
             // Keep servicing layout during a continuous resize instead of waiting
@@ -156,14 +163,14 @@ namespace CIARE
             if (_editorLayoutRefreshTimer != null)
                 return;
 
-            _editorLayoutRefreshTimer = new System.Windows.Forms.Timer(components)
+            _editorLayoutRefreshTimer = new System.Windows.Forms.Timer(_mainForm.components)
             {
                 Interval = 16
             };
             _editorLayoutRefreshTimer.Tick += OnEditorLayoutRefreshTimer;
         }
 
-        private void OnEditorLayoutRefreshTimer(object sender, EventArgs e)
+        internal void OnEditorLayoutRefreshTimer(object sender, EventArgs e)
         {
             _editorLayoutRefreshTimer?.Stop();
             if (!_pendingEditorLayoutRefresh)
@@ -173,9 +180,9 @@ namespace CIARE
             RefreshEditorLayoutBounds();
         }
 
-        private void RefreshEditorLayoutBounds()
+        internal void RefreshEditorLayoutBounds()
         {
-            if (EditorTabControl == null || EditorTabControl.IsDisposed)
+            if (_mainForm.EditorTabControl == null || _mainForm.EditorTabControl.IsDisposed)
                 return;
 
             if (_refreshingEditorLayoutBounds)
@@ -185,9 +192,9 @@ namespace CIARE
             try
             {
                 ConfigureEditorTabControlLayout();
-                EditorTabControl.PerformLayout();
+                _mainForm.EditorTabControl.PerformLayout();
 
-                EditorTabControl.SelectedTab?.PerformLayout();
+                _mainForm.EditorTabControl.SelectedTab?.PerformLayout();
             }
             finally
             {
@@ -200,9 +207,9 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void SplitWindowHorizontally(object sender, DoWorkEventArgs e)
+        internal void SplitWindowHorizontally(object sender, DoWorkEventArgs e)
         {
-            this.Invoke(delegate
+            _mainForm.Invoke(delegate
             {
                 SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), true);
             });
@@ -213,9 +220,9 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void SplitWindowVertically(object sender, DoWorkEventArgs e)
+        internal void SplitWindowVertically(object sender, DoWorkEventArgs e)
         {
-            this.Invoke(delegate
+            _mainForm.Invoke(delegate
             {
                 SplitEditorWindow.SplitWindow(SelectedEditor.GetSelectedEditor(), false);
             });
@@ -226,7 +233,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void textEditorControl1_Resize(object sender, EventArgs e)
+        internal void textEditorControl1_Resize(object sender, EventArgs e)
         {
             if (sender is TextEditorControl editor)
             {

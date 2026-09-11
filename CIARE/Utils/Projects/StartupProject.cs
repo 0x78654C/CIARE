@@ -3,50 +3,61 @@ using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 using CIARE.Utils;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Projects.ProjectContext;
+using static global::CIARE.Utils.Projects.ProjectFiles;
+using static global::CIARE.Utils.Projects.ProjectPaths;
 
-namespace CIARE
+namespace CIARE.Utils.Projects
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class StartupProject
     {
-        private const string FileExplorerStartupProjectKey = "fileExplorerStartupProject";
-        private string _fileExplorerStartupProjectPath = string.Empty;
+        private readonly MainForm _mainForm;
 
-        private void fileExplorerSetStartupProjectMenuItem_Click(object sender, EventArgs e)
+        internal StartupProject(MainForm mainForm)
         {
-            string projectPath = GetProjectPathFromExplorerPath(
-                (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string);
+            _mainForm = mainForm;
+        }
+        internal const string FileExplorerStartupProjectKey = "fileExplorerStartupProject";
+        internal string _fileExplorerStartupProjectPath = string.Empty;
+
+        internal void fileExplorerSetStartupProjectMenuItem_Click(object sender, EventArgs e)
+        {
+            string projectPath = _mainForm.ProjectContextFeature.GetProjectPathFromExplorerPath(
+                (_mainForm.ExplorerFeature._fileExplorerContextNode ?? _mainForm.ExplorerFeature._fileExplorerTree?.SelectedNode)?.Tag as string);
             if (!IsProjectFilePath(projectPath))
                 return;
 
             _fileExplorerStartupProjectPath = projectPath;
             SaveStartupProjectPath();
             UpdateFileExplorerStartupProjectHighlight();
-            ShowProjectStatus("Startup project set", projectPath, FindNearestBuildFile(
-                Path.GetDirectoryName(projectPath), _fileExplorerRootPath, "*.sln"));
+            _mainForm.ProjectCommandsFeature.ShowProjectStatus("Startup project set", projectPath, FindNearestBuildFile(
+                Path.GetDirectoryName(projectPath), _mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.sln"));
         }
 
-        private void RestoreStartupProjectForLoadedFolder()
+        internal void RestoreStartupProjectForLoadedFolder()
         {
-            if (IsSolutionFilePath(_fileExplorerSolutionPath))
+            if (IsSolutionFilePath(_mainForm.ProjectContextFeature._fileExplorerSolutionPath))
             {
                 _fileExplorerStartupProjectPath =
-                    SolutionStartupProjectStore.Ensure(_fileExplorerSolutionPath);
+                    SolutionStartupProjectStore.Ensure(_mainForm.ProjectContextFeature._fileExplorerSolutionPath);
                 return;
             }
 
             string startupProjectPath = RegistryManagement.RegKey_Read(
                 $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", FileExplorerStartupProjectKey);
             _fileExplorerStartupProjectPath = IsProjectFilePath(startupProjectPath) &&
-                IsPathInsideFolder(startupProjectPath, _fileExplorerRootPath)
+                IsPathInsideFolder(startupProjectPath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath)
                     ? startupProjectPath
                     : string.Empty;
         }
 
         private void SaveStartupProjectPath()
         {
-            if (IsSolutionFilePath(_fileExplorerSolutionPath))
+            if (IsSolutionFilePath(_mainForm.ProjectContextFeature._fileExplorerSolutionPath))
             {
-                SolutionStartupProjectStore.Save(_fileExplorerSolutionPath,
+                SolutionStartupProjectStore.Save(_mainForm.ProjectContextFeature._fileExplorerSolutionPath,
                     _fileExplorerStartupProjectPath ?? string.Empty);
                 return;
             }
@@ -55,7 +66,7 @@ namespace CIARE
                 FileExplorerStartupProjectKey, _fileExplorerStartupProjectPath ?? string.Empty);
         }
 
-        private bool IsStartupProjectPath(string projectPath)
+        internal bool IsStartupProjectPath(string projectPath)
         {
             return IsProjectFilePath(projectPath) &&
                 IsProjectFilePath(_fileExplorerStartupProjectPath) &&
@@ -77,7 +88,7 @@ namespace CIARE
                     StringComparison.OrdinalIgnoreCase);
         }
 
-        private void ApplyStartupProjectNodeStyle(TreeNode node)
+        internal void ApplyStartupProjectNodeStyle(TreeNode node)
         {
             if (node == null)
                 return;
@@ -106,20 +117,20 @@ namespace CIARE
             }
         }
 
-        private void UpdateFileExplorerStartupProjectHighlight()
+        internal void UpdateFileExplorerStartupProjectHighlight()
         {
-            if (_fileExplorerTree == null || _fileExplorerTree.IsDisposed)
+            if (_mainForm.ExplorerFeature._fileExplorerTree == null || _mainForm.ExplorerFeature._fileExplorerTree.IsDisposed)
                 return;
 
-            _fileExplorerTree.BeginUpdate();
+            _mainForm.ExplorerFeature._fileExplorerTree.BeginUpdate();
             try
             {
-                foreach (TreeNode node in _fileExplorerTree.Nodes)
+                foreach (TreeNode node in _mainForm.ExplorerFeature._fileExplorerTree.Nodes)
                     ApplyStartupProjectNodeStyleRecursive(node);
             }
             finally
             {
-                _fileExplorerTree.EndUpdate();
+                _mainForm.ExplorerFeature._fileExplorerTree.EndUpdate();
             }
         }
 
@@ -130,7 +141,7 @@ namespace CIARE
                 ApplyStartupProjectNodeStyleRecursive(child);
         }
 
-        private void UpdateStartupProjectAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        internal void UpdateStartupProjectAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
         {
             if (string.IsNullOrWhiteSpace(_fileExplorerStartupProjectPath) ||
                 !string.Equals(Path.GetExtension(_fileExplorerStartupProjectPath), ".csproj",
@@ -148,15 +159,15 @@ namespace CIARE
             }
         }
 
-        private void UpdateLoadedSolutionAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        internal void UpdateLoadedSolutionAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
         {
-            string renamedSolutionPath = GetRenamedExplorerPath(_fileExplorerSolutionPath, oldPath, newPath,
+            string renamedSolutionPath = GetRenamedExplorerPath(_mainForm.ProjectContextFeature._fileExplorerSolutionPath, oldPath, newPath,
                 renamedDirectory);
             if (IsSolutionFilePath(renamedSolutionPath))
-                _fileExplorerSolutionPath = renamedSolutionPath;
+                _mainForm.ProjectContextFeature._fileExplorerSolutionPath = renamedSolutionPath;
         }
 
-        private void ClearStartupProjectAfterExplorerDelete(string deletedPath, bool deletedDirectory)
+        internal void ClearStartupProjectAfterExplorerDelete(string deletedPath, bool deletedDirectory)
         {
             if (string.IsNullOrWhiteSpace(_fileExplorerStartupProjectPath) ||
                 !string.Equals(Path.GetExtension(_fileExplorerStartupProjectPath), ".csproj",
@@ -172,10 +183,10 @@ namespace CIARE
 
             if (deletedStartupProject)
             {
-                if (IsSolutionFilePath(_fileExplorerSolutionPath))
+                if (IsSolutionFilePath(_mainForm.ProjectContextFeature._fileExplorerSolutionPath))
                 {
                     _fileExplorerStartupProjectPath =
-                        SolutionStartupProjectStore.Ensure(_fileExplorerSolutionPath);
+                        SolutionStartupProjectStore.Ensure(_mainForm.ProjectContextFeature._fileExplorerSolutionPath);
                 }
                 else
                 {

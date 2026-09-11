@@ -7,21 +7,28 @@ using CIARE.Roslyn;
 using CIARE.Utils;
 using CIARE.Utils.OpenAISettings;
 
-namespace CIARE
+namespace CIARE.Utils.Editor
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class EditorCommands
     {
+        private readonly MainForm _mainForm;
+
+        internal EditorCommands(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         /// <summary>
         /// Button event for start compile and run code from editor.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void runCodePb_Click(object sender, EventArgs e)
+        internal void runCodePb_Click(object sender, EventArgs e)
         {
-            RealTimeChecker.Cancel(SelectedEditor.GetSelectedEditor(), typeCheckLbl, errorsLV, errorsTabPage, warningsCheckLbl);
-            if (outputTabControl.SelectedTab == errorsTabPage)
-                outputTabControl.SelectedTab = outputTabPage;
-            RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
+            RealTimeChecker.Cancel(SelectedEditor.GetSelectedEditor(), _mainForm.typeCheckLbl, _mainForm.errorsLV, _mainForm.errorsTabPage, _mainForm.warningsCheckLbl);
+            if (_mainForm.outputTabControl.SelectedTab == _mainForm.errorsTabPage)
+                _mainForm.outputTabControl.SelectedTab = _mainForm.outputTabPage;
+            RoslynRun.RunCode(_mainForm.outputRBT, _mainForm.runCodePb, SelectedEditor.GetSelectedEditor(), _mainForm.splitContainer1, true);
         }
 
         /// <summary>
@@ -29,7 +36,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Application.Exit();
         }
@@ -39,10 +46,10 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            int indexTab = EditorTabControl.SelectedIndex;
-            FileManage.OpenFileTab(EditorTabControl, SelectedEditor.GetSelectedEditor(indexTab));
+            int indexTab = _mainForm.EditorTabControl.SelectedIndex;
+            FileManage.OpenFileTab(_mainForm.EditorTabControl, SelectedEditor.GetSelectedEditor(indexTab));
         }
 
         /// <summary>
@@ -50,15 +57,15 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void saveToolStripMenuItem_Click(object sender, EventArgs e) =>
-            FileManage.SaveFileTab(EditorTabControl, selectedEditor);
+        internal void saveToolStripMenuItem_Click(object sender, EventArgs e) =>
+            FileManage.SaveFileTab(_mainForm.EditorTabControl, _mainForm.EditorFeature.selectedEditor);
 
         /// <summary>
         /// Save data from text editor. (Save As)
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void saveAsStripMenuItem_Click(object sender, EventArgs e)
+        internal void saveAsStripMenuItem_Click(object sender, EventArgs e)
         {
             FileManage.SaveAsDialog(SelectedEditor.GetSelectedEditor());
         }
@@ -68,9 +75,9 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        internal void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            FileManage.NewFile(selectedEditor, outputRBT);
+            FileManage.NewFile(_mainForm.EditorFeature.selectedEditor, _mainForm.outputRBT);
         }
 
         /// <summary>
@@ -79,7 +86,7 @@ namespace CIARE
         /// <param name="msg"></param>
         /// <param name="keyData"></param>
         /// <returns></returns>
-        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        internal bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             switch (keyData)
             {
@@ -102,31 +109,31 @@ namespace CIARE
                     }
                     return true;
                 case Keys.PageDown | Keys.Control:
-                    TabControllerManage.SwitchTabs(EditorTabControl, true);
+                    TabControllerManage.SwitchTabs(_mainForm.EditorTabControl, true);
                     return true;
                 case Keys.PageUp | Keys.Control:
-                    TabControllerManage.SwitchTabs(EditorTabControl, false);
+                    TabControllerManage.SwitchTabs(_mainForm.EditorTabControl, false);
                     return true;
                 case Keys.Q | Keys.Control:
                     LiveShareHost liveShareHost = new LiveShareHost();
                     liveShareHost.ShowDialog();
                     return true;
                 case Keys.Left | Keys.Control:
-                    TabControllerManage.SwitchTabs(EditorTabControl, true);
+                    TabControllerManage.SwitchTabs(_mainForm.EditorTabControl, true);
                     return true;
                 case Keys.Right | Keys.Control:
-                    TabControllerManage.SwitchTabs(EditorTabControl, false);
+                    TabControllerManage.SwitchTabs(_mainForm.EditorTabControl, false);
                     return true;
                 case Keys.Tab | Keys.Control:
-                    worker = new BackgroundWorker();
-                    worker.DoWork += NewHotKeyTab;
-                    worker.RunWorkerAsync();
+                    _mainForm.EditorFeature.worker = new BackgroundWorker();
+                    _mainForm.EditorFeature.worker.DoWork += _mainForm.TabsFeature.NewHotKeyTab;
+                    _mainForm.EditorFeature.worker.RunWorkerAsync();
                     return true;
                 case Keys.N | Keys.Control:
-                    FileManage.NewFile(SelectedEditor.GetSelectedEditor(), outputRBT);
+                    FileManage.NewFile(SelectedEditor.GetSelectedEditor(), _mainForm.outputRBT);
                     return true;
                 case Keys.N | Keys.Control | Keys.Shift:
-                    newProjectStripMenuItem_Click(this, EventArgs.Empty);
+                    _mainForm.ProjectCommandsFeature.newProjectStripMenuItem_Click(_mainForm, EventArgs.Empty);
                     return true;
                 case Keys.H | Keys.Control:
                     GlobalVariables.findTabOpen = false;
@@ -140,11 +147,11 @@ namespace CIARE
                     FileManage.SaveAsDialog(SelectedEditor.GetSelectedEditor());
                     return true;
                 case Keys.O | Keys.Control:
-                    int indexTab = EditorTabControl.SelectedIndex;
-                    FileManage.OpenFileTab(EditorTabControl, SelectedEditor.GetSelectedEditor(indexTab));
+                    int indexTab = _mainForm.EditorTabControl.SelectedIndex;
+                    FileManage.OpenFileTab(_mainForm.EditorTabControl, SelectedEditor.GetSelectedEditor(indexTab));
                     return true;
                 case Keys.O | Keys.Control | Keys.Shift:
-                    OpenProjectOrSolutionDialog();
+                    _mainForm.ProjectCommandsFeature.OpenProjectOrSolutionDialog();
                     return true;
                 case Keys.F | Keys.Control:
                     GlobalVariables.findTabOpen = true;
@@ -152,12 +159,12 @@ namespace CIARE
                     find.ShowDialog();
                     return true;
                 case Keys.F12 | Keys.Shift:
-                    FindUsagesAtCaret();
+                    _mainForm.FindUsagesFeature.FindUsagesAtCaret();
                     return true;
                 case Keys.F5:
-                    if (outputTabControl.SelectedTab == errorsTabPage)
-                        outputTabControl.SelectedTab = outputTabPage;
-                    RoslynRun.RunCode(outputRBT, runCodePb, SelectedEditor.GetSelectedEditor(), splitContainer1, true);
+                    if (_mainForm.outputTabControl.SelectedTab == _mainForm.errorsTabPage)
+                        _mainForm.outputTabControl.SelectedTab = _mainForm.outputTabPage;
+                    RoslynRun.RunCode(_mainForm.outputRBT, _mainForm.runCodePb, SelectedEditor.GetSelectedEditor(), _mainForm.splitContainer1, true);
                     return true;
                 case Keys.T | Keys.Control:
                     FileManage.LoadCSTemplate(SelectedEditor.GetSelectedEditor());
@@ -165,32 +172,32 @@ namespace CIARE
                 case Keys.B | Keys.Control:
                     GlobalVariables.binaryPublish = false;
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
-                    if (outputTabControl.SelectedTab == errorsTabPage)
-                        outputTabControl.SelectedTab = outputTabPage;
-                    RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
+                    if (_mainForm.outputTabControl.SelectedTab == _mainForm.errorsTabPage)
+                        _mainForm.outputTabControl.SelectedTab = _mainForm.outputTabPage;
+                    RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), _mainForm.splitContainer1, _mainForm.outputRBT, false, GlobalVariables.OutputKind);
                     return true;
                 case Keys.B | Keys.Control | Keys.Shift:
                     GlobalVariables.binaryPublish = true;
                     FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
-                    if (outputTabControl.SelectedTab == errorsTabPage)
-                        outputTabControl.SelectedTab = outputTabPage;
-                    RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
+                    if (_mainForm.outputTabControl.SelectedTab == _mainForm.errorsTabPage)
+                        _mainForm.outputTabControl.SelectedTab = _mainForm.outputTabPage;
+                    RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), _mainForm.splitContainer1, _mainForm.outputRBT, false, GlobalVariables.OutputKind);
                     return true;
                 case Keys.W | Keys.Control:
-                    worker = new BackgroundWorker();
-                    worker.DoWork += SplitWindowHorizontally;
-                    worker.RunWorkerAsync();
+                    _mainForm.EditorFeature.worker = new BackgroundWorker();
+                    _mainForm.EditorFeature.worker.DoWork += _mainForm.EditorLayoutFeature.SplitWindowHorizontally;
+                    _mainForm.EditorFeature.worker.RunWorkerAsync();
                     return true;
                 case Keys.W | Keys.Control | Keys.Shift:
-                    worker = new BackgroundWorker();
-                    worker.DoWork += SplitWindowVertically;
-                    worker.RunWorkerAsync();
+                    _mainForm.EditorFeature.worker = new BackgroundWorker();
+                    _mainForm.EditorFeature.worker.DoWork += _mainForm.EditorLayoutFeature.SplitWindowVertically;
+                    _mainForm.EditorFeature.worker.RunWorkerAsync();
                     return true;
                 case Keys.K | Keys.Control:
-                    OutputWindowManage.SetOutputWindowState(outputRBT, splitContainer1);
+                    OutputWindowManage.SetOutputWindowState(_mainForm.outputRBT, _mainForm.splitContainer1);
                     return true;
                 case Keys.E | Keys.Control:
-                    ToggleFileExplorer();
+                    _mainForm.ExplorerLayoutFeature.ToggleFileExplorer();
                     return true;
                 case Keys.G | Keys.Control:
                     GoToLine goToLine = new GoToLine();
@@ -209,13 +216,13 @@ namespace CIARE
                         refManager.ShowDialog();
                     var editorRef = SelectedEditor.GetSelectedEditor();
                     if (editorRef != null)
-                        ScheduleCurrentTypeCheck(editorRef);
+                        _mainForm.EditorFeature.ScheduleCurrentTypeCheck(editorRef);
                     return true;
                 case Keys.F11:
-                    ToggleFullScreen();
+                    _mainForm.WindowStateFeature.ToggleFullScreen();
                     return true;
             }
-            return base.ProcessCmdKey(ref msg, keyData);
+            return false;
         }
 
         /// <summary>
@@ -223,7 +230,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void LoadCStripMenuItem_Click(object sender, EventArgs e)
+        internal void LoadCStripMenuItem_Click(object sender, EventArgs e)
         {
             FileManage.LoadCSTemplate(SelectedEditor.GetSelectedEditor());
         }
@@ -233,7 +240,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             AboutBox aboutBox = new AboutBox();
             aboutBox.ShowDialog();
@@ -245,7 +252,7 @@ namespace CIARE
         /// <param name="sender"></param>
         /// <param name="e"></param>
         /// <exception cref="System.NotImplementedException"></exception>
-        private void HotKeyToolStripMenuItem_Click(object sender, System.EventArgs e)
+        internal void HotKeyToolStripMenuItem_Click(object sender, System.EventArgs e)
         {
             HotKeys hotKeys = new HotKeys();
             hotKeys.ShowDialog();
@@ -256,13 +263,13 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void compileToexeCtrlShiftBToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GlobalVariables.binaryPublish = false;
             FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
-            if (outputTabControl.SelectedTab == errorsTabPage)
-                outputTabControl.SelectedTab = outputTabPage;
-            RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
+            if (_mainForm.outputTabControl.SelectedTab == _mainForm.errorsTabPage)
+                _mainForm.outputTabControl.SelectedTab = _mainForm.outputTabPage;
+            RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), _mainForm.splitContainer1, _mainForm.outputRBT, false, GlobalVariables.OutputKind);
         }
 
         /// <summary>
@@ -270,104 +277,104 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void compileToDLLCtrlSfitBToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void compileToDLLCtrlSfitBToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GlobalVariables.binaryPublish = true;
             FileManage.CompileRunSaveData(SelectedEditor.GetSelectedEditor());
-            if (outputTabControl.SelectedTab == errorsTabPage)
-                outputTabControl.SelectedTab = outputTabPage;
-            RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), splitContainer1, outputRBT, false, GlobalVariables.OutputKind);
+            if (_mainForm.outputTabControl.SelectedTab == _mainForm.errorsTabPage)
+                _mainForm.outputTabControl.SelectedTab = _mainForm.outputTabPage;
+            RoslynRun.CompileBinary(SelectedEditor.GetSelectedEditor(), _mainForm.splitContainer1, _mainForm.outputRBT, false, GlobalVariables.OutputKind);
         }
 
-        private void undoToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void undoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^z");
         }
 
-        private void redoToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void redoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^y");
         }
 
-        private void cutStripMenuItem_Click(object sender, EventArgs e)
+        internal void cutStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^x");
         }
 
-        private void copyStripMenuItem_Click(object sender, EventArgs e)
+        internal void copyStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^c");
         }
 
-        private void pasteStripMenuItem_Click(object sender, EventArgs e)
+        internal void pasteStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^v");
         }
 
-        private void deleteStripMenuItem_Click(object sender, EventArgs e)
+        internal void deleteStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("{DELETE}");
         }
 
-        private void replaceStripMenuItem_Click(object sender, EventArgs e)
+        internal void replaceStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^h");
         }
 
-        private void selectAllStripMenuItem3_Click(object sender, EventArgs e)
+        internal void selectAllStripMenuItem3_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^a");
         }
 
-        private void splitEditorToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void splitEditorToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^w");
         }
 
-        private void splitVEditorToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void splitVEditorToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            worker = new BackgroundWorker();
-            worker.DoWork += SplitWindowVertically;
-            worker.RunWorkerAsync();
+            _mainForm.EditorFeature.worker = new BackgroundWorker();
+            _mainForm.EditorFeature.worker.DoWork += _mainForm.EditorLayoutFeature.SplitWindowVertically;
+            _mainForm.EditorFeature.worker.RunWorkerAsync();
         }
 
-        private void showHideSCToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void showHideSCToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^k");
         }
 
-        private void showHideExplorerToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void showHideExplorerToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            ToggleFileExplorer();
+            _mainForm.ExplorerLayoutFeature.ToggleFileExplorer();
         }
 
-        private void goToLineStripMenuItem_Click(object sender, EventArgs e)
+        internal void goToLineStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^g");
         }
 
-        private void cmdLinesArgsStripMenuItem_Click(object sender, EventArgs e)
+        internal void cmdLinesArgsStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^l");
         }
 
-        private void finStripMenuItem_Click(object sender, EventArgs e)
+        internal void finStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^f");
         }
 
-        private void optionsToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void optionsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Options options = new Options();
+            CIARE.Options options = new CIARE.Options();
             options.ShowDialog();
         }
 
-        private void chatGPTCTRLShiftPToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void chatGPTCTRLShiftPToolStripMenuItem_Click(object sender, EventArgs e)
         {
             AiManage.GetDataAI(SelectedEditor.GetSelectedEditor(), GlobalVariables.aiKey.ConvertSecureStringToString());
         }
 
-        private void referenceAddToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void referenceAddToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SendKeys.Send("^r");
         }

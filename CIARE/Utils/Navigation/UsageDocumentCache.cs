@@ -6,10 +6,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Navigation.UsageDocuments;
+using static global::CIARE.Utils.Projects.WorkspaceFiles;
 
-namespace CIARE
+namespace CIARE.Utils.Navigation
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal static class UsageDocumentCache
     {
         private static readonly object _usageDocumentCacheLock = new object();
         private static readonly Dictionary<string, UsageDocumentCacheEntry> _usageDocumentCache
@@ -39,7 +43,7 @@ namespace CIARE
             }
         }
 
-        private static List<UsageDocument> BuildUsageDocuments(
+        internal static List<UsageDocument> BuildUsageDocuments(
             string identifier,
             List<OpenTabInfo> openTabs,
             List<string> workspaceFolders,
@@ -88,7 +92,7 @@ namespace CIARE
             return documents;
         }
 
-        private static ParallelOptions CreateUsageParallelOptions()
+        internal static ParallelOptions CreateUsageParallelOptions()
         {
             return new ParallelOptions
             {
@@ -260,7 +264,7 @@ namespace CIARE
             return false;
         }
 
-        private static bool TextContainsIdentifier(string text, string identifier)
+        internal static bool TextContainsIdentifier(string text, string identifier)
         {
             if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(identifier))
                 return false;

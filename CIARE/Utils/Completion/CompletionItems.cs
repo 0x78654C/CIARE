@@ -4,12 +4,14 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static global::CIARE.Utils.Completion.CompletionParsing;
 
-namespace CIARE
+namespace CIARE.Utils.Completion
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal static class CompletionItems
     {
-        private static void AddRoslynCompletionClasses(List<WorkspaceCompletionClass> result, string code, string filePath)
+        internal static void AddRoslynCompletionClasses(List<WorkspaceCompletionClass> result, string code, string filePath)
         {
             if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
                 return;
@@ -27,7 +29,7 @@ namespace CIARE
             }
         }
 
-        private static void CollectTopLevelLocalFunctions(List<WorkspaceCompletionItem> result, string code, string filePath)
+        internal static void CollectTopLevelLocalFunctions(List<WorkspaceCompletionItem> result, string code, string filePath)
         {
             if (IsVisualBasic || string.IsNullOrWhiteSpace(code))
                 return;
@@ -316,7 +318,7 @@ namespace CIARE
             return typeDeclaration is EnumDeclarationSyntax ? 4 : 0;
         }
 
-        private sealed class WorkspaceCompletionClass
+        internal sealed class WorkspaceCompletionClass
         {
             public WorkspaceCompletionClass(string name, string fullName, string namespaceName, string kindKeyword, int imageIndex, bool isNested, string filePath)
             {
@@ -345,7 +347,7 @@ namespace CIARE
             }
         }
 
-        private sealed class WorkspaceCompletionItem
+        internal sealed class WorkspaceCompletionItem
         {
             public WorkspaceCompletionItem(string name, string description, int imageIndex, string filePath = null, int line = 0)
             {

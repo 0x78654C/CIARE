@@ -7,33 +7,43 @@ using CIARE.Utils;
 using ICSharpCode.TextEditor;
 using Dom = ICSharpCode.SharpDevelop.Dom;
 using NRefactory = ICSharpCode.NRefactory;
+using static global::CIARE.Utils.Completion.CompletionItems;
+using static global::CIARE.Utils.Completion.CompletionResources;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
 
-namespace CIARE
+namespace CIARE.Utils.Completion
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class CompletionParsing
     {
+        private readonly MainForm _mainForm;
+
+        internal CompletionParsing(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         public static Dom.ProjectContentRegistry pcRegistry;
         internal static Dom.DefaultProjectContent myProjectContent;
         internal static Dom.ParseInformation parseInformation = new Dom.ParseInformation();
         public static bool IsVisualBasic = false;
         Dom.ICompilationUnit lastCompilationUnit;
         public const string DummyFileName = "edited.cs";
-        static readonly Dom.LanguageProperties CurrentLanguageProperties = IsVisualBasic ? Dom.LanguageProperties.VBNet : Dom.LanguageProperties.CSharp;
+        internal         static readonly Dom.LanguageProperties CurrentLanguageProperties = IsVisualBasic ? Dom.LanguageProperties.VBNet : Dom.LanguageProperties.CSharp;
         Thread parserThread;
-        private readonly object _completionDataLock = new object();
+        internal readonly object _completionDataLock = new object();
         private bool _completionRegistryInitialized;
-        private int _completionTextVersion;
+        internal int _completionTextVersion;
         private int _lastParsedTextVersion = -1;
         private int _lastParsedScopeVersion = -1;
         private HashSet<string> _alreadyLoaded = new HashSet<string>();
 
-        private void SetCodeCompletion(int index)
+        internal void SetCodeCompletion(int index)
         {
             if (GlobalVariables.OCodeCompletion)
             {
-                HostCallbackImplementation.Register(this);
-                CodeCompletionKeyHandler.Attach(this, SelectedEditor.GetSelectedEditor(index));
-                ToolTipProvider.Attach(this, SelectedEditor.GetSelectedEditor(index));
+                HostCallbackImplementation.Register(_mainForm);
+                CodeCompletionKeyHandler.Attach(_mainForm, SelectedEditor.GetSelectedEditor(index));
+                ToolTipProvider.Attach(_mainForm, SelectedEditor.GetSelectedEditor(index));
 
                 EnsureCompletionRegistry();
             }
@@ -54,7 +64,7 @@ namespace CIARE
         /// </summary>
         public void ReloadRef()
         {
-            if (!isLoaded || Disposing || IsDisposed)
+            if (!_mainForm.isLoaded || _mainForm.Disposing || _mainForm.IsDisposed)
                 return;
 
             if (GlobalVariables.OCodeCompletion)
@@ -92,7 +102,7 @@ namespace CIARE
                 }
             }
 
-            while (!IsDisposed)
+            while (!_mainForm.IsDisposed)
             {
                 ParseStep();
                 Thread.Sleep(2000);
@@ -101,14 +111,14 @@ namespace CIARE
 
         void ParseStep()
         {
-            if (!Monitor.TryEnter(_completionParseLock)) return;
+            if (!Monitor.TryEnter(_mainForm.CompletionResourcesFeature._completionParseLock)) return;
             try { ParseCompletionStep(); }
-            finally { Monitor.Exit(_completionParseLock); }
+            finally { Monitor.Exit(_mainForm.CompletionResourcesFeature._completionParseLock); }
         }
 
         private void ParseCompletionStep()
         {
-            if (IsDisposed || Disposing || !IsHandleCreated)
+            if (_mainForm.IsDisposed || _mainForm.Disposing || !_mainForm.IsHandleCreated)
                 return;
 
             string code = null;
@@ -117,17 +127,17 @@ namespace CIARE
             int textVersion = 0;
             try
             {
-                Invoke(new System.Windows.Forms.MethodInvoker(delegate
+                _mainForm.Invoke(new System.Windows.Forms.MethodInvoker(delegate
                 {
-                    if (IsDisposed || Disposing || EditorTabControl.SelectedIndex <= 0)
+                    if (_mainForm.IsDisposed || _mainForm.Disposing || _mainForm.EditorTabControl.SelectedIndex <= 0)
                         return;
 
-                    completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
+                    completionScope = _mainForm.CompletionWorkspaceFeature.RefreshCompletionScope(_mainForm.EditorFeature.GetActiveEditorFilePath());
                     textVersion = Volatile.Read(ref _completionTextVersion);
                     editor = SelectedEditor.GetSelectedEditor();
                 }));
             }
-            catch (InvalidOperationException) when (IsDisposed || Disposing || !IsHandleCreated)
+            catch (InvalidOperationException) when (_mainForm.IsDisposed || _mainForm.Disposing || !_mainForm.IsHandleCreated)
             {
                 // The form can close between checking its handle and invoking the UI thread.
                 return;
@@ -136,27 +146,27 @@ namespace CIARE
                 return;
 
             bool hasStamp = TryGetCompletionSourceStamp(completionScope, out ulong sourceStamp);
-            int sourceVersion = Volatile.Read(ref _completionSourceVersion);
-            bool sameWorkspace = hasStamp && _hasParsedSourceStamp && sourceStamp == _lastParsedSourceStamp
-                && sourceVersion == _lastParsedSourceVersion && completionScope.Version == _lastParsedScopeVersion;
+            int sourceVersion = Volatile.Read(ref _mainForm.CompletionResourcesFeature._completionSourceVersion);
+            bool sameWorkspace = hasStamp && _mainForm.CompletionResourcesFeature._hasParsedSourceStamp && sourceStamp == _mainForm.CompletionResourcesFeature._lastParsedSourceStamp
+                && sourceVersion == _mainForm.CompletionResourcesFeature._lastParsedSourceVersion && completionScope.Version == _lastParsedScopeVersion;
             if (sameWorkspace && textVersion == _lastParsedTextVersion)
                 return;
             // An unchanged document needs no full-text allocation on each idle poll.
             try
             {
-                Invoke(new System.Windows.Forms.MethodInvoker(() =>
+                _mainForm.Invoke(new System.Windows.Forms.MethodInvoker(() =>
                 {
                     if (editor.IsDisposed || editor != SelectedEditor.GetSelectedEditor() ||
-                        !IsCompletionScopeCurrent(completionScope))
+                        !_mainForm.CompletionWorkspaceFeature.IsCompletionScopeCurrent(completionScope))
                         return;
                     textVersion = Volatile.Read(ref _completionTextVersion);
                     code = editor.Text;
                 }));
             }
-            catch (InvalidOperationException) when (IsDisposed || Disposing || !IsHandleCreated) { return; }
+            catch (InvalidOperationException) when (_mainForm.IsDisposed || _mainForm.Disposing || !_mainForm.IsHandleCreated) { return; }
             if (code == null) return;
             if (!sameWorkspace)
-                ClearCompletionGlobalUsingsCache();
+                _mainForm.CompletionResourcesFeature.ClearCompletionGlobalUsingsCache();
 
             var workspaceCompletionClasses = new List<WorkspaceCompletionClass>();
             AddRoslynCompletionClasses(workspaceCompletionClasses, code, completionScope.CurrentFilePath);
@@ -164,46 +174,46 @@ namespace CIARE
             CollectTopLevelLocalFunctions(topLevelFunctions, code, completionScope.CurrentFilePath);
             Dom.ICompilationUnit activeCompilationUnit = ParseCompletionCompilationUnit(code,
                 completionScope.CurrentFilePath);
-            if (!IsCompletionScopeCurrent(completionScope))
+            if (!_mainForm.CompletionWorkspaceFeature.IsCompletionScopeCurrent(completionScope))
                 return;
 
             SetActiveCompletionCompilationUnit(activeCompilationUnit, completionScope.CurrentFilePath);
             if (!sameWorkspace)
-                ParseWorkspaceFilesForCompletion(completionScope, workspaceCompletionClasses);
-            if (!IsCompletionScopeCurrent(completionScope))
+                _mainForm.CompletionWorkspaceFeature.ParseWorkspaceFilesForCompletion(completionScope, workspaceCompletionClasses);
+            if (!_mainForm.CompletionWorkspaceFeature.IsCompletionScopeCurrent(completionScope))
                 return;
 
             lock (_completionDataLock)
             {
-                if (!IsCompletionScopeCurrent(completionScope))
+                if (!_mainForm.CompletionWorkspaceFeature.IsCompletionScopeCurrent(completionScope))
                     return;
 
                 if (sameWorkspace)
-                    _workspaceCompletionClasses.RemoveAll(item => string.Equals(item.FilePath,
+                    _mainForm.CompletionWorkspaceFeature._workspaceCompletionClasses.RemoveAll(item => string.Equals(item.FilePath,
                         completionScope.CurrentFilePath, StringComparison.OrdinalIgnoreCase));
                 else
-                    _workspaceCompletionClasses.Clear();
-                _workspaceCompletionClasses.AddRange(workspaceCompletionClasses);
-                _topLevelLocalFunctions.Clear();
-                _topLevelLocalFunctions.AddRange(topLevelFunctions);
+                    _mainForm.CompletionWorkspaceFeature._workspaceCompletionClasses.Clear();
+                _mainForm.CompletionWorkspaceFeature._workspaceCompletionClasses.AddRange(workspaceCompletionClasses);
+                _mainForm.CompletionWorkspaceFeature._topLevelLocalFunctions.Clear();
+                _mainForm.CompletionWorkspaceFeature._topLevelLocalFunctions.AddRange(topLevelFunctions);
                 _lastParsedTextVersion = textVersion;
                 _lastParsedScopeVersion = completionScope.Version;
-                _lastParsedSourceStamp = sourceStamp;
-                _lastParsedSourceVersion = sourceVersion;
-                _hasParsedSourceStamp = hasStamp;
+                _mainForm.CompletionResourcesFeature._lastParsedSourceStamp = sourceStamp;
+                _mainForm.CompletionResourcesFeature._lastParsedSourceVersion = sourceVersion;
+                _mainForm.CompletionResourcesFeature._hasParsedSourceStamp = hasStamp;
             }
         }
 
         internal void RefreshActiveCompletionUnit(string code)
         {
-            RefreshActiveCompletionUnit(code, GetActiveEditorFilePath());
+            RefreshActiveCompletionUnit(code, _mainForm.EditorFeature.GetActiveEditorFilePath());
         }
 
         internal void RefreshActiveCompletionUnit(string code, string currentFilePath)
         {
             if (!GlobalVariables.OCodeCompletion || myProjectContent == null)
                 return;
-            string preparedCode = PrepareCodeForNRefactoryCompletion(code ?? string.Empty, currentFilePath,
+            string preparedCode = _mainForm.CompletionSyntaxFeature.PrepareCodeForNRefactoryCompletion(code ?? string.Empty, currentFilePath,
                 out _, out _, out _);
             RefreshPreparedActiveCompletionUnit(preparedCode, currentFilePath, CancellationToken.None);
         }
@@ -214,14 +224,14 @@ namespace CIARE
             if (!GlobalVariables.OCodeCompletion || myProjectContent == null)
                 return;
 
-            CompletionScopeSnapshot completionScope = RefreshCompletionScope(currentFilePath);
+            CompletionScopeSnapshot completionScope = _mainForm.CompletionWorkspaceFeature.RefreshCompletionScope(currentFilePath);
             SetActiveCompletionCompilationUnit(ParsePreparedCompletionCompilationUnit(preparedCode, cancellationToken),
                 completionScope.CurrentFilePath);
         }
 
         private Dom.ICompilationUnit ParseCompletionCompilationUnit(string code, string currentFilePath)
         {
-            string parsedCode = PrepareCodeForNRefactoryCompletion(code ?? string.Empty, currentFilePath,
+            string parsedCode = _mainForm.CompletionSyntaxFeature.PrepareCodeForNRefactoryCompletion(code ?? string.Empty, currentFilePath,
                 out _, out _, out _);
             return ParsePreparedCompletionCompilationUnit(parsedCode, CancellationToken.None);
         }
@@ -264,7 +274,7 @@ namespace CIARE
             }
         }
 
-        Dom.ICompilationUnit ConvertCompilationUnit(NRefactory.Ast.CompilationUnit cu)
+        internal Dom.ICompilationUnit ConvertCompilationUnit(NRefactory.Ast.CompilationUnit cu)
         {
             Dom.NRefactoryResolver.NRefactoryASTConvertVisitor converter;
             converter = new Dom.NRefactoryResolver.NRefactoryASTConvertVisitor(myProjectContent);

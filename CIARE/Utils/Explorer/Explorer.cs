@@ -3,57 +3,66 @@ using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Utils;
 using Button = System.Windows.Forms.Button;
+using static global::CIARE.Utils.Editor.EditorLayout;
+using static global::CIARE.Utils.Explorer.ExplorerLayout;
 
-namespace CIARE
+namespace CIARE.Utils.Explorer
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class Explorer
     {
-        private Panel _editorWorkspacePanel;
-        private SplitContainer _editorExplorerSplitContainer;
+        private readonly MainForm _mainForm;
+
+        internal Explorer(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
+        internal Panel _editorWorkspacePanel;
+        internal SplitContainer _editorExplorerSplitContainer;
         private Panel _fileExplorerPanel;
         private TableLayoutPanel _fileExplorerHeader;
-        private Label _fileExplorerTitleLabel;
+        internal Label _fileExplorerTitleLabel;
         private Button _fileExplorerOpenFolderButton;
         private Button _fileExplorerHideButton;
-        private Button _fileExplorerShowButton;
-        private SplitContainer _fileExplorerContentSplitContainer;
-        private TreeView _fileExplorerTree;
+        internal Button _fileExplorerShowButton;
+        internal SplitContainer _fileExplorerContentSplitContainer;
+        internal TreeView _fileExplorerTree;
         private Panel _fileExplorerNuGetPanel;
-        private Label _fileExplorerNuGetTitleLabel;
-        private ListView _fileExplorerNuGetList;
-        private ColumnHeader _fileExplorerNuGetPackageColumn;
-        private ColumnHeader _fileExplorerNuGetVersionColumn;
-        private ColumnHeader _fileExplorerNuGetUpdateColumn;
-        private ColumnHeader _fileExplorerNuGetStatusColumn;
+        internal Label _fileExplorerNuGetTitleLabel;
+        internal ListView _fileExplorerNuGetList;
+        internal ColumnHeader _fileExplorerNuGetPackageColumn;
+        internal ColumnHeader _fileExplorerNuGetVersionColumn;
+        internal ColumnHeader _fileExplorerNuGetUpdateColumn;
+        internal ColumnHeader _fileExplorerNuGetStatusColumn;
         private ContextMenuStrip _fileExplorerContextMenu;
-        private ToolStripMenuItem _fileExplorerAddProjectMenuItem;
-        private ToolStripMenuItem _fileExplorerAddProjectReferenceMenuItem;
-        private ToolStripMenuItem _fileExplorerRemoveProjectReferenceMenuItem;
-        private ToolStripMenuItem _fileExplorerSetStartupProjectMenuItem;
-        private ToolStripMenuItem _fileExplorerBuildProjectMenuItem;
-        private ToolStripMenuItem _fileExplorerNewFileMenuItem;
-        private ToolStripMenuItem _fileExplorerNewFolderMenuItem;
-        private ToolStripSeparator _fileExplorerProjectSeparator;
-        private ToolStripSeparator _fileExplorerContextSeparator;
-        private ToolStripMenuItem _fileExplorerRenameMenuItem;
-        private ToolStripMenuItem _fileExplorerDeleteMenuItem;
-        private ContextMenuStrip _fileExplorerNuGetContextMenu;
-        private ToolStripMenuItem _fileExplorerNuGetUpdateMenuItem;
-        private ToolStripMenuItem _fileExplorerNuGetRemoveMenuItem;
-        private TreeNode _fileExplorerContextNode;
+        internal ToolStripMenuItem _fileExplorerAddProjectMenuItem;
+        internal ToolStripMenuItem _fileExplorerAddProjectReferenceMenuItem;
+        internal ToolStripMenuItem _fileExplorerRemoveProjectReferenceMenuItem;
+        internal ToolStripMenuItem _fileExplorerSetStartupProjectMenuItem;
+        internal ToolStripMenuItem _fileExplorerBuildProjectMenuItem;
+        internal ToolStripMenuItem _fileExplorerNewFileMenuItem;
+        internal ToolStripMenuItem _fileExplorerNewFolderMenuItem;
+        internal ToolStripSeparator _fileExplorerProjectSeparator;
+        internal ToolStripSeparator _fileExplorerContextSeparator;
+        internal ToolStripMenuItem _fileExplorerRenameMenuItem;
+        internal ToolStripMenuItem _fileExplorerDeleteMenuItem;
+        internal ContextMenuStrip _fileExplorerNuGetContextMenu;
+        internal ToolStripMenuItem _fileExplorerNuGetUpdateMenuItem;
+        internal ToolStripMenuItem _fileExplorerNuGetRemoveMenuItem;
+        internal TreeNode _fileExplorerContextNode;
         private ImageList _fileExplorerImageList;
 
-        private void InitializeFileExplorerPane()
+        internal void InitializeFileExplorerPane()
         {
             if (_editorExplorerSplitContainer != null)
                 return;
 
-            LoadFileExplorerLayoutValues();
+            _mainForm.ExplorerLayoutFeature.LoadFileExplorerLayoutValues();
 
-            splitContainer1.Panel1.SuspendLayout();
-            EditorTabControl.SuspendLayout();
+            _mainForm.splitContainer1.Panel1.SuspendLayout();
+            _mainForm.EditorTabControl.SuspendLayout();
 
-            splitContainer1.Panel1.Controls.Remove(EditorTabControl);
+            _mainForm.splitContainer1.Panel1.Controls.Remove(_mainForm.EditorTabControl);
 
             _editorWorkspacePanel = new Panel
             {
@@ -74,32 +83,32 @@ namespace CIARE
             _editorExplorerSplitContainer.Panel2.Padding = Padding.Empty;
             _editorExplorerSplitContainer.Panel1.BackColor = GetEditorSurfaceBackColor();
             _editorExplorerSplitContainer.Panel2.BackColor = GetEditorSurfaceBackColor();
-            _editorExplorerSplitContainer.Panel1.Resize += (sender, args) => QueueEditorLayoutRefresh();
+            _editorExplorerSplitContainer.Panel1.Resize += (sender, args) => _mainForm.EditorLayoutFeature.QueueEditorLayoutRefresh();
             _editorExplorerSplitContainer.SizeChanged += (sender, args) =>
             {
-                OnFileExplorerLayoutContainerSizeChanged();
+                _mainForm.ExplorerLayoutFeature.OnFileExplorerLayoutContainerSizeChanged();
             };
             _editorExplorerSplitContainer.SplitterMoving += (sender, args) =>
             {
-                _fileExplorerWidthDragInProgress = true;
-                CancelPendingFileExplorerLayoutApplyForUserResize();
+                _mainForm.ExplorerLayoutFeature._fileExplorerWidthDragInProgress = true;
+                _mainForm.ExplorerLayoutFeature.CancelPendingFileExplorerLayoutApplyForUserResize();
             };
             _editorExplorerSplitContainer.SplitterMoved += (sender, args) =>
             {
-                if (_fileExplorerWidthDragInProgress)
+                if (_mainForm.ExplorerLayoutFeature._fileExplorerWidthDragInProgress)
                 {
-                    _fileExplorerWidthDragInProgress = false;
-                    QueueFileExplorerWidthSave();
+                    _mainForm.ExplorerLayoutFeature._fileExplorerWidthDragInProgress = false;
+                    _mainForm.ExplorerLayoutFeature.QueueFileExplorerWidthSave();
                 }
 
-                QueueEditorLayoutRefresh();
+                _mainForm.EditorLayoutFeature.QueueEditorLayoutRefresh();
             };
             _editorExplorerSplitContainer.MouseUp += (sender, args) =>
             {
-                if (_fileExplorerWidthDragInProgress)
+                if (_mainForm.ExplorerLayoutFeature._fileExplorerWidthDragInProgress)
                 {
-                    _fileExplorerWidthDragInProgress = false;
-                    QueueFileExplorerWidthSave();
+                    _mainForm.ExplorerLayoutFeature._fileExplorerWidthDragInProgress = false;
+                    _mainForm.ExplorerLayoutFeature.QueueFileExplorerWidthSave();
                 }
             };
 
@@ -123,28 +132,28 @@ namespace CIARE
             _fileExplorerContentSplitContainer.Panel2.BackColor = GetEditorSurfaceBackColor();
             _fileExplorerContentSplitContainer.SizeChanged += (sender, args) =>
             {
-                OnFileExplorerLayoutContainerSizeChanged();
+                _mainForm.ExplorerLayoutFeature.OnFileExplorerLayoutContainerSizeChanged();
             };
             _fileExplorerContentSplitContainer.SplitterMoving +=
                 (sender, args) =>
                 {
-                    _fileExplorerNuGetHeightDragInProgress = true;
-                    CancelPendingFileExplorerLayoutApplyForUserResize();
+                    _mainForm.ExplorerLayoutFeature._fileExplorerNuGetHeightDragInProgress = true;
+                    _mainForm.ExplorerLayoutFeature.CancelPendingFileExplorerLayoutApplyForUserResize();
                 };
             _fileExplorerContentSplitContainer.SplitterMoved +=
                 (sender, args) =>
                 {
-                    if (_fileExplorerNuGetHeightDragInProgress)
-                        QueueFileExplorerNuGetHeightSave();
+                    if (_mainForm.ExplorerLayoutFeature._fileExplorerNuGetHeightDragInProgress)
+                        _mainForm.ExplorerLayoutFeature.QueueFileExplorerNuGetHeightSave();
                 };
             _fileExplorerContentSplitContainer.MouseUp +=
                 (sender, args) =>
                 {
-                    if (!_fileExplorerNuGetHeightDragInProgress)
+                    if (!_mainForm.ExplorerLayoutFeature._fileExplorerNuGetHeightDragInProgress)
                         return;
 
-                    _fileExplorerNuGetHeightDragInProgress = false;
-                    QueueFileExplorerNuGetHeightSave();
+                    _mainForm.ExplorerLayoutFeature._fileExplorerNuGetHeightDragInProgress = false;
+                    _mainForm.ExplorerLayoutFeature.QueueFileExplorerNuGetHeightSave();
                 };
 
             _fileExplorerHeader = new TableLayoutPanel
@@ -176,8 +185,8 @@ namespace CIARE
                 Margin = new Padding(2, 0, 2, 0),
                 UseVisualStyleBackColor = false
             };
-            toolTip1.SetToolTip(_fileExplorerOpenFolderButton, "Open folder");
-            _fileExplorerOpenFolderButton.Click += fileExplorerOpenFolderButton_Click;
+            _mainForm.toolTip1.SetToolTip(_fileExplorerOpenFolderButton, "Open folder");
+            _fileExplorerOpenFolderButton.Click += _mainForm.ExplorerTreeFeature.fileExplorerOpenFolderButton_Click;
 
             _fileExplorerHideButton = new Button
             {
@@ -187,8 +196,8 @@ namespace CIARE
                 Margin = new Padding(2, 0, 0, 0),
                 UseVisualStyleBackColor = false
             };
-            toolTip1.SetToolTip(_fileExplorerHideButton, "Hide file explorer");
-            _fileExplorerHideButton.Click += (sender, args) => ToggleFileExplorer(false);
+            _mainForm.toolTip1.SetToolTip(_fileExplorerHideButton, "Hide file explorer");
+            _fileExplorerHideButton.Click += (sender, args) => _mainForm.ExplorerLayoutFeature.ToggleFileExplorer(false);
 
             _fileExplorerTree = new TreeView
             {
@@ -198,67 +207,67 @@ namespace CIARE
                 ShowNodeToolTips = true,
                 ImageList = CreateFileExplorerImageList()
             };
-            _fileExplorerTree.BeforeExpand += fileExplorerTree_BeforeExpand;
-            _fileExplorerTree.AfterExpand += fileExplorerTree_AfterExpand;
-            _fileExplorerTree.AfterCollapse += fileExplorerTree_AfterCollapse;
-            _fileExplorerTree.AfterSelect += fileExplorerTree_AfterSelect;
-            _fileExplorerTree.MouseDown += fileExplorerTree_MouseDown;
-            _fileExplorerTree.NodeMouseDoubleClick += fileExplorerTree_NodeMouseDoubleClick;
-            _fileExplorerTree.KeyDown += fileExplorerTree_KeyDown;
+            _fileExplorerTree.BeforeExpand += _mainForm.ExplorerTreeFeature.fileExplorerTree_BeforeExpand;
+            _fileExplorerTree.AfterExpand += _mainForm.ExplorerTreeFeature.fileExplorerTree_AfterExpand;
+            _fileExplorerTree.AfterCollapse += _mainForm.ExplorerTreeFeature.fileExplorerTree_AfterCollapse;
+            _fileExplorerTree.AfterSelect += _mainForm.ExplorerTreeFeature.fileExplorerTree_AfterSelect;
+            _fileExplorerTree.MouseDown += _mainForm.ExplorerTreeFeature.fileExplorerTree_MouseDown;
+            _fileExplorerTree.NodeMouseDoubleClick += _mainForm.ExplorerTreeFeature.fileExplorerTree_NodeMouseDoubleClick;
+            _fileExplorerTree.KeyDown += _mainForm.ExplorerTreeFeature.fileExplorerTree_KeyDown;
 
             _fileExplorerAddProjectMenuItem = new ToolStripMenuItem
             {
                 Text = "Add New Project..."
             };
-            _fileExplorerAddProjectMenuItem.Click += fileExplorerAddProjectMenuItem_Click;
+            _fileExplorerAddProjectMenuItem.Click += _mainForm.ProjectReferencesFeature.fileExplorerAddProjectMenuItem_Click;
 
             _fileExplorerAddProjectReferenceMenuItem = new ToolStripMenuItem
             {
                 Text = "Add Project Reference..."
             };
-            _fileExplorerAddProjectReferenceMenuItem.Click += fileExplorerAddProjectReferenceMenuItem_Click;
+            _fileExplorerAddProjectReferenceMenuItem.Click += _mainForm.ProjectReferencesFeature.fileExplorerAddProjectReferenceMenuItem_Click;
 
             _fileExplorerRemoveProjectReferenceMenuItem = new ToolStripMenuItem
             {
                 Text = "Remove Project Reference..."
             };
-            _fileExplorerRemoveProjectReferenceMenuItem.Click += fileExplorerRemoveProjectReferenceMenuItem_Click;
+            _fileExplorerRemoveProjectReferenceMenuItem.Click += _mainForm.ProjectReferencesFeature.fileExplorerRemoveProjectReferenceMenuItem_Click;
 
             _fileExplorerSetStartupProjectMenuItem = new ToolStripMenuItem
             {
                 Text = "Set as Startup Project"
             };
-            _fileExplorerSetStartupProjectMenuItem.Click += fileExplorerSetStartupProjectMenuItem_Click;
+            _fileExplorerSetStartupProjectMenuItem.Click += _mainForm.StartupProjectFeature.fileExplorerSetStartupProjectMenuItem_Click;
 
             _fileExplorerBuildProjectMenuItem = new ToolStripMenuItem { Text = "Build Project" };
-            _fileExplorerBuildProjectMenuItem.Click += fileExplorerBuildProjectMenuItem_Click;
+            _fileExplorerBuildProjectMenuItem.Click += _mainForm.ProjectBuildFeature.fileExplorerBuildProjectMenuItem_Click;
 
             _fileExplorerNewFileMenuItem = new ToolStripMenuItem
             {
                 Text = "New C# File..."
             };
-            _fileExplorerNewFileMenuItem.Click += fileExplorerNewFileMenuItem_Click;
+            _fileExplorerNewFileMenuItem.Click += _mainForm.ExplorerActionsFeature.fileExplorerNewFileMenuItem_Click;
 
             _fileExplorerNewFolderMenuItem = new ToolStripMenuItem
             {
                 Text = "New Folder..."
             };
-            _fileExplorerNewFolderMenuItem.Click += fileExplorerNewFolderMenuItem_Click;
+            _fileExplorerNewFolderMenuItem.Click += _mainForm.ExplorerActionsFeature.fileExplorerNewFolderMenuItem_Click;
 
             _fileExplorerRenameMenuItem = new ToolStripMenuItem
             {
                 Text = "Rename..."
             };
-            _fileExplorerRenameMenuItem.Click += fileExplorerRenameMenuItem_Click;
+            _fileExplorerRenameMenuItem.Click += _mainForm.ExplorerActionsFeature.fileExplorerRenameMenuItem_Click;
 
             _fileExplorerDeleteMenuItem = new ToolStripMenuItem
             {
                 Text = "Delete"
             };
-            _fileExplorerDeleteMenuItem.Click += fileExplorerDeleteMenuItem_Click;
+            _fileExplorerDeleteMenuItem.Click += _mainForm.ExplorerActionsFeature.fileExplorerDeleteMenuItem_Click;
 
-            _fileExplorerContextMenu = new ContextMenuStrip(components);
-            _fileExplorerContextMenu.Opening += fileExplorerContextMenu_Opening;
+            _fileExplorerContextMenu = new ContextMenuStrip(_mainForm.components);
+            _fileExplorerContextMenu.Opening += _mainForm.ExplorerActionsFeature.fileExplorerContextMenu_Opening;
             _fileExplorerContextMenu.Items.Add(_fileExplorerBuildProjectMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectMenuItem);
             _fileExplorerContextMenu.Items.Add(_fileExplorerAddProjectReferenceMenuItem);
@@ -308,22 +317,22 @@ namespace CIARE
                 ShowItemToolTips = true,
                 View = View.Details
             };
-            _fileExplorerNuGetList.Resize += (sender, args) => ResizeFileExplorerNuGetColumns();
-            _fileExplorerNuGetList.MouseClick += fileExplorerNuGetList_MouseClick;
+            _fileExplorerNuGetList.Resize += (sender, args) => _mainForm.NuGetFeature.ResizeFileExplorerNuGetColumns();
+            _fileExplorerNuGetList.MouseClick += _mainForm.NuGetFeature.fileExplorerNuGetList_MouseClick;
 
             _fileExplorerNuGetUpdateMenuItem = new ToolStripMenuItem
             {
                 Text = "Update package"
             };
-            _fileExplorerNuGetUpdateMenuItem.Click += fileExplorerNuGetUpdateMenuItem_Click;
+            _fileExplorerNuGetUpdateMenuItem.Click += _mainForm.NuGetFeature.fileExplorerNuGetUpdateMenuItem_Click;
 
             _fileExplorerNuGetRemoveMenuItem = new ToolStripMenuItem
             {
                 Text = "Remove from Project"
             };
-            _fileExplorerNuGetRemoveMenuItem.Click += fileExplorerNuGetRemoveMenuItem_Click;
+            _fileExplorerNuGetRemoveMenuItem.Click += _mainForm.NuGetFeature.fileExplorerNuGetRemoveMenuItem_Click;
 
-            _fileExplorerNuGetContextMenu = new ContextMenuStrip(components);
+            _fileExplorerNuGetContextMenu = new ContextMenuStrip(_mainForm.components);
             _fileExplorerNuGetContextMenu.Items.Add(_fileExplorerNuGetUpdateMenuItem);
             _fileExplorerNuGetContextMenu.Items.Add(new ToolStripSeparator());
             _fileExplorerNuGetContextMenu.Items.Add(_fileExplorerNuGetRemoveMenuItem);
@@ -344,9 +353,9 @@ namespace CIARE
             _fileExplorerPanel.Controls.Add(_fileExplorerContentSplitContainer);
             _fileExplorerPanel.Controls.Add(_fileExplorerHeader);
 
-            ConfigureEditorTabControlLayout(configureAllTabs: true);
+            _mainForm.EditorLayoutFeature.ConfigureEditorTabControlLayout(configureAllTabs: true);
 
-            _editorExplorerSplitContainer.Panel1.Controls.Add(EditorTabControl);
+            _editorExplorerSplitContainer.Panel1.Controls.Add(_mainForm.EditorTabControl);
             _editorExplorerSplitContainer.Panel2.Controls.Add(_fileExplorerPanel);
             _editorWorkspacePanel.Controls.Add(_editorExplorerSplitContainer);
 
@@ -359,14 +368,14 @@ namespace CIARE
                 FlatStyle = FlatStyle.Flat,
                 UseVisualStyleBackColor = false
             };
-            toolTip1.SetToolTip(_fileExplorerShowButton, "Show file explorer");
-            _fileExplorerShowButton.Click += (sender, args) => ToggleFileExplorer(true);
+            _mainForm.toolTip1.SetToolTip(_fileExplorerShowButton, "Show file explorer");
+            _fileExplorerShowButton.Click += (sender, args) => _mainForm.ExplorerLayoutFeature.ToggleFileExplorer(true);
             _editorWorkspacePanel.Controls.Add(_fileExplorerShowButton);
-            _editorWorkspacePanel.Resize += (sender, args) => PositionFileExplorerShowButton();
+            _editorWorkspacePanel.Resize += (sender, args) => _mainForm.ExplorerLayoutFeature.PositionFileExplorerShowButton();
 
             EnableBufferedPainting(
-                splitContainer1,
-                splitContainer1.Panel1,
+                _mainForm.splitContainer1,
+                _mainForm.splitContainer1.Panel1,
                 _editorWorkspacePanel,
                 _editorExplorerSplitContainer,
                 _editorExplorerSplitContainer.Panel1,
@@ -377,20 +386,20 @@ namespace CIARE
                 _fileExplorerContentSplitContainer.Panel1,
                 _fileExplorerContentSplitContainer.Panel2,
                 _fileExplorerNuGetPanel,
-                EditorTabControl);
+                _mainForm.EditorTabControl);
 
-            splitContainer1.Panel1.Controls.Add(_editorWorkspacePanel);
-            splitContainer1.Panel1.ResumeLayout();
-            EditorTabControl.ResumeLayout();
-            ApplyEditorExplorerMinimumWidths();
-            PositionFileExplorerShowButton();
+            _mainForm.splitContainer1.Panel1.Controls.Add(_editorWorkspacePanel);
+            _mainForm.splitContainer1.Panel1.ResumeLayout();
+            _mainForm.EditorTabControl.ResumeLayout();
+            _mainForm.ExplorerLayoutFeature.ApplyEditorExplorerMinimumWidths();
+            _mainForm.ExplorerLayoutFeature.PositionFileExplorerShowButton();
 
             ApplyFileExplorerTheme();
         }
 
         private ImageList CreateFileExplorerImageList()
         {
-            _fileExplorerImageList = new ImageList(components)
+            _fileExplorerImageList = new ImageList(_mainForm.components)
             {
                 ColorDepth = ColorDepth.Depth32Bit,
                 ImageSize = new Size(16, 16),
@@ -470,12 +479,12 @@ namespace CIARE
             return bitmap;
         }
 
-        private void ApplyFileExplorerTheme(string highlight = null)
+        internal void ApplyFileExplorerTheme(string highlight = null)
         {
             if (_fileExplorerPanel == null)
                 return;
 
-            var theme = ThemeManager.GetCompletionThemeColors(highlight ?? _appliedTheme);
+            var theme = ThemeManager.GetCompletionThemeColors(highlight ?? _mainForm.WindowThemeFeature._appliedTheme);
             bool dark = GlobalVariables.darkColor;
             Color backColor = dark ? theme.BackColor : SystemColors.Window;
             Color headerColor = dark ? theme.RowAlternateColor : SystemColors.Control;
@@ -506,7 +515,7 @@ namespace CIARE
             ApplyFileExplorerButtonTheme(_fileExplorerOpenFolderButton, buttonBackColor, foreColor, borderColor);
             ApplyFileExplorerButtonTheme(_fileExplorerHideButton, buttonBackColor, foreColor, borderColor);
             ApplyFileExplorerButtonTheme(_fileExplorerShowButton, buttonBackColor, foreColor, borderColor);
-            UpdateFileExplorerStartupProjectHighlight();
+            _mainForm.StartupProjectFeature.UpdateFileExplorerStartupProjectHighlight();
         }
 
         private static void ApplyFileExplorerButtonTheme(Button button, Color backColor, Color foreColor, Color borderColor)

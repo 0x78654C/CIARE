@@ -5,11 +5,18 @@ using CIARE.GUI;
 using CIARE.Utils;
 using CIARE.Utils.FilesOpenOS;
 
-namespace CIARE
+namespace CIARE.Utils.Window
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class WindowState
     {
-        private System.Windows.Forms.Timer _windowPlacementSaveTimer;
+        private readonly MainForm _mainForm;
+
+        internal WindowState(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
+        internal System.Windows.Forms.Timer _windowPlacementSaveTimer;
         private bool _isFullScreen = false;
         private FormBorderStyle _savedBorderStyle;
         private FormWindowState _savedWindowState;
@@ -18,71 +25,72 @@ namespace CIARE
         /// <summary>
         /// Toggle full screen mode: hides the menu bar and toolbar, leaving only the tab strip visible.
         /// </summary>
-        private void ToggleFullScreen()
+        internal void ToggleFullScreen()
         {
             if (!_isFullScreen)
             {
                 _windowPlacementSaveTimer?.Stop();
                 SaveWindowPlacement();
-                _savedBorderStyle = this.FormBorderStyle;
-                _savedWindowState = this.WindowState;
-                _markStartFileChkVisible = markStartFileChk.Visible;
+                _savedBorderStyle = _mainForm.FormBorderStyle;
+                _savedWindowState = _mainForm.WindowState;
+                _markStartFileChkVisible = _mainForm.markStartFileChk.Visible;
                 _isFullScreen = true;
 
-                this.WindowState = FormWindowState.Normal;
-                this.FormBorderStyle = FormBorderStyle.None;
-                this.WindowState = FormWindowState.Maximized;
+                _mainForm.WindowState = FormWindowState.Normal;
+                _mainForm.FormBorderStyle = FormBorderStyle.None;
+                _mainForm.WindowState = FormWindowState.Maximized;
 
-                menuStrip1.Visible = false;
-                runCodePb.Visible = false;
-                label2.Visible = false;
-                label3.Visible = false;
-                linesCountLbl.Visible = false;
-                linesPositionLbl.Visible = false;
-                typeCheckLbl.Visible = false;
-                warningsCheckLbl.Visible = false;
-                liveStatusPb.Visible = false;
-                markStartFileChk.Visible = false;
+                _mainForm.menuStrip1.Visible = false;
+                _mainForm.runCodePb.Visible = false;
+                _mainForm.label2.Visible = false;
+                _mainForm.label3.Visible = false;
+                _mainForm.linesCountLbl.Visible = false;
+                _mainForm.linesPositionLbl.Visible = false;
+                _mainForm.typeCheckLbl.Visible = false;
+                _mainForm.warningsCheckLbl.Visible = false;
+                _mainForm.liveStatusPb.Visible = false;
+                _mainForm.markStartFileChk.Visible = false;
 
-                fullScreenToolStripMenuItem.Checked = true;
+                _mainForm.fullScreenToolStripMenuItem.Checked = true;
             }
             else
             {
-                this.FormBorderStyle = _savedBorderStyle;
-                this.WindowState = _savedWindowState;
+                _mainForm.FormBorderStyle = _savedBorderStyle;
+                _mainForm.WindowState = _savedWindowState;
 
-                menuStrip1.Visible = true;
-                runCodePb.Visible = true;
-                label2.Visible = true;
-                label3.Visible = true;
-                linesCountLbl.Visible = true;
-                linesPositionLbl.Visible = true;
-                typeCheckLbl.Visible = true;
-                warningsCheckLbl.Visible = true;
-                liveStatusPb.Visible = true;
-                markStartFileChk.Visible = _markStartFileChkVisible;
+                _mainForm.menuStrip1.Visible = true;
+                _mainForm.runCodePb.Visible = true;
+                _mainForm.label2.Visible = true;
+                _mainForm.label3.Visible = true;
+                _mainForm.linesCountLbl.Visible = true;
+                _mainForm.linesPositionLbl.Visible = true;
+                _mainForm.typeCheckLbl.Visible = true;
+                _mainForm.warningsCheckLbl.Visible = true;
+                _mainForm.liveStatusPb.Visible = true;
+                _mainForm.markStartFileChk.Visible = _markStartFileChkVisible;
 
-                fullScreenToolStripMenuItem.Checked = false;
+                _mainForm.fullScreenToolStripMenuItem.Checked = false;
                 _isFullScreen = false;
             }
-            QueueEditorLayoutRefresh();
+            _mainForm.MenuStatusLayoutFeature.SetFullScreen(_isFullScreen);
+            _mainForm.EditorLayoutFeature.QueueEditorLayoutRefresh();
         }
 
-        private void fullScreenToolStripMenuItem_Click(object sender, EventArgs e) => ToggleFullScreen();
+        internal void fullScreenToolStripMenuItem_Click(object sender, EventArgs e) => ToggleFullScreen();
 
         /// <summary>
         /// Form resize event used to store window size in registry.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void MainForm_Resize(object sender, EventArgs e)
+        internal void MainForm_Resize(object sender, EventArgs e)
         {
-            if (!isLoaded || _isFullScreen || WindowState == FormWindowState.Minimized)
+            if (!_mainForm.isLoaded || _isFullScreen || _mainForm.WindowState == FormWindowState.Minimized)
                 return;
 
             if (_windowPlacementSaveTimer == null)
             {
-                _windowPlacementSaveTimer = new System.Windows.Forms.Timer(components) { Interval = 250 };
+                _windowPlacementSaveTimer = new System.Windows.Forms.Timer(_mainForm.components) { Interval = 250 };
                 _windowPlacementSaveTimer.Tick += (timerSender, args) =>
                 {
                     _windowPlacementSaveTimer.Stop();
@@ -91,19 +99,19 @@ namespace CIARE
             }
             _windowPlacementSaveTimer.Stop();
             _windowPlacementSaveTimer.Start();
-            QueueEditorLayoutRefresh();
+            _mainForm.EditorLayoutFeature.QueueEditorLayoutRefresh();
         }
 
-        private void SaveWindowPlacement()
+        internal void SaveWindowPlacement()
         {
-            if (!isLoaded || _isFullScreen || WindowState == FormWindowState.Minimized)
+            if (!_mainForm.isLoaded || _isFullScreen || _mainForm.WindowState == FormWindowState.Minimized)
                 return;
 
-            Size normalSize = WindowState == FormWindowState.Normal ? Size : RestoreBounds.Size;
+            Size normalSize = _mainForm.WindowState == FormWindowState.Normal ? _mainForm.Size : _mainForm.RestoreBounds.Size;
             if (normalSize.Width > 0 && normalSize.Height > 0)
                 InitializeEditor.SetEditorWindowSize(GlobalVariables.registryPath, normalSize.Width, normalSize.Height);
             InitializeEditor.SetMaximizedWindowState(GlobalVariables.registryPath,
-                WindowState == FormWindowState.Maximized);
+                _mainForm.WindowState == FormWindowState.Maximized);
         }
 
         /// <summary>
@@ -111,10 +119,10 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void markStartFileChk_CheckedChanged(object sender, EventArgs e)
+        internal void markStartFileChk_CheckedChanged(object sender, EventArgs e)
         {
             AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFileTemp, GlobalVariables.openedFilePath);
-            autoStartFile.SetFilePath(markStartFileChk);
+            autoStartFile.SetFilePath(_mainForm.markStartFileChk);
             if (GlobalVariables.OWinLoginState)
                 autoStartFile.SetRegistryRunApp();
         }
@@ -124,8 +132,8 @@ namespace CIARE
         /// </summary>
         public void RefreshTopMost()
         {
-            TopMost = true;
-            TopMost = false;
+            _mainForm.TopMost = true;
+            _mainForm.TopMost = false;
         }
     }
 }

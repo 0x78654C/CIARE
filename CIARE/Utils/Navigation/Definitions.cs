@@ -8,11 +8,24 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Dom = ICSharpCode.SharpDevelop.Dom;
+using static global::CIARE.Utils.Completion.CompletionItems;
+using static global::CIARE.Utils.Completion.CompletionParsing;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Navigation.FindUsages;
+using static global::CIARE.Utils.Navigation.UsageDocumentCache;
+using static global::CIARE.Utils.Navigation.UsageDocuments;
 
-namespace CIARE
+namespace CIARE.Utils.Navigation
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class Definitions
     {
+        private readonly MainForm _mainForm;
+
+        internal Definitions(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         /// <summary>
         /// Finds the first declaration of <paramref name="name"/> across all parsed compilation units.
         /// Returns (filePath, lineNumber) or (null, 0) if not found.
@@ -36,10 +49,10 @@ namespace CIARE
             if (string.IsNullOrEmpty(name))
                 return (null, 0);
 
-            lock (_completionDataLock)
+            lock (_mainForm.CompletionParsingFeature._completionDataLock)
             {
                 // Top-level local functions and variables in the active file take priority.
-                foreach (var item in _topLevelLocalFunctions)
+                foreach (var item in _mainForm.CompletionWorkspaceFeature._topLevelLocalFunctions)
                 {
                     if (string.Equals(item.Name, name, StringComparison.Ordinal)
                         && item.FilePath != null && item.Line > 0)
@@ -48,7 +61,7 @@ namespace CIARE
 
                 var hit = FindDefinitionInUnit(parseInformation.MostRecentCompilationUnit, name);
                 if (hit.FilePath != null) return hit;
-                foreach (var unit in _workspaceCompilationUnits.Values)
+                foreach (var unit in _mainForm.CompletionWorkspaceFeature._workspaceCompilationUnits.Values)
                 {
                     hit = FindDefinitionInUnit(unit, name);
                     if (hit.FilePath != null) return hit;
@@ -70,7 +83,7 @@ namespace CIARE
 
             try
             {
-                string filePath = GetActiveEditorFilePath();
+                string filePath = _mainForm.EditorFeature.GetActiveEditorFilePath();
                 var tree = CSharpSyntaxTree.ParseText(code, path: filePath ?? string.Empty);
                 var root = tree.GetCompilationUnitRoot();
                 var token = root.FindToken(offset);
@@ -122,11 +135,11 @@ namespace CIARE
 
             try
             {
-                var openTabs = CollectOpenTabInfo(name);
-                var workspaceFolders = GetUsageWorkspaceFolders(GetActiveEditorFilePath()).ToList();
+                var openTabs = _mainForm.UsageDocumentsFeature.CollectOpenTabInfo(name);
+                var workspaceFolders = _mainForm.UsageDocumentsFeature.GetUsageWorkspaceFolders(_mainForm.EditorFeature.GetActiveEditorFilePath()).ToList();
                 List<string> compilationUnitKeys;
-                lock (_completionDataLock)
-                    compilationUnitKeys = _workspaceCompilationUnits.Keys.ToList();
+                lock (_mainForm.CompletionParsingFeature._completionDataLock)
+                    compilationUnitKeys = _mainForm.CompletionWorkspaceFeature._workspaceCompilationUnits.Keys.ToList();
 
                 var documents = BuildUsageDocuments(name, openTabs, workspaceFolders, compilationUnitKeys);
                 var activeDocument = documents.FirstOrDefault(document => document.IsActive);
@@ -172,7 +185,7 @@ namespace CIARE
             if (string.IsNullOrEmpty(name))
                 return (null, 0);
 
-            lock (_completionDataLock)
+            lock (_mainForm.CompletionParsingFeature._completionDataLock)
             {
                 return FindDefinitionInWorkspaceMembersCore(name, qualifier);
             }
@@ -183,7 +196,7 @@ namespace CIARE
             string normalizedQualifier = NormalizeCompletionExpression(qualifier);
             if (!string.IsNullOrEmpty(normalizedQualifier))
             {
-                foreach (var completionClass in _workspaceCompletionClasses)
+                foreach (var completionClass in _mainForm.CompletionWorkspaceFeature._workspaceCompletionClasses)
                 {
                     if (!MatchesWorkspaceClass(completionClass, normalizedQualifier))
                         continue;
@@ -194,7 +207,7 @@ namespace CIARE
                 }
             }
 
-            foreach (var completionClass in _workspaceCompletionClasses)
+            foreach (var completionClass in _mainForm.CompletionWorkspaceFeature._workspaceCompletionClasses)
             {
                 var hit = FindDefinitionInWorkspaceItems(completionClass.StaticMembers, name);
                 if (hit.FilePath != null)
@@ -357,7 +370,7 @@ namespace CIARE
             return false;
         }
 
-        private static ISymbol GetDeclaredSymbolForIdentifier(SemanticModel semanticModel, SyntaxToken token)
+        internal static ISymbol GetDeclaredSymbolForIdentifier(SemanticModel semanticModel, SyntaxToken token)
         {
             SyntaxNode node = token.Parent;
             while (node != null)
@@ -474,15 +487,15 @@ namespace CIARE
             if (string.IsNullOrEmpty(filePath) || lineNumber <= 0 || !File.Exists(filePath))
                 return;
             string normalizedPath = NormalizeCompletionPath(filePath);
-            string currentFilePath = NormalizeCompletionPath(GetActiveEditorFilePath());
+            string currentFilePath = NormalizeCompletionPath(_mainForm.EditorFeature.GetActiveEditorFilePath());
             if (!string.Equals(normalizedPath, currentFilePath, StringComparison.OrdinalIgnoreCase))
-                OpenFileFromExplorer(filePath);
+                _mainForm.ExplorerTreeFeature.OpenFileFromExplorer(filePath);
             var editor = SelectedEditor.GetSelectedEditor();
             if (editor != null)
                 editor.ActiveTextAreaControl.JumpTo(lineNumber - 1);
         }
 
-        private void NavigateToUsageLocation(string filePath, int lineNumber, int columnNumber)
+        internal void NavigateToUsageLocation(string filePath, int lineNumber, int columnNumber)
         {
             if (lineNumber <= 0)
                 return;
@@ -493,9 +506,9 @@ namespace CIARE
                     return;
 
                 string normalizedPath = NormalizeCompletionPath(filePath);
-                string currentFilePath = NormalizeCompletionPath(GetActiveEditorFilePath());
+                string currentFilePath = NormalizeCompletionPath(_mainForm.EditorFeature.GetActiveEditorFilePath());
                 if (!string.Equals(normalizedPath, currentFilePath, StringComparison.OrdinalIgnoreCase))
-                    OpenFileFromExplorer(filePath);
+                    _mainForm.ExplorerTreeFeature.OpenFileFromExplorer(filePath);
             }
 
             var editor = SelectedEditor.GetSelectedEditor();

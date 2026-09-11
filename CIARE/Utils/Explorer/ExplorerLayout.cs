@@ -9,19 +9,26 @@ using CIARE.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace CIARE
+namespace CIARE.Utils.Explorer
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class ExplorerLayout
     {
+        private readonly MainForm _mainForm;
+
+        internal ExplorerLayout(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         private const int FileExplorerDefaultWidth = 280;
         private const int FileExplorerMinWidth = 220;
         private const int EditorPaneMinWidth = 180;
         private const int FileExplorerDefaultNuGetHeight = 350;
-        private const int FileExplorerNuGetMinHeight = 90;
+        internal const int FileExplorerNuGetMinHeight = 90;
         private const int FileExplorerTreeMinHeight = 120;
         private const int FileExplorerLayoutApplyMaxAttempts = 20;
         private const int FileExplorerLayoutApplyInterval = 50;
-        private const string FileExplorerVisibleKey = "fileExplorerVisible";
+        internal const string FileExplorerVisibleKey = "fileExplorerVisible";
         private const string FileExplorerWidthKey = "fileExplorerWidth";
         private const string FileExplorerNuGetHeightKey = "fileExplorerNuGetHeight";
         private static readonly string FileExplorerLayoutFilePath =
@@ -34,33 +41,33 @@ namespace CIARE
         private int _fileExplorerLayoutApplyAttempts;
         private System.Windows.Forms.Timer _fileExplorerLayoutApplyTimer;
         private bool _fileExplorerLayoutReadyForUserSave;
-        private bool _fileExplorerWidthDragInProgress;
-        private bool _fileExplorerNuGetHeightDragInProgress;
+        internal bool _fileExplorerWidthDragInProgress;
+        internal bool _fileExplorerNuGetHeightDragInProgress;
 
-        private void ToggleFileExplorer(bool show, bool saveWidth = true)
+        internal void ToggleFileExplorer(bool show, bool saveWidth = true)
         {
-            if (_editorExplorerSplitContainer == null)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null)
                 return;
 
-            _editorWorkspacePanel?.SuspendLayout();
-            _editorExplorerSplitContainer.SuspendLayout();
-            EditorTabControl.SuspendLayout();
+            _mainForm.ExplorerFeature._editorWorkspacePanel?.SuspendLayout();
+            _mainForm.ExplorerFeature._editorExplorerSplitContainer.SuspendLayout();
+            _mainForm.EditorTabControl.SuspendLayout();
             try
             {
                 if (show)
                 {
-                    _editorExplorerSplitContainer.Panel2Collapsed = false;
+                    _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2Collapsed = false;
                     ApplyEditorExplorerMinimumWidths();
                     ApplyFileExplorerLayoutValues();
                     QueueFileExplorerLayoutApply();
-                    _fileExplorerShowButton.Visible = false;
+                    _mainForm.ExplorerFeature._fileExplorerShowButton.Visible = false;
                 }
                 else
                 {
                     if (saveWidth)
                         SaveFileExplorerWidth(force: true);
-                    _editorExplorerSplitContainer.Panel2Collapsed = true;
-                    _fileExplorerShowButton.Visible = true;
+                    _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2Collapsed = true;
+                    _mainForm.ExplorerFeature._fileExplorerShowButton.Visible = true;
                     PositionFileExplorerShowButton();
                     SelectedEditor.GetSelectedEditor()?.Focus();
                 }
@@ -69,100 +76,100 @@ namespace CIARE
             }
             finally
             {
-                EditorTabControl.ResumeLayout(false);
-                _editorExplorerSplitContainer.ResumeLayout(false);
-                _editorWorkspacePanel?.ResumeLayout(false);
+                _mainForm.EditorTabControl.ResumeLayout(false);
+                _mainForm.ExplorerFeature._editorExplorerSplitContainer.ResumeLayout(false);
+                _mainForm.ExplorerFeature._editorWorkspacePanel?.ResumeLayout(false);
             }
 
-            QueueEditorLayoutRefresh();
+            _mainForm.EditorLayoutFeature.QueueEditorLayoutRefresh();
         }
 
-        private void ToggleFileExplorer()
+        internal void ToggleFileExplorer()
         {
-            if (_editorExplorerSplitContainer == null)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null)
                 return;
 
-            ToggleFileExplorer(_editorExplorerSplitContainer.Panel2Collapsed);
+            ToggleFileExplorer(_mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2Collapsed);
         }
 
         private void SetFileExplorerWidth(int width)
         {
-            if (_editorExplorerSplitContainer == null)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null)
                 return;
 
             ApplyEditorExplorerMinimumWidths();
 
             int splitWidth = GetEditorExplorerSplitWidth();
-            int availableWidth = splitWidth - _editorExplorerSplitContainer.SplitterWidth;
+            int availableWidth = splitWidth - _mainForm.ExplorerFeature._editorExplorerSplitContainer.SplitterWidth;
             if (availableWidth <= 0)
             {
-                QueueEditorLayoutRefresh();
+                _mainForm.EditorLayoutFeature.QueueEditorLayoutRefresh();
                 return;
             }
 
-            int minDist = _editorExplorerSplitContainer.Panel1MinSize;
-            int maxDist = Math.Max(minDist, availableWidth - _editorExplorerSplitContainer.Panel2MinSize);
+            int minDist = _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel1MinSize;
+            int maxDist = Math.Max(minDist, availableWidth - _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2MinSize);
             int explorerWidth = GetClampedFileExplorerWidth(width);
             int dist = Math.Max(minDist, Math.Min(maxDist, availableWidth - explorerWidth));
 
-            if (!_editorExplorerSplitContainer.Panel2Collapsed)
-                _editorExplorerSplitContainer.SplitterDistance = dist;
+            if (!_mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2Collapsed)
+                _mainForm.ExplorerFeature._editorExplorerSplitContainer.SplitterDistance = dist;
 
-            QueueEditorLayoutRefresh();
+            _mainForm.EditorLayoutFeature.QueueEditorLayoutRefresh();
         }
 
         private void SetFileExplorerNuGetHeight(int height)
         {
-            if (_fileExplorerContentSplitContainer == null ||
-                _fileExplorerContentSplitContainer.IsDisposed ||
-                _fileExplorerContentSplitContainer.Panel2Collapsed)
+            if (_mainForm.ExplorerFeature._fileExplorerContentSplitContainer == null ||
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.IsDisposed ||
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.Panel2Collapsed)
             {
                 return;
             }
 
-            int splitHeight = _fileExplorerContentSplitContainer.ClientSize.Height;
-            int availableHeight = splitHeight - _fileExplorerContentSplitContainer.SplitterWidth;
+            int splitHeight = _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.ClientSize.Height;
+            int availableHeight = splitHeight - _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.SplitterWidth;
             if (availableHeight <= 0)
                 return;
 
             int nuGetHeight = GetClampedFileExplorerNuGetHeight(height);
-            _fileExplorerContentSplitContainer.SplitterDistance = Math.Max(0, availableHeight - nuGetHeight);
+            _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.SplitterDistance = Math.Max(0, availableHeight - nuGetHeight);
         }
 
         private int GetClampedFileExplorerWidth(int width)
         {
-            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null || _mainForm.ExplorerFeature._editorExplorerSplitContainer.IsDisposed)
                 return width;
 
-            int availableWidth = GetEditorExplorerSplitWidth() - _editorExplorerSplitContainer.SplitterWidth;
+            int availableWidth = GetEditorExplorerSplitWidth() - _mainForm.ExplorerFeature._editorExplorerSplitContainer.SplitterWidth;
             if (availableWidth <= 0)
                 return width;
 
-            int minExplorerWidth = Math.Max(0, _editorExplorerSplitContainer.Panel2MinSize);
+            int minExplorerWidth = Math.Max(0, _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2MinSize);
             int maxExplorerWidth = Math.Max(minExplorerWidth,
-                availableWidth - Math.Max(0, _editorExplorerSplitContainer.Panel1MinSize));
+                availableWidth - Math.Max(0, _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel1MinSize));
             return Math.Max(minExplorerWidth, Math.Min(width, maxExplorerWidth));
         }
 
         private int GetClampedFileExplorerNuGetHeight(int height)
         {
-            if (_fileExplorerContentSplitContainer == null ||
-                _fileExplorerContentSplitContainer.IsDisposed)
+            if (_mainForm.ExplorerFeature._fileExplorerContentSplitContainer == null ||
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.IsDisposed)
             {
                 return height;
             }
 
-            int availableHeight = _fileExplorerContentSplitContainer.ClientSize.Height -
-                _fileExplorerContentSplitContainer.SplitterWidth;
+            int availableHeight = _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.ClientSize.Height -
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.SplitterWidth;
             if (availableHeight <= 0)
                 return height;
 
-            int minNuGetHeight = Math.Max(0, _fileExplorerContentSplitContainer.Panel2MinSize);
+            int minNuGetHeight = Math.Max(0, _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.Panel2MinSize);
             int maxNuGetHeight = Math.Max(minNuGetHeight, availableHeight - FileExplorerTreeMinHeight);
             return Math.Max(minNuGetHeight, Math.Min(height, maxNuGetHeight));
         }
 
-        private void LoadFileExplorerLayoutValues()
+        internal void LoadFileExplorerLayoutValues()
         {
             _fileExplorerWidth = ReadFileExplorerLayoutValue(FileExplorerWidthKey,
                 FileExplorerDefaultWidth, FileExplorerMinWidth);
@@ -184,34 +191,34 @@ namespace CIARE
             return defaultValue;
         }
 
-        private void ApplyFileExplorerLayoutValues()
+        internal void ApplyFileExplorerLayoutValues()
         {
-            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null || _mainForm.ExplorerFeature._editorExplorerSplitContainer.IsDisposed)
                 return;
 
             _suppressFileExplorerLayoutSave = true;
             _applyingFileExplorerLayout = true;
             try
             {
-                _editorExplorerSplitContainer.SuspendLayout();
-                _fileExplorerContentSplitContainer?.SuspendLayout();
+                _mainForm.ExplorerFeature._editorExplorerSplitContainer.SuspendLayout();
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer?.SuspendLayout();
 
-                if (!_editorExplorerSplitContainer.Panel2Collapsed)
+                if (!_mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2Collapsed)
                     SetFileExplorerWidth(_fileExplorerWidth);
                 SetFileExplorerNuGetHeight(_fileExplorerNuGetHeight);
             }
             finally
             {
-                _fileExplorerContentSplitContainer?.ResumeLayout(true);
-                _editorExplorerSplitContainer.ResumeLayout(true);
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer?.ResumeLayout(true);
+                _mainForm.ExplorerFeature._editorExplorerSplitContainer.ResumeLayout(true);
                 _applyingFileExplorerLayout = false;
                 _suppressFileExplorerLayoutSave = false;
             }
         }
 
-        private void QueueFileExplorerLayoutApply()
+        internal void QueueFileExplorerLayoutApply()
         {
-            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed || IsDisposed)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null || _mainForm.ExplorerFeature._editorExplorerSplitContainer.IsDisposed || _mainForm.IsDisposed)
                 return;
 
             _pendingFileExplorerLayoutApply = true;
@@ -220,7 +227,7 @@ namespace CIARE
             SchedulePendingFileExplorerLayoutApply();
         }
 
-        private void OnFileExplorerLayoutContainerSizeChanged()
+        internal void OnFileExplorerLayoutContainerSizeChanged()
         {
             if (_fileExplorerWidthDragInProgress ||
                 _fileExplorerNuGetHeightDragInProgress ||
@@ -234,7 +241,7 @@ namespace CIARE
             SchedulePendingFileExplorerLayoutApply();
         }
 
-        private void CancelPendingFileExplorerLayoutApplyForUserResize()
+        internal void CancelPendingFileExplorerLayoutApplyForUserResize()
         {
             _pendingFileExplorerLayoutApply = false;
             _fileExplorerLayoutReadyForUserSave = true;
@@ -243,7 +250,7 @@ namespace CIARE
 
         private void SchedulePendingFileExplorerLayoutApply()
         {
-            if (!isLoaded || IsDisposed || !IsHandleCreated)
+            if (!_mainForm.isLoaded || _mainForm.IsDisposed || !_mainForm.IsHandleCreated)
                 return;
 
             EnsureFileExplorerLayoutApplyTimer();
@@ -260,7 +267,7 @@ namespace CIARE
             if (_fileExplorerLayoutApplyTimer != null)
                 return;
 
-            _fileExplorerLayoutApplyTimer = new System.Windows.Forms.Timer(components)
+            _fileExplorerLayoutApplyTimer = new System.Windows.Forms.Timer(_mainForm.components)
             {
                 Interval = FileExplorerLayoutApplyInterval
             };
@@ -276,8 +283,8 @@ namespace CIARE
         private void ApplyPendingFileExplorerLayoutValues()
         {
             if (!_pendingFileExplorerLayoutApply ||
-                _editorExplorerSplitContainer == null ||
-                _editorExplorerSplitContainer.IsDisposed)
+                _mainForm.ExplorerFeature._editorExplorerSplitContainer == null ||
+                _mainForm.ExplorerFeature._editorExplorerSplitContainer.IsDisposed)
             {
                 return;
             }
@@ -294,7 +301,7 @@ namespace CIARE
             if (!IsFileExplorerLayoutApplied())
                 ApplyFileExplorerLayoutValues();
             PositionFileExplorerShowButton();
-            QueueEditorLayoutRefresh();
+            _mainForm.EditorLayoutFeature.QueueEditorLayoutRefresh();
 
             _fileExplorerLayoutApplyAttempts++;
             if (!IsFileExplorerLayoutApplied())
@@ -312,24 +319,24 @@ namespace CIARE
 
         private bool CanApplyFileExplorerLayoutValues()
         {
-            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null || _mainForm.ExplorerFeature._editorExplorerSplitContainer.IsDisposed)
                 return false;
 
-            if (!Visible || WindowState == FormWindowState.Minimized)
+            if (!_mainForm.Visible || _mainForm.WindowState == FormWindowState.Minimized)
                 return false;
 
             int splitWidth = GetEditorExplorerSplitWidth();
-            if (splitWidth <= _editorExplorerSplitContainer.SplitterWidth)
+            if (splitWidth <= _mainForm.ExplorerFeature._editorExplorerSplitContainer.SplitterWidth)
                 return false;
 
-            if (_editorExplorerSplitContainer.Panel2Collapsed)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2Collapsed)
                 return true;
 
-            if (_fileExplorerContentSplitContainer == null || _fileExplorerContentSplitContainer.IsDisposed)
+            if (_mainForm.ExplorerFeature._fileExplorerContentSplitContainer == null || _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.IsDisposed)
                 return true;
 
-            int splitHeight = _fileExplorerContentSplitContainer.ClientSize.Height;
-            if (splitHeight <= _fileExplorerContentSplitContainer.SplitterWidth)
+            int splitHeight = _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.ClientSize.Height;
+            if (splitHeight <= _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.SplitterWidth)
                 return false;
 
             return true;
@@ -337,13 +344,13 @@ namespace CIARE
 
         private bool IsFileExplorerLayoutApplied()
         {
-            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null || _mainForm.ExplorerFeature._editorExplorerSplitContainer.IsDisposed)
                 return false;
 
-            if (_editorExplorerSplitContainer.Panel2Collapsed)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2Collapsed)
                 return true;
 
-            if (!_editorExplorerSplitContainer.Panel2Collapsed)
+            if (!_mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2Collapsed)
             {
                 int currentWidth = GetCurrentFileExplorerWidth();
                 int targetWidth = GetClampedFileExplorerWidth(_fileExplorerWidth);
@@ -351,9 +358,9 @@ namespace CIARE
                     return false;
             }
 
-            if (_fileExplorerContentSplitContainer == null ||
-                _fileExplorerContentSplitContainer.IsDisposed ||
-                _fileExplorerContentSplitContainer.Panel2Collapsed)
+            if (_mainForm.ExplorerFeature._fileExplorerContentSplitContainer == null ||
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.IsDisposed ||
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.Panel2Collapsed)
             {
                 return true;
             }
@@ -363,7 +370,7 @@ namespace CIARE
             return currentHeight > 0 && Math.Abs(currentHeight - targetHeight) <= 1;
         }
 
-        private void QueueFileExplorerWidthSave()
+        internal void QueueFileExplorerWidthSave()
         {
             if (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave)
                 return;
@@ -371,7 +378,7 @@ namespace CIARE
             SaveFileExplorerWidth();
         }
 
-        private void QueueFileExplorerNuGetHeightSave()
+        internal void QueueFileExplorerNuGetHeightSave()
         {
             if (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave)
                 return;
@@ -379,14 +386,14 @@ namespace CIARE
             SaveFileExplorerNuGetHeight();
         }
 
-        private void SaveFileExplorerWidth(bool force = false)
+        internal void SaveFileExplorerWidth(bool force = false)
         {
             if (!force && (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave))
                 return;
 
-            if (_editorExplorerSplitContainer == null ||
-                _editorExplorerSplitContainer.IsDisposed ||
-                _editorExplorerSplitContainer.Panel2Collapsed)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null ||
+                _mainForm.ExplorerFeature._editorExplorerSplitContainer.IsDisposed ||
+                _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2Collapsed)
             {
                 return;
             }
@@ -399,14 +406,14 @@ namespace CIARE
             WriteFileExplorerLayoutValue(FileExplorerWidthKey, _fileExplorerWidth);
         }
 
-        private void SaveFileExplorerNuGetHeight(bool force = false)
+        internal void SaveFileExplorerNuGetHeight(bool force = false)
         {
             if (!force && (_suppressFileExplorerLayoutSave || !_fileExplorerLayoutReadyForUserSave))
                 return;
 
-            if (_fileExplorerContentSplitContainer == null ||
-                _fileExplorerContentSplitContainer.IsDisposed ||
-                _fileExplorerContentSplitContainer.Panel2Collapsed)
+            if (_mainForm.ExplorerFeature._fileExplorerContentSplitContainer == null ||
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.IsDisposed ||
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.Panel2Collapsed)
             {
                 return;
             }
@@ -421,33 +428,33 @@ namespace CIARE
 
         private int GetCurrentFileExplorerWidth()
         {
-            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null || _mainForm.ExplorerFeature._editorExplorerSplitContainer.IsDisposed)
                 return 0;
 
-            if (_editorExplorerSplitContainer.Panel2.Width > 0)
-                return _editorExplorerSplitContainer.Panel2.Width;
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2.Width > 0)
+                return _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2.Width;
 
-            int availableWidth = GetEditorExplorerSplitWidth() - _editorExplorerSplitContainer.SplitterWidth;
+            int availableWidth = GetEditorExplorerSplitWidth() - _mainForm.ExplorerFeature._editorExplorerSplitContainer.SplitterWidth;
             return availableWidth > 0
-                ? Math.Max(0, availableWidth - _editorExplorerSplitContainer.SplitterDistance)
+                ? Math.Max(0, availableWidth - _mainForm.ExplorerFeature._editorExplorerSplitContainer.SplitterDistance)
                 : 0;
         }
 
         private int GetCurrentFileExplorerNuGetHeight()
         {
-            if (_fileExplorerContentSplitContainer == null ||
-                _fileExplorerContentSplitContainer.IsDisposed)
+            if (_mainForm.ExplorerFeature._fileExplorerContentSplitContainer == null ||
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.IsDisposed)
             {
                 return 0;
             }
 
-            if (_fileExplorerContentSplitContainer.Panel2.Height > 0)
-                return _fileExplorerContentSplitContainer.Panel2.Height;
+            if (_mainForm.ExplorerFeature._fileExplorerContentSplitContainer.Panel2.Height > 0)
+                return _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.Panel2.Height;
 
-            int availableHeight = _fileExplorerContentSplitContainer.ClientSize.Height -
-                _fileExplorerContentSplitContainer.SplitterWidth;
+            int availableHeight = _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.ClientSize.Height -
+                _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.SplitterWidth;
             return availableHeight > 0
-                ? Math.Max(0, availableHeight - _fileExplorerContentSplitContainer.SplitterDistance)
+                ? Math.Max(0, availableHeight - _mainForm.ExplorerFeature._fileExplorerContentSplitContainer.SplitterDistance)
                 : 0;
         }
 
@@ -515,21 +522,21 @@ namespace CIARE
 
         private int GetEditorExplorerSplitWidth()
         {
-            if (_editorExplorerSplitContainer == null)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null)
                 return 0;
 
-            return _editorExplorerSplitContainer.ClientSize.Width > 0
-                ? _editorExplorerSplitContainer.ClientSize.Width
-                : _editorExplorerSplitContainer.Width;
+            return _mainForm.ExplorerFeature._editorExplorerSplitContainer.ClientSize.Width > 0
+                ? _mainForm.ExplorerFeature._editorExplorerSplitContainer.ClientSize.Width
+                : _mainForm.ExplorerFeature._editorExplorerSplitContainer.Width;
         }
 
-        private void ApplyEditorExplorerMinimumWidths()
+        internal void ApplyEditorExplorerMinimumWidths()
         {
-            if (_editorExplorerSplitContainer == null || _editorExplorerSplitContainer.IsDisposed)
+            if (_mainForm.ExplorerFeature._editorExplorerSplitContainer == null || _mainForm.ExplorerFeature._editorExplorerSplitContainer.IsDisposed)
                 return;
 
             int splitWidth = GetEditorExplorerSplitWidth();
-            int availableWidth = splitWidth - _editorExplorerSplitContainer.SplitterWidth;
+            int availableWidth = splitWidth - _mainForm.ExplorerFeature._editorExplorerSplitContainer.SplitterWidth;
             if (availableWidth <= 0)
                 return;
 
@@ -543,29 +550,29 @@ namespace CIARE
 
             int minDist = panel1Min;
             int maxDist = Math.Max(minDist, availableWidth - panel2Min);
-            int currentDist = Math.Max(0, _editorExplorerSplitContainer.SplitterDistance);
+            int currentDist = Math.Max(0, _mainForm.ExplorerFeature._editorExplorerSplitContainer.SplitterDistance);
             int safeDist = Math.Max(minDist, Math.Min(maxDist, currentDist));
 
-            _editorExplorerSplitContainer.Panel1MinSize = 0;
-            _editorExplorerSplitContainer.Panel2MinSize = 0;
+            _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel1MinSize = 0;
+            _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2MinSize = 0;
 
-            if (!_editorExplorerSplitContainer.Panel2Collapsed)
-                _editorExplorerSplitContainer.SplitterDistance = safeDist;
+            if (!_mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2Collapsed)
+                _mainForm.ExplorerFeature._editorExplorerSplitContainer.SplitterDistance = safeDist;
 
-            _editorExplorerSplitContainer.Panel1MinSize = panel1Min;
-            _editorExplorerSplitContainer.Panel2MinSize = panel2Min;
+            _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel1MinSize = panel1Min;
+            _mainForm.ExplorerFeature._editorExplorerSplitContainer.Panel2MinSize = panel2Min;
         }
 
-        private void PositionFileExplorerShowButton()
+        internal void PositionFileExplorerShowButton()
         {
-            if (_editorWorkspacePanel == null || _fileExplorerShowButton == null)
+            if (_mainForm.ExplorerFeature._editorWorkspacePanel == null || _mainForm.ExplorerFeature._fileExplorerShowButton == null)
                 return;
 
-            _fileExplorerShowButton.Location = new Point(
-                Math.Max(0, _editorWorkspacePanel.ClientSize.Width - _fileExplorerShowButton.Width
+            _mainForm.ExplorerFeature._fileExplorerShowButton.Location = new Point(
+                Math.Max(0, _mainForm.ExplorerFeature._editorWorkspacePanel.ClientSize.Width - _mainForm.ExplorerFeature._fileExplorerShowButton.Width
                     - SystemInformation.VerticalScrollBarWidth - 4),
                 6);
-            _fileExplorerShowButton.BringToFront();
+            _mainForm.ExplorerFeature._fileExplorerShowButton.BringToFront();
         }
     }
 }

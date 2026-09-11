@@ -10,23 +10,35 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Dom = ICSharpCode.SharpDevelop.Dom;
 using NRefactory = ICSharpCode.NRefactory;
+using static global::CIARE.Utils.Completion.CompletionItems;
+using static global::CIARE.Utils.Completion.CompletionParsing;
+using static global::CIARE.Utils.Projects.ProjectContext;
+using static global::CIARE.Utils.Projects.ProjectFiles;
+using static global::CIARE.Utils.Projects.WorkspaceFiles;
 
-namespace CIARE
+namespace CIARE.Utils.Completion
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class CompletionWorkspace
     {
-        private const int WorkspaceCompletionMethodLimit = 300;
+        private readonly MainForm _mainForm;
+
+        internal CompletionWorkspace(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
+        internal const int WorkspaceCompletionMethodLimit = 300;
         private int _completionWorkspaceVersion;
         private string _completionWorkspaceKey = string.Empty;
         private string _completionFileKey = string.Empty;
-        private readonly Dictionary<string, Dom.ICompilationUnit> _workspaceCompilationUnits
+        internal readonly Dictionary<string, Dom.ICompilationUnit> _workspaceCompilationUnits
             = new Dictionary<string, Dom.ICompilationUnit>(StringComparer.OrdinalIgnoreCase);
-        private readonly List<WorkspaceCompletionClass> _workspaceCompletionClasses
+        internal readonly List<WorkspaceCompletionClass> _workspaceCompletionClasses
             = new List<WorkspaceCompletionClass>();
-        private readonly List<WorkspaceCompletionItem> _topLevelLocalFunctions
+        internal readonly List<WorkspaceCompletionItem> _topLevelLocalFunctions
             = new List<WorkspaceCompletionItem>();
 
-        private struct CompletionScopeSnapshot
+        internal struct CompletionScopeSnapshot
         {
             public string CurrentFilePath;
             public string WorkspaceFolder;
@@ -37,9 +49,9 @@ namespace CIARE
             public int Version;
         }
 
-        private CompletionScopeSnapshot RefreshCompletionScope(string currentFilePath)
+        internal CompletionScopeSnapshot RefreshCompletionScope(string currentFilePath)
         {
-            string projectPath = GetCompletionProjectPath(currentFilePath);
+            string projectPath = _mainForm.CompletionSyntaxFeature.GetCompletionProjectPath(currentFilePath);
             string workspaceFolder = GetCompletionWorkspaceFolder(currentFilePath);
             var projectPaths = GetCompletionProjectPaths(projectPath);
             var sourceFolders = GetCompletionSourceFolders(projectPaths);
@@ -74,14 +86,14 @@ namespace CIARE
             };
         }
 
-        private bool IsCompletionScopeCurrent(CompletionScopeSnapshot scope)
+        internal bool IsCompletionScopeCurrent(CompletionScopeSnapshot scope)
         {
             return scope.Version == Volatile.Read(ref _completionWorkspaceVersion) &&
                 string.Equals(scope.WorkspaceKey, _completionWorkspaceKey, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(scope.FileKey, _completionFileKey, StringComparison.OrdinalIgnoreCase);
         }
 
-        private void InvalidateCompletionWorkspace()
+        internal void InvalidateCompletionWorkspace()
         {
             _completionWorkspaceKey = string.Empty;
             _completionFileKey = string.Empty;
@@ -89,7 +101,7 @@ namespace CIARE
             ClearWorkspaceCompletionData();
         }
 
-        private void ParseWorkspaceFilesForCompletion(CompletionScopeSnapshot scope, List<WorkspaceCompletionClass> workspaceCompletionClasses)
+        internal void ParseWorkspaceFilesForCompletion(CompletionScopeSnapshot scope, List<WorkspaceCompletionClass> workspaceCompletionClasses)
         {
             List<string> sourceFolders = scope.SourceFolders ?? new List<string>();
             string currentFilePath = scope.CurrentFilePath;
@@ -126,7 +138,7 @@ namespace CIARE
                     {
                         string originalFileCode = File.ReadAllText(filePath);
                         AddRoslynCompletionClasses(workspaceCompletionClasses, originalFileCode, filePath);
-                        string fileCode = PrepareCodeForNRefactoryCompletion(originalFileCode, filePath,
+                        string fileCode = _mainForm.CompletionSyntaxFeature.PrepareCodeForNRefactoryCompletion(originalFileCode, filePath,
                             out _, out _, out _);
                         Dom.ICompilationUnit newCU;
                         using (var reader = new StringReader(fileCode))
@@ -134,11 +146,11 @@ namespace CIARE
                         {
                             p.ParseMethodBodies = false;
                             p.Parse();
-                            newCU = ConvertCompilationUnit(p.CompilationUnit);
+                            newCU = _mainForm.CompletionParsingFeature.ConvertCompilationUnit(p.CompilationUnit);
                         }
                         if (newCU is Dom.DefaultCompilationUnit dcuW)
                             dcuW.FileName = filePath;
-                        lock (_completionDataLock)
+                        lock (_mainForm.CompletionParsingFeature._completionDataLock)
                         {
                             if (!IsCompletionScopeCurrent(scope))
                                 return;
@@ -152,7 +164,7 @@ namespace CIARE
                 }
             }
 
-            lock (_completionDataLock)
+            lock (_mainForm.CompletionParsingFeature._completionDataLock)
             {
                 if (!IsCompletionScopeCurrent(scope))
                     return;
@@ -176,7 +188,7 @@ namespace CIARE
                 return result;
 
             var seen = new HashSet<string>(StringComparer.Ordinal);
-            lock (_completionDataLock)
+            lock (_mainForm.CompletionParsingFeature._completionDataLock)
             {
                 AddCompilationUnitMethods(result, seen, parseInformation.MostRecentCompilationUnit, prefix);
                 foreach (var unit in _workspaceCompilationUnits.Values)
@@ -207,7 +219,7 @@ namespace CIARE
                 return result;
 
             var seen = new HashSet<string>(StringComparer.Ordinal);
-            lock (_completionDataLock)
+            lock (_mainForm.CompletionParsingFeature._completionDataLock)
             {
                 foreach (var completionClass in _workspaceCompletionClasses)
                 {
@@ -226,7 +238,7 @@ namespace CIARE
             return result;
         }
 
-        private static List<string> GetCompletionProjectPaths(string projectPath)
+        internal static List<string> GetCompletionProjectPaths(string projectPath)
         {
             var projectPaths = new List<string>();
             AddCompletionProjectPath(projectPath, projectPaths,
@@ -249,7 +261,7 @@ namespace CIARE
                 AddCompletionProjectPath(referencedProjectPath, projectPaths, visited);
         }
 
-        private static List<string> GetCompletionSourceFolders(IList<string> projectPaths)
+        internal static List<string> GetCompletionSourceFolders(IList<string> projectPaths)
         {
             return projectPaths
                 .Select(GetProjectDirectory)
@@ -283,7 +295,7 @@ namespace CIARE
 
         private string GetCompletionWorkspaceFolder(string currentFilePath)
         {
-            string projectPath = GetCompletionProjectPath(currentFilePath);
+            string projectPath = _mainForm.CompletionSyntaxFeature.GetCompletionProjectPath(currentFilePath);
             if (string.IsNullOrEmpty(projectPath))
                 return string.Empty;
 
@@ -295,13 +307,13 @@ namespace CIARE
 
         private bool ShouldUseWorkspaceCompletionData()
         {
-            string projectPath = GetCompletionProjectPath(GetActiveEditorFilePath());
+            string projectPath = _mainForm.CompletionSyntaxFeature.GetCompletionProjectPath(_mainForm.EditorFeature.GetActiveEditorFilePath());
             return GetCompletionSourceFolders(GetCompletionProjectPaths(projectPath)).Count > 0;
         }
 
         internal void ResetCompletionWorkspaceIfInactive()
         {
-            ResetCompletionWorkspaceIfInactive(GetActiveEditorFilePath());
+            ResetCompletionWorkspaceIfInactive(_mainForm.EditorFeature.GetActiveEditorFilePath());
         }
 
         internal void ResetCompletionWorkspaceIfInactive(string currentFilePath)
@@ -310,16 +322,16 @@ namespace CIARE
             if (string.IsNullOrEmpty(completionScope.WorkspaceFolder))
             {
                 InvalidateCompletionWorkspace();
-                ClearProjectPackageCompletionReferences();
+                _mainForm.CompletionReferencesFeature.ClearProjectPackageCompletionReferences();
             }
         }
 
-        private void ClearWorkspaceCompletionData()
+        internal void ClearWorkspaceCompletionData()
         {
             if (myProjectContent == null)
                 return;
 
-            lock (_completionDataLock)
+            lock (_mainForm.CompletionParsingFeature._completionDataLock)
             {
                 foreach (var pair in _workspaceCompilationUnits)
                     myProjectContent.RemoveCompilationUnit(pair.Value);
@@ -332,7 +344,7 @@ namespace CIARE
 
         internal ArrayList FilterCompletionDataForActiveProject(ArrayList completionData)
         {
-            return FilterCompletionDataForActiveProject(completionData, GetActiveEditorFilePath());
+            return FilterCompletionDataForActiveProject(completionData, _mainForm.EditorFeature.GetActiveEditorFilePath());
         }
 
         internal ArrayList FilterCompletionDataForActiveProject(ArrayList completionData, string activeFilePath)
@@ -341,7 +353,7 @@ namespace CIARE
                 return completionData;
 
             var sourceFolders = GetCompletionSourceFolders(
-                GetCompletionProjectPaths(GetCompletionProjectPath(activeFilePath)));
+                GetCompletionProjectPaths(_mainForm.CompletionSyntaxFeature.GetCompletionProjectPath(activeFilePath)));
             var filtered = new ArrayList(completionData.Count);
 
             foreach (object item in completionData)
@@ -460,13 +472,13 @@ namespace CIARE
                 result.Add(new DefaultCompletionData(item.Name, item.Description, item.ImageIndex));
         }
 
-        private static bool MatchesWorkspaceClass(WorkspaceCompletionClass completionClass, string expression)
+        internal static bool MatchesWorkspaceClass(WorkspaceCompletionClass completionClass, string expression)
         {
             return string.Equals(completionClass.FullName, expression, StringComparison.Ordinal) ||
                    string.Equals(completionClass.Name, expression, StringComparison.Ordinal);
         }
 
-        private static string NormalizeCompletionExpression(string expression)
+        internal static string NormalizeCompletionExpression(string expression)
         {
             if (string.IsNullOrWhiteSpace(expression))
                 return string.Empty;
@@ -522,7 +534,7 @@ namespace CIARE
             }
         }
 
-        private static string NormalizeCompletionPath(string path)
+        internal static string NormalizeCompletionPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) return string.Empty;
             try { return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar); }

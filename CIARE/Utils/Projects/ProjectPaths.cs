@@ -7,26 +7,36 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Projects.ProjectContext;
+using static global::CIARE.Utils.Projects.ProjectFiles;
 
-namespace CIARE
+namespace CIARE.Utils.Projects
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class ProjectPaths
     {
-        private void UpdateProjectReferencesAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        private readonly MainForm _mainForm;
+
+        internal ProjectPaths(MainForm mainForm)
         {
-            if (!Directory.Exists(_fileExplorerRootPath))
+            _mainForm = mainForm;
+        }
+        internal void UpdateProjectReferencesAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        {
+            if (!Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath))
                 return;
 
             try
             {
-                foreach (string projectPath in EnumerateBuildFiles(_fileExplorerRootPath, "*.csproj"))
+                foreach (string projectPath in EnumerateBuildFiles(_mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.csproj"))
                     UpdateProjectFileItemReferences(projectPath, oldPath, newPath, renamedDirectory);
 
                 var projectPathPairs = GetRenamedProjectPathPairs(oldPath, newPath, renamedDirectory).ToList();
                 if (projectPathPairs.Count == 0)
                     return;
 
-                foreach (string solutionPath in EnumerateBuildFiles(_fileExplorerRootPath, "*.sln"))
+                foreach (string solutionPath in EnumerateBuildFiles(_mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.sln"))
                     UpdateSolutionProjectReferences(solutionPath, projectPathPairs);
             }
             catch
@@ -204,7 +214,7 @@ namespace CIARE
             }
         }
 
-        private static List<string> GetExplorerDeletedProjectPaths(string path, bool isDirectory)
+        internal static List<string> GetExplorerDeletedProjectPaths(string path, bool isDirectory)
         {
             if (isDirectory)
                 return EnumerateBuildFiles(path, "*.csproj")
@@ -216,7 +226,7 @@ namespace CIARE
                 : new List<string>();
         }
 
-        private static void RemoveProjectsFromWorkspaceSolutions(IList<string> projectPaths, string workspaceFolder)
+        internal static void RemoveProjectsFromWorkspaceSolutions(IList<string> projectPaths, string workspaceFolder)
         {
             if (projectPaths == null || projectPaths.Count == 0 ||
                 string.IsNullOrWhiteSpace(workspaceFolder) ||
@@ -356,7 +366,7 @@ namespace CIARE
             return builder.ToString();
         }
 
-        private static string GetRenamedExplorerPath(string path, string oldPath, string newPath, bool renamedDirectory)
+        internal static string GetRenamedExplorerPath(string path, string oldPath, string newPath, bool renamedDirectory)
         {
             if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path))
                 return string.Empty;

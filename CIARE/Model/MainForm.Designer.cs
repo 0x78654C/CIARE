@@ -1,4 +1,4 @@
-﻿
+
 using System.Drawing.Text;
 using System.Windows.Forms;
 
@@ -9,7 +9,7 @@ namespace CIARE
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        internal System.ComponentModel.IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -883,19 +883,19 @@ namespace CIARE
 
 
         #endregion
-        private System.Windows.Forms.PictureBox runCodePb;
+        internal System.Windows.Forms.PictureBox runCodePb;
         public System.Windows.Forms.RichTextBox outputRBT;
         public CIARE.GUI.DarkTabControl outputTabControl;
         public System.Windows.Forms.TabPage outputTabPage;
         public System.Windows.Forms.TabPage errorsTabPage;
         public System.Windows.Forms.ListView errorsLV;
-        private System.Windows.Forms.ToolTip toolTip1;
+        internal System.Windows.Forms.ToolTip toolTip1;
         public System.Windows.Forms.ToolStripMenuItem fIleToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
-        private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.SplitContainer splitContainer1;
+        internal System.Windows.Forms.GroupBox groupBox1;
+        internal System.Windows.Forms.SplitContainer splitContainer1;
         public System.Windows.Forms.ToolStripMenuItem saveAsStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem newFileStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem newProjectStripMenuItem;
@@ -903,11 +903,11 @@ namespace CIARE
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         public System.Windows.Forms.ToolStripMenuItem LoadCStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
-        private System.Windows.Forms.Label label2;
+        internal System.Windows.Forms.Label label2;
         public System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem hotKeyToolStripMenuItem;
-        private System.Windows.Forms.Label label3;
+        internal System.Windows.Forms.Label label3;
         public System.Windows.Forms.ToolStripMenuItem compileToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem compileToexeCtrlShiftBToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem compileToDLLCtrlSfitBToolStripMenuItem;
@@ -954,7 +954,7 @@ namespace CIARE
         public CIARE.GUI.DarkTabControl EditorTabControl;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabPage tabPage2;
-        private System.Windows.Forms.ContextMenuStrip tabMenu;
+        internal System.Windows.Forms.ContextMenuStrip tabMenu;
         private System.Windows.Forms.ToolStripMenuItem closeTab;
         private System.Windows.Forms.ToolStripMenuItem closeAllTabs;
         private System.Windows.Forms.ToolStripMenuItem closeAllTabsOne;

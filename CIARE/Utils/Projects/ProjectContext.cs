@@ -4,50 +4,60 @@ using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Projects.ProjectCommands;
+using static global::CIARE.Utils.Projects.ProjectFiles;
 
-namespace CIARE
+namespace CIARE.Utils.Projects
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class ProjectContext
     {
-        private string _fileExplorerSolutionPath = string.Empty;
+        private readonly MainForm _mainForm;
 
-        private string GetActiveWorkspaceFolder()
+        internal ProjectContext(MainForm mainForm)
         {
-            string filePath = GetActiveEditorFilePath();
+            _mainForm = mainForm;
+        }
+        internal string _fileExplorerSolutionPath = string.Empty;
 
-            if (!Directory.Exists(_fileExplorerRootPath))
+        internal string GetActiveWorkspaceFolder()
+        {
+            string filePath = _mainForm.EditorFeature.GetActiveEditorFilePath();
+
+            if (!Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath))
                 return string.Empty;
 
-            if (string.IsNullOrEmpty(filePath) || IsPathInsideFolder(filePath, _fileExplorerRootPath))
-                return _fileExplorerRootPath;
+            if (string.IsNullOrEmpty(filePath) || IsPathInsideFolder(filePath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath))
+                return _mainForm.ExplorerTreeFeature._fileExplorerRootPath;
 
             return string.Empty;
         }
 
         public string GetActiveCompileProjectPath()
         {
-            string filePath = GetActiveEditorFilePath();
+            string filePath = _mainForm.EditorFeature.GetActiveEditorFilePath();
 
-            if (IsActiveUntitledEditorPage())
+            if (_mainForm.EditorFeature.IsActiveUntitledEditorPage())
                 return string.Empty;
 
             if (IsCSharpFilePath(filePath))
                 return GetBuildTargetForActiveCSharpFile(filePath);
 
-            if (Directory.Exists(_fileExplorerRootPath))
+            if (Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath))
             {
-                if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
-                    IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
+                if (IsProjectFilePath(_mainForm.StartupProjectFeature._fileExplorerStartupProjectPath) &&
+                    IsPathInsideFolder(_mainForm.StartupProjectFeature._fileExplorerStartupProjectPath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath))
                 {
-                    return _fileExplorerStartupProjectPath;
+                    return _mainForm.StartupProjectFeature._fileExplorerStartupProjectPath;
                 }
 
                 string activeFilePath = File.Exists(filePath) &&
-                    IsPathInsideFolder(filePath, _fileExplorerRootPath)
+                    IsPathInsideFolder(filePath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath)
                     ? filePath
                     : null;
 
-                string openFolderTarget = FindBuildTargetFile(_fileExplorerRootPath, activeFilePath);
+                string openFolderTarget = FindBuildTargetFile(_mainForm.ExplorerTreeFeature._fileExplorerRootPath, activeFilePath);
                 if (!string.IsNullOrEmpty(openFolderTarget))
                     return openFolderTarget;
             }
@@ -57,14 +67,14 @@ namespace CIARE
 
         public string GetActiveRunProjectPath()
         {
-            if (!Directory.Exists(_fileExplorerRootPath))
+            if (!Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath))
                 return string.Empty;
 
-            string filePath = GetActiveEditorFilePath();
-            if (IsActiveUntitledEditorPage() || string.IsNullOrEmpty(filePath))
+            string filePath = _mainForm.EditorFeature.GetActiveEditorFilePath();
+            if (_mainForm.EditorFeature.IsActiveUntitledEditorPage() || string.IsNullOrEmpty(filePath))
                 return string.Empty;
 
-            if (!IsPathInsideFolder(filePath, _fileExplorerRootPath))
+            if (!IsPathInsideFolder(filePath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath))
                 return string.Empty;
 
             if (IsCSharpFilePath(filePath))
@@ -73,42 +83,42 @@ namespace CIARE
                 if (string.IsNullOrEmpty(sourceProject))
                     return string.Empty;
 
-                if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
-                    IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
+                if (IsProjectFilePath(_mainForm.StartupProjectFeature._fileExplorerStartupProjectPath) &&
+                    IsPathInsideFolder(_mainForm.StartupProjectFeature._fileExplorerStartupProjectPath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath))
                 {
-                    return _fileExplorerStartupProjectPath;
+                    return _mainForm.StartupProjectFeature._fileExplorerStartupProjectPath;
                 }
 
                 return sourceProject;
             }
 
-            if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
-                IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath))
+            if (IsProjectFilePath(_mainForm.StartupProjectFeature._fileExplorerStartupProjectPath) &&
+                IsPathInsideFolder(_mainForm.StartupProjectFeature._fileExplorerStartupProjectPath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath))
             {
-                return _fileExplorerStartupProjectPath;
+                return _mainForm.StartupProjectFeature._fileExplorerStartupProjectPath;
             }
 
-            string activeProject = FindProjectFileForPath(filePath, _fileExplorerRootPath);
+            string activeProject = FindProjectFileForPath(filePath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath);
             if (!string.IsNullOrEmpty(activeProject))
                 return activeProject;
 
-            string selectedPath = _fileExplorerTree?.SelectedNode?.Tag as string;
-            string selectedProject = FindProjectFileForPath(selectedPath, _fileExplorerRootPath);
+            string selectedPath = _mainForm.ExplorerFeature._fileExplorerTree?.SelectedNode?.Tag as string;
+            string selectedProject = FindProjectFileForPath(selectedPath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath);
             if (!string.IsNullOrEmpty(selectedProject))
                 return selectedProject;
 
-            string rootProject = FindTopLevelBuildFile(_fileExplorerRootPath, "*.csproj");
+            string rootProject = FindTopLevelBuildFile(_mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.csproj");
             if (!string.IsNullOrEmpty(rootProject))
                 return rootProject;
 
-            return FindSingleRecursiveBuildFile(_fileExplorerRootPath, "*.csproj");
+            return FindSingleRecursiveBuildFile(_mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.csproj");
         }
 
         private string GetBuildTargetForActiveCSharpFile(string filePath)
         {
-            if (!Directory.Exists(_fileExplorerRootPath) ||
+            if (!Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath) ||
                 !File.Exists(filePath) ||
-                !IsPathInsideFolder(filePath, _fileExplorerRootPath))
+                !IsPathInsideFolder(filePath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath))
             {
                 return string.Empty;
             }
@@ -117,11 +127,11 @@ namespace CIARE
             if (string.IsNullOrEmpty(activeProject))
                 return string.Empty;
 
-            if (IsProjectFilePath(_fileExplorerStartupProjectPath) &&
-                IsPathInsideFolder(_fileExplorerStartupProjectPath, _fileExplorerRootPath) &&
-                ProjectContainsSourceFile(_fileExplorerStartupProjectPath, filePath))
+            if (IsProjectFilePath(_mainForm.StartupProjectFeature._fileExplorerStartupProjectPath) &&
+                IsPathInsideFolder(_mainForm.StartupProjectFeature._fileExplorerStartupProjectPath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath) &&
+                ProjectContainsSourceFile(_mainForm.StartupProjectFeature._fileExplorerStartupProjectPath, filePath))
             {
-                return _fileExplorerStartupProjectPath;
+                return _mainForm.StartupProjectFeature._fileExplorerStartupProjectPath;
             }
 
             string activeSolution = FindContainingSolutionForProjectInWorkspace(activeProject);
@@ -131,8 +141,8 @@ namespace CIARE
         private string FindProjectContainingSourceFile(string filePath)
         {
             if (!IsCSharpFilePath(filePath) ||
-                !Directory.Exists(_fileExplorerRootPath) ||
-                !IsPathInsideFolder(filePath, _fileExplorerRootPath))
+                !Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath) ||
+                !IsPathInsideFolder(filePath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath))
             {
                 return string.Empty;
             }
@@ -151,11 +161,11 @@ namespace CIARE
             var candidates = new List<string>();
             string activeFolder = Path.GetDirectoryName(filePath);
 
-            string activeSolution = FindNearestBuildFile(activeFolder, _fileExplorerRootPath, "*.sln");
+            string activeSolution = FindNearestBuildFile(activeFolder, _mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.sln");
             if (!string.IsNullOrEmpty(activeSolution))
                 candidates.AddRange(ReadSolutionProjectFiles(activeSolution));
 
-            candidates.AddRange(EnumerateBuildFiles(_fileExplorerRootPath, "*.csproj"));
+            candidates.AddRange(EnumerateBuildFiles(_mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.csproj"));
 
             return candidates
                 .Where(IsProjectFilePath)
@@ -166,60 +176,60 @@ namespace CIARE
 
         private string FindContainingSolutionForProjectInWorkspace(string projectPath)
         {
-            if (!IsProjectFilePath(projectPath) || !Directory.Exists(_fileExplorerRootPath))
+            if (!IsProjectFilePath(projectPath) || !Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath))
                 return string.Empty;
 
             string projectFolder = Path.GetDirectoryName(projectPath);
-            string solutionPath = FindNearestBuildFile(projectFolder, _fileExplorerRootPath, "*.sln");
+            string solutionPath = FindNearestBuildFile(projectFolder, _mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.sln");
             return SolutionFileContainsProject(solutionPath, projectPath) ? solutionPath : string.Empty;
         }
 
         public string GetActivePackageProjectPath()
         {
-            if (!Directory.Exists(_fileExplorerRootPath))
+            if (!Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath))
                 return string.Empty;
 
-            string selectedPath = _fileExplorerTree?.SelectedNode?.Tag as string;
-            string selectedProject = FindProjectFileForPath(selectedPath, _fileExplorerRootPath);
+            string selectedPath = _mainForm.ExplorerFeature._fileExplorerTree?.SelectedNode?.Tag as string;
+            string selectedProject = FindProjectFileForPath(selectedPath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath);
             if (!string.IsNullOrEmpty(selectedProject))
                 return selectedProject;
 
-            string activeProject = FindProjectFileForPath(GetActiveEditorFilePath(), _fileExplorerRootPath);
+            string activeProject = FindProjectFileForPath(_mainForm.EditorFeature.GetActiveEditorFilePath(), _mainForm.ExplorerTreeFeature._fileExplorerRootPath);
             if (!string.IsNullOrEmpty(activeProject))
                 return activeProject;
 
-            string rootProject = FindTopLevelBuildFile(_fileExplorerRootPath, "*.csproj");
+            string rootProject = FindTopLevelBuildFile(_mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.csproj");
             if (!string.IsNullOrEmpty(rootProject))
                 return rootProject;
 
-            return FindSingleRecursiveBuildFile(_fileExplorerRootPath, "*.csproj");
+            return FindSingleRecursiveBuildFile(_mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.csproj");
         }
 
         public string GetActivePackageInstallProjectPath()
         {
-            if (!Directory.Exists(_fileExplorerRootPath))
+            if (!Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath))
                 return string.Empty;
 
-            string filePath = GetActiveEditorFilePath();
-            if (!File.Exists(filePath) || !IsPathInsideFolder(filePath, _fileExplorerRootPath))
+            string filePath = _mainForm.EditorFeature.GetActiveEditorFilePath();
+            if (!File.Exists(filePath) || !IsPathInsideFolder(filePath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath))
                 return string.Empty;
 
-            return FindProjectFileForPath(filePath, _fileExplorerRootPath);
+            return FindProjectFileForPath(filePath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath);
         }
 
-        private string GetActiveEditorPackageProjectPath()
+        internal string GetActiveEditorPackageProjectPath()
         {
             string activeProject = GetActivePackageInstallProjectPath();
             return !string.IsNullOrEmpty(activeProject) ? activeProject : GetActivePackageProjectPath();
         }
 
-        private static bool IsCSharpFilePath(string filePath)
+        internal static bool IsCSharpFilePath(string filePath)
         {
             return !string.IsNullOrWhiteSpace(filePath) &&
                 string.Equals(Path.GetExtension(filePath), ".cs", StringComparison.OrdinalIgnoreCase);
         }
 
-        private string GetProjectPathFromExplorerPath(string path)
+        internal string GetProjectPathFromExplorerPath(string path)
         {
             if (IsProjectFilePath(path))
                 return path;
@@ -228,8 +238,8 @@ namespace CIARE
                 return string.Empty;
 
             if (File.Exists(path))
-                return Directory.Exists(_fileExplorerRootPath)
-                    ? FindProjectFileForPath(path, _fileExplorerRootPath)
+                return Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath)
+                    ? FindProjectFileForPath(path, _mainForm.ExplorerTreeFeature._fileExplorerRootPath)
                     : string.Empty;
 
             if (!Directory.Exists(path))
@@ -239,12 +249,12 @@ namespace CIARE
             if (!string.IsNullOrEmpty(childProject))
                 return childProject;
 
-            return Directory.Exists(_fileExplorerRootPath)
-                ? FindNearestBuildFile(path, _fileExplorerRootPath, "*.csproj")
+            return Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath)
+                ? FindNearestBuildFile(path, _mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.csproj")
                 : string.Empty;
         }
 
-        private string GetSolutionPathFromExplorerPath(string path)
+        internal string GetSolutionPathFromExplorerPath(string path)
         {
             if (IsSolutionFilePath(path))
                 return path;
@@ -267,13 +277,13 @@ namespace CIARE
                 return _fileExplorerSolutionPath;
             }
 
-            if (Directory.Exists(_fileExplorerRootPath))
-                return FindNearestBuildFile(folder, _fileExplorerRootPath, "*.sln");
+            if (Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath))
+                return FindNearestBuildFile(folder, _mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.sln");
 
             return FindTopLevelBuildFile(folder, "*.sln");
         }
 
-        private static string ResolveSolutionPathForLoadedFolder(string folderPath, string solutionPath)
+        internal static string ResolveSolutionPathForLoadedFolder(string folderPath, string solutionPath)
         {
             if (solutionPath != null)
                 return IsSolutionFilePath(solutionPath) ? Path.GetFullPath(solutionPath) : string.Empty;
@@ -285,7 +295,7 @@ namespace CIARE
             return FindSingleRecursiveBuildFile(folderPath, "*.sln");
         }
 
-        private static bool IsAddProjectToSolutionContext(string path, string solutionPath)
+        internal static bool IsAddProjectToSolutionContext(string path, string solutionPath)
         {
             if (!IsSolutionFilePath(solutionPath) || string.IsNullOrWhiteSpace(path))
                 return false;
@@ -303,7 +313,7 @@ namespace CIARE
                     StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string FindProjectFileForPath(string path, string workspaceFolder)
+        internal static string FindProjectFileForPath(string path, string workspaceFolder)
         {
             if (string.IsNullOrWhiteSpace(path) ||
                 string.IsNullOrWhiteSpace(workspaceFolder) ||
@@ -331,7 +341,7 @@ namespace CIARE
             return FindNearestBuildFile(folder, workspaceFolder, "*.csproj");
         }
 
-        private static bool IsPathInsideFolder(string filePath, string folderPath)
+        internal static bool IsPathInsideFolder(string filePath, string folderPath)
         {
             try
             {
@@ -406,7 +416,7 @@ namespace CIARE
             }
         }
 
-        private static string FindNearestBuildFile(string startFolder, string stopFolder, string searchPattern)
+        internal static string FindNearestBuildFile(string startFolder, string stopFolder, string searchPattern)
         {
             if (string.IsNullOrEmpty(startFolder) || !Directory.Exists(startFolder))
                 return string.Empty;
@@ -455,7 +465,7 @@ namespace CIARE
             }
         }
 
-        private static IEnumerable<string> EnumerateBuildFiles(string folderPath, string searchPattern)
+        internal static IEnumerable<string> EnumerateBuildFiles(string folderPath, string searchPattern)
         {
             var pending = new Stack<string>();
             pending.Push(folderPath);
@@ -491,7 +501,7 @@ namespace CIARE
             }
         }
 
-        private static bool IsSameOrChildDirectory(string path, string folderPath)
+        internal static bool IsSameOrChildDirectory(string path, string folderPath)
         {
             try
             {

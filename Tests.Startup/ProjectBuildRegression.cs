@@ -5,7 +5,6 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -13,8 +12,6 @@ namespace CIARE;
 
 internal static class ProjectBuildRegression
 {
-    private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
-
     public static void Run(MainForm form, Action<bool, string> assert)
     {
         string root = Path.Combine(GlobalVariables.userProfileDirectory, "Build solution");
@@ -33,8 +30,8 @@ internal static class ProjectBuildRegression
         string otherSource = Path.Combine(other, "Other.cs");
         File.WriteAllText(source, "public class Chosen { public const int Number = 1; }");
         File.WriteAllText(otherSource, "public class Other { }");
-        typeof(MainForm).GetMethod("LoadFileExplorerFolder", Private).Invoke(form, new object[] { root, null });
-        typeof(MainForm).GetField("_fileExplorerStartupProjectPath", Private).SetValue(form, otherProject);
+        form.ExplorerTreeFeature.LoadFileExplorerFolder(root);
+        form.StartupProjectFeature._fileExplorerStartupProjectPath = otherProject;
 
         FileManage.OpenFileFromArgs("cli|" + source, form.EditorTabControl);
         SelectedEditor.GetSelectedEditor().Text = "public class Chosen { public const int Number = 42; }";
@@ -44,11 +41,11 @@ internal static class ProjectBuildRegression
         Pump(300);
         TabPage activeTab = form.EditorTabControl.SelectedTab;
 
-        var item = (ToolStripMenuItem)typeof(MainForm).GetField("_fileExplorerBuildProjectMenuItem", Private).GetValue(form);
+        var item = form.ExplorerFeature._fileExplorerBuildProjectMenuItem;
         void OpenMenu(string path)
         {
-            typeof(MainForm).GetField("_fileExplorerContextNode", Private).SetValue(form, new TreeNode { Tag = path });
-            typeof(MainForm).GetMethod("fileExplorerContextMenu_Opening", Private).Invoke(form, new object[] { null, new CancelEventArgs() });
+            form.ExplorerFeature._fileExplorerContextNode = new TreeNode { Tag = path };
+            form.ExplorerActionsFeature.fileExplorerContextMenu_Opening(null, new CancelEventArgs());
         }
         OpenMenu(otherSource);
         assert(!item.Available, "Build Project is hidden on ordinary files");
@@ -69,10 +66,10 @@ internal static class ProjectBuildRegression
         timer.Start();
         item.PerformClick();
         assert(!item.Enabled, "Duplicate builds are disabled while the project is building");
-        var running = typeof(MainForm).GetField("_explorerProjectBuildRunning", Private);
+        var build = form.ProjectBuildFeature;
         var elapsed = Stopwatch.StartNew();
-        while ((bool)running.GetValue(form) && elapsed.ElapsedMilliseconds < 45000) Pump(25);
-        assert(!(bool)running.GetValue(form), "Project build completes");
+        while (build._explorerProjectBuildRunning && elapsed.ElapsedMilliseconds < 45000) Pump(25);
+        assert(!build._explorerProjectBuildRunning, "Project build completes");
         var output = form.outputRBT;
         Console.Error.WriteLine(output.Text);
         assert(output.Text.Contains("Build completed."), "The selected project builds even when its referenced project cannot build");
@@ -86,8 +83,8 @@ internal static class ProjectBuildRegression
         File.WriteAllText(source, "this is invalid C#;");
         item.PerformClick();
         elapsed.Restart();
-        while ((bool)running.GetValue(form) && elapsed.ElapsedMilliseconds < 30000) Pump(25);
-        assert(!(bool)running.GetValue(form) && item.Enabled && output.Text.Contains("Build failed (exit code"),
+        while (build._explorerProjectBuildRunning && elapsed.ElapsedMilliseconds < 30000) Pump(25);
+        assert(!build._explorerProjectBuildRunning && item.Enabled && output.Text.Contains("Build failed (exit code"),
             "Build errors appear in Output and allow another build");
     }
 

@@ -8,10 +8,17 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using CIARE.Updating;
 
-namespace CIARE;
+namespace CIARE.Utils.Window;
 
-public partial class MainForm
+[System.Runtime.Versioning.SupportedOSPlatform("windows")]
+internal sealed class UpdateEvents
 {
+    private readonly MainForm _mainForm;
+
+    internal UpdateEvents(MainForm mainForm)
+    {
+        _mainForm = mainForm;
+    }
     private bool _checkingForUpdate;
     private readonly CancellationTokenSource _updateLifetime = new();
 
@@ -19,7 +26,7 @@ public partial class MainForm
     internal void InitializeUpdates()
     {
         InitializeUpdateMenu();
-        Shown += async (_, _) =>
+        _mainForm.Shown += async (_, _) =>
         {
             try
             {
@@ -28,21 +35,21 @@ public partial class MainForm
             }
             catch (OperationCanceledException) { }
         };
-        FormClosed += (_, _) => _updateLifetime.Cancel();
+        _mainForm.FormClosed += (_, _) => _updateLifetime.Cancel();
     }
 
     internal void InitializeUpdateMenu()
     {
-        if (helpToolStripMenuItem.DropDownItems.ContainsKey("checkForUpdatesToolStripMenuItem")) return;
+        if (_mainForm.helpToolStripMenuItem.DropDownItems.ContainsKey("checkForUpdatesToolStripMenuItem")) return;
         var check = new ToolStripMenuItem("Check for updates…") { Name = "checkForUpdatesToolStripMenuItem" };
         check.Click += async (_, _) => await CheckForUpdatesAsync(true);
-        helpToolStripMenuItem.DropDownItems.Add(new ToolStripSeparator { Name = "updateToolStripSeparator" });
-        helpToolStripMenuItem.DropDownItems.Add(check);
+        _mainForm.helpToolStripMenuItem.DropDownItems.Add(new ToolStripSeparator { Name = "updateToolStripSeparator" });
+        _mainForm.helpToolStripMenuItem.DropDownItems.Add(check);
     }
 
     private async Task CheckForUpdatesAsync(bool manual)
     {
-        if (_checkingForUpdate || IsDisposed || Disposing) return;
+        if (_checkingForUpdate || _mainForm.IsDisposed || _mainForm.Disposing) return;
         _checkingForUpdate = true;
         try
         {
@@ -58,10 +65,10 @@ public partial class MainForm
             };
             var releases = await ReleaseCatalog.ReadAsync(client, timeout.Token);
             var update = ReleaseCatalog.SelectUpdate(releases, installed, architecture);
-            if (IsDisposed || Disposing) return;
+            if (_mainForm.IsDisposed || _mainForm.Disposing) return;
             if (update == null)
             {
-                if (manual) MessageBox.Show(this, $"CIARE {installed} ({architecture}) is up to date.", "CIARE Update", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (manual) MessageBox.Show(_mainForm, $"CIARE {installed} ({architecture}) is up to date.", "CIARE Update", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -109,7 +116,7 @@ public partial class MainForm
             };
             try
             {
-                if (window.ShowDialog(this) == DialogResult.OK && updaterPath != null)
+                if (window.ShowDialog(_mainForm) == DialogResult.OK && updaterPath != null)
                 {
                     string executable = updaterPath;
                     updaterPath = null; // LaunchUpdaterAsync now owns cleanup, including a failed launch.
@@ -125,8 +132,8 @@ public partial class MainForm
         catch (Exception ex)
         {
             Trace.TraceWarning("CIARE update check: {0}", ex);
-            if (manual && !IsDisposed && !Disposing)
-                MessageBox.Show(this, "Couldn’t check for updates. Please try again later.\n\n" + ex.Message,
+            if (manual && !_mainForm.IsDisposed && !_mainForm.Disposing)
+                MessageBox.Show(_mainForm, "Couldn’t check for updates. Please try again later.\n\n" + ex.Message,
                     "CIARE Update", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         finally { _checkingForUpdate = false; }
@@ -159,9 +166,9 @@ public partial class MainForm
                         throw new IOException("The updater did not become ready. CIARE has been kept open.");
                     await Task.Delay(100, _updateLifetime.Token);
                 }
-                if (IsDisposed || Disposing) return;
-                Close(); // Existing unsaved-work prompts can cancel this close.
-                handoff = IsDisposed || Disposing;
+                if (_mainForm.IsDisposed || _mainForm.Disposing) return;
+                _mainForm.Close(); // Existing unsaved-work prompts can cancel this close.
+                handoff = _mainForm.IsDisposed || _mainForm.Disposing;
             }
             finally
             {
