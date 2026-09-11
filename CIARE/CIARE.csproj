@@ -138,14 +138,14 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Feature partials share the MainForm designer in Model. -->
-    <Compile Update="Model\MainForm\**\*.cs">
+    <!-- Editor features share the form designer in Model and open as code. -->
+    <FormFeature Include="Utils\Completion\*.cs;Utils\Editor\*.cs;Utils\Explorer\*.cs;Utils\Navigation\*.cs;Utils\Projects\*.cs;Utils\Window\*.cs" />
+    <FormFeature Include="Utils\NuGetManage\NuGet.cs;Utils\NuGetManage\NuGetMetadata.cs;LiveShareManage\LiveShareEvents.cs" />
+    <Compile Update="@(FormFeature)">
       <SubType>Code</SubType>
     </Compile>
-    <!-- Partial files share Model\MainForm.resx. Ignore resource files generated
-         when a feature partial is opened in the WinForms designer. -->
-    <EmbeddedResource Remove="Model\MainForm.Updates.resx;Model\MainForm\**\*.resx" />
-    <EmbeddedResource Include="Model\MainForm\Completion\MainForm.CompletionItems.resx" />
+    <!-- Only Model\MainForm.resx owns the shared form's resources. -->
+    <EmbeddedResource Remove="@(FormFeature->'%(RelativeDir)%(Filename).resx');Model\MainForm.Updates.resx;Model\MainForm\**\*.resx" />
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -169,4 +169,10 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
+  <!-- The designer can add explicit resource items after the exclusions above. -->
+  <Target Name="ExcludeFeatureDesignerResources" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <EmbeddedResource Remove="@(FormFeature->'%(RelativeDir)%(Filename).resx');Model\MainForm.Updates.resx;Model\MainForm\**\*.resx" />
+    </ItemGroup>
+  </Target>
 </Project>
