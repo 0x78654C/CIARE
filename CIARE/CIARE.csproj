@@ -169,9 +169,12 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
-  <!-- The designer can add explicit resource items after the exclusions above. -->
-  <Target Name="ExcludeFeatureDesignerResources" BeforeTargets="AssignTargetPaths">
+  <!-- Apply after designer/user metadata and explicit resource entries are loaded. -->
+  <Target Name="ConfigureFormFeatures" BeforeTargets="AssignTargetPaths">
     <ItemGroup>
+      <Compile Update="@(FormFeature)">
+        <SubType>Code</SubType>
+      </Compile>
       <EmbeddedResource Remove="@(FormFeature->'%(RelativeDir)%(Filename).resx');Model\MainForm.Updates.resx;Model\MainForm\**\*.resx" />
     </ItemGroup>
   </Target>
