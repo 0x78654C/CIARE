@@ -634,7 +634,7 @@ internal static class StartupRegression
             while ((popup = form.OwnedForms.OfType<CodeCompletionWindow>().FirstOrDefault()) == null &&
                 elapsed.ElapsedMilliseconds < 15000)
                 Pump(10);
-            Assert(popup != null, "Suggestions appear while the prefix continues to grow");
+            Assert(popup != null, $"Suggestions appear while the prefix continues to grow; focused={area.Focused}, code={editor.Text}, caret={area.Caret.Offset}");
             var list = popup.Controls.OfType<CodeCompletionListView>().Single();
             if (list.SelectedCompletionData?.Text != expected)
             {
