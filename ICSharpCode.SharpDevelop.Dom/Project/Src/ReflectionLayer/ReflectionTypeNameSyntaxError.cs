@@ -28,6 +28,7 @@ namespace ICSharpCode.SharpDevelop.Dom.ReflectionLayer
 		{
 		}
 		
+		[Obsolete("Formatter-based serialization is obsolete.")]
 		protected ReflectionTypeNameSyntaxError(SerializationInfo info, StreamingContext context) : base(info, context)
 		{
 		}

@@ -34,13 +34,8 @@
     <Reference Include="Mono.Cecil">
       <HintPath>..\..\Libs\Mono.Cecil\Mono.Cecil.dll</HintPath>
     </Reference>
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Core\Project\Src\Services\FileUtility\FileUtility.Minimal.cs">
-      <Link>Src\ProjectContent\FileUtility.Minimal.cs</Link>
-    </Compile>
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Configuration\GlobalAssemblyInfo.cs</Link>
     </Compile>

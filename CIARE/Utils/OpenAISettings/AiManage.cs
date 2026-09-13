@@ -24,7 +24,6 @@ namespace CIARE.Utils.OpenAISettings
         private string ApiKey = string.Empty;
         private string Qestion = string.Empty;
         private static HttpClient HttpClient = new HttpClient();
-        private static int s_line = 0;
 
         public AiManage(string apiKey, string question)
         {

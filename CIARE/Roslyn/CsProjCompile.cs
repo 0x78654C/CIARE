@@ -20,8 +20,6 @@ namespace CIARE.Roslyn
         private bool Library { get; set; } = false;
         private bool Publish { get; set; } = false;
         private bool NativeAot { get; set; } = false;
-        private string _exeFilePath;
-        private string _pathNative;
         private string CsProjTemplateExe = @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>"+GlobalVariables.WinExe+@"</OutputType>

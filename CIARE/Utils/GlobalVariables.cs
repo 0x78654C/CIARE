@@ -117,7 +117,9 @@ namespace CIARE.Utils
         public static readonly string copilotTokenKey = "copilotOAuthToken";
         public static string aiMaxTokens = string.Empty;
         public static SecureString aiKey;
+#nullable enable annotations
         public static SecureString? copilotOAuthToken;
+#nullable restore annotations
         public static string model = string.Empty;
         public static string modelOllamaVar = string.Empty;
         public static string codexReasoningLevelVar = "medium";

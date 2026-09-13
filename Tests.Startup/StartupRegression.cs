@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Windows.Forms;
+using Dom = ICSharpCode.SharpDevelop.Dom;
 
 namespace CIARE;
 
@@ -58,6 +59,9 @@ internal static class StartupRegression
 
     private static void Run(string scenario)
     {
+        if (scenario == "completion")
+            VerifyLocalResolveResult();
+
         if (scenario == "dark")
             ThemeRegression.Run(Assert, AppContext.BaseDirectory);
 
@@ -318,6 +322,17 @@ internal static class StartupRegression
         Assert(form.IsDisposed, "Completion tolerates a disposed form");
         Pump(100);
         Console.Error.WriteLine($"Startup to Show completed: {elapsed.ElapsedMilliseconds} ms ({scenario})");
+    }
+
+    private static void VerifyLocalResolveResult()
+    {
+        var project = new Dom.DefaultProjectContent();
+        var owner = new Dom.DefaultClass(new Dom.DefaultCompilationUnit(project), "Example");
+        var method = new Dom.DefaultMethod(owner, "Run");
+        var local = new Dom.DefaultField.LocalVariableField(owner.DefaultReturnType, "item", Dom.DomRegion.Empty, owner);
+        var result = new Dom.LocalResolveResult(method, local);
+        Assert(ReferenceEquals(result.Field, local), "Local resolution returns its stored field under C# 14");
+        Assert(ReferenceEquals(((Dom.LocalResolveResult)result.Clone()).Field, local), "Cloning preserves the resolved local field");
     }
 
     private static T GetField<T>(object owner, string name) =>

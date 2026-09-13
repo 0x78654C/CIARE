@@ -8,7 +8,9 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Security.Permissions;
+using System.Runtime.Versioning;
+
+[assembly: SupportedOSPlatform("windows")]
 
 [assembly: CLSCompliant(true)]
 [assembly: StringFreezing()]
@@ -20,4 +22,3 @@ using System.Security.Permissions;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
-[assembly: SecurityPermission(SecurityAction.RequestMinimum, Unrestricted=true)]
