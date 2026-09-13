@@ -77,6 +77,8 @@
 ### Themes
 - 4 built-in themes: Default, C#-Light, C#-Dark, C#-DarkVS
 - 8 additional themes bundled as external `.xshd` files: **8bit**, **Gruvbox**, **Lilac**, **Neon**, **NoctisHC**, **Noegi**, **NordWave**, **Sweet**
+- All C# themes share modern keyword, common .NET type, nullable directive, and XML documentation highlighting. Syntax text and line numbers use colors with at least 4.5:1 contrast against the editor background.
+- Completion popups follow the editor's selection and accent colors; dark menus and output panes use the theme's text color.
 - Drop any custom `.xshd` file into the `themes\` folder next to the exe to add it instantly — no restart needed
 - UI colors (forms, tabs, controls) adapt automatically to the active theme
 

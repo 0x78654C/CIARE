@@ -16,6 +16,7 @@ Get-ChildItem -LiteralPath $source -Force |
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'StartupRegression.cs') -Destination $copy
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ResourceRegression.cs') -Destination $copy
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ProjectBuildRegression.cs') -Destination $copy
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ThemeRegression.cs') -Destination $copy
 $globalsPath = Join-Path $copy 'Utils\GlobalVariables.cs'
 $globals = [IO.File]::ReadAllText($globalsPath)
 $globals = [regex]::Replace($globals, '(?m)^        public static readonly string userProfileDirectory = .*;\r?$',

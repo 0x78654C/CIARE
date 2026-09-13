@@ -58,6 +58,9 @@ internal static class StartupRegression
 
     private static void Run(string scenario)
     {
+        if (scenario == "dark")
+            ThemeRegression.Run(Assert, AppContext.BaseDirectory);
+
         using var settings = Registry.CurrentUser.CreateSubKey(GlobalVariables.registryPath);
         settings.SetValue("highlight", scenario == "light" ? "C#-Light" : "C#-Dark");
         settings.SetValue("OCodeCompletion", (scenario == "completion" || scenario == "memory" || scenario.StartsWith("resources") || scenario.StartsWith("retention")).ToString());

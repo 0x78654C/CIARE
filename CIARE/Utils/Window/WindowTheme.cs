@@ -36,9 +36,9 @@ namespace CIARE
                 GlobalVariables.isVStheme = highlight.EndsWith("VS");
                 UpdateThemeColors(highlight);
                 var darkBg = GlobalVariables.controlBgColor;
-                var darkFg = Color.FromArgb(192, 215, 207);
+                var darkFg = theme.ForeColor;
                 DarkModeMain.SetDarkModeMain(this, outputRBT, groupBox1, label2, label3,
-                    menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator(), GlobalVariables.isVStheme);
+                    menuStrip1, ListMenuStripItems.ListToolStripMenu(), ListMenuStripItems.ListToolStripSeparator(), GlobalVariables.isVStheme, darkFg);
                 errorsLV.BackColor = darkBg;
                 errorsLV.ForeColor = darkFg;
                 ApplyTabControlDarkMode(EditorTabControl, darkBg);
