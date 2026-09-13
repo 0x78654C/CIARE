@@ -8,14 +8,25 @@ using ICSharpCode.TextEditor.Gui.CompletionWindow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static global::CIARE.Utils.Completion.CompletionParsing;
+using static global::CIARE.Utils.Completion.CompletionProject;
+using static global::CIARE.Utils.Completion.CompletionSyntax;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
 
-namespace CIARE
+namespace CIARE.Utils.Completion
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class RoslynCompletion
     {
+        private readonly MainForm _mainForm;
+
+        internal RoslynCompletion(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         internal ArrayList GetRoslynMemberCompletionData(string code, int caretOffset, string expressionText)
         {
-            return GetRoslynMemberCompletionData(code, caretOffset, expressionText, GetActiveEditorFilePath());
+            return GetRoslynMemberCompletionData(code, caretOffset, expressionText, _mainForm.EditorFeature.GetActiveEditorFilePath());
         }
 
         internal ArrayList GetRoslynMemberCompletionData(string code, int caretOffset, string expressionText,
@@ -120,7 +131,7 @@ namespace CIARE
 
         internal ArrayList GetRoslynCtrlSpaceCompletionData(string code, int caretOffset, string prefix)
         {
-            return GetRoslynCtrlSpaceCompletionData(code, caretOffset, prefix, GetActiveEditorFilePath());
+            return GetRoslynCtrlSpaceCompletionData(code, caretOffset, prefix, _mainForm.EditorFeature.GetActiveEditorFilePath());
         }
 
         internal ArrayList GetRoslynCtrlSpaceCompletionData(string code, int caretOffset, string prefix,
@@ -164,19 +175,19 @@ namespace CIARE
 
         private RoslynCompletionContext BuildRoslynCompletionContext(string code)
         {
-            return BuildRoslynCompletionContext(code, GetActiveEditorFilePath(), CancellationToken.None);
+            return BuildRoslynCompletionContext(code, _mainForm.EditorFeature.GetActiveEditorFilePath(), CancellationToken.None);
         }
 
         private RoslynCompletionContext BuildRoslynCompletionContext(string code, string currentFilePath,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            string projectPath = GetCompletionProjectPath(currentFilePath);
+            string projectPath = _mainForm.CompletionSyntaxFeature.GetCompletionProjectPath(currentFilePath);
             var parseOptions = BuildCompletionParseOptions();
             string activePath = string.IsNullOrWhiteSpace(currentFilePath) ? DummyFileName : currentFilePath;
             SyntaxTree activeTree = CSharpSyntaxTree.ParseText(code ?? string.Empty, parseOptions,
                 path: activePath, cancellationToken: cancellationToken);
-            RoslynCompletionProjectSnapshot projectSnapshot = GetRoslynCompletionProjectSnapshot(
+            RoslynCompletionProjectSnapshot projectSnapshot = _mainForm.CompletionProjectFeature.GetRoslynCompletionProjectSnapshot(
                 currentFilePath, projectPath, parseOptions, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             var compilation = projectSnapshot.WithActiveTree(activeTree);

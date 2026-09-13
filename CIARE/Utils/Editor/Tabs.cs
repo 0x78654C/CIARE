@@ -11,26 +11,35 @@ using CIARE.Utils;
 using ICSharpCode.TextEditor;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Projects.ProjectPaths;
 
-namespace CIARE
+namespace CIARE.Utils.Editor
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class Tabs
     {
+        private readonly MainForm _mainForm;
+
+        internal Tabs(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         private const int TCM_SETMINTABWIDTH = 0x1300 + 49;
 
         // Used for tab's auto-resize
         [DllImport("user32.dll")]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);
 
-        private void UpdateOpenTabsAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
+        internal void UpdateOpenTabsAfterExplorerRename(string oldPath, string newPath, bool renamedDirectory)
         {
-            if (EditorTabControl == null)
+            if (_mainForm.EditorTabControl == null)
                 return;
 
             bool selectedTabChanged = false;
-            for (int i = 0; i < EditorTabControl.TabPages.Count; i++)
+            for (int i = 0; i < _mainForm.EditorTabControl.TabPages.Count; i++)
             {
-                TabPage tabPage = EditorTabControl.TabPages[i];
+                TabPage tabPage = _mainForm.EditorTabControl.TabPages[i];
                 string tabPath = tabPage.ToolTipText?.Trim();
                 string renamedPath = GetRenamedExplorerPath(tabPath, oldPath, newPath, renamedDirectory);
                 if (string.IsNullOrEmpty(renamedPath))
@@ -41,7 +50,7 @@ namespace CIARE
 
                 if (GlobalVariables.OStartUp)
                 {
-                    TabControllerManage.DeleteFileSize(EditorTabControl, tabPath, GlobalVariables.userProfileDirectory,
+                    TabControllerManage.DeleteFileSize(_mainForm.EditorTabControl, tabPath, GlobalVariables.userProfileDirectory,
                         GlobalVariables.tabsFilePath, i.ToString());
                     TabControllerManage.StoreFileMD5(renamedPath, GlobalVariables.userProfileDirectory,
                         GlobalVariables.tabsFilePath, i);
@@ -49,7 +58,7 @@ namespace CIARE
                         GlobalVariables.tabsFilePathAll, i);
                 }
 
-                if (ReferenceEquals(tabPage, EditorTabControl.SelectedTab))
+                if (ReferenceEquals(tabPage, _mainForm.EditorTabControl.SelectedTab))
                     selectedTabChanged = true;
             }
 
@@ -61,7 +70,7 @@ namespace CIARE
         {
             try
             {
-                string filePath = EditorTabControl.SelectedTab?.ToolTipText?.Trim();
+                string filePath = _mainForm.EditorTabControl.SelectedTab?.ToolTipText?.Trim();
                 if (string.IsNullOrWhiteSpace(filePath))
                     return;
 
@@ -71,7 +80,7 @@ namespace CIARE
                     FileManage.SetFileMD5(filePath);
 
                 if (!string.IsNullOrEmpty(GlobalVariables.openedFileName))
-                    Text = $"{GlobalVariables.openedFileName} : {FileManage.GetFilePath(filePath)} - CIARE {GlobalVariables.versionName}";
+                    _mainForm.Text = $"{GlobalVariables.openedFileName} : {FileManage.GetFilePath(filePath)} - CIARE {GlobalVariables.versionName}";
             }
             catch
             {
@@ -83,11 +92,11 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void NewHotKeyTab(object sender, DoWorkEventArgs e)
+        internal void NewHotKeyTab(object sender, DoWorkEventArgs e)
         {
-            if (outputRBT.ForeColor == Color.Red)
+            if (_mainForm.outputRBT.ForeColor == Color.Red)
                 GlobalVariables.isRed = true;
-            TabControllerManage.AddNewTab(EditorTabControl);
+            TabControllerManage.AddNewTab(_mainForm.EditorTabControl);
         }
 
         /// <summary>
@@ -95,9 +104,9 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void EditorTabControl_MouseDown(object sender, MouseEventArgs e)
+        internal void EditorTabControl_MouseDown(object sender, MouseEventArgs e)
         {
-            TabControllerManage.CloseTab(EditorTabControl, e);
+            TabControllerManage.CloseTab(_mainForm.EditorTabControl, e);
         }
 
         /// <summary>
@@ -105,63 +114,63 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void EditorTabControl_HandleCreated(object sender, EventArgs e) =>
-            SendMessage(this.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
+        internal void EditorTabControl_HandleCreated(object sender, EventArgs e) =>
+            SendMessage(_mainForm.EditorTabControl.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
 
         /// <summary>
         /// Autoresize tab names.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
+        internal void EditorTabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
-            if (isLoaded && e.TabPageIndex == 0 && EditorTabControl.TabCount > 1)
+            if (_mainForm.isLoaded && e.TabPageIndex == 0 && _mainForm.EditorTabControl.TabCount > 1)
             {
                 // The plus header is an action, never an empty document page.
                 // Its mouse handler creates and selects the actual editor tab.
                 e.Cancel = true;
                 return;
             }
-            if (Instance == null || e.TabPage == null || e.TabPageIndex <= 0)
+            if (MainForm.Instance == null || e.TabPage == null || e.TabPageIndex <= 0)
                 return;
 
             // Tab counts also change on removal; only an empty page needs a new editor.
-            selectedEditor = e.TabPage.Controls.OfType<TextEditorControl>().FirstOrDefault();
-            if (selectedEditor == null)
+            _mainForm.EditorFeature.selectedEditor = e.TabPage.Controls.OfType<TextEditorControl>().FirstOrDefault();
+            if (_mainForm.EditorFeature.selectedEditor == null)
             {
                 e.TabPage.SuspendLayout();
                 try
                 {
-                    selectedEditor = new TextEditorControl { Visible = false };
-                    ConfigureEditorTabPageLayout(e.TabPage);
-                    SetDesignEditor(ref selectedEditor);
-                    e.TabPage.Controls.Add(selectedEditor);
-                    InitializeEditorSettings(selectedEditor, e.TabPageIndex);
+                    _mainForm.EditorFeature.selectedEditor = new TextEditorControl { Visible = false };
+                    _mainForm.EditorLayoutFeature.ConfigureEditorTabPageLayout(e.TabPage);
+                    _mainForm.EditorFeature.SetDesignEditor(ref _mainForm.EditorFeature.selectedEditor);
+                    e.TabPage.Controls.Add(_mainForm.EditorFeature.selectedEditor);
+                    _mainForm.EditorFeature.InitializeEditorSettings(_mainForm.EditorFeature.selectedEditor, e.TabPageIndex);
                     if (e.TabPage is EditorTabPage filePage && filePage.InitialText != null)
                     {
                         string initialText = filePage.InitialText;
                         filePage.InitialText = null;
-                        selectedEditor.Text = initialText;
+                        _mainForm.EditorFeature.selectedEditor.Text = initialText;
                     }
                 }
                 finally
                 {
                     e.TabPage.ResumeLayout(true);
                 }
-                selectedEditor.Visible = true;
+                _mainForm.EditorFeature.selectedEditor.Visible = true;
             }
-            QueueEditorLayoutRefresh();
+            _mainForm.EditorLayoutFeature.QueueEditorLayoutRefresh();
 
             string titleTab = e.TabPage.Text.Trim();
             string filePath = e.TabPage.ToolTipText.Trim();
 
-            if (isLoaded)
+            if (_mainForm.isLoaded)
             {
                 try
                 {
-                    GlobalVariables.textAreaFirst = selectedEditor.primaryTextArea;
-                    GlobalVariables.textAreaSecond = selectedEditor.secondaryTextArea;
-                    InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _editFontSize, selectedEditor);
+                    GlobalVariables.textAreaFirst = _mainForm.EditorFeature.selectedEditor.primaryTextArea;
+                    GlobalVariables.textAreaSecond = _mainForm.EditorFeature.selectedEditor.secondaryTextArea;
+                    InitializeEditor.ReadEditorFontSize(GlobalVariables.registryPath, _mainForm.EditorFeature._editFontSize, _mainForm.EditorFeature.selectedEditor);
                 }
                 catch
                 {
@@ -185,12 +194,12 @@ namespace CIARE
             }
             if (!titleTab.Contains("New Pag") && !titleTab.Contains("+"))
             {
-                this.Text = $"{titleTab.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
+                _mainForm.Text = $"{titleTab.Trim()} : {FileManage.GetFilePath(GlobalVariables.openedFilePath)} - CIARE {GlobalVariables.versionName}";
 
             }
             else
             {
-                this.Text = $"CIARE {GlobalVariables.versionName}";
+                _mainForm.Text = $"CIARE {GlobalVariables.versionName}";
             }
 
             //TODO: Will see in future if is needed
@@ -198,29 +207,29 @@ namespace CIARE
 
             // Clear line/col position on new tab switch
             ClearInfoLinescs.ClearLinesInfo();
-            LinesManage.GetTotalLinesCount(linesCountLbl);
+            LinesManage.GetTotalLinesCount(_mainForm.linesCountLbl);
         }
 
         /// <summary>
         /// Re-run real-time check whenever the active editor tab changes.
         /// </summary>
-        private void EditorTabControl_SelectedIndexChanged(object sender, EventArgs e)
+        internal void EditorTabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (!isLoaded) return;
-            Interlocked.Increment(ref _completionTextVersion);
+            if (!_mainForm.isLoaded) return;
+            Interlocked.Increment(ref _mainForm.CompletionParsingFeature._completionTextVersion);
             try
             {
                 var editor = SelectedEditor.GetSelectedEditor();
                 if (editor == null) return;
-                CompletionScopeSnapshot completionScope = RefreshCompletionScope(GetActiveEditorFilePath());
+                CompletionScopeSnapshot completionScope = _mainForm.CompletionWorkspaceFeature.RefreshCompletionScope(_mainForm.EditorFeature.GetActiveEditorFilePath());
                 if (string.IsNullOrEmpty(completionScope.WorkspaceFolder))
                 {
-                    ClearProjectPackageCompletionReferences();
-                    ClearWorkspaceCompletionData();
+                    _mainForm.CompletionReferencesFeature.ClearProjectPackageCompletionReferences();
+                    _mainForm.CompletionWorkspaceFeature.ClearWorkspaceCompletionData();
                 }
-                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                _mainForm.NuGetFeature.RefreshProjectPackageContext(_mainForm.ProjectContextFeature.GetActiveEditorPackageProjectPath(), restoreProject: false,
                     showRestoreFailure: false);
-                ScheduleCurrentTypeCheck(editor);
+                _mainForm.EditorFeature.ScheduleCurrentTypeCheck(editor);
             }
             catch { }
         }
@@ -230,22 +239,22 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void EditorTabControl_DrawItem(object sender, DrawItemEventArgs e)
+        internal void EditorTabControl_DrawItem(object sender, DrawItemEventArgs e)
         {
             // Draw tab on initialize.
-            TabControllerManage.DrawTabControl(EditorTabControl, e);
+            TabControllerManage.DrawTabControl(_mainForm.EditorTabControl, e);
 
             // Set transparent header bar.
-            TabControllerManage.SetTransparentTabBar(EditorTabControl, e,
+            TabControllerManage.SetTransparentTabBar(_mainForm.EditorTabControl, e,
                 GlobalVariables.formBgColor.R, GlobalVariables.formBgColor.G, GlobalVariables.formBgColor.B);
 
             // Color tab to red if live shared started on that index.
             if (GlobalVariables.apiConnected || GlobalVariables.apiRemoteConnected)
-                TabControllerManage.ColorTab(EditorTabControl, GlobalVariables.liveTabIndex, e, Color.Red);
-            var taBindex = EditorTabControl.SelectedIndex;
+                TabControllerManage.ColorTab(_mainForm.EditorTabControl, GlobalVariables.liveTabIndex, e, Color.Red);
+            var taBindex = _mainForm.EditorTabControl.SelectedIndex;
 
             // Color light green if editor data is unsaved.
-            TabControllerManage.ColorTab(EditorTabControl, taBindex, e, Color.LightGray);
+            TabControllerManage.ColorTab(_mainForm.EditorTabControl, taBindex, e, Color.LightGray);
         }
 
         /// <summary>
@@ -253,20 +262,20 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void EditorTabControl_MouseClick(object sender, MouseEventArgs e)
+        internal void EditorTabControl_MouseClick(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
             {
-                Point p = EditorTabControl.PointToClient(Cursor.Position);
-                for (int i = 0; i < EditorTabControl.TabCount; i++)
+                Point p = _mainForm.EditorTabControl.PointToClient(Cursor.Position);
+                for (int i = 0; i < _mainForm.EditorTabControl.TabCount; i++)
                 {
-                    Rectangle r = EditorTabControl.GetTabRect(i);
+                    Rectangle r = _mainForm.EditorTabControl.GetTabRect(i);
                     if (r.Contains(p))
                     {
                         if (i >= 1)
                         {
-                            EditorTabControl.SelectedIndex = i;
-                            tabMenu.Show(EditorTabControl, e.Location);
+                            _mainForm.EditorTabControl.SelectedIndex = i;
+                            _mainForm.tabMenu.Show(_mainForm.EditorTabControl, e.Location);
                             return;
                         }
                     }
@@ -279,9 +288,9 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void closeTab_Click(object sender, EventArgs e)
+        internal void closeTab_Click(object sender, EventArgs e)
         {
-            TabControllerManage.CloseTabEvent(EditorTabControl, SelectedEditor.GetSelectedEditor());
+            TabControllerManage.CloseTabEvent(_mainForm.EditorTabControl, SelectedEditor.GetSelectedEditor());
         }
 
         /// <summary>
@@ -289,9 +298,9 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void closeAllTabs_Click(object sender, EventArgs e)
+        internal void closeAllTabs_Click(object sender, EventArgs e)
         {
-            TabControllerManage.CloseAllTabs(EditorTabControl, SelectedEditor.GetSelectedEditor());
+            TabControllerManage.CloseAllTabs(_mainForm.EditorTabControl, SelectedEditor.GetSelectedEditor());
         }
 
         /// <summary>
@@ -299,10 +308,10 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void closeAllTabsOne_Click(object sender, EventArgs e)
+        internal void closeAllTabsOne_Click(object sender, EventArgs e)
         {
-            int index = EditorTabControl.SelectedIndex;
-            TabControllerManage.CloseAllTabsOne(EditorTabControl, SelectedEditor.GetSelectedEditor(), index);
+            int index = _mainForm.EditorTabControl.SelectedIndex;
+            TabControllerManage.CloseAllTabsOne(_mainForm.EditorTabControl, SelectedEditor.GetSelectedEditor(), index);
         }
 
         /// <summary>
@@ -310,7 +319,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void EditorTabControl_KeyDown(object sender, KeyEventArgs e)
+        internal void EditorTabControl_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right)
                 e.Handled = true;

@@ -7,17 +7,28 @@ using CIARE.Roslyn;
 using CIARE.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using static global::CIARE.Utils.Completion.CompletionReferences;
+using static global::CIARE.Utils.Completion.CompletionSyntax;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Projects.WorkspaceFiles;
 
-namespace CIARE
+namespace CIARE.Utils.Completion
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class CompletionProject
     {
+        private readonly MainForm _mainForm;
+
+        internal CompletionProject(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         private const int RoslynCompletionSourceFileLimit = 300;
         private static readonly TimeSpan RoslynCompletionCacheLifetime = TimeSpan.FromSeconds(5);
         private readonly object _roslynCompletionCacheLock = new object();
         private RoslynCompletionProjectSnapshot _roslynCompletionProjectSnapshot;
 
-        private RoslynCompletionProjectSnapshot GetRoslynCompletionProjectSnapshot(
+        internal RoslynCompletionProjectSnapshot GetRoslynCompletionProjectSnapshot(
             string currentFilePath, string projectPath, CSharpParseOptions parseOptions,
             CancellationToken cancellationToken)
         {
@@ -162,7 +173,7 @@ namespace CIARE
             }
         }
 
-        private sealed class RoslynCompletionProjectSnapshot
+        internal sealed class RoslynCompletionProjectSnapshot
         {
             private readonly object compilationLock = new object();
             private CSharpCompilation compilation;

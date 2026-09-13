@@ -8,19 +8,31 @@ using CIARE.GUI;
 using CIARE.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Explorer.ExplorerLayout;
+using static global::CIARE.Utils.Projects.ProjectContext;
+using static global::CIARE.Utils.Projects.StartupProject;
+using static global::CIARE.Utils.Projects.WorkspaceFiles;
 
-namespace CIARE
+namespace CIARE.Utils.Explorer
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class ExplorerTree
     {
-        private const string FileExplorerLoadingTag = "__loading__";
+        private readonly MainForm _mainForm;
+
+        internal ExplorerTree(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
+        internal const string FileExplorerLoadingTag = "__loading__";
         private const string FileExplorerPathKey = "fileExplorerPath";
         private static readonly string FileExplorerExpandedPathsFilePath =
             Path.Combine(GlobalVariables.userProfileDirectory, "fileExplorerExpandedPaths.cDat");
-        private string _fileExplorerRootPath = string.Empty;
+        internal string _fileExplorerRootPath = string.Empty;
         private bool _suppressFileExplorerExpandedStateSave;
 
-        private void fileExplorerOpenFolderButton_Click(object sender, EventArgs e)
+        internal void fileExplorerOpenFolderButton_Click(object sender, EventArgs e)
         {
             using (var dialog = new FolderBrowserDialog())
             {
@@ -31,22 +43,22 @@ namespace CIARE
                     dialog.SelectedPath = _fileExplorerRootPath;
                 else
                 {
-                    var filePath = GetActiveEditorFilePath();
+                    var filePath = _mainForm.EditorFeature.GetActiveEditorFilePath();
                     if (File.Exists(filePath))
                         dialog.SelectedPath = Path.GetDirectoryName(filePath);
                 }
 
-                if (dialog.ShowDialog(this) == DialogResult.OK)
+                if (dialog.ShowDialog(_mainForm) == DialogResult.OK)
                     LoadFileExplorerFolder(dialog.SelectedPath);
             }
         }
 
-        private void RestoreFileExplorerState()
+        internal void RestoreFileExplorerState()
         {
             InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerPathKey, string.Empty);
             InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerVisibleKey, "True");
             InitializeEditor.SetCiareRegKey(GlobalVariables.registryPath, FileExplorerStartupProjectKey, string.Empty);
-            LoadFileExplorerLayoutValues();
+            _mainForm.ExplorerLayoutFeature.LoadFileExplorerLayoutValues();
 
             string savedPath = RegistryManagement.RegKey_Read(
                 $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", FileExplorerPathKey);
@@ -57,32 +69,32 @@ namespace CIARE
                 LoadFileExplorerFolder(savedPath);
 
             if (savedVisible == "False")
-                ToggleFileExplorer(false, saveWidth: false);
+                _mainForm.ExplorerLayoutFeature.ToggleFileExplorer(false, saveWidth: false);
             else
-                QueueFileExplorerLayoutApply();
+                _mainForm.ExplorerLayoutFeature.QueueFileExplorerLayoutApply();
         }
 
-        private void LoadFileExplorerFolder(string folderPath, string solutionPath = null)
+        internal void LoadFileExplorerFolder(string folderPath, string solutionPath = null)
         {
-            if (!Directory.Exists(folderPath) || _fileExplorerTree == null)
+            if (!Directory.Exists(folderPath) || _mainForm.ExplorerFeature._fileExplorerTree == null)
                 return;
 
             _fileExplorerRootPath = folderPath;
-            _fileExplorerSolutionPath = ResolveSolutionPathForLoadedFolder(folderPath, solutionPath);
-            RestoreStartupProjectForLoadedFolder();
+            _mainForm.ProjectContextFeature._fileExplorerSolutionPath = ResolveSolutionPathForLoadedFolder(folderPath, solutionPath);
+            _mainForm.StartupProjectFeature.RestoreStartupProjectForLoadedFolder();
 
-            InvalidateCompletionWorkspace();
-            Interlocked.Increment(ref _projectPackageRefreshVersion);
-            ClearProjectPackageCompletionReferences();
+            _mainForm.CompletionWorkspaceFeature.InvalidateCompletionWorkspace();
+            Interlocked.Increment(ref _mainForm.NuGetFeature._projectPackageRefreshVersion);
+            _mainForm.CompletionReferencesFeature.ClearProjectPackageCompletionReferences();
             RegistryManagement.RegKey_WriteSubkey(GlobalVariables.registryPath, FileExplorerPathKey, folderPath);
             var expandedPaths = ReadFileExplorerExpandedPaths(folderPath);
-            _fileExplorerTree.BeginUpdate();
+            _mainForm.ExplorerFeature._fileExplorerTree.BeginUpdate();
             _suppressFileExplorerExpandedStateSave = true;
             try
             {
-                _fileExplorerTree.Nodes.Clear();
+                _mainForm.ExplorerFeature._fileExplorerTree.Nodes.Clear();
                 var root = CreateDirectoryNode(new DirectoryInfo(folderPath));
-                _fileExplorerTree.Nodes.Add(root);
+                _mainForm.ExplorerFeature._fileExplorerTree.Nodes.Add(root);
                 PopulateDirectoryNode(root);
                 root.Expand();
                 RestoreExpandedPaths(root, expandedPaths);
@@ -90,19 +102,19 @@ namespace CIARE
             finally
             {
                 _suppressFileExplorerExpandedStateSave = false;
-                _fileExplorerTree.EndUpdate();
+                _mainForm.ExplorerFeature._fileExplorerTree.EndUpdate();
             }
-            _fileExplorerTitleLabel.Text = "Explorer";
-            toolTip1.SetToolTip(_fileExplorerTitleLabel, folderPath);
+            _mainForm.ExplorerFeature._fileExplorerTitleLabel.Text = "Explorer";
+            _mainForm.toolTip1.SetToolTip(_mainForm.ExplorerFeature._fileExplorerTitleLabel, folderPath);
 
-            StartFileExplorerWatcher(folderPath);
+            _mainForm.ExplorerWatcherFeature.StartFileExplorerWatcher(folderPath);
             SaveFileExplorerExpandedState();
-            RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+            _mainForm.NuGetFeature.RefreshProjectPackageContext(_mainForm.ProjectContextFeature.GetActiveEditorPackageProjectPath(), restoreProject: false,
                 showRestoreFailure: false);
-            ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+            _mainForm.EditorFeature.ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
         }
 
-        private static TreeNode FindTreeNodeByPath(TreeNode root, string path)
+        internal static TreeNode FindTreeNodeByPath(TreeNode root, string path)
         {
             if (string.Equals(root.Tag as string, path, StringComparison.OrdinalIgnoreCase))
                 return root;
@@ -122,7 +134,7 @@ namespace CIARE
             return null;
         }
 
-        private static void CollectExpandedPaths(TreeNode node, HashSet<string> paths)
+        internal static void CollectExpandedPaths(TreeNode node, HashSet<string> paths)
         {
             foreach (TreeNode child in node.Nodes)
             {
@@ -136,7 +148,7 @@ namespace CIARE
             }
         }
 
-        private void RestoreExpandedPaths(TreeNode node, HashSet<string> expandedPaths)
+        internal void RestoreExpandedPaths(TreeNode node, HashSet<string> expandedPaths)
         {
             foreach (TreeNode child in node.Nodes)
             {
@@ -162,7 +174,7 @@ namespace CIARE
                 SelectedImageKey = selectedImageKey,
                 ToolTipText = directory.FullName
             };
-            ApplyStartupProjectNodeStyle(node);
+            _mainForm.StartupProjectFeature.ApplyStartupProjectNodeStyle(node);
             node.Nodes.Add(new TreeNode("Loading...") { Tag = FileExplorerLoadingTag });
             return node;
         }
@@ -177,7 +189,7 @@ namespace CIARE
                 SelectedImageKey = imageKey,
                 ToolTipText = file.FullName
             };
-            ApplyStartupProjectNodeStyle(node);
+            _mainForm.StartupProjectFeature.ApplyStartupProjectNodeStyle(node);
             return node;
         }
 
@@ -215,33 +227,33 @@ namespace CIARE
             }
         }
 
-        private void fileExplorerTree_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        internal void fileExplorerTree_BeforeExpand(object sender, TreeViewCancelEventArgs e)
         {
             if (e.Node.Nodes.Count == 1 && Equals(e.Node.Nodes[0].Tag, FileExplorerLoadingTag))
                 PopulateDirectoryNode(e.Node);
         }
 
-        private void fileExplorerTree_AfterExpand(object sender, TreeViewEventArgs e)
+        internal void fileExplorerTree_AfterExpand(object sender, TreeViewEventArgs e)
         {
             SaveFileExplorerExpandedState();
         }
 
-        private void fileExplorerTree_AfterCollapse(object sender, TreeViewEventArgs e)
+        internal void fileExplorerTree_AfterCollapse(object sender, TreeViewEventArgs e)
         {
             SaveFileExplorerExpandedState();
         }
 
-        private void fileExplorerTree_AfterSelect(object sender, TreeViewEventArgs e)
+        internal void fileExplorerTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            RefreshExplorerNuGetPackages();
+            _mainForm.NuGetFeature.RefreshExplorerNuGetPackages();
         }
 
-        private void SaveFileExplorerExpandedState()
+        internal void SaveFileExplorerExpandedState()
         {
             if (_suppressFileExplorerExpandedStateSave ||
-                _fileExplorerTree == null ||
-                _fileExplorerTree.IsDisposed ||
-                _fileExplorerTree.Nodes.Count == 0)
+                _mainForm.ExplorerFeature._fileExplorerTree == null ||
+                _mainForm.ExplorerFeature._fileExplorerTree.IsDisposed ||
+                _mainForm.ExplorerFeature._fileExplorerTree.Nodes.Count == 0)
             {
                 return;
             }
@@ -249,7 +261,7 @@ namespace CIARE
             try
             {
                 var expandedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                CollectExpandedPaths(_fileExplorerTree.Nodes[0], expandedPaths);
+                CollectExpandedPaths(_mainForm.ExplorerFeature._fileExplorerTree.Nodes[0], expandedPaths);
 
                 Directory.CreateDirectory(GlobalVariables.userProfileDirectory);
                 File.WriteAllLines(FileExplorerExpandedPathsFilePath,
@@ -289,7 +301,7 @@ namespace CIARE
             return expandedPaths;
         }
 
-        private void PopulateDirectoryNode(TreeNode node)
+        internal void PopulateDirectoryNode(TreeNode node)
         {
             string folderPath = node.Tag as string;
             if (string.IsNullOrEmpty(folderPath) || !Directory.Exists(folderPath))
@@ -336,29 +348,29 @@ namespace CIARE
                 ShouldHideExplorerItem(directory.Attributes);
         }
 
-        private void fileExplorerTree_MouseDown(object sender, MouseEventArgs e)
+        internal void fileExplorerTree_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Right)
                 return;
 
-            TreeNode node = _fileExplorerTree.GetNodeAt(e.Location);
+            TreeNode node = _mainForm.ExplorerFeature._fileExplorerTree.GetNodeAt(e.Location);
             if (node == null)
             {
-                _fileExplorerContextNode = null;
+                _mainForm.ExplorerFeature._fileExplorerContextNode = null;
                 return;
             }
 
-            _fileExplorerTree.SelectedNode = node;
-            _fileExplorerContextNode = node;
+            _mainForm.ExplorerFeature._fileExplorerTree.SelectedNode = node;
+            _mainForm.ExplorerFeature._fileExplorerContextNode = node;
         }
 
-        private string GetExplorerContextFolderPath()
+        internal string GetExplorerContextFolderPath()
         {
-            string path = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
+            string path = (_mainForm.ExplorerFeature._fileExplorerContextNode ?? _mainForm.ExplorerFeature._fileExplorerTree?.SelectedNode)?.Tag as string;
             return Directory.Exists(path) && IsPathInsideExplorerRoot(path) ? path : string.Empty;
         }
 
-        private bool IsExplorerRootPath(string path)
+        internal bool IsExplorerRootPath(string path)
         {
             return !string.IsNullOrWhiteSpace(path) &&
                 Directory.Exists(_fileExplorerRootPath) &&
@@ -366,32 +378,32 @@ namespace CIARE
                     StringComparison.OrdinalIgnoreCase);
         }
 
-        private bool IsPathInsideExplorerRoot(string path)
+        internal bool IsPathInsideExplorerRoot(string path)
         {
             return !string.IsNullOrWhiteSpace(path) &&
                 Directory.Exists(_fileExplorerRootPath) &&
                 IsSameOrChildDirectory(path, _fileExplorerRootPath);
         }
 
-        private void SelectExplorerPath(string path)
+        internal void SelectExplorerPath(string path)
         {
-            if (_fileExplorerTree == null || _fileExplorerTree.Nodes.Count == 0 || string.IsNullOrWhiteSpace(path))
+            if (_mainForm.ExplorerFeature._fileExplorerTree == null || _mainForm.ExplorerFeature._fileExplorerTree.Nodes.Count == 0 || string.IsNullOrWhiteSpace(path))
                 return;
 
-            TreeNode node = FindTreeNodeByPath(_fileExplorerTree.Nodes[0], path);
+            TreeNode node = FindTreeNodeByPath(_mainForm.ExplorerFeature._fileExplorerTree.Nodes[0], path);
             if (node != null)
             {
-                _fileExplorerTree.SelectedNode = node;
+                _mainForm.ExplorerFeature._fileExplorerTree.SelectedNode = node;
                 node.EnsureVisible();
             }
         }
 
-        private void RefreshAndExpandExplorerFolder(string folderPath)
+        internal void RefreshAndExpandExplorerFolder(string folderPath)
         {
-            if (_fileExplorerTree == null || _fileExplorerTree.Nodes.Count == 0)
+            if (_mainForm.ExplorerFeature._fileExplorerTree == null || _mainForm.ExplorerFeature._fileExplorerTree.Nodes.Count == 0)
                 return;
 
-            TreeNode node = FindTreeNodeByPath(_fileExplorerTree.Nodes[0], folderPath);
+            TreeNode node = FindTreeNodeByPath(_mainForm.ExplorerFeature._fileExplorerTree.Nodes[0], folderPath);
             if (node == null)
                 return;
 
@@ -400,17 +412,17 @@ namespace CIARE
                 node.Expand();
         }
 
-        private void fileExplorerTree_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+        internal void fileExplorerTree_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
             OpenFileExplorerNode(e.Node);
         }
 
-        private void fileExplorerTree_KeyDown(object sender, KeyEventArgs e)
+        internal void fileExplorerTree_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode != Keys.Enter || _fileExplorerTree.SelectedNode == null)
+            if (e.KeyCode != Keys.Enter || _mainForm.ExplorerFeature._fileExplorerTree.SelectedNode == null)
                 return;
 
-            OpenFileExplorerNode(_fileExplorerTree.SelectedNode);
+            OpenFileExplorerNode(_mainForm.ExplorerFeature._fileExplorerTree.SelectedNode);
             e.Handled = true;
         }
 
@@ -435,29 +447,29 @@ namespace CIARE
             OpenFileFromExplorer(path);
         }
 
-        private void OpenFileFromExplorer(string filePath)
+        internal void OpenFileFromExplorer(string filePath)
         {
             try
             {
-                if (TabControllerManage.IsFileOpenedInTab(EditorTabControl, filePath))
+                if (TabControllerManage.IsFileOpenedInTab(_mainForm.EditorTabControl, filePath))
                 {
-                    ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+                    _mainForm.EditorFeature.ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
                     return;
                 }
 
                 var editor = SelectedEditor.GetSelectedEditor();
                 bool useCurrentBlankTab = editor != null &&
-                    EditorTabControl.SelectedIndex > 0 &&
+                    _mainForm.EditorTabControl.SelectedIndex > 0 &&
                     string.IsNullOrWhiteSpace(editor.Text) &&
-                    string.IsNullOrWhiteSpace(EditorTabControl.SelectedTab.ToolTipText);
+                    string.IsNullOrWhiteSpace(_mainForm.EditorTabControl.SelectedTab.ToolTipText);
 
                 if (!useCurrentBlankTab)
-                    TabControllerManage.AddNewTab(EditorTabControl);
+                    TabControllerManage.AddNewTab(_mainForm.EditorTabControl);
 
                 FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), filePath);
-                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                _mainForm.NuGetFeature.RefreshProjectPackageContext(_mainForm.ProjectContextFeature.GetActiveEditorPackageProjectPath(), restoreProject: false,
                     showRestoreFailure: false);
-                ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+                _mainForm.EditorFeature.ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
             }
             catch (Exception ex)
             {

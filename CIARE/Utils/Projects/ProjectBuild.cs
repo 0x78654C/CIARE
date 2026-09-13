@@ -8,14 +8,23 @@ using CIARE.GUI;
 using CIARE.Roslyn;
 using CIARE.Utils;
 using ICSharpCode.TextEditor;
+using static global::CIARE.Utils.Projects.ProjectContext;
+using static global::CIARE.Utils.Projects.ProjectFiles;
 
-namespace CIARE;
+namespace CIARE.Utils.Projects;
 
-public partial class MainForm
+[System.Runtime.Versioning.SupportedOSPlatform("windows")]
+internal sealed class ProjectBuild
 {
-    private bool _explorerProjectBuildRunning;
+    private readonly MainForm _mainForm;
 
-    private static string GetExplorerBuildProjectPath(string path)
+    internal ProjectBuild(MainForm mainForm)
+    {
+        _mainForm = mainForm;
+    }
+    internal bool _explorerProjectBuildRunning;
+
+    internal static string GetExplorerBuildProjectPath(string path)
     {
         if (IsProjectFilePath(path)) return path;
         if (!Directory.Exists(path)) return string.Empty;
@@ -28,9 +37,9 @@ public partial class MainForm
         catch (UnauthorizedAccessException) { return string.Empty; }
     }
 
-    private async void fileExplorerBuildProjectMenuItem_Click(object sender, EventArgs e)
+    internal async void fileExplorerBuildProjectMenuItem_Click(object sender, EventArgs e)
     {
-        string path = (_fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode)?.Tag as string;
+        string path = (_mainForm.ExplorerFeature._fileExplorerContextNode ?? _mainForm.ExplorerFeature._fileExplorerTree?.SelectedNode)?.Tag as string;
         await BuildExplorerProjectAsync(GetExplorerBuildProjectPath(path));
     }
 
@@ -38,42 +47,42 @@ public partial class MainForm
     {
         if (_explorerProjectBuildRunning || !IsProjectFilePath(projectPath)) return;
         _explorerProjectBuildRunning = true;
-        _fileExplorerBuildProjectMenuItem.Enabled = false;
+        _mainForm.ExplorerFeature._fileExplorerBuildProjectMenuItem.Enabled = false;
         try
         {
-            if (_pendingEditorTextRefresh) OnEditorTextRefreshTimer(this, EventArgs.Empty);
+            if (_mainForm.EditorFeature._pendingEditorTextRefresh) _mainForm.EditorFeature.OnEditorTextRefreshTimer(_mainForm, EventArgs.Empty);
             SaveOpenProjectFilesForBuild(projectPath);
-            outputTabControl.SelectedTab = outputTabPage;
-            OutputWindowManage.ShowOutputWindow(splitContainer1, outputRBT);
-            outputRBT.ForeColor = GlobalVariables.darkColor ? Color.FromArgb(192, 215, 207) : Color.Black;
-            outputRBT.Text = $"Building project: {projectPath}\n";
+            _mainForm.outputTabControl.SelectedTab = _mainForm.outputTabPage;
+            OutputWindowManage.ShowOutputWindow(_mainForm.splitContainer1, _mainForm.outputRBT);
+            _mainForm.outputRBT.ForeColor = GlobalVariables.darkColor ? Color.FromArgb(192, 215, 207) : Color.Black;
+            _mainForm.outputRBT.Text = $"Building project: {projectPath}\n";
             ProcessRunResult result = await RoslynRun.BuildSingleProjectAsync(projectPath);
-            if (IsDisposed || Disposing || outputRBT.IsDisposed) return;
-            outputRBT.Text = $"Project: {projectPath}\n{result.Output.TrimEnd()}\n" +
+            if (_mainForm.IsDisposed || _mainForm.Disposing || _mainForm.outputRBT.IsDisposed) return;
+            _mainForm.outputRBT.Text = $"Project: {projectPath}\n{result.Output.TrimEnd()}\n" +
                 (result.Success ? "Build completed." : $"Build failed (exit code {result.ExitCode}).");
-            outputRBT.SelectionStart = outputRBT.TextLength;
-            outputRBT.ScrollToCaret();
+            _mainForm.outputRBT.SelectionStart = _mainForm.outputRBT.TextLength;
+            _mainForm.outputRBT.ScrollToCaret();
         }
         catch (Exception exception)
         {
-            if (!IsDisposed && !Disposing && !outputRBT.IsDisposed)
-                outputRBT.Text = $"Build failed: {exception.Message}";
+            if (!_mainForm.IsDisposed && !_mainForm.Disposing && !_mainForm.outputRBT.IsDisposed)
+                _mainForm.outputRBT.Text = $"Build failed: {exception.Message}";
         }
         finally
         {
             _explorerProjectBuildRunning = false;
-            if (!IsDisposed && !Disposing) _fileExplorerBuildProjectMenuItem.Enabled = true;
+            if (!_mainForm.IsDisposed && !_mainForm.Disposing) _mainForm.ExplorerFeature._fileExplorerBuildProjectMenuItem.Enabled = true;
         }
     }
 
     private void SaveOpenProjectFilesForBuild(string projectPath)
     {
-        foreach (TabPage page in EditorTabControl.TabPages)
+        foreach (TabPage page in _mainForm.EditorTabControl.TabPages)
         {
             string path = page.ToolTipText;
             if (!page.Text.StartsWith("*", StringComparison.Ordinal) || !File.Exists(path)) continue;
             bool belongsToProject = string.Equals(path, projectPath, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(GetProjectPathFromExplorerPath(path), projectPath, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(_mainForm.ProjectContextFeature.GetProjectPathFromExplorerPath(path), projectPath, StringComparison.OrdinalIgnoreCase) ||
                 (IsCSharpFilePath(path) && ProjectContainsSourceFile(projectPath, path));
             if (!belongsToProject) continue;
             TextEditorControl editor = page.Controls.OfType<TextEditorControl>().FirstOrDefault();
@@ -81,11 +90,11 @@ public partial class MainForm
             File.WriteAllText(path, editor.Text);
             page.Text = page.Text.TrimStart('*');
             TabControllerManage.StoreFileMD5(path, GlobalVariables.userProfileDirectory,
-                GlobalVariables.tabsFilePath, EditorTabControl.TabPages.IndexOf(page));
-            if (page == EditorTabControl.SelectedTab)
+                GlobalVariables.tabsFilePath, _mainForm.EditorTabControl.TabPages.IndexOf(page));
+            if (page == _mainForm.EditorTabControl.SelectedTab)
             {
                 FileManage.SetFileMD5(path);
-                Text = Text.TrimStart('*');
+                _mainForm.Text = _mainForm.Text.TrimStart('*');
             }
         }
     }

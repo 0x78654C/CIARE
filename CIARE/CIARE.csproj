@@ -138,14 +138,14 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Editor features share the form designer in Model and open as code. -->
-    <FormFeature Include="Utils\Completion\*.cs;Utils\Editor\*.cs;Utils\Explorer\*.cs;Utils\Navigation\*.cs;Utils\Projects\*.cs;Utils\Window\*.cs" />
-    <FormFeature Include="Utils\NuGetManage\NuGet.cs;Utils\NuGetManage\NuGetMetadata.cs;LiveShareManage\LiveShareEvents.cs" />
-    <Compile Update="@(FormFeature)">
+    <!-- Independent utility classes open as code; MainForm owns the form designer. -->
+    <UtilityFeature Include="Utils\Completion\*.cs;Utils\Editor\*.cs;Utils\Explorer\*.cs;Utils\Navigation\*.cs;Utils\Projects\*.cs;Utils\Window\*.cs" />
+    <UtilityFeature Include="Utils\NuGetManage\NuGet.cs;Utils\NuGetManage\NuGetMetadata.cs;LiveShareManage\LiveShareEvents.cs" />
+    <Compile Update="@(UtilityFeature)">
       <SubType>Code</SubType>
     </Compile>
-    <!-- Only Model\MainForm.resx owns the shared form's resources. -->
-    <EmbeddedResource Remove="@(FormFeature->'%(RelativeDir)%(Filename).resx');Model\MainForm.Updates.resx;Model\MainForm\**\*.resx" />
+    <!-- Ignore stale resources generated when these utilities were form partials. -->
+    <EmbeddedResource Remove="@(UtilityFeature->'%(RelativeDir)%(Filename).resx');Model\MainForm.Updates.resx;Model\MainForm\**\*.resx" />
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -170,12 +170,12 @@
     </None>
   </ItemGroup>
   <!-- Apply after designer/user metadata and explicit resource entries are loaded. -->
-  <Target Name="ConfigureFormFeatures" BeforeTargets="AssignTargetPaths">
+  <Target Name="ConfigureUtilityFeatures" BeforeTargets="AssignTargetPaths">
     <ItemGroup>
-      <Compile Update="@(FormFeature)">
+      <Compile Update="@(UtilityFeature)">
         <SubType>Code</SubType>
       </Compile>
-      <EmbeddedResource Remove="@(FormFeature->'%(RelativeDir)%(Filename).resx');Model\MainForm.Updates.resx;Model\MainForm\**\*.resx" />
+      <EmbeddedResource Remove="@(UtilityFeature->'%(RelativeDir)%(Filename).resx');Model\MainForm.Updates.resx;Model\MainForm\**\*.resx" />
     </ItemGroup>
   </Target>
 </Project>

@@ -9,11 +9,21 @@ using CIARE.Utils.NuGetManage;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static global::CIARE.Utils.Completion.CompletionParsing;
+using static global::CIARE.Utils.Projects.ProjectContext;
+using static global::CIARE.Utils.Projects.WorkspaceFiles;
 
-namespace CIARE
+namespace CIARE.Utils.Completion
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class CompletionSyntax
     {
+        private readonly MainForm _mainForm;
+
+        internal CompletionSyntax(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         private static readonly string[] CompletionImplicitUsingNamespaces =
         {
             "System",
@@ -28,7 +38,7 @@ namespace CIARE
             @"^[ \t]*namespace[ \t]+([\w.]+)[ \t]*;",
             RegexOptions.Multiline | RegexOptions.Compiled);
 
-        private static CSharpParseOptions BuildCompletionParseOptions()
+        internal static CSharpParseOptions BuildCompletionParseOptions()
         {
             string framework = GlobalVariables.Framework ?? string.Empty;
             var languageVersion = LanguageVersion.Default;
@@ -46,7 +56,7 @@ namespace CIARE
             return CSharpParseOptions.Default.WithLanguageVersion(languageVersion);
         }
 
-        private static string BuildCompletionImplicitUsingsCode(string projectPath)
+        internal static string BuildCompletionImplicitUsingsCode(string projectPath)
         {
             var namespaces = ProjectNuGetManager.GetImplicitUsingNamespaces(projectPath);
             if (namespaces.Count == 0)
@@ -74,7 +84,7 @@ namespace CIARE
         internal string PrepareCodeForNRefactoryCompletion(string code, out int prefixLineOffset,
             out int wrapLineOffset, out int bodyStartLine)
         {
-            return PrepareCodeForNRefactoryCompletion(code, GetActiveEditorFilePath(),
+            return PrepareCodeForNRefactoryCompletion(code, _mainForm.EditorFeature.GetActiveEditorFilePath(),
                 out prefixLineOffset, out wrapLineOffset, out bodyStartLine);
         }
 
@@ -106,27 +116,27 @@ namespace CIARE
         {
             string projectPath = GetCompletionProjectPath(sourceFilePath);
             if (string.IsNullOrEmpty(projectPath)) return string.Empty;
-            lock (_completionGlobalUsingsLock)
+            lock (_mainForm.CompletionResourcesFeature._completionGlobalUsingsLock)
             {
-                int version = Volatile.Read(ref _completionSourceVersion);
-                if (_completionGlobalUsings.TryGetValue(projectPath, out var entry) && entry.Version == version)
+                int version = Volatile.Read(ref _mainForm.CompletionResourcesFeature._completionSourceVersion);
+                if (_mainForm.CompletionResourcesFeature._completionGlobalUsings.TryGetValue(projectPath, out var entry) && entry.Version == version)
                     return entry.Text;
                 string text = ReadGlobalUsingsAsRegularDirectives(projectPath);
-                if (_completionGlobalUsings.Count >= 16) _completionGlobalUsings.Clear();
-                _completionGlobalUsings[projectPath] = (version, text);
+                if (_mainForm.CompletionResourcesFeature._completionGlobalUsings.Count >= 16) _mainForm.CompletionResourcesFeature._completionGlobalUsings.Clear();
+                _mainForm.CompletionResourcesFeature._completionGlobalUsings[projectPath] = (version, text);
                 return text;
             }
         }
 
-        private string GetCompletionProjectPath(string sourceFilePath)
+        internal string GetCompletionProjectPath(string sourceFilePath)
         {
             if (string.IsNullOrWhiteSpace(sourceFilePath) || !File.Exists(sourceFilePath))
                 return string.Empty;
 
-            if (Directory.Exists(_fileExplorerRootPath))
+            if (Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath))
             {
-                return IsPathInsideFolder(sourceFilePath, _fileExplorerRootPath)
-                    ? FindProjectFileForPath(sourceFilePath, _fileExplorerRootPath)
+                return IsPathInsideFolder(sourceFilePath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath)
+                    ? FindProjectFileForPath(sourceFilePath, _mainForm.ExplorerTreeFeature._fileExplorerRootPath)
                     : string.Empty;
             }
 
@@ -188,7 +198,7 @@ namespace CIARE
                 directives.Add(directive);
         }
 
-        private static string FindProjectGlobalUsingsFile(string projectPath)
+        internal static string FindProjectGlobalUsingsFile(string projectPath)
         {
             if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
                 return string.Empty;

@@ -7,19 +7,26 @@ using CIARE.Utils;
 using Microsoft.AspNetCore.SignalR.Client;
 using Button = System.Windows.Forms.Button;
 
-namespace CIARE
+namespace CIARE.LiveShareManage
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class LiveShareEvents
     {
+        private readonly MainForm _mainForm;
+
+        internal LiveShareEvents(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         internal HubConnection hubConnection;
-        private ApiConnectionEvents _apiConnectionEvents;
+        internal ApiConnectionEvents _apiConnectionEvents;
 
         /// <summary>
         /// Start live share host
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void liveShareHostToolStripMenuItem_Click(object sender, EventArgs e)
+        internal void liveShareHostToolStripMenuItem_Click(object sender, EventArgs e)
         {
             LiveShareHost liveShareHost = new LiveShareHost();
             liveShareHost.ShowDialog();
@@ -28,7 +35,7 @@ namespace CIARE
         /// <summary>
         /// Send data to remote client.
         /// </summary>
-        private async void SendData()
+        internal async void SendData()
         {
             GlobalVariables.codeWriter = false;
 
@@ -44,7 +51,7 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void liveStatusPb_Paint(object sender, PaintEventArgs e)
+        internal void liveStatusPb_Paint(object sender, PaintEventArgs e)
         {
             if (GlobalVariables.connected && GlobalVariables.liveDisconnected)
             {

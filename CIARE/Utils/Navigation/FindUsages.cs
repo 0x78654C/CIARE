@@ -11,27 +11,40 @@ using CIARE.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static global::CIARE.Utils.Completion.CompletionParsing;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Navigation.Definitions;
+using static global::CIARE.Utils.Navigation.UsageDocumentCache;
+using static global::CIARE.Utils.Navigation.UsageDocuments;
+using static global::CIARE.Utils.Projects.ProjectFiles;
 
-namespace CIARE
+namespace CIARE.Utils.Navigation
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class FindUsages
     {
+        private readonly MainForm _mainForm;
+
+        internal FindUsages(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         private static readonly object _usageReferencesLock = new object();
         private static List<MetadataReference> _usagePlatformReferences;
         private static List<MetadataReference> _usageCustomReferences = new List<MetadataReference>();
         private static string _usageCustomReferenceKey = string.Empty;
 
-        private async void FindUsagesAtCaret()
+        internal async void FindUsagesAtCaret()
         {
             if (IsVisualBasic)
             {
-                ShowFindUsagesMessage("Find Usages is available for C# files.");
+                _mainForm.FindUsagesWindowFeature.ShowFindUsagesMessage("Find Usages is available for C# files.");
                 return;
             }
 
             if (!TryGetIdentifierAtCaret(out string identifier, out int identifierOffset))
             {
-                ShowFindUsagesMessage("Put the caret on an identifier to find usages.");
+                _mainForm.FindUsagesWindowFeature.ShowFindUsagesMessage("Put the caret on an identifier to find usages.");
                 return;
             }
 
@@ -40,9 +53,9 @@ namespace CIARE
             try
             {
                 // Capture all UI-thread state before going async.
-                string activeFilePath = GetActiveEditorFilePath();
-                var projectPaths = GetFileExplorerUsageProjectPaths();
-                var activeTab = CollectActiveUsageTabInfo();
+                string activeFilePath = _mainForm.EditorFeature.GetActiveEditorFilePath();
+                var projectPaths = _mainForm.UsageDocumentsFeature.GetFileExplorerUsageProjectPaths();
+                var activeTab = _mainForm.UsageDocumentsFeature.CollectActiveUsageTabInfo();
                 bool activeFileIsInProject = projectPaths.Any(
                     projectPath => ProjectContainsSourceFile(projectPath, activeFilePath));
                 var projectFolders = activeFileIsInProject
@@ -60,13 +73,13 @@ namespace CIARE
                 });
 
                 if (usages == null)
-                    ShowFindUsagesMessage("No C# files found to search.");
+                    _mainForm.FindUsagesWindowFeature.ShowFindUsagesMessage("No C# files found to search.");
                 else
-                    ShowFindUsagesResults(identifier, usages);
+                    _mainForm.FindUsagesWindowFeature.ShowFindUsagesResults(identifier, usages);
             }
             catch (Exception ex)
             {
-                ShowFindUsagesMessage("Find Usages failed: " + ex.Message);
+                _mainForm.FindUsagesWindowFeature.ShowFindUsagesMessage("Find Usages failed: " + ex.Message);
             }
             finally
             {
@@ -206,7 +219,7 @@ namespace CIARE
                     string.Equals(token.ValueText, identifier, StringComparison.Ordinal));
         }
 
-        private static ISymbol GetIdentifierSymbolAtOffset(SemanticModel semanticModel,
+        internal static ISymbol GetIdentifierSymbolAtOffset(SemanticModel semanticModel,
             CompilationUnitSyntax root, int offset, string identifier)
         {
             if (semanticModel == null || root == null || offset < 0)
@@ -370,7 +383,7 @@ namespace CIARE
                 .ToList();
         }
 
-        private static IEnumerable<MetadataReference> BuildUsageReferences()
+        internal static IEnumerable<MetadataReference> BuildUsageReferences()
         {
             lock (_usageReferencesLock)
             {

@@ -6,21 +6,30 @@ using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.Utils;
 using Button = System.Windows.Forms.Button;
+using static global::CIARE.Utils.Navigation.UsageDocuments;
+using static global::CIARE.Utils.Projects.ProjectContext;
 
-namespace CIARE
+namespace CIARE.Utils.Navigation
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class FindUsagesWindow
     {
+        private readonly MainForm _mainForm;
+
+        internal FindUsagesWindow(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         private Form _findUsagesWindow;
 
-        private void ShowFindUsagesResults(string identifier, List<UsageLocation> usages)
+        internal void ShowFindUsagesResults(string identifier, List<UsageLocation> usages)
         {
             CloseFindUsagesWindow();
 
             var form = new Form
             {
                 Text = "Find Usages - " + identifier,
-                Icon = this.Icon,
+                Icon = _mainForm.Icon,
                 Size = new Size(900, 480),
                 MinimumSize = new Size(640, 320),
                 StartPosition = FormStartPosition.Manual,
@@ -29,8 +38,8 @@ namespace CIARE
                 KeyPreview = true,
             };
             form.Location = new Point(
-                Math.Max(0, Left + 80),
-                Math.Max(0, Top + 80));
+                Math.Max(0, _mainForm.Left + 80),
+                Math.Max(0, _mainForm.Top + 80));
 
             var header = new Label
             {
@@ -56,7 +65,7 @@ namespace CIARE
             list.Columns.Add("Column", 70);
             list.Columns.Add("Code", 400);
 
-            string workspaceFolder = GetUsageWorkspaceFolder(GetActiveEditorFilePath());
+            string workspaceFolder = _mainForm.UsageDocumentsFeature.GetUsageWorkspaceFolder(_mainForm.EditorFeature.GetActiveEditorFilePath());
             bool hasWorkspaceFolder = Directory.Exists(workspaceFolder);
             var usageItems = new List<ListViewItem>(Math.Max(1, usages.Count));
             foreach (var usage in usages)
@@ -115,7 +124,7 @@ namespace CIARE
                     return;
 
                 if (list.SelectedItems[0].Tag is UsageLocation usage)
-                    NavigateToUsageLocation(usage.FilePath, usage.Line, usage.Column);
+                    _mainForm.DefinitionsFeature.NavigateToUsageLocation(usage.FilePath, usage.Line, usage.Column);
             }
 
             openButton.Click += (sender, e) => OpenSelectedUsage();
@@ -159,12 +168,12 @@ namespace CIARE
             };
 
             _findUsagesWindow = form;
-            form.Show(this);
+            form.Show(_mainForm);
         }
 
-        private void ShowFindUsagesMessage(string message)
+        internal void ShowFindUsagesMessage(string message)
         {
-            MessageBox.Show(this, message, "Find Usages", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(_mainForm, message, "Find Usages", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void CloseFindUsagesWindow()
@@ -176,7 +185,7 @@ namespace CIARE
 
         private string GetUsageWindowDisplayPath(string filePath)
         {
-            string workspaceFolder = GetUsageWorkspaceFolder(GetActiveEditorFilePath());
+            string workspaceFolder = _mainForm.UsageDocumentsFeature.GetUsageWorkspaceFolder(_mainForm.EditorFeature.GetActiveEditorFilePath());
             return GetUsageWindowDisplayPath(filePath, workspaceFolder, Directory.Exists(workspaceFolder));
         }
 

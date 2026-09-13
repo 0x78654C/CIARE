@@ -2,16 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
+using static global::CIARE.Utils.Explorer.ExplorerTree;
+using static global::CIARE.Utils.NuGetManage.NuGet;
 
-namespace CIARE
+namespace CIARE.Utils.Explorer
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class ExplorerWatcher
     {
+        private readonly MainForm _mainForm;
+
+        internal ExplorerWatcher(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         private FileSystemWatcher _fileExplorerWatcher;
         private System.Windows.Forms.Timer _fileExplorerRefreshTimer;
         private readonly HashSet<string> _pendingRefreshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        private void StartFileExplorerWatcher(string folderPath)
+        internal void StartFileExplorerWatcher(string folderPath)
         {
             StopFileExplorerWatcher();
 
@@ -33,7 +42,7 @@ namespace CIARE
             _fileExplorerRefreshTimer.Tick += OnFileExplorerRefreshTimer;
         }
 
-        private void StopFileExplorerWatcher()
+        internal void StopFileExplorerWatcher()
         {
             if (_fileExplorerWatcher != null)
             {
@@ -48,41 +57,41 @@ namespace CIARE
                 _fileExplorerRefreshTimer.Dispose();
                 _fileExplorerRefreshTimer = null;
             }
-            if (_fileExplorerNuGetRefreshTimer != null)
+            if (_mainForm.NuGetFeature._fileExplorerNuGetRefreshTimer != null)
             {
-                _fileExplorerNuGetRefreshTimer.Stop();
-                _fileExplorerNuGetRefreshTimer.Tick -= OnFileExplorerNuGetRefreshTimer;
-                _fileExplorerNuGetRefreshTimer.Dispose();
-                _fileExplorerNuGetRefreshTimer = null;
+                _mainForm.NuGetFeature._fileExplorerNuGetRefreshTimer.Stop();
+                _mainForm.NuGetFeature._fileExplorerNuGetRefreshTimer.Tick -= _mainForm.NuGetFeature.OnFileExplorerNuGetRefreshTimer;
+                _mainForm.NuGetFeature._fileExplorerNuGetRefreshTimer.Dispose();
+                _mainForm.NuGetFeature._fileExplorerNuGetRefreshTimer = null;
             }
-            _pendingProjectPackageRefreshPath = string.Empty;
-            _pendingProjectPackageRestore = false;
-            _pendingProjectPackageShowRestoreFailure = false;
+            _mainForm.NuGetFeature._pendingProjectPackageRefreshPath = string.Empty;
+            _mainForm.NuGetFeature._pendingProjectPackageRestore = false;
+            _mainForm.NuGetFeature._pendingProjectPackageShowRestoreFailure = false;
             _pendingRefreshPaths.Clear();
         }
 
         private void OnFileExplorerWatcherEvent(object sender, FileSystemEventArgs e)
         {
-            InvalidateCompletionSourceFile(e.FullPath);
+            _mainForm.CompletionResourcesFeature.InvalidateCompletionSourceFile(e.FullPath);
             string parentDir = Path.GetDirectoryName(e.FullPath);
             if (!string.IsNullOrEmpty(parentDir))
                 ScheduleExplorerRefresh(parentDir);
 
             if (ShouldRefreshExplorerNuGetPackages(e.FullPath))
-                ScheduleExplorerNuGetRefresh();
+                _mainForm.NuGetFeature.ScheduleExplorerNuGetRefresh();
         }
 
         private void OnFileExplorerWatcherChanged(object sender, FileSystemEventArgs e)
         {
-            InvalidateCompletionSourceFile(e.FullPath);
+            _mainForm.CompletionResourcesFeature.InvalidateCompletionSourceFile(e.FullPath);
             if (ShouldRefreshExplorerNuGetPackages(e.FullPath))
-                ScheduleExplorerNuGetRefresh();
+                _mainForm.NuGetFeature.ScheduleExplorerNuGetRefresh();
         }
 
         private void OnFileExplorerWatcherRenamed(object sender, RenamedEventArgs e)
         {
-            InvalidateCompletionSourceFile(e.OldFullPath);
-            InvalidateCompletionSourceFile(e.FullPath);
+            _mainForm.CompletionResourcesFeature.InvalidateCompletionSourceFile(e.OldFullPath);
+            _mainForm.CompletionResourcesFeature.InvalidateCompletionSourceFile(e.FullPath);
             string parentDir = Path.GetDirectoryName(e.FullPath);
             if (!string.IsNullOrEmpty(parentDir))
                 ScheduleExplorerRefresh(parentDir);
@@ -90,15 +99,15 @@ namespace CIARE
             if (ShouldRefreshExplorerNuGetPackages(e.FullPath) ||
                 ShouldRefreshExplorerNuGetPackages(e.OldFullPath))
             {
-                ScheduleExplorerNuGetRefresh();
+                _mainForm.NuGetFeature.ScheduleExplorerNuGetRefresh();
             }
         }
 
         private void ScheduleExplorerRefresh(string dirPath)
         {
-            if (IsDisposed || !IsHandleCreated)
+            if (_mainForm.IsDisposed || !_mainForm.IsHandleCreated)
                 return;
-            BeginInvoke((Action)(() =>
+            _mainForm.BeginInvoke((Action)(() =>
             {
                 _pendingRefreshPaths.Add(dirPath);
                 _fileExplorerRefreshTimer?.Stop();
@@ -116,18 +125,18 @@ namespace CIARE
 
         private void RefreshExplorerNodes(HashSet<string> paths)
         {
-            if (_fileExplorerTree == null || _fileExplorerTree.IsDisposed || _fileExplorerTree.Nodes.Count == 0)
+            if (_mainForm.ExplorerFeature._fileExplorerTree == null || _mainForm.ExplorerFeature._fileExplorerTree.IsDisposed || _mainForm.ExplorerFeature._fileExplorerTree.Nodes.Count == 0)
                 return;
 
-            _fileExplorerTree.BeginUpdate();
+            _mainForm.ExplorerFeature._fileExplorerTree.BeginUpdate();
             foreach (string path in paths)
                 RefreshExplorerNodeForPath(path);
-            _fileExplorerTree.EndUpdate();
+            _mainForm.ExplorerFeature._fileExplorerTree.EndUpdate();
         }
 
-        private void RefreshExplorerNodeForPath(string dirPath)
+        internal void RefreshExplorerNodeForPath(string dirPath)
         {
-            var node = FindTreeNodeByPath(_fileExplorerTree.Nodes[0], dirPath);
+            var node = FindTreeNodeByPath(_mainForm.ExplorerFeature._fileExplorerTree.Nodes[0], dirPath);
             if (node == null)
                 return;
 
@@ -140,8 +149,8 @@ namespace CIARE
 
             var expandedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             CollectExpandedPaths(node, expandedPaths);
-            PopulateDirectoryNode(node);
-            RestoreExpandedPaths(node, expandedPaths);
+            _mainForm.ExplorerTreeFeature.PopulateDirectoryNode(node);
+            _mainForm.ExplorerTreeFeature.RestoreExpandedPaths(node, expandedPaths);
         }
     }
 }

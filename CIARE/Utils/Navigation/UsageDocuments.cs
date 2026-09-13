@@ -8,14 +8,26 @@ using ICSharpCode.TextEditor;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Navigation.UsageDocumentCache;
+using static global::CIARE.Utils.Projects.ProjectContext;
+using static global::CIARE.Utils.Projects.ProjectFiles;
+using static global::CIARE.Utils.Projects.WorkspaceFiles;
 
-namespace CIARE
+namespace CIARE.Utils.Navigation
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class UsageDocuments
     {
-        private const string CurrentFileUsageDisplayName = "<current file>";
+        private readonly MainForm _mainForm;
 
-        private struct OpenTabInfo
+        internal UsageDocuments(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
+        internal const string CurrentFileUsageDisplayName = "<current file>";
+
+        internal struct OpenTabInfo
         {
             public readonly string FilePath;
             public readonly string Text;
@@ -28,7 +40,7 @@ namespace CIARE
             }
         }
 
-        private sealed class UsageDocument
+        internal sealed class UsageDocument
         {
             private readonly object _linesLock = new object();
             private string[] _lines;
@@ -73,7 +85,7 @@ namespace CIARE
             }
         }
 
-        private sealed class UsageLocation
+        internal sealed class UsageLocation
         {
             public UsageLocation(string filePath, int line, int column, string text)
             {
@@ -89,18 +101,18 @@ namespace CIARE
             public string Text { get; }
         }
 
-        private List<OpenTabInfo> CollectOpenTabInfo(string identifier)
+        internal List<OpenTabInfo> CollectOpenTabInfo(string identifier)
         {
             var tabs = new List<OpenTabInfo>();
             bool hasActive = false;
-            for (int i = 0; i < EditorTabControl.TabPages.Count; i++)
+            for (int i = 0; i < _mainForm.EditorTabControl.TabPages.Count; i++)
             {
-                var tabPage = EditorTabControl.TabPages[i];
+                var tabPage = _mainForm.EditorTabControl.TabPages[i];
                 var editor = tabPage.Controls.Count > 0 ? tabPage.Controls[0] as TextEditorControl : null;
                 if (editor == null)
                     continue;
 
-                bool isActive = i == EditorTabControl.SelectedIndex;
+                bool isActive = i == _mainForm.EditorTabControl.SelectedIndex;
                 string filePath = tabPage.ToolTipText?.Trim() ?? string.Empty;
                 if (string.IsNullOrEmpty(filePath))
                 {
@@ -127,16 +139,16 @@ namespace CIARE
             {
                 var editor = SelectedEditor.GetSelectedEditor();
                 if (editor != null)
-                    tabs.Add(new OpenTabInfo(GetActiveEditorFilePath(), editor.Text ?? string.Empty, true));
+                    tabs.Add(new OpenTabInfo(_mainForm.EditorFeature.GetActiveEditorFilePath(), editor.Text ?? string.Empty, true));
             }
 
             return tabs;
         }
 
-        private List<OpenTabInfo> CollectActiveUsageTabInfo()
+        internal List<OpenTabInfo> CollectActiveUsageTabInfo()
         {
             var editor = SelectedEditor.GetSelectedEditor();
-            string filePath = GetActiveEditorFilePath();
+            string filePath = _mainForm.EditorFeature.GetActiveEditorFilePath();
             if (editor == null || !IsCSharpFilePath(filePath))
                 return new List<OpenTabInfo>();
 
@@ -146,19 +158,19 @@ namespace CIARE
             };
         }
 
-        private List<string> GetFileExplorerUsageProjectPaths()
+        internal List<string> GetFileExplorerUsageProjectPaths()
         {
-            if (!Directory.Exists(_fileExplorerRootPath))
+            if (!Directory.Exists(_mainForm.ExplorerTreeFeature._fileExplorerRootPath))
                 return new List<string>();
 
-            return EnumerateBuildFiles(_fileExplorerRootPath, "*.csproj")
+            return EnumerateBuildFiles(_mainForm.ExplorerTreeFeature._fileExplorerRootPath, "*.csproj")
                 .Where(IsProjectFilePath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(projectPath => projectPath, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
 
-        private IEnumerable<string> GetUsageWorkspaceFolders(string activeFilePath)
+        internal IEnumerable<string> GetUsageWorkspaceFolders(string activeFilePath)
         {
             var folders = new List<string>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -173,26 +185,26 @@ namespace CIARE
                     folders.Add(folder);
             }
 
-            AddFolder(GetActiveWorkspaceFolder());
+            AddFolder(_mainForm.ProjectContextFeature.GetActiveWorkspaceFolder());
             AddUsageFoldersForFile(activeFilePath, AddFolder);
 
-            foreach (TabPage tabPage in EditorTabControl.TabPages)
+            foreach (TabPage tabPage in _mainForm.EditorTabControl.TabPages)
             {
                 string tabPath = tabPage.ToolTipText?.Trim();
                 if (IsCSharpFilePath(tabPath))
                     AddUsageFoldersForFile(tabPath, AddFolder);
             }
 
-            lock (_completionDataLock)
+            lock (_mainForm.CompletionParsingFeature._completionDataLock)
             {
-                foreach (var filePath in _workspaceCompilationUnits.Keys)
+                foreach (var filePath in _mainForm.CompletionWorkspaceFeature._workspaceCompilationUnits.Keys)
                     AddUsageFoldersForFile(filePath, AddFolder);
             }
 
             return folders;
         }
 
-        private string GetUsageWorkspaceFolder(string activeFilePath)
+        internal string GetUsageWorkspaceFolder(string activeFilePath)
         {
             return GetUsageWorkspaceFolders(activeFilePath).FirstOrDefault() ?? string.Empty;
         }

@@ -11,46 +11,54 @@ using CIARE.Utils;
 using CIARE.Utils.NuGetManage;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using static global::CIARE.Utils.NuGetManage.NuGetMetadata;
 
-namespace CIARE
+namespace CIARE.Utils.NuGetManage
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class NuGet
     {
-        private System.Windows.Forms.Timer _fileExplorerNuGetRefreshTimer;
-        private string _pendingProjectPackageRefreshPath = string.Empty;
-        private bool _pendingProjectPackageRestore;
-        private bool _pendingProjectPackageShowRestoreFailure;
-        private int _projectPackageRefreshVersion;
-        private int _fileExplorerNuGetListRefreshVersion;
+        private readonly MainForm _mainForm;
+
+        internal NuGet(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
+        internal System.Windows.Forms.Timer _fileExplorerNuGetRefreshTimer;
+        internal string _pendingProjectPackageRefreshPath = string.Empty;
+        internal bool _pendingProjectPackageRestore;
+        internal bool _pendingProjectPackageShowRestoreFailure;
+        internal int _projectPackageRefreshVersion;
+        internal int _fileExplorerNuGetListRefreshVersion;
 
         public void RefreshExplorerNuGetPackages()
         {
-            if (_fileExplorerNuGetList == null || _fileExplorerNuGetList.IsDisposed)
+            if (_mainForm.ExplorerFeature._fileExplorerNuGetList == null || _mainForm.ExplorerFeature._fileExplorerNuGetList.IsDisposed)
                 return;
 
-            if (InvokeRequired)
+            if (_mainForm.InvokeRequired)
             {
-                TryBeginInvoke(RefreshExplorerNuGetPackages);
+                _mainForm.TryBeginInvoke(RefreshExplorerNuGetPackages);
                 return;
             }
 
-            string projectPath = GetActivePackageProjectPath();
+            string projectPath = _mainForm.ProjectContextFeature.GetActivePackageProjectPath();
             int refreshVersion = Interlocked.Increment(ref _fileExplorerNuGetListRefreshVersion);
             List<ProjectNuGetPackageReference> packages = null;
-            _fileExplorerNuGetList.BeginUpdate();
+            _mainForm.ExplorerFeature._fileExplorerNuGetList.BeginUpdate();
             try
             {
-                _fileExplorerNuGetList.Items.Clear();
+                _mainForm.ExplorerFeature._fileExplorerNuGetList.Items.Clear();
                 if (string.IsNullOrEmpty(projectPath))
                 {
-                    _fileExplorerNuGetTitleLabel.Text = "NuGet packages";
-                    toolTip1.SetToolTip(_fileExplorerNuGetTitleLabel, "Open a project folder or select a .csproj file");
+                    _mainForm.ExplorerFeature._fileExplorerNuGetTitleLabel.Text = "NuGet packages";
+                    _mainForm.toolTip1.SetToolTip(_mainForm.ExplorerFeature._fileExplorerNuGetTitleLabel, "Open a project folder or select a .csproj file");
                     AddFileExplorerNuGetPlaceholder("No project selected");
                     return;
                 }
 
-                _fileExplorerNuGetTitleLabel.Text = $"NuGet: {Path.GetFileName(projectPath)}";
-                toolTip1.SetToolTip(_fileExplorerNuGetTitleLabel, projectPath);
+                _mainForm.ExplorerFeature._fileExplorerNuGetTitleLabel.Text = $"NuGet: {Path.GetFileName(projectPath)}";
+                _mainForm.toolTip1.SetToolTip(_mainForm.ExplorerFeature._fileExplorerNuGetTitleLabel, projectPath);
 
                 packages = ProjectNuGetManager.GetPackageReferences(projectPath);
                 if (packages.Count == 0)
@@ -72,43 +80,43 @@ namespace CIARE
                         Tag = package,
                         ToolTipText = FormatExplorerNuGetToolTip(package)
                     };
-                    _fileExplorerNuGetList.Items.Add(item);
+                    _mainForm.ExplorerFeature._fileExplorerNuGetList.Items.Add(item);
                 }
             }
             finally
             {
-                _fileExplorerNuGetList.EndUpdate();
+                _mainForm.ExplorerFeature._fileExplorerNuGetList.EndUpdate();
                 ResizeFileExplorerNuGetColumns();
             }
 
             if (packages != null && packages.Count > 0)
-                ScheduleExplorerNuGetPackageMetadataRefresh(projectPath, packages, refreshVersion);
+                _mainForm.NuGetMetadataFeature.ScheduleExplorerNuGetPackageMetadataRefresh(projectPath, packages, refreshVersion);
         }
 
         public void RefreshProjectPackageContext(string projectPath, bool restoreProject,
             bool showRestoreFailure = true)
         {
-            if (InvokeRequired)
+            if (_mainForm.InvokeRequired)
             {
-                TryBeginInvoke(() => RefreshProjectPackageContext(projectPath, restoreProject, showRestoreFailure));
+                _mainForm.TryBeginInvoke(() => RefreshProjectPackageContext(projectPath, restoreProject, showRestoreFailure));
                 return;
             }
 
             int refreshVersion = Interlocked.Increment(ref _projectPackageRefreshVersion);
-            bool useCompletionReferences = ShouldUseProjectPackageCompletionReferences(projectPath);
+            bool useCompletionReferences = _mainForm.CompletionReferencesFeature.ShouldUseProjectPackageCompletionReferences(projectPath);
             RefreshExplorerNuGetPackages();
 
             if (string.IsNullOrWhiteSpace(projectPath) || !File.Exists(projectPath))
             {
                 RealTimeChecker.InvalidateReferenceCache();
-                ClearProjectPackageCompletionReferences();
-                ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+                _mainForm.CompletionReferencesFeature.ClearProjectPackageCompletionReferences();
+                _mainForm.EditorFeature.ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
                 return;
             }
 
             RealTimeChecker.InvalidateReferenceCache();
             if (!useCompletionReferences)
-                ClearProjectPackageCompletionReferences();
+                _mainForm.CompletionReferencesFeature.ClearProjectPackageCompletionReferences();
 
             Task.Run(() =>
             {
@@ -120,21 +128,21 @@ namespace CIARE
                 if (useCompletionReferences &&
                     refreshVersion == Volatile.Read(ref _projectPackageRefreshVersion))
                 {
-                    RefreshProjectPackageCompletionReferences(projectPath);
+                    _mainForm.CompletionReferencesFeature.RefreshProjectPackageCompletionReferences(projectPath);
                 }
                 return restoreResult;
             }).ContinueWith(task =>
             {
-                if (IsDisposed || !IsHandleCreated || refreshVersion != _projectPackageRefreshVersion)
+                if (_mainForm.IsDisposed || !_mainForm.IsHandleCreated || refreshVersion != _projectPackageRefreshVersion)
                     return;
 
-                TryBeginInvoke(() =>
+                _mainForm.TryBeginInvoke(() =>
                 {
                     if (refreshVersion != _projectPackageRefreshVersion)
                         return;
 
                     RefreshExplorerNuGetPackages();
-                    ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+                    _mainForm.EditorFeature.ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
 
                     ProcessRunResult restoreResult = null;
                     if (task.Status == TaskStatus.RanToCompletion)
@@ -156,14 +164,14 @@ namespace CIARE
         {
             RealTimeChecker.InvalidateReferenceCache();
 
-            if (InvokeRequired)
+            if (_mainForm.InvokeRequired)
             {
-                TryBeginInvoke(RefreshStandaloneReferenceContext);
+                _mainForm.TryBeginInvoke(RefreshStandaloneReferenceContext);
                 return;
             }
 
-            ReloadRef();
-            ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+            _mainForm.CompletionParsingFeature.ReloadRef();
+            _mainForm.EditorFeature.ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
         }
 
         private static string FormatProjectRestoreFailure(string restoreOutput)
@@ -184,19 +192,19 @@ namespace CIARE
             {
                 ForeColor = GlobalVariables.darkColor ? Color.FromArgb(150, 170, 165) : SystemColors.GrayText
             };
-            _fileExplorerNuGetList.Items.Add(item);
+            _mainForm.ExplorerFeature._fileExplorerNuGetList.Items.Add(item);
         }
 
-        private void ResizeFileExplorerNuGetColumns()
+        internal void ResizeFileExplorerNuGetColumns()
         {
-            if (_fileExplorerNuGetList == null ||
-                _fileExplorerNuGetList.IsDisposed ||
-                _fileExplorerNuGetList.Columns.Count < 4)
+            if (_mainForm.ExplorerFeature._fileExplorerNuGetList == null ||
+                _mainForm.ExplorerFeature._fileExplorerNuGetList.IsDisposed ||
+                _mainForm.ExplorerFeature._fileExplorerNuGetList.Columns.Count < 4)
             {
                 return;
             }
 
-            int availableWidth = _fileExplorerNuGetList.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 4;
+            int availableWidth = _mainForm.ExplorerFeature._fileExplorerNuGetList.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 4;
             if (availableWidth <= 0)
                 return;
 
@@ -205,30 +213,30 @@ namespace CIARE
             int statusWidth = Math.Max(62, Math.Min(76, availableWidth / 5));
             int packageWidth = Math.Max(90, availableWidth - versionWidth - updateWidth - statusWidth);
 
-            _fileExplorerNuGetVersionColumn.Width = versionWidth;
-            _fileExplorerNuGetUpdateColumn.Width = updateWidth;
-            _fileExplorerNuGetStatusColumn.Width = statusWidth;
-            _fileExplorerNuGetPackageColumn.Width = packageWidth;
+            _mainForm.ExplorerFeature._fileExplorerNuGetVersionColumn.Width = versionWidth;
+            _mainForm.ExplorerFeature._fileExplorerNuGetUpdateColumn.Width = updateWidth;
+            _mainForm.ExplorerFeature._fileExplorerNuGetStatusColumn.Width = statusWidth;
+            _mainForm.ExplorerFeature._fileExplorerNuGetPackageColumn.Width = packageWidth;
         }
 
-        private void ScheduleExplorerNuGetRefresh()
+        internal void ScheduleExplorerNuGetRefresh()
         {
-            if (IsDisposed || !IsHandleCreated)
+            if (_mainForm.IsDisposed || !_mainForm.IsHandleCreated)
                 return;
 
-            TryBeginInvoke(() => ScheduleProjectPackageContextRefresh(GetActiveEditorPackageProjectPath(),
+            _mainForm.TryBeginInvoke(() => ScheduleProjectPackageContextRefresh(_mainForm.ProjectContextFeature.GetActiveEditorPackageProjectPath(),
                 restoreProject: false, showRestoreFailure: false));
         }
 
         private void ScheduleProjectPackageContextRefresh(string projectPath, bool restoreProject,
             bool showRestoreFailure = true)
         {
-            if (IsDisposed || !IsHandleCreated)
+            if (_mainForm.IsDisposed || !_mainForm.IsHandleCreated)
                 return;
 
-            if (InvokeRequired)
+            if (_mainForm.InvokeRequired)
             {
-                TryBeginInvoke(() => ScheduleProjectPackageContextRefresh(projectPath, restoreProject,
+                _mainForm.TryBeginInvoke(() => ScheduleProjectPackageContextRefresh(projectPath, restoreProject,
                     showRestoreFailure));
                 return;
             }
@@ -248,7 +256,7 @@ namespace CIARE
             _fileExplorerNuGetRefreshTimer.Start();
         }
 
-        private void OnFileExplorerNuGetRefreshTimer(object sender, EventArgs e)
+        internal void OnFileExplorerNuGetRefreshTimer(object sender, EventArgs e)
         {
             _fileExplorerNuGetRefreshTimer?.Stop();
 
@@ -263,7 +271,7 @@ namespace CIARE
             RefreshProjectPackageContext(projectPath, restoreProject, showRestoreFailure);
         }
 
-        private static bool ShouldRefreshExplorerNuGetPackages(string path)
+        internal static bool ShouldRefreshExplorerNuGetPackages(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
                 return false;
@@ -273,31 +281,31 @@ namespace CIARE
                 string.Equals(Path.GetFileName(path), "project.assets.json", StringComparison.OrdinalIgnoreCase);
         }
 
-        private void fileExplorerNuGetList_MouseClick(object sender, MouseEventArgs e)
+        internal void fileExplorerNuGetList_MouseClick(object sender, MouseEventArgs e)
         {
-            if (e.Button != MouseButtons.Right || _fileExplorerNuGetList == null)
+            if (e.Button != MouseButtons.Right || _mainForm.ExplorerFeature._fileExplorerNuGetList == null)
                 return;
 
-            ListViewHitTestInfo hit = _fileExplorerNuGetList.HitTest(e.Location);
+            ListViewHitTestInfo hit = _mainForm.ExplorerFeature._fileExplorerNuGetList.HitTest(e.Location);
             if (!(hit.Item?.Tag is ProjectNuGetPackageReference package))
                 return;
 
             hit.Item.Selected = true;
-            _fileExplorerNuGetUpdateMenuItem.Tag = package;
-            _fileExplorerNuGetUpdateMenuItem.Enabled = package.HasUpdate &&
+            _mainForm.ExplorerFeature._fileExplorerNuGetUpdateMenuItem.Tag = package;
+            _mainForm.ExplorerFeature._fileExplorerNuGetUpdateMenuItem.Enabled = package.HasUpdate &&
                 !string.IsNullOrWhiteSpace(package.LatestVersion);
-            _fileExplorerNuGetUpdateMenuItem.Text = _fileExplorerNuGetUpdateMenuItem.Enabled
+            _mainForm.ExplorerFeature._fileExplorerNuGetUpdateMenuItem.Text = _mainForm.ExplorerFeature._fileExplorerNuGetUpdateMenuItem.Enabled
                 ? $"Update {package.Name} to {package.LatestVersion}"
                 : "No update available";
 
-            _fileExplorerNuGetRemoveMenuItem.Tag = package;
-            _fileExplorerNuGetRemoveMenuItem.Text = $"Remove {package.Name} from Project";
-            _fileExplorerNuGetContextMenu.Show(_fileExplorerNuGetList, e.Location);
+            _mainForm.ExplorerFeature._fileExplorerNuGetRemoveMenuItem.Tag = package;
+            _mainForm.ExplorerFeature._fileExplorerNuGetRemoveMenuItem.Text = $"Remove {package.Name} from Project";
+            _mainForm.ExplorerFeature._fileExplorerNuGetContextMenu.Show(_mainForm.ExplorerFeature._fileExplorerNuGetList, e.Location);
         }
 
-        private void fileExplorerNuGetUpdateMenuItem_Click(object sender, EventArgs e)
+        internal void fileExplorerNuGetUpdateMenuItem_Click(object sender, EventArgs e)
         {
-            if (!(_fileExplorerNuGetUpdateMenuItem.Tag is ProjectNuGetPackageReference package) ||
+            if (!(_mainForm.ExplorerFeature._fileExplorerNuGetUpdateMenuItem.Tag is ProjectNuGetPackageReference package) ||
                 !package.HasUpdate ||
                 string.IsNullOrWhiteSpace(package.LatestVersion))
             {
@@ -321,9 +329,9 @@ namespace CIARE
             MessageBox.Show(message, "CIARE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void fileExplorerNuGetRemoveMenuItem_Click(object sender, EventArgs e)
+        internal void fileExplorerNuGetRemoveMenuItem_Click(object sender, EventArgs e)
         {
-            if (!(_fileExplorerNuGetRemoveMenuItem.Tag is ProjectNuGetPackageReference package))
+            if (!(_mainForm.ExplorerFeature._fileExplorerNuGetRemoveMenuItem.Tag is ProjectNuGetPackageReference package))
                 return;
 
             DialogResult dialog = MessageBox.Show(

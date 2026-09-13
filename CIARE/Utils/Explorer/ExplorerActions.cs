@@ -12,14 +12,26 @@ using Button = System.Windows.Forms.Button;
 using VBFileSystem = Microsoft.VisualBasic.FileIO.FileSystem;
 using VBRecycleOption = Microsoft.VisualBasic.FileIO.RecycleOption;
 using VBUIOption = Microsoft.VisualBasic.FileIO.UIOption;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.Explorer.ExplorerTree;
+using static global::CIARE.Utils.Projects.ProjectBuild;
+using static global::CIARE.Utils.Projects.ProjectContext;
+using static global::CIARE.Utils.Projects.ProjectPaths;
 
-namespace CIARE
+namespace CIARE.Utils.Explorer
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class ExplorerActions
     {
-        private void fileExplorerContextMenu_Opening(object sender, CancelEventArgs e)
+        private readonly MainForm _mainForm;
+
+        internal ExplorerActions(MainForm mainForm)
         {
-            TreeNode node = _fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode;
+            _mainForm = mainForm;
+        }
+        internal void fileExplorerContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            TreeNode node = _mainForm.ExplorerFeature._fileExplorerContextNode ?? _mainForm.ExplorerFeature._fileExplorerTree?.SelectedNode;
             string path = node?.Tag as string;
             if (string.IsNullOrWhiteSpace(path) || Equals(path, FileExplorerLoadingTag))
             {
@@ -35,43 +47,43 @@ namespace CIARE
                 return;
             }
 
-            string solutionPath = GetSolutionPathFromExplorerPath(path);
-            string projectPath = GetProjectPathFromExplorerPath(path);
+            string solutionPath = _mainForm.ProjectContextFeature.GetSolutionPathFromExplorerPath(path);
+            string projectPath = _mainForm.ProjectContextFeature.GetProjectPathFromExplorerPath(path);
             bool hasSolutionContext = !string.IsNullOrEmpty(solutionPath);
             bool canAddProjectToSolution = hasSolutionContext &&
                 IsAddProjectToSolutionContext(path, solutionPath);
             bool hasProjectContext = !string.IsNullOrEmpty(projectPath);
-            _fileExplorerBuildProjectMenuItem.Visible = !string.IsNullOrEmpty(GetExplorerBuildProjectPath(path));
-            _fileExplorerBuildProjectMenuItem.Enabled = !_explorerProjectBuildRunning;
+            _mainForm.ExplorerFeature._fileExplorerBuildProjectMenuItem.Visible = !string.IsNullOrEmpty(GetExplorerBuildProjectPath(path));
+            _mainForm.ExplorerFeature._fileExplorerBuildProjectMenuItem.Enabled = !_mainForm.ProjectBuildFeature._explorerProjectBuildRunning;
             bool hasProjectReferenceCandidates = hasProjectContext &&
                 ProjectReferenceManager.GetReferenceableProjects(projectPath, solutionPath,
-                    _fileExplorerRootPath).Count > 0;
+                    _mainForm.ExplorerTreeFeature._fileExplorerRootPath).Count > 0;
             bool hasProjectReferences = hasProjectContext &&
                 ProjectReferenceManager.GetProjectReferences(projectPath).Count > 0;
 
-            _fileExplorerAddProjectMenuItem.Visible = hasSolutionContext;
-            _fileExplorerAddProjectMenuItem.Enabled = canAddProjectToSolution;
-            _fileExplorerAddProjectReferenceMenuItem.Visible = hasProjectContext;
-            _fileExplorerAddProjectReferenceMenuItem.Enabled = hasProjectReferenceCandidates;
-            _fileExplorerRemoveProjectReferenceMenuItem.Visible = hasProjectContext;
-            _fileExplorerRemoveProjectReferenceMenuItem.Enabled = hasProjectReferences;
-            _fileExplorerSetStartupProjectMenuItem.Visible = hasProjectContext;
-            _fileExplorerSetStartupProjectMenuItem.Enabled = hasProjectContext;
-            _fileExplorerSetStartupProjectMenuItem.Checked = hasProjectContext &&
-                IsStartupProjectPath(projectPath);
-            _fileExplorerProjectSeparator.Visible = hasSolutionContext || hasProjectContext;
-            _fileExplorerNewFileMenuItem.Visible = isDirectory;
-            _fileExplorerNewFolderMenuItem.Visible = isDirectory;
-            _fileExplorerContextSeparator.Visible = isDirectory;
-            _fileExplorerRenameMenuItem.Visible = isDirectory || isFile;
-            _fileExplorerRenameMenuItem.Enabled = !IsExplorerRootPath(path);
-            _fileExplorerDeleteMenuItem.Visible = isDirectory || isFile;
-            _fileExplorerDeleteMenuItem.Enabled = !IsExplorerRootPath(path);
+            _mainForm.ExplorerFeature._fileExplorerAddProjectMenuItem.Visible = hasSolutionContext;
+            _mainForm.ExplorerFeature._fileExplorerAddProjectMenuItem.Enabled = canAddProjectToSolution;
+            _mainForm.ExplorerFeature._fileExplorerAddProjectReferenceMenuItem.Visible = hasProjectContext;
+            _mainForm.ExplorerFeature._fileExplorerAddProjectReferenceMenuItem.Enabled = hasProjectReferenceCandidates;
+            _mainForm.ExplorerFeature._fileExplorerRemoveProjectReferenceMenuItem.Visible = hasProjectContext;
+            _mainForm.ExplorerFeature._fileExplorerRemoveProjectReferenceMenuItem.Enabled = hasProjectReferences;
+            _mainForm.ExplorerFeature._fileExplorerSetStartupProjectMenuItem.Visible = hasProjectContext;
+            _mainForm.ExplorerFeature._fileExplorerSetStartupProjectMenuItem.Enabled = hasProjectContext;
+            _mainForm.ExplorerFeature._fileExplorerSetStartupProjectMenuItem.Checked = hasProjectContext &&
+                _mainForm.StartupProjectFeature.IsStartupProjectPath(projectPath);
+            _mainForm.ExplorerFeature._fileExplorerProjectSeparator.Visible = hasSolutionContext || hasProjectContext;
+            _mainForm.ExplorerFeature._fileExplorerNewFileMenuItem.Visible = isDirectory;
+            _mainForm.ExplorerFeature._fileExplorerNewFolderMenuItem.Visible = isDirectory;
+            _mainForm.ExplorerFeature._fileExplorerContextSeparator.Visible = isDirectory;
+            _mainForm.ExplorerFeature._fileExplorerRenameMenuItem.Visible = isDirectory || isFile;
+            _mainForm.ExplorerFeature._fileExplorerRenameMenuItem.Enabled = !_mainForm.ExplorerTreeFeature.IsExplorerRootPath(path);
+            _mainForm.ExplorerFeature._fileExplorerDeleteMenuItem.Visible = isDirectory || isFile;
+            _mainForm.ExplorerFeature._fileExplorerDeleteMenuItem.Enabled = !_mainForm.ExplorerTreeFeature.IsExplorerRootPath(path);
         }
 
-        private void fileExplorerNewFileMenuItem_Click(object sender, EventArgs e)
+        internal void fileExplorerNewFileMenuItem_Click(object sender, EventArgs e)
         {
-            string folderPath = GetExplorerContextFolderPath();
+            string folderPath = _mainForm.ExplorerTreeFeature.GetExplorerContextFolderPath();
             if (string.IsNullOrEmpty(folderPath))
                 return;
 
@@ -93,9 +105,9 @@ namespace CIARE
             try
             {
                 File.WriteAllText(filePath, BuildNewCSharpFileContent(fileName));
-                RefreshAndExpandExplorerFolder(folderPath);
-                SelectExplorerPath(filePath);
-                OpenFileFromExplorer(filePath);
+                _mainForm.ExplorerTreeFeature.RefreshAndExpandExplorerFolder(folderPath);
+                _mainForm.ExplorerTreeFeature.SelectExplorerPath(filePath);
+                _mainForm.ExplorerTreeFeature.OpenFileFromExplorer(filePath);
             }
             catch (Exception ex)
             {
@@ -103,9 +115,9 @@ namespace CIARE
             }
         }
 
-        private void fileExplorerNewFolderMenuItem_Click(object sender, EventArgs e)
+        internal void fileExplorerNewFolderMenuItem_Click(object sender, EventArgs e)
         {
-            string folderPath = GetExplorerContextFolderPath();
+            string folderPath = _mainForm.ExplorerTreeFeature.GetExplorerContextFolderPath();
             if (string.IsNullOrEmpty(folderPath))
                 return;
 
@@ -127,8 +139,8 @@ namespace CIARE
             try
             {
                 Directory.CreateDirectory(newFolderPath);
-                RefreshAndExpandExplorerFolder(folderPath);
-                SelectExplorerPath(newFolderPath);
+                _mainForm.ExplorerTreeFeature.RefreshAndExpandExplorerFolder(folderPath);
+                _mainForm.ExplorerTreeFeature.SelectExplorerPath(newFolderPath);
             }
             catch (Exception ex)
             {
@@ -136,11 +148,11 @@ namespace CIARE
             }
         }
 
-        private void fileExplorerRenameMenuItem_Click(object sender, EventArgs e)
+        internal void fileExplorerRenameMenuItem_Click(object sender, EventArgs e)
         {
-            TreeNode node = _fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode;
+            TreeNode node = _mainForm.ExplorerFeature._fileExplorerContextNode ?? _mainForm.ExplorerFeature._fileExplorerTree?.SelectedNode;
             string path = node?.Tag as string;
-            if (string.IsNullOrWhiteSpace(path) || IsExplorerRootPath(path))
+            if (string.IsNullOrWhiteSpace(path) || _mainForm.ExplorerTreeFeature.IsExplorerRootPath(path))
                 return;
 
             bool isDirectory = Directory.Exists(path);
@@ -148,7 +160,7 @@ namespace CIARE
             if (!isDirectory && !isFile)
                 return;
 
-            if (!IsPathInsideExplorerRoot(path))
+            if (!_mainForm.ExplorerTreeFeature.IsPathInsideExplorerRoot(path))
             {
                 MessageBox.Show("This item is outside the opened explorer folder.", "Rename",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -186,20 +198,20 @@ namespace CIARE
             try
             {
                 MoveExplorerItem(path, newPath, isDirectory);
-                UpdateLoadedSolutionAfterExplorerRename(path, newPath, isDirectory);
-                UpdateStartupProjectAfterExplorerRename(path, newPath, isDirectory);
-                UpdateProjectReferencesAfterExplorerRename(path, newPath, isDirectory);
-                UpdateOpenTabsAfterExplorerRename(path, newPath, isDirectory);
+                _mainForm.StartupProjectFeature.UpdateLoadedSolutionAfterExplorerRename(path, newPath, isDirectory);
+                _mainForm.StartupProjectFeature.UpdateStartupProjectAfterExplorerRename(path, newPath, isDirectory);
+                _mainForm.ProjectPathsFeature.UpdateProjectReferencesAfterExplorerRename(path, newPath, isDirectory);
+                _mainForm.TabsFeature.UpdateOpenTabsAfterExplorerRename(path, newPath, isDirectory);
 
-                RefreshAndExpandExplorerFolder(parentPath);
-                SelectExplorerPath(newPath);
-                UpdateFileExplorerStartupProjectHighlight();
+                _mainForm.ExplorerTreeFeature.RefreshAndExpandExplorerFolder(parentPath);
+                _mainForm.ExplorerTreeFeature.SelectExplorerPath(newPath);
+                _mainForm.StartupProjectFeature.UpdateFileExplorerStartupProjectHighlight();
 
-                InvalidateCompletionWorkspace();
+                _mainForm.CompletionWorkspaceFeature.InvalidateCompletionWorkspace();
                 RealTimeChecker.InvalidateReferenceCache();
-                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                _mainForm.NuGetFeature.RefreshProjectPackageContext(_mainForm.ProjectContextFeature.GetActiveEditorPackageProjectPath(), restoreProject: false,
                     showRestoreFailure: false);
-                ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
+                _mainForm.EditorFeature.ScheduleCurrentTypeCheck(SelectedEditor.GetSelectedEditor());
             }
             catch (Exception ex)
             {
@@ -207,11 +219,11 @@ namespace CIARE
             }
         }
 
-        private void fileExplorerDeleteMenuItem_Click(object sender, EventArgs e)
+        internal void fileExplorerDeleteMenuItem_Click(object sender, EventArgs e)
         {
-            TreeNode node = _fileExplorerContextNode ?? _fileExplorerTree?.SelectedNode;
+            TreeNode node = _mainForm.ExplorerFeature._fileExplorerContextNode ?? _mainForm.ExplorerFeature._fileExplorerTree?.SelectedNode;
             string path = node?.Tag as string;
-            if (string.IsNullOrWhiteSpace(path) || IsExplorerRootPath(path))
+            if (string.IsNullOrWhiteSpace(path) || _mainForm.ExplorerTreeFeature.IsExplorerRootPath(path))
                 return;
 
             bool isDirectory = Directory.Exists(path);
@@ -219,7 +231,7 @@ namespace CIARE
             if (!isDirectory && !isFile)
                 return;
 
-            if (!IsPathInsideExplorerRoot(path))
+            if (!_mainForm.ExplorerTreeFeature.IsPathInsideExplorerRoot(path))
             {
                 MessageBox.Show("This item is outside the opened explorer folder.", "Delete",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -248,12 +260,12 @@ namespace CIARE
                         VBRecycleOption.SendToRecycleBin);
                 }
 
-                RemoveProjectsFromWorkspaceSolutions(deletedProjectPaths, _fileExplorerRootPath);
-                ClearStartupProjectAfterExplorerDelete(path, isDirectory);
+                RemoveProjectsFromWorkspaceSolutions(deletedProjectPaths, _mainForm.ExplorerTreeFeature._fileExplorerRootPath);
+                _mainForm.StartupProjectFeature.ClearStartupProjectAfterExplorerDelete(path, isDirectory);
                 if (!string.IsNullOrEmpty(parentPath))
-                    RefreshExplorerNodeForPath(parentPath);
-                UpdateFileExplorerStartupProjectHighlight();
-                RefreshProjectPackageContext(GetActiveEditorPackageProjectPath(), restoreProject: false,
+                    _mainForm.ExplorerWatcherFeature.RefreshExplorerNodeForPath(parentPath);
+                _mainForm.StartupProjectFeature.UpdateFileExplorerStartupProjectHighlight();
+                _mainForm.NuGetFeature.RefreshProjectPackageContext(_mainForm.ProjectContextFeature.GetActiveEditorPackageProjectPath(), restoreProject: false,
                     showRestoreFailure: false);
             }
             catch (Exception ex)
@@ -384,7 +396,7 @@ namespace CIARE
                 form.MaximizeBox = false;
                 form.ShowInTaskbar = false;
                 form.ClientSize = new Size(360, 118);
-                form.Font = Font;
+                form.Font = _mainForm.Font;
 
                 label.AutoSize = true;
                 label.Text = labelText;
@@ -414,7 +426,7 @@ namespace CIARE
 
                 FrmColorMod.ToogleColorMode(form, GlobalVariables.darkColor);
 
-                return form.ShowDialog(this) == DialogResult.OK
+                return form.ShowDialog(_mainForm) == DialogResult.OK
                     ? textBox.Text.Trim()
                     : string.Empty;
             }

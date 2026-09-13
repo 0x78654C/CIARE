@@ -5,30 +5,37 @@ using CIARE.GUI;
 using CIARE.Utils;
 using CIARE.Utils.OpenAISettings;
 
-namespace CIARE
+namespace CIARE.Utils.Editor
 {
-    public partial class MainForm
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal sealed class Errors
     {
+        private readonly MainForm _mainForm;
+
+        internal Errors(MainForm mainForm)
+        {
+            _mainForm = mainForm;
+        }
         private string _clickedErrorLine = "";
 
-        private void ConfigureErrorsListView()
+        internal void ConfigureErrorsListView()
         {
-            if (errorsLV == null)
+            if (_mainForm.errorsLV == null)
                 return;
 
-            if (errorsLV.Columns.Count == 0)
+            if (_mainForm.errorsLV.Columns.Count == 0)
             {
-                errorsLV.Columns.Add(string.Empty, 34, HorizontalAlignment.Center);
-                errorsLV.Columns.Add("Line", 64, HorizontalAlignment.Right);
-                errorsLV.Columns.Add("Code", 84, HorizontalAlignment.Left);
-                errorsLV.Columns.Add("Message", 320, HorizontalAlignment.Left);
+                _mainForm.errorsLV.Columns.Add(string.Empty, 34, HorizontalAlignment.Center);
+                _mainForm.errorsLV.Columns.Add("Line", 64, HorizontalAlignment.Right);
+                _mainForm.errorsLV.Columns.Add("Code", 84, HorizontalAlignment.Left);
+                _mainForm.errorsLV.Columns.Add("Message", 320, HorizontalAlignment.Left);
             }
 
-            errorsLV.HeaderStyle = ColumnHeaderStyle.Nonclickable;
-            errorsLV.ShowItemToolTips = true;
-            if (errorsLV.ListViewItemSorter == null)
-                errorsLV.ListViewItemSorter = new CIARE.GUI.ListViewColumnSorter();
-            errorsLV.Resize += errorsLV_Resize;
+            _mainForm.errorsLV.HeaderStyle = ColumnHeaderStyle.Nonclickable;
+            _mainForm.errorsLV.ShowItemToolTips = true;
+            if (_mainForm.errorsLV.ListViewItemSorter == null)
+                _mainForm.errorsLV.ListViewItemSorter = new CIARE.GUI.ListViewColumnSorter();
+            _mainForm.errorsLV.Resize += errorsLV_Resize;
             ResizeErrorsListViewColumns();
         }
 
@@ -39,10 +46,10 @@ namespace CIARE
 
         private void ResizeErrorsListViewColumns()
         {
-            if (errorsLV == null || errorsLV.IsDisposed || errorsLV.Columns.Count < 4)
+            if (_mainForm.errorsLV == null || _mainForm.errorsLV.IsDisposed || _mainForm.errorsLV.Columns.Count < 4)
                 return;
 
-            int availableWidth = errorsLV.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6;
+            int availableWidth = _mainForm.errorsLV.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6;
             if (availableWidth <= 0)
                 return;
 
@@ -51,22 +58,22 @@ namespace CIARE
             int codeWidth = 84;
             int messageWidth = Math.Max(180, availableWidth - iconWidth - lineWidth - codeWidth);
 
-            errorsLV.Columns[0].Width = iconWidth;
-            errorsLV.Columns[1].Width = lineWidth;
-            errorsLV.Columns[2].Width = codeWidth;
-            errorsLV.Columns[3].Width = messageWidth;
+            _mainForm.errorsLV.Columns[0].Width = iconWidth;
+            _mainForm.errorsLV.Columns[1].Width = lineWidth;
+            _mainForm.errorsLV.Columns[2].Width = codeWidth;
+            _mainForm.errorsLV.Columns[3].Width = messageWidth;
         }
 
-        private void OutputTabControl_DrawItem(object sender, DrawItemEventArgs e)
+        internal void OutputTabControl_DrawItem(object sender, DrawItemEventArgs e)
         {
-            if (e.Index < 0 || e.Index >= outputTabControl.TabPages.Count)
+            if (e.Index < 0 || e.Index >= _mainForm.outputTabControl.TabPages.Count)
                 return;
 
             bool dark = GlobalVariables.darkColor;
             var g = e.Graphics;
-            var tp = outputTabControl.TabPages[e.Index];
-            var tabBounds = outputTabControl.GetTabRect(e.Index);
-            bool selected = e.Index == outputTabControl.SelectedIndex;
+            var tp = _mainForm.outputTabControl.TabPages[e.Index];
+            var tabBounds = _mainForm.outputTabControl.GetTabRect(e.Index);
+            bool selected = e.Index == _mainForm.outputTabControl.SelectedIndex;
 
             Color tabBackColor = dark
                 ? (selected ? GlobalVariables.TabSelectedColor : GlobalVariables.TabBgColor)
@@ -79,24 +86,24 @@ namespace CIARE
             using (var borderPen = new Pen(borderColor))
                 g.DrawRectangle(borderPen, tabBounds.X, tabBounds.Y, tabBounds.Width - 1, tabBounds.Height - 1);
 
-            if (e.Index == outputTabControl.TabPages.Count - 1)
+            if (e.Index == _mainForm.outputTabControl.TabPages.Count - 1)
             {
-                TabControllerManage.SetTransparentTabBar(outputTabControl, e,
+                TabControllerManage.SetTransparentTabBar(_mainForm.outputTabControl, e,
                     GlobalVariables.formBgColor.R, GlobalVariables.formBgColor.G, GlobalVariables.formBgColor.B);
             }
 
             Rectangle textBounds = Rectangle.Inflate(tabBounds, -8, 0);
-            TextRenderer.DrawText(g, tp.Text, tp.Font ?? outputTabControl.Font, textBounds, textColor,
+            TextRenderer.DrawText(g, tp.Text, tp.Font ?? _mainForm.outputTabControl.Font, textBounds, textColor,
                 TextFormatFlags.HorizontalCenter |
                 TextFormatFlags.VerticalCenter |
                 TextFormatFlags.NoPrefix |
                 TextFormatFlags.SingleLine);
         }
 
-        private void errorsLV_ItemActivate(object sender, EventArgs e)
+        internal void errorsLV_ItemActivate(object sender, EventArgs e)
         {
-            if (errorsLV.SelectedItems.Count == 0) return;
-            var item = errorsLV.SelectedItems[0];
+            if (_mainForm.errorsLV.SelectedItems.Count == 0) return;
+            var item = _mainForm.errorsLV.SelectedItems[0];
             if (!int.TryParse(item.SubItems[1].Text, out int targetLine)) return;
 
             var editor = SelectedEditor.GetSelectedEditor();
@@ -106,10 +113,10 @@ namespace CIARE
             editor.Focus();
         }
 
-        private void errorsLV_MouseDown(object sender, MouseEventArgs e)
+        internal void errorsLV_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Right) return;
-            var hit = errorsLV.HitTest(e.Location);
+            var hit = _mainForm.errorsLV.HitTest(e.Location);
             if (hit.Item == null)
             {
                 _clickedErrorLine = "";
@@ -119,23 +126,23 @@ namespace CIARE
             _clickedErrorLine = $"{item.SubItems[2].Text}: {item.SubItems[3].Text}";
         }
 
-        private void errorsLV_ColumnClick(object sender, ColumnClickEventArgs e)
+        internal void errorsLV_ColumnClick(object sender, ColumnClickEventArgs e)
         {
-            if (errorsLV.ListViewItemSorter is CIARE.GUI.ListViewColumnSorter sorter)
+            if (_mainForm.errorsLV.ListViewItemSorter is CIARE.GUI.ListViewColumnSorter sorter)
             {
                 sorter.SortColumn = e.Column;
-                errorsLV.Sorting = SortOrder.None;
-                errorsLV.Sort();
+                _mainForm.errorsLV.Sorting = SortOrder.None;
+                _mainForm.errorsLV.Sort();
             }
         }
 
-        private void copyErrorMenuItem_Click(object sender, EventArgs e)
+        internal void copyErrorMenuItem_Click(object sender, EventArgs e)
         {
             if (!string.IsNullOrEmpty(_clickedErrorLine))
                 Clipboard.SetText(_clickedErrorLine);
         }
 
-        private void askAiErrorMenuItem_Click(object sender, EventArgs e)
+        internal void askAiErrorMenuItem_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(_clickedErrorLine)) return;
             var editor = SelectedEditor.GetSelectedEditor();
@@ -148,6 +155,6 @@ namespace CIARE
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void outputRBT_MouseWheel(object sender, MouseEventArgs e) => GlobalVariables.zoomFactor = outputRBT.ZoomFactor;
+        internal void outputRBT_MouseWheel(object sender, MouseEventArgs e) => GlobalVariables.zoomFactor = _mainForm.outputRBT.ZoomFactor;
     }
 }
