@@ -40,6 +40,7 @@ namespace ICSharpCode.Core
 		/// <summary>
 		/// Deserializes a <see cref="TreePathNotFoundException"/>
 		/// </summary>
+		[Obsolete("Formatter-based serialization is obsolete.")]
 		protected TreePathNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
 		{
 		}

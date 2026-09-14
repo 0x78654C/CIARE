@@ -11,7 +11,7 @@ using ICSharpCode.NRefactory.Ast;
 
 namespace ICSharpCode.NRefactory.AstBuilder
 {
-	#if NET35
+	//#if NET35
 	/// <summary>
 	/// Extension methods for NRefactory.Ast.Expression.
 	/// </summary>
@@ -94,5 +94,5 @@ namespace ICSharpCode.NRefactory.AstBuilder
 			return new BinaryOperatorExpression(left, op, right);
 		}
 	}
-	#endif
+	//#endif
 }

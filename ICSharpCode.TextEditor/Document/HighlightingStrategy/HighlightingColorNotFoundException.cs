@@ -25,6 +25,7 @@ namespace ICSharpCode.TextEditor.Document
 		{
 		}
 		
+		[Obsolete("Formatter-based serialization is obsolete.")]
 		protected HighlightingColorNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
 		{
 		}

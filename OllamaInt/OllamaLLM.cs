@@ -5,11 +5,11 @@ namespace OllamaInt
 {
     public class OllamaLLM
     {
-        public string Model { get; set; }
-        public string Uri { get; set; }
+        public string Model { get; set; } = string.Empty;
+        public string Uri { get; set; } = "http://localhost:11434/";
         public string Promt { get; set; } = string.Empty;
 
-        public List<ChatMessage> ChatHistory { get; set; }
+        public List<ChatMessage> ChatHistory { get; set; } = new();
 
         /// <summary>
         /// Constructor for Ollama.
@@ -79,7 +79,7 @@ namespace OllamaInt
             var outData = process.StandardOutput.ReadToEnd();
             using (var reader = new StringReader(outData))
             {
-                string line;
+                string? line;
                 while (null != (line = reader.ReadLine()))
                 {
                     if (!line.StartsWith("NAME"))

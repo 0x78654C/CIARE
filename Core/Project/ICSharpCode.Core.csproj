@@ -21,11 +21,9 @@
     <NoWarn>1591</NoWarn>
     <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
     <OutputPath>Debug\</OutputPath>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <OutputPath>Release\</OutputPath>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
     <RegisterForComInterop>False</RegisterForComInterop>
@@ -41,9 +39,6 @@
     <Content Include="..\..\..\..\data\schemas\AddIn.xsd">
       <Link>Src\AddInTree\AddIn\AddIn.xsd</Link>
     </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
   </ItemGroup>
   <PropertyGroup />
   <PropertyGroup>

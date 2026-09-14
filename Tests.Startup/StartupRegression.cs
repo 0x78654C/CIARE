@@ -1,5 +1,6 @@
 using CIARE.GUI;
 using CIARE.Utils;
+using CIARE.Utils.NuGetManage;
 using CIARE.Roslyn;
 using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Document;
@@ -18,6 +19,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Windows.Forms;
+using Dom = ICSharpCode.SharpDevelop.Dom;
 
 namespace CIARE;
 
@@ -58,6 +60,12 @@ internal static class StartupRegression
 
     private static void Run(string scenario)
     {
+        if (scenario == "completion")
+            VerifyLocalResolveResult();
+
+        if (scenario == "dark")
+            ThemeRegression.Run(Assert, AppContext.BaseDirectory);
+
         using var settings = Registry.CurrentUser.CreateSubKey(GlobalVariables.registryPath);
         settings.SetValue("highlight", scenario == "light" ? "C#-Light" : "C#-Dark");
         settings.SetValue("OCodeCompletion", (scenario == "completion" || scenario == "memory" || scenario.StartsWith("resources") || scenario.StartsWith("retention")).ToString());
@@ -106,16 +114,16 @@ internal static class StartupRegression
             Assert(updateMenu.BackColor == form.aboutToolStripMenuItem.BackColor
                 && updateMenu.ForeColor == form.aboutToolStripMenuItem.ForeColor, "Update command matches Help colors before first visibility");
             Assert(!form.progressBar.Visible, "AI progress indicator is hidden at startup");
-            Assert(GetField<TreeView>(form, "_fileExplorerTree").BackColor ==
+            Assert(GetField<TreeView>(form.ExplorerFeature, "_fileExplorerTree").BackColor ==
                 (scenario == "light" ? SystemColors.Window : GlobalVariables.controlBgColor),
                 "Explorer palette matches the initial theme");
-            Assert(GetField<SplitContainer>(form, "_editorExplorerSplitContainer").Panel2Collapsed == (scenario == "light"),
+            Assert(GetField<SplitContainer>(form.ExplorerFeature, "_editorExplorerSplitContainer").Panel2Collapsed == (scenario == "light"),
                 "Explorer visibility ready before first visibility");
             if (scenario != "light")
             {
-                Assert(GetField<SplitContainer>(form, "_editorExplorerSplitContainer").Panel2.Width == 260,
+                Assert(GetField<SplitContainer>(form.ExplorerFeature, "_editorExplorerSplitContainer").Panel2.Width == 260,
                     "Explorer width ready before first visibility");
-                Assert(GetField<SplitContainer>(form, "_fileExplorerContentSplitContainer").Panel2.Height == 180,
+                Assert(GetField<SplitContainer>(form.ExplorerFeature, "_fileExplorerContentSplitContainer").Panel2.Height == 180,
                     "NuGet pane height ready before first visibility");
             }
         };
@@ -266,12 +274,17 @@ internal static class StartupRegression
         Assert((string)settings.GetValue("windowSize") == savedBeforeResize, "Resize persistence is deferred");
         Pump(450);
         Assert((string)settings.GetValue("windowSize") == "970|650", "Final resize persisted");
-        Assert(!GetField<bool>(form, "_pendingFileExplorerLayoutApply"), "Explorer layout settles");
-        Assert(GetField<System.Windows.Forms.Timer>(form, "_fileExplorerLayoutApplyTimer")?.Enabled != true, "Explorer layout timer stops");
-        Invoke(form, "ToggleFullScreen");
+        Assert(!GetField<bool>(form.ExplorerLayoutFeature, "_pendingFileExplorerLayoutApply"), "Explorer layout settles");
+        Assert(GetField<System.Windows.Forms.Timer>(form.ExplorerLayoutFeature, "_fileExplorerLayoutApplyTimer")?.Enabled != true, "Explorer layout timer stops");
+        Invoke(form.WindowStateFeature, "ToggleFullScreen");
         Pump(300);
+        Assert(!form.linesPositionLbl.Visible && !form.linesCountLbl.Visible, "Fullscreen hides editor status");
         Assert((string)settings.GetValue("windowSize") == "970|650", "Fullscreen preserves normal saved size");
-        Invoke(form, "ToggleFullScreen");
+        Invoke(form.WindowStateFeature, "ToggleFullScreen");
+        CheckMenuStatusLayout(form);
+
+        if (scenario is "dark" or "light")
+            CheckExplorerNuGetTheme(form, firstEditor);
 
         for (int index = 0; index < 3; index++)
         {
@@ -309,14 +322,144 @@ internal static class StartupRegression
 
         // Dispose without invoking file-saving prompts; only test fixture files have been opened.
         form.Dispose();
-        Invoke(form, "ParseStep");
+        Invoke(form.CompletionParsingFeature, "ParseStep");
         Assert(form.IsDisposed, "Completion tolerates a disposed form");
         Pump(100);
         Console.Error.WriteLine($"Startup to Show completed: {elapsed.ElapsedMilliseconds} ms ({scenario})");
     }
 
-    private static T GetField<T>(MainForm form, string name) =>
-        (T)typeof(MainForm).GetField(name, PrivateInstance).GetValue(form);
+    private static void CheckExplorerNuGetTheme(MainForm form, TextEditorControl editor)
+    {
+        var list = form.ExplorerFeature._fileExplorerNuGetList;
+        var originalItems = list.Items.Cast<ListViewItem>().ToArray();
+        var packages = new List<ProjectNuGetPackageReference>
+        {
+            new() { Name = "Used.Package", Version = "1.0", UnusedCheckCompleted = true },
+            new() { Name = "Unused.Package", Version = "2.0", UnusedCheckCompleted = true, IsUnused = true },
+            new() { Name = "Pending.Package", Version = "3.0" }
+        };
+        var applyMetadata = form.NuGetMetadataFeature.GetType().GetMethod("ApplyExplorerNuGetPackageMetadata", PrivateInstance);
+        void CompleteMetadata() => applyMetadata.Invoke(form.NuGetMetadataFeature, new object[]
+        {
+            form.ProjectContextFeature.GetActivePackageProjectPath(), packages,
+            form.NuGetFeature._fileExplorerNuGetListRefreshVersion
+        });
+
+        try
+        {
+            list.Items.Clear();
+            foreach (var package in packages)
+            {
+                list.Items.Add(new ListViewItem(new[] { package.Name, package.Version, "Checking...", "Checking..." })
+                {
+                    Tag = package
+                });
+            }
+            form.NuGetFeature.GetType().GetMethod("AddFileExplorerNuGetPlaceholder", PrivateInstance)
+                .Invoke(form.NuGetFeature, new object[] { "No project selected" });
+            var rows = list.Items.Cast<ListViewItem>().ToArray();
+            rows[0].Selected = true;
+            CompleteMetadata();
+            Assert(rows[0].SubItems[3].Text == "Used" && rows[1].SubItems[3].Text == "Unused",
+                "Package usage metadata populates the explorer rows");
+            var names = new[] { "C#-Light", "C#-Dark", "C#-DarkVS" }
+                .Concat(ThemeManager.ExternalThemeNames).Concat(new[] { "C#-Light", "C#-Dark" });
+            foreach (string name in names)
+            {
+                form.SetHighLighter(editor, name);
+                void CheckColors()
+                {
+                    Assert(rows[0].ForeColor == list.ForeColor && rows[2].ForeColor == list.ForeColor,
+                        name + " used and pending packages follow the explorer text color");
+                    Assert(rows[1].ForeColor == (GlobalVariables.darkColor ? Color.FromArgb(245, 174, 96) : Color.DarkOrange),
+                        name + " unused packages follow the warning color");
+                    Assert(rows[3].ForeColor == (GlobalVariables.darkColor ? Color.FromArgb(150, 170, 165) : SystemColors.GrayText),
+                        name + " empty package list follows the placeholder color");
+                }
+                CheckColors();
+                // Usage results arriving after the switch must also use the current palette.
+                CompleteMetadata();
+                CheckColors();
+                Assert(list.Items.Cast<ListViewItem>().SequenceEqual(rows) && rows[0].Selected,
+                    name + " theme changes preserve package rows and selection");
+            }
+
+            packages[1].IsUnused = false;
+            CompleteMetadata();
+            Assert(rows[1].ForeColor == list.ForeColor && rows[1].SubItems[3].Text == "Used",
+                "A package becoming used clears its warning color");
+        }
+        finally
+        {
+            list.Items.Clear();
+            list.Items.AddRange(originalItems);
+            form.ExplorerFeature.ApplyFileExplorerTheme();
+        }
+    }
+
+    private static void VerifyLocalResolveResult()
+    {
+        var project = new Dom.DefaultProjectContent();
+        var owner = new Dom.DefaultClass(new Dom.DefaultCompilationUnit(project), "Example");
+        var method = new Dom.DefaultMethod(owner, "Run");
+        var local = new Dom.DefaultField.LocalVariableField(owner.DefaultReturnType, "item", Dom.DomRegion.Empty, owner);
+        var result = new Dom.LocalResolveResult(method, local);
+        Assert(ReferenceEquals(result.Field, local), "Local resolution returns its stored field under C# 14");
+        Assert(ReferenceEquals(((Dom.LocalResolveResult)result.Clone()).Field, local), "Cloning preserves the resolved local field");
+    }
+
+    private static T GetField<T>(object owner, string name) =>
+        (T)owner.GetType().GetField(name, PrivateInstance).GetValue(owner);
+
+    private static void CheckMenuStatusLayout(MainForm form)
+    {
+        Size originalSize = form.Size;
+        var labels = new[] { form.linesPositionLbl, form.linesCountLbl, form.typeCheckLbl, form.warningsCheckLbl };
+        var originalTexts = labels.Select(label => label.Text).ToArray();
+        Font originalFont = form.linesPositionLbl.Font;
+        using var largerFont = new Font(originalFont.FontFamily, originalFont.Size + 4);
+        try
+        {
+            form.linesPositionLbl.Text = "[Line 100000, Col 100000]";
+            form.linesCountLbl.Text = "Lines: 100000";
+            form.typeCheckLbl.Text = "Errors: 100000";
+            form.warningsCheckLbl.Text = "Warnings: 100000";
+            foreach (Font font in new[] { originalFont, largerFont })
+            {
+                form.linesPositionLbl.Font = font;
+                foreach (int width in new[] { 1500, 1000, 680, 520, 1000, 1500 })
+                {
+                    form.Width = width;
+                    Rectangle OnForm(Control control) => form.RectangleToClient(control.Parent.RectangleToScreen(control.Bounds));
+                    var blockers = form.menuStrip1.Items.Cast<ToolStripItem>().Where(item => item.Available)
+                        .Select(item => form.RectangleToClient(form.menuStrip1.RectangleToScreen(item.Bounds)))
+                        .Append(OnForm(form.runCodePb)).ToArray();
+                    for (int index = 0; index < labels.Length; index++)
+                    {
+                        Rectangle bounds = OnForm(labels[index]);
+                        Assert(labels[index].Visible && form.ClientRectangle.Contains(bounds), "Status stays visible inside the resized window");
+                        Assert(blockers.All(blocker => !blocker.IntersectsWith(bounds)), "Status does not cover menu commands or Run");
+                        Assert(!OnForm(form.splitContainer1).IntersectsWith(bounds),
+                            $"Wrapped status does not cover the editor: width={width}, font={font.Size}, status={bounds}, editor={OnForm(form.splitContainer1)}");
+                        for (int other = index + 1; other < labels.Length; other++)
+                            Assert(!bounds.IntersectsWith(OnForm(labels[other])), "Status labels do not overlap each other");
+                    }
+                    if (font == originalFont && (width == 680 || width == 1500))
+                    {
+                        using var snapshot = new Bitmap(form.Width, form.Height);
+                        form.DrawToBitmap(snapshot, new Rectangle(Point.Empty, snapshot.Size));
+                        snapshot.Save(Path.Combine(AppContext.BaseDirectory, $"status-{GlobalVariables.darkColor}-{width}.png"));
+                    }
+                }
+            }
+        }
+        finally
+        {
+            form.linesPositionLbl.Font = originalFont;
+            for (int index = 0; index < labels.Length; index++) labels[index].Text = originalTexts[index];
+            form.Size = originalSize;
+        }
+    }
 
     private static void CheckFileTabFirstDisplay(MainForm form)
     {
@@ -454,7 +597,7 @@ internal static class StartupRegression
                 "Completed diagnostics release the queued source snapshot");
             Assert(typeof(RealTimeChecker).GetField("_cts", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null) == null,
                 "Completed diagnostics release the cancellation source");
-            var snapshot = GetField<object>(form, "_roslynCompletionProjectSnapshot");
+            var snapshot = GetField<object>(form.CompletionProjectFeature, "_roslynCompletionProjectSnapshot");
             var compilation = (Microsoft.CodeAnalysis.CSharp.CSharpCompilation)snapshot.GetType()
                 .GetField("compilation", PrivateInstance).GetValue(snapshot);
             var platformRefs = (IEnumerable<Microsoft.CodeAnalysis.MetadataReference>)typeof(RealTimeChecker)
@@ -492,10 +635,10 @@ internal static class StartupRegression
                 "The latest empty document supersedes old diagnostics and clears their UI");
         }
         RealTimeChecker.Cancel();
-        Invoke(form, "ParseStep");
-        object parsedUnit = GetField<object>(form, "lastCompilationUnit");
-        Invoke(form, "ParseStep");
-        Assert(ReferenceEquals(parsedUnit, GetField<object>(form, "lastCompilationUnit")),
+        Invoke(form.CompletionParsingFeature, "ParseStep");
+        object parsedUnit = GetField<object>(form.CompletionParsingFeature, "lastCompilationUnit");
+        Invoke(form.CompletionParsingFeature, "ParseStep");
+        Assert(ReferenceEquals(parsedUnit, GetField<object>(form.CompletionParsingFeature, "lastCompilationUnit")),
             "Idle standalone editors reuse the previous completion parse");
         Report("released");
     }
@@ -564,7 +707,7 @@ internal static class StartupRegression
             while ((popup = form.OwnedForms.OfType<CodeCompletionWindow>().FirstOrDefault()) == null &&
                 elapsed.ElapsedMilliseconds < 15000)
                 Pump(10);
-            Assert(popup != null, "Suggestions appear while the prefix continues to grow");
+            Assert(popup != null, $"Suggestions appear while the prefix continues to grow; focused={area.Focused}, code={editor.Text}, caret={area.Caret.Offset}");
             var list = popup.Controls.OfType<CodeCompletionListView>().Single();
             if (list.SelectedCompletionData?.Text != expected)
             {
@@ -640,8 +783,8 @@ internal static class StartupRegression
             area.Caret.Offset, area.Caret.Offset, true, true);
     }
 
-    private static void Invoke(MainForm form, string name) =>
-        typeof(MainForm).GetMethod(name, PrivateInstance).Invoke(form, null);
+    private static void Invoke(object owner, string name) =>
+        owner.GetType().GetMethod(name, PrivateInstance).Invoke(owner, null);
 
     private static void Pump(int milliseconds)
     {

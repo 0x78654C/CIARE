@@ -25,7 +25,6 @@
         private void InitializeComponent() {
             System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
-            System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
             this.undo = new System.Windows.Forms.ToolStripMenuItem();
             this.cut = new System.Windows.Forms.ToolStripMenuItem();
             this.copy = new System.Windows.Forms.ToolStripMenuItem();

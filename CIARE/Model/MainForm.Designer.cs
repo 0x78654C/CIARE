@@ -1,4 +1,4 @@
-﻿
+
 using System.Drawing.Text;
 using System.Windows.Forms;
 
@@ -6,10 +6,6 @@ namespace CIARE
 {
     partial class MainForm
     {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
-        private System.ComponentModel.IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -141,7 +137,7 @@ namespace CIARE
             outputRBT.Name = "outputRBT";
             outputRBT.ReadOnly = true;
             outputRBT.ScrollBars = RichTextBoxScrollBars.Vertical;
-            outputRBT.Size = new System.Drawing.Size(1386, 132);
+            outputRBT.Size = new System.Drawing.Size(1386, 130);
             outputRBT.TabIndex = 3;
             outputRBT.Text = "";
             outputRBT.MouseWheel += outputRBT_MouseWheel;
@@ -153,10 +149,10 @@ namespace CIARE
             // runCodePb
             // 
             runCodePb.Image = Properties.Resources.runButton21;
-            runCodePb.Location = new System.Drawing.Point(365, 4);
+            runCodePb.Location = new System.Drawing.Point(366, 5);
             runCodePb.Margin = new Padding(4, 3, 4, 3);
             runCodePb.Name = "runCodePb";
-            runCodePb.Size = new System.Drawing.Size(33, 24);
+            runCodePb.Size = new System.Drawing.Size(21, 18);
             runCodePb.TabIndex = 2;
             runCodePb.TabStop = false;
             toolTip1.SetToolTip(runCodePb, "Run code ( F5 )");
@@ -183,35 +179,35 @@ namespace CIARE
             // newFileStripMenuItem
             // 
             newFileStripMenuItem.Name = "newFileStripMenuItem";
-            newFileStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            newFileStripMenuItem.Size = new System.Drawing.Size(292, 22);
             newFileStripMenuItem.Text = "New                                    ( CTRL + N )";
             newFileStripMenuItem.Click += toolStripMenuItem1_Click;
             // 
             // newProjectStripMenuItem
             // 
             newProjectStripMenuItem.Name = "newProjectStripMenuItem";
-            newProjectStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            newProjectStripMenuItem.Size = new System.Drawing.Size(292, 22);
             newProjectStripMenuItem.Text = "New Project...                   ( Ctrl+Shift+N )";
             newProjectStripMenuItem.Click += newProjectStripMenuItem_Click;
             // 
             // openToolStripMenuItem
             // 
             openToolStripMenuItem.Name = "openToolStripMenuItem";
-            openToolStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            openToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
             openToolStripMenuItem.Text = "Open                                  ( CTRL + O )";
             openToolStripMenuItem.Click += openToolStripMenuItem_Click;
             // 
             // openProjectStripMenuItem
             // 
             openProjectStripMenuItem.Name = "openProjectStripMenuItem";
-            openProjectStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            openProjectStripMenuItem.Size = new System.Drawing.Size(292, 22);
             openProjectStripMenuItem.Text = "Open Project/Solution... ( Ctrl+Shift+O )";
             openProjectStripMenuItem.Click += openProjectStripMenuItem_Click;
             // 
             // saveToolStripMenuItem
             // 
             saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            saveToolStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            saveToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
             saveToolStripMenuItem.Text = "Save                                    ( CTRL + S ) ";
             saveToolStripMenuItem.Click += saveToolStripMenuItem_Click;
             // 
@@ -225,25 +221,25 @@ namespace CIARE
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new System.Drawing.Size(283, 6);
+            toolStripSeparator1.Size = new System.Drawing.Size(289, 6);
             // 
             // LoadCStripMenuItem
             // 
             LoadCStripMenuItem.Name = "LoadCStripMenuItem";
-            LoadCStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            LoadCStripMenuItem.Size = new System.Drawing.Size(292, 22);
             LoadCStripMenuItem.Text = "Load C# Code Template    ( CTRL + T )";
             LoadCStripMenuItem.Click += LoadCStripMenuItem_Click;
             // 
             // toolStripSeparator2
             // 
             toolStripSeparator2.Name = "toolStripSeparator2";
-            toolStripSeparator2.Size = new System.Drawing.Size(283, 6);
+            toolStripSeparator2.Size = new System.Drawing.Size(289, 6);
             // 
             // exitToolStripMenuItem
             // 
             exitToolStripMenuItem.ForeColor = System.Drawing.Color.Red;
             exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            exitToolStripMenuItem.Size = new System.Drawing.Size(286, 22);
+            exitToolStripMenuItem.Size = new System.Drawing.Size(292, 22);
             exitToolStripMenuItem.Text = "Exit";
             exitToolStripMenuItem.Click += exitToolStripMenuItem_Click;
             // 
@@ -509,7 +505,7 @@ namespace CIARE
             groupBox1.Margin = new Padding(4, 3, 4, 3);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new Padding(4, 3, 4, 3);
-            groupBox1.Size = new System.Drawing.Size(1402, 180);
+            groupBox1.Size = new System.Drawing.Size(1402, 178);
             groupBox1.TabIndex = 5;
             groupBox1.TabStop = false;
             // 
@@ -523,7 +519,7 @@ namespace CIARE
             outputTabControl.Location = new System.Drawing.Point(4, 14);
             outputTabControl.Name = "outputTabControl";
             outputTabControl.SelectedIndex = 0;
-            outputTabControl.Size = new System.Drawing.Size(1394, 162);
+            outputTabControl.Size = new System.Drawing.Size(1394, 160);
             outputTabControl.SizeMode = TabSizeMode.Fixed;
             outputTabControl.TabIndex = 3;
             outputTabControl.DrawItem += OutputTabControl_DrawItem;
@@ -533,7 +529,7 @@ namespace CIARE
             outputTabPage.Controls.Add(outputRBT);
             outputTabPage.Location = new System.Drawing.Point(4, 26);
             outputTabPage.Name = "outputTabPage";
-            outputTabPage.Size = new System.Drawing.Size(1386, 132);
+            outputTabPage.Size = new System.Drawing.Size(1386, 130);
             outputTabPage.TabIndex = 0;
             outputTabPage.Text = "Output";
             outputTabPage.UseVisualStyleBackColor = true;
@@ -543,7 +539,7 @@ namespace CIARE
             errorsTabPage.Controls.Add(errorsLV);
             errorsTabPage.Location = new System.Drawing.Point(4, 26);
             errorsTabPage.Name = "errorsTabPage";
-            errorsTabPage.Size = new System.Drawing.Size(1386, 132);
+            errorsTabPage.Size = new System.Drawing.Size(1386, 130);
             errorsTabPage.TabIndex = 1;
             errorsTabPage.Text = "Errors";
             errorsTabPage.UseVisualStyleBackColor = true;
@@ -560,7 +556,7 @@ namespace CIARE
             errorsLV.Location = new System.Drawing.Point(0, 0);
             errorsLV.MultiSelect = false;
             errorsLV.Name = "errorsLV";
-            errorsLV.Size = new System.Drawing.Size(1386, 132);
+            errorsLV.Size = new System.Drawing.Size(1386, 130);
             errorsLV.TabIndex = 0;
             errorsLV.UseCompatibleStateImageBehavior = false;
             errorsLV.View = View.Details;
@@ -654,7 +650,7 @@ namespace CIARE
             // 
             label2.AutoSize = true;
             label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
-            label2.Location = new System.Drawing.Point(343, 2);
+            label2.Location = new System.Drawing.Point(343, 1);
             label2.Margin = new Padding(4, 0, 4, 0);
             label2.Name = "label2";
             label2.Size = new System.Drawing.Size(13, 18);
@@ -665,7 +661,7 @@ namespace CIARE
             // 
             label3.AutoSize = true;
             label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F);
-            label3.Location = new System.Drawing.Point(395, 2);
+            label3.Location = new System.Drawing.Point(395, 1);
             label3.Margin = new Padding(4, 0, 4, 0);
             label3.Name = "label3";
             label3.Size = new System.Drawing.Size(13, 18);
@@ -883,19 +879,19 @@ namespace CIARE
 
 
         #endregion
-        private System.Windows.Forms.PictureBox runCodePb;
+        internal System.Windows.Forms.PictureBox runCodePb;
         public System.Windows.Forms.RichTextBox outputRBT;
         public CIARE.GUI.DarkTabControl outputTabControl;
         public System.Windows.Forms.TabPage outputTabPage;
         public System.Windows.Forms.TabPage errorsTabPage;
         public System.Windows.Forms.ListView errorsLV;
-        private System.Windows.Forms.ToolTip toolTip1;
+        internal System.Windows.Forms.ToolTip toolTip1;
         public System.Windows.Forms.ToolStripMenuItem fIleToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
-        private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.SplitContainer splitContainer1;
+        internal System.Windows.Forms.GroupBox groupBox1;
+        internal System.Windows.Forms.SplitContainer splitContainer1;
         public System.Windows.Forms.ToolStripMenuItem saveAsStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem newFileStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem newProjectStripMenuItem;
@@ -903,11 +899,11 @@ namespace CIARE
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         public System.Windows.Forms.ToolStripMenuItem LoadCStripMenuItem;
         public System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
-        private System.Windows.Forms.Label label2;
+        internal System.Windows.Forms.Label label2;
         public System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem hotKeyToolStripMenuItem;
-        private System.Windows.Forms.Label label3;
+        internal System.Windows.Forms.Label label3;
         public System.Windows.Forms.ToolStripMenuItem compileToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem compileToexeCtrlShiftBToolStripMenuItem;
         public System.Windows.Forms.ToolStripMenuItem compileToDLLCtrlSfitBToolStripMenuItem;
@@ -954,7 +950,7 @@ namespace CIARE
         public CIARE.GUI.DarkTabControl EditorTabControl;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabPage tabPage2;
-        private System.Windows.Forms.ContextMenuStrip tabMenu;
+        internal System.Windows.Forms.ContextMenuStrip tabMenu;
         private System.Windows.Forms.ToolStripMenuItem closeTab;
         private System.Windows.Forms.ToolStripMenuItem closeAllTabs;
         private System.Windows.Forms.ToolStripMenuItem closeAllTabsOne;
@@ -962,6 +958,7 @@ namespace CIARE
         private System.Windows.Forms.ToolStripMenuItem copyErrorMenuItem;
         private System.Windows.Forms.ToolStripMenuItem askAiErrorMenuItem;
         public System.Windows.Forms.ProgressBar progressBar;
+        public System.ComponentModel.IContainer components;
     }
 }
 

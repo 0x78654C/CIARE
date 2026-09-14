@@ -46,10 +46,6 @@
     <None Remove="Model\RefManager.cs~RF603ad3.TMP" />
   </ItemGroup>
   <ItemGroup>
-    <Analyzer Include="$(UserProfile)\.nuget\packages\microsoft.codeanalysis.analyzers\3.3.4\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
-    <Analyzer Include="$(UserProfile)\.nuget\packages\microsoft.codeanalysis.analyzers\3.3.4\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="logoCiare.ico" />
   </ItemGroup>
   <ItemGroup>
@@ -81,7 +77,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AutoUpdater\AutoUpdater.csproj" />
     <ProjectReference Include="..\UpdateCleanup\UpdateCleanup.csproj" />
-    <ProjectReference Include="..\..\CIARE\OpenAI.Api.Client\OpenAI.Api.Client.csproj" />
+    <ProjectReference Include="..\OpenAI.Api.Client\OpenAI.Api.Client.csproj" />
     <ProjectReference Include="..\Core\Project\ICSharpCode.Core.csproj" />
     <ProjectReference Include="..\ICSharpCode.SharpDevelop.Dom\Project\ICSharpCode.SharpDevelop.Dom.csproj" />
     <ProjectReference Include="..\ICSharpCode.TextEditor\ICSharpCode.TextEditor.csproj" />
@@ -116,12 +112,8 @@
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="5.0.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="5.0.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="5.0.0" />
-    <PackageReference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform" Version="4.1.0" />
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Mono.Cecil" Version="0.11.5" />
     <PackageReference Include="NuGet.Protocol" Version="7.3.1" />
-    <PackageReference Include="System.Buffers" Version="4.6.1" />
-    <PackageReference Include="System.Collections.Immutable" Version="10.0.0" />
     <PackageReference Include="System.Composition" Version="10.0.0" />
     <PackageReference Include="System.Composition.AttributedModel" Version="10.0.0" />
     <PackageReference Include="System.Composition.Convention" Version="10.0.0" />
@@ -129,21 +121,16 @@
     <PackageReference Include="System.Composition.Runtime" Version="10.0.0" />
     <PackageReference Include="System.Composition.TypedParts" Version="10.0.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-    <PackageReference Include="System.IO.Pipelines" Version="10.0.0" />
-    <PackageReference Include="System.Memory" Version="4.6.3" />
-    <PackageReference Include="System.Numerics.Vectors" Version="4.6.1" />
-    <PackageReference Include="System.Reflection.Metadata" Version="10.0.0" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.0" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
   </ItemGroup>
   <ItemGroup>
-    <!-- This partial class contains update logic, not a second form designer. -->
-    <Compile Update="Model\MainForm.Updates.cs">
+    <!-- Independent utility classes open as code; MainForm owns the form designer. -->
+    <UtilityFeature Include="Utils\Completion\*.cs;Utils\Editor\*.cs;Utils\Explorer\*.cs;Utils\Navigation\*.cs;Utils\Projects\*.cs;Utils\Window\*.cs" />
+    <UtilityFeature Include="Utils\NuGetManage\NuGet.cs;Utils\NuGetManage\NuGetMetadata.cs;LiveShareManage\LiveShareEvents.cs" />
+    <Compile Update="@(UtilityFeature)">
       <SubType>Code</SubType>
-      <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
-    <EmbeddedResource Remove="Model\MainForm.Updates.resx" />
+    <!-- Ignore stale resources generated when these utilities were form partials. -->
+    <EmbeddedResource Remove="@(UtilityFeature->'%(RelativeDir)%(Filename).resx');Model\MainForm.Updates.resx;Model\MainForm\**\*.resx" />
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -167,4 +154,13 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
+  <!-- Apply after designer/user metadata and explicit resource entries are loaded. -->
+  <Target Name="ConfigureUtilityFeatures" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <Compile Update="@(UtilityFeature)">
+        <SubType>Code</SubType>
+      </Compile>
+      <EmbeddedResource Remove="@(UtilityFeature->'%(RelativeDir)%(Filename).resx');Model\MainForm.Updates.resx;Model\MainForm\**\*.resx" />
+    </ItemGroup>
+  </Target>
 </Project>

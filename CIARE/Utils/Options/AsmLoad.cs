@@ -2,6 +2,8 @@
 using System.Reflection;
 using System.Runtime.Loader;
 
+#nullable enable
+
 namespace CIARE.Utils.Options
 {
     public class AsmLoad : AssemblyLoadContext

@@ -8,24 +8,24 @@ namespace OpenRouter
 {
     public class Message
     {
-        public string role { get; set; }
-        public string content { get; set; }
+        public string role { get; set; } = string.Empty;
+        public string content { get; set; } = string.Empty;
     }
 
     public class RequestBody
     {
-        public string model { get; set; }
-        public List<Message> messages { get; set; }
+        public string model { get; set; } = string.Empty;
+        public List<Message> messages { get; set; } = new();
     }
 
     public class Choice
     {
-        public Message message { get; set; }
+        public Message? message { get; set; }
     }
 
     public class OpenRouterResponse
     {
-        public List<Choice> choices { get; set; }
+        public List<Choice>? choices { get; set; }
     }
 
     public class OpenRouterClient

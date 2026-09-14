@@ -24,6 +24,9 @@ namespace CIARE.GUI
         private static readonly Dictionary<string, CompletionThemeColors> _externalCompletionThemeColors =
             new Dictionary<string, CompletionThemeColors>(StringComparer.OrdinalIgnoreCase);
 
+        private static readonly Dictionary<string, CompletionThemeColors> _builtInCompletionThemeColors =
+            new Dictionary<string, CompletionThemeColors>(StringComparer.Ordinal);
+
         private static readonly List<string> _externalThemeNames = new List<string>();
         private static FileSyntaxModeProvider _externalThemeProvider;
         private static bool _loaded = false;
@@ -98,122 +101,35 @@ namespace CIARE.GUI
                 return externalTheme;
             }
 
-            switch (themeName)
+            if (string.IsNullOrEmpty(themeName))
+                return CompletionThemeColors.Light;
+
+            if (_builtInCompletionThemeColors.TryGetValue(themeName, out var builtInTheme))
+                return builtInTheme;
+
+            string resourceName = themeName switch
             {
-                case "C#-Dark":
-                    return Make(
-                        bg:       Color.FromArgb(2,   0,   10),
-                        altBg:    Color.FromArgb(13,  11,  24),
-                        fg:       Color.White,
-                        selStart: Color.FromArgb(26,  58,  110),
-                        selEnd:   Color.FromArgb(21,  45,  85),
-                        selFg:    Color.White,
-                        accent:   Color.FromArgb(79,  195, 247),
-                        border:   Color.FromArgb(45,  43,  66));
-
-                case "C#-DarkVS":
-                    return Make(
-                        bg:       Color.FromArgb(30,  30,  30),
-                        altBg:    Color.FromArgb(37,  37,  38),
-                        fg:       Color.FromArgb(212, 208, 200),
-                        selStart: Color.FromArgb(38,  79,  120),
-                        selEnd:   Color.FromArgb(27,  59,  92),
-                        selFg:    Color.White,
-                        accent:   Color.FromArgb(86,  156, 214),
-                        border:   Color.FromArgb(63,  63,  70));
-
-                case "C#-Gruvbox":
-                    return Make(
-                        bg:       Color.FromArgb(40,  40,  40),
-                        altBg:    Color.FromArgb(50,  48,  47),
-                        fg:       Color.FromArgb(235, 219, 178),
-                        selStart: Color.FromArgb(80,  73,  69),
-                        selEnd:   Color.FromArgb(60,  56,  54),
-                        selFg:    Color.FromArgb(251, 241, 199),
-                        accent:   Color.FromArgb(250, 189, 47),
-                        border:   Color.FromArgb(80,  73,  69));
-
-                case "C#-Lilac":
-                    return Make(
-                        bg:       Color.FromArgb(29,  27,  46),
-                        altBg:    Color.FromArgb(37,  35,  64),
-                        fg:       Color.FromArgb(228, 217, 245),
-                        selStart: Color.FromArgb(61,  50,  88),
-                        selEnd:   Color.FromArgb(46,  37,  74),
-                        selFg:    Color.White,
-                        accent:   Color.FromArgb(199, 146, 234),
-                        border:   Color.FromArgb(61,  50,  88));
-
-                case "C#-Neon":
-                    return Make(
-                        bg:       Color.FromArgb(13,  13,  13),
-                        altBg:    Color.FromArgb(26,  26,  26),
-                        fg:       Color.FromArgb(232, 232, 232),
-                        selStart: Color.FromArgb(26,  26,  58),
-                        selEnd:   Color.FromArgb(17,  17,  40),
-                        selFg:    Color.White,
-                        accent:   Color.FromArgb(0,   255, 204),
-                        border:   Color.FromArgb(51,  51,  51));
-
-                case "C#-NoctisHC":
-                    return Make(
-                        bg:       Color.FromArgb(0,   0,   0),
-                        altBg:    Color.FromArgb(13,  13,  13),
-                        fg:       Color.FromArgb(238, 238, 238),
-                        selStart: Color.FromArgb(61,  61,  61),
-                        selEnd:   Color.FromArgb(42,  42,  42),
-                        selFg:    Color.White,
-                        accent:   Color.FromArgb(126, 179, 255),
-                        border:   Color.FromArgb(51,  51,  51));
-
-                case "C#-Noegi":
-                    return Make(
-                        bg:       Color.FromArgb(26,  30,  36),
-                        altBg:    Color.FromArgb(34,  40,  49),
-                        fg:       Color.FromArgb(198, 208, 218),
-                        selStart: Color.FromArgb(46,  58,  68),
-                        selEnd:   Color.FromArgb(37,  48,  56),
-                        selFg:    Color.FromArgb(198, 208, 218),
-                        accent:   Color.FromArgb(128, 179, 210),
-                        border:   Color.FromArgb(46,  58,  68));
-
-                case "C#-NordWave":
-                    return Make(
-                        bg:       Color.FromArgb(46,  52,  64),
-                        altBg:    Color.FromArgb(59,  66,  82),
-                        fg:       Color.FromArgb(216, 222, 233),
-                        selStart: Color.FromArgb(76,  86,  106),
-                        selEnd:   Color.FromArgb(67,  76,  94),
-                        selFg:    Color.FromArgb(236, 239, 244),
-                        accent:   Color.FromArgb(136, 192, 208),
-                        border:   Color.FromArgb(76,  86,  106));
-
-                case "C#-Sweet":
-                    return Make(
-                        bg:       Color.FromArgb(26,  26,  46),
-                        altBg:    Color.FromArgb(34,  34,  58),
-                        fg:       Color.FromArgb(238, 255, 255),
-                        selStart: Color.FromArgb(45,  43,  85),
-                        selEnd:   Color.FromArgb(35,  33,  69),
-                        selFg:    Color.FromArgb(238, 255, 255),
-                        accent:   Color.FromArgb(189, 147, 249),
-                        border:   Color.FromArgb(74,  72,  112));
-
-                case "C#-8bit":
-                    return Make(
-                        bg:       Color.FromArgb(10,  10,  10),
-                        altBg:    Color.FromArgb(26,  26,  26),
-                        fg:       Color.FromArgb(192, 192, 192),
-                        selStart: Color.FromArgb(0,   0,   170),
-                        selEnd:   Color.FromArgb(0,   0,   136),
-                        selFg:    Color.White,
-                        accent:   Color.FromArgb(0,   170, 170),
-                        border:   Color.FromArgb(85,  85,  85));
-
-                default:
-                    // Unknown / light theme
-                    return CompletionThemeColors.Light;
+                "C#-Light" => "CSharp-Mode.xshd",
+                "C#-Dark" => "CSharp-Mode-Dark.xshd",
+                "C#-DarkVS" => "CSharp-Mode-DarkVS.xshd",
+                _ => null
+            };
+            if (resourceName != null)
+            {
+                using var stream = typeof(HighlightingManager).Assembly.GetManifestResourceStream(
+                    "ICSharpCode.TextEditor.Resources." + resourceName);
+                if (stream != null)
+                {
+                    using var reader = XmlReader.Create(stream);
+                    if (TryReadXshdTheme(reader, out var themeInfo))
+                    {
+                        builtInTheme = BuildCompletionThemeColors(themeInfo);
+                        _builtInCompletionThemeColors[themeName] = builtInTheme;
+                        return builtInTheme;
+                    }
+                }
             }
+            return CompletionThemeColors.Light;
         }
 
         private static CompletionThemeColors Make(
@@ -239,7 +155,17 @@ namespace CIARE.GUI
             themeInfo = new XshdThemeInfo();
             try
             {
-                using var reader = new XmlTextReader(File.OpenRead(xshdPath));
+                using var reader = XmlReader.Create(xshdPath);
+                return TryReadXshdTheme(reader, out themeInfo);
+            }
+            catch { return false; }
+        }
+
+        private static bool TryReadXshdTheme(XmlReader reader, out XshdThemeInfo themeInfo)
+        {
+            themeInfo = new XshdThemeInfo();
+            try
+            {
                 while (reader.Read())
                 {
                     if (reader.NodeType != XmlNodeType.Element)
@@ -252,6 +178,10 @@ namespace CIARE.GUI
 
                     switch (reader.Name)
                     {
+                        case "Custom":
+                            if (reader.GetAttribute("name") == "Accent")
+                                themeInfo.AccentColor = color;
+                            break;
                         case "Default":
                             themeInfo.DefaultForeColor = color;
                             themeInfo.DefaultBackColor = bgColor;
@@ -325,6 +255,13 @@ namespace CIARE.GUI
 
         private static Color PickAccentColor(XshdThemeInfo themeInfo, Color bg, Color selectionBg, Color fallback)
         {
+            if (themeInfo.AccentColor.HasValue &&
+                ContrastRatio(themeInfo.AccentColor.Value, bg) >= 3.0 &&
+                ContrastRatio(themeInfo.AccentColor.Value, selectionBg) >= 1.6)
+            {
+                return themeInfo.AccentColor.Value;
+            }
+
             Color best = Color.Empty;
             double bestScore = double.MinValue;
             var seen = new HashSet<int>();
@@ -408,6 +345,7 @@ namespace CIARE.GUI
 
         private sealed class XshdThemeInfo
         {
+            public Color? AccentColor { get; set; }
             public Color? DefaultBackColor { get; set; }
             public Color? DefaultForeColor { get; set; }
             public Color? SelectionBackColor { get; set; }

@@ -30,12 +30,14 @@ namespace CIARE.GUI
         /// <param name="findButton"></param>
         public static void SetDarkModeMain(Form form, RichTextBox richTextBox, GroupBox groupBox,
             Label separator2, Label separator3, MenuStrip menuStrip,
-            List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList, bool isVsTheme)
+            List<ToolStripMenuItem> toolStripMenuList, List<ToolStripSeparator> toolStripSeparatorList, bool isVsTheme,
+            Color? foreColor = null)
         {
 
+            var textColor = foreColor ?? Color.FromArgb(192, 215, 207);
             FrmColorMod.EnableDarkTitleBar(form.Handle);
             form.BackColor = GlobalVariables.formBgColor;
-            form.ForeColor = Color.FromArgb(192, 215, 207);
+            form.ForeColor = textColor;
             richTextBox.BackColor = GlobalVariables.controlBgColor;
             if (GlobalVariables.isRed)
             {
@@ -43,17 +45,17 @@ namespace CIARE.GUI
                 GlobalVariables.isRed = false;
             }
             else
-                richTextBox.ForeColor = Color.FromArgb(192, 215, 207);
-            groupBox.ForeColor = Color.FromArgb(192, 215, 207);
-            separator2.ForeColor = Color.FromArgb(192, 215, 207);
-            separator3.ForeColor = Color.FromArgb(192, 215, 207);
+                richTextBox.ForeColor = textColor;
+            groupBox.ForeColor = textColor;
+            separator2.ForeColor = textColor;
+            separator3.ForeColor = textColor;
             menuStrip.BackColor = GlobalVariables.formBgColor;
-            menuStrip.ForeColor = Color.FromArgb(192, 215, 207);
+            menuStrip.ForeColor = textColor;
             menuStrip.Renderer = new ColorTableSet();
             foreach (var toolStripMenu in toolStripMenuList)
             {
                 toolStripMenu.BackColor = GlobalVariables.formBgColor;
-                toolStripMenu.ForeColor = Color.FromArgb(192, 215, 207);
+                toolStripMenu.ForeColor = textColor;
             }
             foreach (var toolStripSeparator in toolStripSeparatorList)
             {

@@ -279,7 +279,7 @@ namespace ICSharpCode.SharpDevelop.Dom
 		/// Gets the field representing the local variable.
 		/// </summary>
 		public IField Field {
-			get { return field; }
+			get { return this.field; }
 		}
 		
 		/// <summary>

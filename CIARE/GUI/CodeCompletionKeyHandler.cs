@@ -301,7 +301,7 @@ namespace CIARE.GUI
 				if (codeCompletionWindow != null)
 				{
 					codeCompletionWindow.CloseWhenCaretAtBeginning = closeWhenCaretAtBeginning;
-					codeCompletionWindow.Closed += new EventHandler(CloseCodeCompletionWindow);
+					codeCompletionWindow.FormClosed += CloseCodeCompletionWindow;
 				}
 			}
 			finally
@@ -934,7 +934,7 @@ namespace CIARE.GUI
 		{
 			if (codeCompletionWindow != null)
 			{
-				codeCompletionWindow.Closed -= new EventHandler(CloseCodeCompletionWindow);
+				codeCompletionWindow.FormClosed -= CloseCodeCompletionWindow;
 				codeCompletionWindow.Dispose();
 				codeCompletionWindow = null;
 			}

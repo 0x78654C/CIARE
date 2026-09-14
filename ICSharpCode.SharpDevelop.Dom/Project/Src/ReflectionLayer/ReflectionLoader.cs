@@ -11,6 +11,7 @@ using System.Reflection;
 
 namespace ICSharpCode.SharpDevelop.Dom
 {
+	[Obsolete("Reflection-only loading is not supported on modern .NET. Use CecilReader.LoadAssembly for metadata inspection.")]
 	public sealed class ReflectionLoader : MarshalByRefObject
 	{
 		public override string ToString()

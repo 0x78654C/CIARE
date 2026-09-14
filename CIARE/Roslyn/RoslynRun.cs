@@ -172,13 +172,8 @@ namespace CIARE.Roslyn
         public static void BinaryCompile(string code, bool exeFile, string outPut, RichTextBox richTextBox, bool allowUnsafe, OutputKind outputKind = OutputKind.ConsoleApplication)
         {
             string pathOutput = Application.StartupPath + "binary\\";
-            string roslynDir = Application.StartupPath + "roslyn\\";
             try
             {
-                if (!Directory.Exists(roslynDir))
-                {
-                    Directory.CreateDirectory(roslynDir);
-                }
                 if (string.IsNullOrEmpty(code))
                 {
                     richTextBox.Text = "ERROR: There is no code in the editor to compile!";

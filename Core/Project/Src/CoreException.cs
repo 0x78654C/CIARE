@@ -28,6 +28,7 @@ namespace ICSharpCode.Core
 		{
 		}
 		
+		[Obsolete("Formatter-based serialization is obsolete.")]
 		protected CoreException(SerializationInfo info, StreamingContext context) : base(info, context)
 		{
 		}

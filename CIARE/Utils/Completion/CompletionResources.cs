@@ -2,25 +2,36 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using static global::CIARE.Utils.Completion.CompletionSyntax;
+using static global::CIARE.Utils.Completion.CompletionWorkspace;
+using static global::CIARE.Utils.NuGetManage.NuGet;
+using static global::CIARE.Utils.Projects.WorkspaceFiles;
 
-namespace CIARE;
+namespace CIARE.Utils.Completion;
 
-public partial class MainForm
+[System.Runtime.Versioning.SupportedOSPlatform("windows")]
+internal sealed class CompletionResources
 {
-    private readonly object _completionParseLock = new();
-    private readonly object _completionGlobalUsingsLock = new();
-    private readonly Dictionary<string, (int Version, string Text)> _completionGlobalUsings = new(StringComparer.OrdinalIgnoreCase);
-    private int _completionSourceVersion;
-    private int _lastParsedSourceVersion = -1;
-    private ulong _lastParsedSourceStamp;
-    private bool _hasParsedSourceStamp;
+    private readonly MainForm _mainForm;
 
-    private void ClearCompletionGlobalUsingsCache()
+    internal CompletionResources(MainForm mainForm)
+    {
+        _mainForm = mainForm;
+    }
+    internal readonly object _completionParseLock = new();
+    internal readonly object _completionGlobalUsingsLock = new();
+    internal readonly Dictionary<string, (int Version, string Text)> _completionGlobalUsings = new(StringComparer.OrdinalIgnoreCase);
+    internal int _completionSourceVersion;
+    internal int _lastParsedSourceVersion = -1;
+    internal ulong _lastParsedSourceStamp;
+    internal bool _hasParsedSourceStamp;
+
+    internal void ClearCompletionGlobalUsingsCache()
     {
         lock (_completionGlobalUsingsLock) _completionGlobalUsings.Clear();
     }
 
-    private void InvalidateCompletionSourceFile(string path)
+    internal void InvalidateCompletionSourceFile(string path)
     {
         string extension = Path.GetExtension(path);
         if (extension.Equals(".cs", StringComparison.OrdinalIgnoreCase) ||
@@ -33,7 +44,7 @@ public partial class MainForm
 
     // Poll only file metadata for unchanged workspaces. This also catches changes
     // in referenced projects outside the explorer's FileSystemWatcher root.
-    private static bool TryGetCompletionSourceStamp(CompletionScopeSnapshot scope, out ulong stamp)
+    internal static bool TryGetCompletionSourceStamp(CompletionScopeSnapshot scope, out ulong stamp)
     {
         ulong hash = 14695981039346656037UL;
         void AddFile(string path)

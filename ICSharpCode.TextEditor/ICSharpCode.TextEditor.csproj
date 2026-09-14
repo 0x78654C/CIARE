@@ -88,9 +88,6 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="10.0.6" />
-  </ItemGroup>
   <PropertyGroup />
   <PropertyGroup>
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
