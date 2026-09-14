@@ -509,8 +509,18 @@ namespace CIARE.Utils.Explorer
             _fileExplorerNuGetPanel.BackColor = backColor;
             _fileExplorerNuGetTitleLabel.BackColor = headerColor;
             _fileExplorerNuGetTitleLabel.ForeColor = foreColor;
-            _fileExplorerNuGetList.BackColor = backColor;
-            _fileExplorerNuGetList.ForeColor = foreColor;
+            _fileExplorerNuGetList.BeginUpdate();
+            try
+            {
+                _fileExplorerNuGetList.BackColor = backColor;
+                _fileExplorerNuGetList.ForeColor = foreColor;
+                foreach (ListViewItem item in _fileExplorerNuGetList.Items)
+                    _mainForm.NuGetFeature.ApplyFileExplorerNuGetItemTheme(item);
+            }
+            finally
+            {
+                _fileExplorerNuGetList.EndUpdate();
+            }
 
             ApplyFileExplorerButtonTheme(_fileExplorerOpenFolderButton, buttonBackColor, foreColor, borderColor);
             ApplyFileExplorerButtonTheme(_fileExplorerHideButton, buttonBackColor, foreColor, borderColor);

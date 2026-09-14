@@ -1,5 +1,6 @@
 using CIARE.GUI;
 using CIARE.Utils;
+using CIARE.Utils.NuGetManage;
 using CIARE.Roslyn;
 using ICSharpCode.TextEditor;
 using ICSharpCode.TextEditor.Document;
@@ -282,6 +283,9 @@ internal static class StartupRegression
         Invoke(form.WindowStateFeature, "ToggleFullScreen");
         CheckMenuStatusLayout(form);
 
+        if (scenario is "dark" or "light")
+            CheckExplorerNuGetTheme(form, firstEditor);
+
         for (int index = 0; index < 3; index++)
         {
             form.SetHighLighter(firstEditor, "C#-Light");
@@ -322,6 +326,75 @@ internal static class StartupRegression
         Assert(form.IsDisposed, "Completion tolerates a disposed form");
         Pump(100);
         Console.Error.WriteLine($"Startup to Show completed: {elapsed.ElapsedMilliseconds} ms ({scenario})");
+    }
+
+    private static void CheckExplorerNuGetTheme(MainForm form, TextEditorControl editor)
+    {
+        var list = form.ExplorerFeature._fileExplorerNuGetList;
+        var originalItems = list.Items.Cast<ListViewItem>().ToArray();
+        var packages = new List<ProjectNuGetPackageReference>
+        {
+            new() { Name = "Used.Package", Version = "1.0", UnusedCheckCompleted = true },
+            new() { Name = "Unused.Package", Version = "2.0", UnusedCheckCompleted = true, IsUnused = true },
+            new() { Name = "Pending.Package", Version = "3.0" }
+        };
+        var applyMetadata = form.NuGetMetadataFeature.GetType().GetMethod("ApplyExplorerNuGetPackageMetadata", PrivateInstance);
+        void CompleteMetadata() => applyMetadata.Invoke(form.NuGetMetadataFeature, new object[]
+        {
+            form.ProjectContextFeature.GetActivePackageProjectPath(), packages,
+            form.NuGetFeature._fileExplorerNuGetListRefreshVersion
+        });
+
+        try
+        {
+            list.Items.Clear();
+            foreach (var package in packages)
+            {
+                list.Items.Add(new ListViewItem(new[] { package.Name, package.Version, "Checking...", "Checking..." })
+                {
+                    Tag = package
+                });
+            }
+            form.NuGetFeature.GetType().GetMethod("AddFileExplorerNuGetPlaceholder", PrivateInstance)
+                .Invoke(form.NuGetFeature, new object[] { "No project selected" });
+            var rows = list.Items.Cast<ListViewItem>().ToArray();
+            rows[0].Selected = true;
+            CompleteMetadata();
+            Assert(rows[0].SubItems[3].Text == "Used" && rows[1].SubItems[3].Text == "Unused",
+                "Package usage metadata populates the explorer rows");
+            var names = new[] { "C#-Light", "C#-Dark", "C#-DarkVS" }
+                .Concat(ThemeManager.ExternalThemeNames).Concat(new[] { "C#-Light", "C#-Dark" });
+            foreach (string name in names)
+            {
+                form.SetHighLighter(editor, name);
+                void CheckColors()
+                {
+                    Assert(rows[0].ForeColor == list.ForeColor && rows[2].ForeColor == list.ForeColor,
+                        name + " used and pending packages follow the explorer text color");
+                    Assert(rows[1].ForeColor == (GlobalVariables.darkColor ? Color.FromArgb(245, 174, 96) : Color.DarkOrange),
+                        name + " unused packages follow the warning color");
+                    Assert(rows[3].ForeColor == (GlobalVariables.darkColor ? Color.FromArgb(150, 170, 165) : SystemColors.GrayText),
+                        name + " empty package list follows the placeholder color");
+                }
+                CheckColors();
+                // Usage results arriving after the switch must also use the current palette.
+                CompleteMetadata();
+                CheckColors();
+                Assert(list.Items.Cast<ListViewItem>().SequenceEqual(rows) && rows[0].Selected,
+                    name + " theme changes preserve package rows and selection");
+            }
+
+            packages[1].IsUnused = false;
+            CompleteMetadata();
+            Assert(rows[1].ForeColor == list.ForeColor && rows[1].SubItems[3].Text == "Used",
+                "A package becoming used clears its warning color");
+        }
+        finally
+        {
+            list.Items.Clear();
+            list.Items.AddRange(originalItems);
+            form.ExplorerFeature.ApplyFileExplorerTheme();
+        }
     }
 
     private static void VerifyLocalResolveResult()

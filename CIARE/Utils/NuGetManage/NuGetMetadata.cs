@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -115,9 +114,7 @@ namespace CIARE.Utils.NuGetManage
                     item.SubItems[2].Text = FormatExplorerNuGetUpdateText(package);
                     item.SubItems[3].Text = FormatExplorerNuGetStatusText(package);
                     item.ToolTipText = FormatExplorerNuGetToolTip(package);
-                    item.ForeColor = package.UnusedCheckCompleted && package.IsUnused
-                        ? (GlobalVariables.darkColor ? Color.FromArgb(245, 174, 96) : Color.DarkOrange)
-                        : _mainForm.ExplorerFeature._fileExplorerNuGetList.ForeColor;
+                    _mainForm.NuGetFeature.ApplyFileExplorerNuGetItemTheme(item);
                 }
             }
             finally

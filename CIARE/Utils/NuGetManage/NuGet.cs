@@ -80,6 +80,7 @@ namespace CIARE.Utils.NuGetManage
                         Tag = package,
                         ToolTipText = FormatExplorerNuGetToolTip(package)
                     };
+                    ApplyFileExplorerNuGetItemTheme(item);
                     _mainForm.ExplorerFeature._fileExplorerNuGetList.Items.Add(item);
                 }
             }
@@ -188,11 +189,23 @@ namespace CIARE.Utils.NuGetManage
 
         private void AddFileExplorerNuGetPlaceholder(string text)
         {
-            var item = new ListViewItem(new[] { text, string.Empty, string.Empty, string.Empty })
-            {
-                ForeColor = GlobalVariables.darkColor ? Color.FromArgb(150, 170, 165) : SystemColors.GrayText
-            };
+            var item = new ListViewItem(new[] { text, string.Empty, string.Empty, string.Empty });
+            ApplyFileExplorerNuGetItemTheme(item);
             _mainForm.ExplorerFeature._fileExplorerNuGetList.Items.Add(item);
+        }
+
+        internal void ApplyFileExplorerNuGetItemTheme(ListViewItem item)
+        {
+            if (item.Tag is not ProjectNuGetPackageReference package)
+            {
+                item.ForeColor = GlobalVariables.darkColor ? Color.FromArgb(150, 170, 165) : SystemColors.GrayText;
+                return;
+            }
+
+            // Used and pending rows inherit the list color so later theme changes remain visible.
+            item.ForeColor = package.UnusedCheckCompleted && package.IsUnused
+                ? (GlobalVariables.darkColor ? Color.FromArgb(245, 174, 96) : Color.DarkOrange)
+                : Color.Empty;
         }
 
         internal void ResizeFileExplorerNuGetColumns()
