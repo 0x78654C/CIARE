@@ -8,6 +8,8 @@ The runner builds an isolated copy under `.tmp`, substitutes dedicated test data
 
 Checks cover first visibility, pane sizes, dark/light themes, restored tabs, maximized and corrupt window settings, completion enabled/disabled, Ollama settings, tab creation/removal, caret subscriptions, resize persistence, fullscreen, repeated theme changes, second-launch arguments, and completion during disposal.
 
+Run the Live Share checks with `& .\Tests.Startup\Run.ps1 -Scenarios @('live-share-dark', 'live-share-light')`. These start a temporary localhost SignalR relay and two clients, checking nickname persistence, Unicode names, the deployed server's message-size limit, remote edits without echoes, legacy clients, separate local/remote caret labels, cursor-only updates, join announcements, preservation of local selections and scrolling, expiry, reconnection and disconnect cleanup. Management-form and editor snapshots are saved with the other artifacts. The ASP.NET Core framework reference is added only to the isolated test copy.
+
 The `dark` scenario also loads all 11 bundled C# themes and checks actual token colors for modern keywords, common .NET types, comments, escaped/verbatim strings, nullable directives, XML documentation, and punctuation. It checks text/selection contrast, completion palette consistency, and exact span delimiters, and saves a `theme-*.png` editor preview for every palette alongside the startup snapshots.
 
 The dark scenario also cancels the normal close sequence with two unsaved documents and verifies that CIARE stays open with both documents intact, including when Save As is cancelled after choosing to save. This covers the save prompt used when handing off to the updater. Isolated startup tests do not enable production GitHub checks.

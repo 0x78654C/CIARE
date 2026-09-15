@@ -69,6 +69,7 @@ namespace CIARE.Utils
         public static bool noClear { get; set; } = false;
         public static string binaryName = string.Empty;
         public static string livePassword = string.Empty;
+        public static string liveShareNickname = "Guest";
         public static string remoteLivePassword = string.Empty;
         public static string sessionId = string.Empty;
         public static string sessionIdMain = string.Empty;

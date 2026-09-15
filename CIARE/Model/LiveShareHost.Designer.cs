@@ -44,6 +44,8 @@
             remoteSessionLbl = new System.Windows.Forms.Label();
             liveApiPb = new System.Windows.Forms.PictureBox();
             checkLiveAPITimer = new System.Windows.Forms.Timer(components);
+            nicknameLbl = new System.Windows.Forms.Label();
+            nicknameTxt = new System.Windows.Forms.TextBox();
             liveShareStartGrp.SuspendLayout();
             remoteGrp.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)liveApiPb).BeginInit();
@@ -56,10 +58,10 @@
             liveShareStartGrp.Controls.Add(startLiveBtn);
             liveShareStartGrp.Controls.Add(sessionTxt);
             liveShareStartGrp.Controls.Add(sessionIdLbl);
-            liveShareStartGrp.Location = new System.Drawing.Point(12, 12);
+            liveShareStartGrp.Location = new System.Drawing.Point(12, 57);
             liveShareStartGrp.Name = "liveShareStartGrp";
             liveShareStartGrp.Size = new System.Drawing.Size(255, 213);
-            liveShareStartGrp.TabIndex = 0;
+            liveShareStartGrp.TabIndex = 1;
             liveShareStartGrp.TabStop = false;
             liveShareStartGrp.Text = "Live Share Host";
             // 
@@ -120,7 +122,7 @@
             remoteGrp.Controls.Add(connectHostBtn);
             remoteGrp.Controls.Add(remoteSessioniDtxt);
             remoteGrp.Controls.Add(remoteSessionLbl);
-            remoteGrp.Location = new System.Drawing.Point(284, 12);
+            remoteGrp.Location = new System.Drawing.Point(284, 57);
             remoteGrp.Name = "remoteGrp";
             remoteGrp.Size = new System.Drawing.Size(255, 213);
             remoteGrp.TabIndex = 5;
@@ -179,7 +181,7 @@
             // liveApiPb
             // 
             liveApiPb.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            liveApiPb.Location = new System.Drawing.Point(7, 229);
+            liveApiPb.Location = new System.Drawing.Point(7, 274);
             liveApiPb.Name = "liveApiPb";
             liveApiPb.Size = new System.Drawing.Size(18, 19);
             liveApiPb.TabIndex = 20;
@@ -189,13 +191,30 @@
             // 
             checkLiveAPITimer.Interval = 1000;
             checkLiveAPITimer.Tick += checkLiveAPITimer_Tick;
+            //
+            // nicknameLbl
+            //
+            nicknameLbl.AutoSize = true;
+            nicknameLbl.Location = new System.Drawing.Point(21, 21);
+            nicknameLbl.Name = "nicknameLbl";
+            nicknameLbl.Text = "Your nickname:";
+            //
+            // nicknameTxt
+            //
+            nicknameTxt.Location = new System.Drawing.Point(121, 17);
+            nicknameTxt.MaxLength = 32;
+            nicknameTxt.Name = "nicknameTxt";
+            nicknameTxt.Size = new System.Drawing.Size(408, 23);
+            nicknameTxt.TabIndex = 0;
             // 
             // LiveShareHost
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             BackColor = System.Drawing.SystemColors.Window;
-            ClientSize = new System.Drawing.Size(551, 254);
+            ClientSize = new System.Drawing.Size(551, 299);
+            Controls.Add(nicknameTxt);
+            Controls.Add(nicknameLbl);
             Controls.Add(liveApiPb);
             Controls.Add(remoteGrp);
             Controls.Add(liveShareStartGrp);
@@ -213,6 +232,7 @@
             remoteGrp.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)liveApiPb).EndInit();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -231,5 +251,7 @@
         private System.Windows.Forms.Label remoteSessionLbl;
         public System.Windows.Forms.PictureBox liveApiPb;
         private System.Windows.Forms.Timer checkLiveAPITimer;
+        private System.Windows.Forms.Label nicknameLbl;
+        private System.Windows.Forms.TextBox nicknameTxt;
     }
 }

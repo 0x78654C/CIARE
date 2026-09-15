@@ -17,6 +17,7 @@ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'StartupRegression.cs') -Destina
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ResourceRegression.cs') -Destination $copy
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ProjectBuildRegression.cs') -Destination $copy
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ThemeRegression.cs') -Destination $copy
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'LiveShareRegression.cs') -Destination $copy
 $globalsPath = Join-Path $copy 'Utils\GlobalVariables.cs'
 $globals = [IO.File]::ReadAllText($globalsPath)
 $globals = [regex]::Replace($globals, '(?m)^        public static readonly string userProfileDirectory = .*;\r?$',
@@ -45,6 +46,11 @@ foreach ($entry in @{ StartupObject = 'CIARE.StartupRegression'; OutputType = 'E
     $properties.AppendChild($property) | Out-Null
 }
 $project.Project.AppendChild($properties) | Out-Null
+$testReferences = $project.CreateElement('ItemGroup')
+$testFramework = $project.CreateElement('FrameworkReference')
+$testFramework.SetAttribute('Include', 'Microsoft.AspNetCore.App')
+$testReferences.AppendChild($testFramework) | Out-Null
+$project.Project.AppendChild($testReferences) | Out-Null
 $project.Save($projectPath)
 
 dotnet build $projectPath -c $Configuration -m:1 -nr:false -p:UseSharedCompilation=false -p:NuGetAudit=false -clp:ErrorsOnly "-flp:logfile=$runRoot\build.log"

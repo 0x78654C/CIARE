@@ -14,10 +14,15 @@ namespace CIARE
     public partial class LiveShareHost : Form
     {
         private const long LiveShareMaxBufferBytes = 8L * 1024L * 1024L;
+        private const string NicknameRegistryKey = "LiveShareNickname";
 
         public LiveShareHost()
         {
             InitializeComponent();
+            string savedNickname = RegistryManagement.RegKey_Read(
+                $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", NicknameRegistryKey);
+            nicknameTxt.Text = LiveSharePosition.TryNormalizeNickname(savedNickname, out string nickname)
+                ? nickname : GlobalVariables.liveShareNickname;
         }
 
         private void LiveShareHost_Load(object sender, EventArgs e)
@@ -86,6 +91,9 @@ namespace CIARE
         /// <param name="e"></param>
         private async void startLiveBtn_Click(object sender, EventArgs e)
         {
+            if (!GlobalVariables.apiConnected && !SaveNickname())
+                return;
+
             // Check if live share API is up.
             Network network = new Network(GlobalVariables.apiUrl);
             if (!network.IsLiveApiConnected())
@@ -210,6 +218,9 @@ namespace CIARE
         /// <param name="e"></param>
         private async void connectHostBtn_Click(object sender, EventArgs e)
         {
+            if (!GlobalVariables.apiRemoteConnected && !SaveNickname())
+                return;
+
             Network network = new Network(GlobalVariables.apiUrl);
             if (!network.IsLiveApiConnected())
             {
@@ -345,8 +356,26 @@ namespace CIARE
         /// <param name="e"></param>
         private void LiveShareHost_FormClosing(object sender, FormClosingEventArgs e)
         {
+            SaveNickname(showValidation: false);
             checkLiveAPITimer.Stop();
             checkLiveAPITimer.Enabled = false;
+        }
+
+        private bool SaveNickname(bool showValidation = true)
+        {
+            if (!LiveSharePosition.TryNormalizeNickname(nicknameTxt.Text, out string nickname))
+            {
+                if (showValidation)
+                {
+                    MessageBox.Show("Enter a nickname of 1 to 32 characters without control characters.",
+                        "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    nicknameTxt.Focus();
+                }
+                return false;
+            }
+            GlobalVariables.liveShareNickname = nickname;
+            RegistryManagement.RegKey_CreateKey(GlobalVariables.registryPath, NicknameRegistryKey, nickname);
+            return true;
         }
     }
 }

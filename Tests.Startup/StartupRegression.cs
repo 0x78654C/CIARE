@@ -67,7 +67,7 @@ internal static class StartupRegression
             ThemeRegression.Run(Assert, AppContext.BaseDirectory);
 
         using var settings = Registry.CurrentUser.CreateSubKey(GlobalVariables.registryPath);
-        settings.SetValue("highlight", scenario == "light" ? "C#-Light" : "C#-Dark");
+        settings.SetValue("highlight", scenario == "light" || scenario == "live-share-light" ? "C#-Light" : "C#-Dark");
         settings.SetValue("OCodeCompletion", (scenario == "completion" || scenario == "memory" || scenario.StartsWith("resources") || scenario.StartsWith("retention")).ToString());
         settings.SetValue("OStartUp", "False");
         settings.SetValue("windowSize", scenario == "corrupt" ? "broken|size|value" : "1000|700");
@@ -110,12 +110,12 @@ internal static class StartupRegression
             visibleEvents++;
             Assert(form.isLoaded, "Startup completed before first visibility");
             Assert(form.EditorTabControl.SelectedIndex > 0, "Editor selected before first visibility");
-            Assert(GlobalVariables.darkColor == (scenario != "light"), "Theme ready before first visibility");
+            Assert(GlobalVariables.darkColor == (scenario != "light" && scenario != "live-share-light"), "Theme ready before first visibility");
             Assert(updateMenu.BackColor == form.aboutToolStripMenuItem.BackColor
                 && updateMenu.ForeColor == form.aboutToolStripMenuItem.ForeColor, "Update command matches Help colors before first visibility");
             Assert(!form.progressBar.Visible, "AI progress indicator is hidden at startup");
             Assert(GetField<TreeView>(form.ExplorerFeature, "_fileExplorerTree").BackColor ==
-                (scenario == "light" ? SystemColors.Window : GlobalVariables.controlBgColor),
+                (scenario == "light" || scenario == "live-share-light" ? SystemColors.Window : GlobalVariables.controlBgColor),
                 "Explorer palette matches the initial theme");
             Assert(GetField<SplitContainer>(form.ExplorerFeature, "_editorExplorerSplitContainer").Panel2Collapsed == (scenario == "light"),
                 "Explorer visibility ready before first visibility");
@@ -131,6 +131,11 @@ internal static class StartupRegression
         elapsed.Stop();
         Assert(visibleEvents == 1, "Main form shown once");
         Assert(form.isLoaded, "Main form loaded");
+        if (scenario.StartsWith("live-share"))
+        {
+            LiveShareRegression.Run(form, Assert, scenario);
+            return;
+        }
         if (scenario == "project-build")
         {
             ProjectBuildRegression.Run(form, Assert);

@@ -37,13 +37,15 @@ namespace CIARE.LiveShareManage
         /// </summary>
         internal async void SendData()
         {
-            GlobalVariables.codeWriter = false;
-
-            if (!GlobalVariables.connected)
+            if (!GlobalVariables.connected || GlobalVariables.codeWriter ||
+                _mainForm.EditorTabControl.SelectedIndex != GlobalVariables.liveTabIndex)
                 return;
 
+            var connection = hubConnection;
             await Task.Delay(10);
-            await _apiConnectionEvents.SendData(hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
+            if (!GlobalVariables.connected || GlobalVariables.codeWriter || !ReferenceEquals(connection, hubConnection) || _mainForm.IsDisposed)
+                return;
+            await _apiConnectionEvents.SendData(connection, GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
         }
 
         /// <summary>
