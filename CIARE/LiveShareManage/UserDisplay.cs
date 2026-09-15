@@ -80,7 +80,7 @@ namespace CIARE.LiveShareManage
                     if (!viewport.Contains(x, y))
                         continue;
 
-                    using Font font = SystemFonts.MessageBoxFont;
+                    Font font = _textArea.TextEditorProperties.FontContainer.RegularFont;
                     const TextFormatFlags flags = TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine |
                         TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter | TextFormatFlags.PreserveGraphicsClipping;
                     bool isLocal = entry.Key == LocalParticipant;
