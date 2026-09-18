@@ -25,8 +25,8 @@ namespace CIARE.LiveShareManage
             _textArea = editor.ActiveTextAreaControl.TextArea;
             _textArea.Paint += Paint;
             _textArea.Disposed += TextAreaDisposed;
-            _timer = new Timer { Interval = 250 };
-            _timer.Tick += Expire;
+            //_timer = new Timer { Interval = 250 };
+            //_timer.Tick += Expire;
         }
 
         internal void Show(string connectionId, string nickname, int line, int column)
