@@ -29,6 +29,15 @@ namespace CIARE.LiveShareManage
             _caretPublisher = new LiveShareCaretPublisher(hubConnection, editor, display, GlobalVariables.sessionId);
             // Reconnecting must not apply each incoming edit more than once.
             hubConnection.Remove("GetSend");
+            hubConnection.Remove("UserDisconnected");
+            hubConnection.On<string>("UserDisconnected", connectionId =>
+            {
+                RunOnEditor(editor, () =>
+                {
+                    if (ReferenceEquals(_userDisplay, display))
+                        display.Remove(connectionId);
+                });
+            });
             hubConnection.On<string, string, string>("GetSend", (code, position, connectionId) =>
             {
                 RunOnEditor(editor, () =>
@@ -99,6 +108,19 @@ namespace CIARE.LiveShareManage
                 _caretPublisher?.Start();
         }
 
+        internal static async Task StopConnection(HubConnection connection)
+        {
+            if (connection == null)
+                return;
+            var publisher = ReferenceEquals(connection, _displayConnection) ? _caretPublisher : null;
+            if (publisher != null)
+                GlobalVariables.connected = false;
+            ClearUserDisplay(connection);
+            if (publisher != null)
+                await publisher.LeaveAsync();
+            await connection.StopAsync();
+        }
+
         private static string GetPosition(TextEditorControl editor) => LiveSharePosition.Encode(
             GoToLineNumber.GetLineNumber(editor), GoToLineNumber.GetColumnNumber(editor), GlobalVariables.liveShareNickname);
 
@@ -160,10 +182,8 @@ namespace CIARE.LiveShareManage
         {
             if (GlobalVariables.apiRemoteConnected)
             {
-                ClearUserDisplay();
                 GlobalVariables.apiRemoteConnected = false;
-                if (hubConnection != null)
-                    await hubConnection.StopAsync();
+                await StopConnection(hubConnection);
                 MainForm.Instance.liveStatusPb.Image = null;
                 RemoveReadOnlyTextEditor(textEditorControl);
                 GlobalVariables.connected = false;
@@ -265,13 +285,7 @@ namespace CIARE.LiveShareManage
         /// <summary>
         /// Close api hub connection.
         /// </summary>
-        public async Task CloseConnection(HubConnection hubConnection)
-        {
-            ClearUserDisplay();
-            MainForm.Instance.liveStatusPb.Image = Properties.Resources.orange_dot;
-            if (hubConnection != null)
-                await hubConnection.StopAsync();
-        }
+        public Task CloseConnection(HubConnection hubConnection) => StopConnection(hubConnection);
 
         /// <summary>
         /// Start live share event.
@@ -288,11 +302,9 @@ namespace CIARE.LiveShareManage
         {
             if (GlobalVariables.apiConnected)
             {
-                ClearUserDisplay();
                 startShareBtn.Text = "Start Live Share";
                 GlobalVariables.apiConnected = false;
-                if (hubConnection != null)
-                    await hubConnection.StopAsync();
+                await StopConnection(hubConnection);
                 MainForm.Instance.liveStatusPb.Image = null;
                 connectBtn.Enabled = true;
                 if (GlobalVariables.darkColor)

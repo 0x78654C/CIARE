@@ -11,22 +11,22 @@ namespace CIARE.LiveShareManage
     [SupportedOSPlatform("windows")]
     internal sealed class UserDisplay : IDisposable
     {
-        private const int DisplayMilliseconds = 3000;
+        internal const int PresenceTimeoutMilliseconds = 10000;
         private const string LocalParticipant = "\0local";
         private readonly TextArea _textArea;
-        private readonly Timer _timer;
+        private readonly Timer _expiryTimer;
         private readonly Dictionary<string, Participant> _participants = new();
         private bool _disposed;
 
-        private sealed record Participant(string Nickname, int Line, int Column, long UpdatedAt);
+        private sealed record Participant(string Nickname, int Line, int Column, long LastSeen);
 
         internal UserDisplay(TextEditorControl editor)
         {
             _textArea = editor.ActiveTextAreaControl.TextArea;
             _textArea.Paint += Paint;
             _textArea.Disposed += TextAreaDisposed;
-            //_timer = new Timer { Interval = 250 };
-            //_timer.Tick += Expire;
+            _expiryTimer = new Timer { Interval = 250 };
+            _expiryTimer.Tick += ExpireDisconnectedParticipants;
         }
 
         internal void Show(string connectionId, string nickname, int line, int column)
@@ -37,25 +37,34 @@ namespace CIARE.LiveShareManage
                 _participants.Remove(connectionId);
             else
                 _participants[connectionId] = new Participant(normalized, line, column, Environment.TickCount64);
-            _timer.Enabled = _participants.Count > 0;
+            _expiryTimer.Enabled = _participants.Count > 0;
             _textArea.Invalidate();
         }
 
         internal void ShowLocal(string nickname, int line, int column) => Show(LocalParticipant, nickname, line, column);
 
-        private void Expire(object sender, EventArgs e)
+        internal void Remove(string connectionId)
         {
+            if (!_disposed && !string.IsNullOrEmpty(connectionId) && connectionId != LocalParticipant &&
+                _participants.Remove(connectionId))
+                _textArea.Invalidate();
+        }
+
+        private void ExpireDisconnectedParticipants(object sender, EventArgs e)
+        {
+            long now = Environment.TickCount64;
             var expired = new List<string>();
             foreach (var entry in _participants)
             {
-                if (Environment.TickCount64 - entry.Value.UpdatedAt >= DisplayMilliseconds)
+                // Connected clients refresh presence even when their caret does not move.
+                if (entry.Key != LocalParticipant && now - entry.Value.LastSeen >= PresenceTimeoutMilliseconds)
                     expired.Add(entry.Key);
             }
             foreach (string connectionId in expired)
                 _participants.Remove(connectionId);
+            _expiryTimer.Enabled = _participants.Count > 0;
             if (expired.Count > 0)
                 _textArea.Invalidate();
-            _timer.Enabled = _participants.Count > 0;
         }
 
         private void Paint(object sender, PaintEventArgs e)
@@ -119,9 +128,9 @@ namespace CIARE.LiveShareManage
             if (_disposed)
                 return;
             _disposed = true;
-            _timer.Stop();
-            _timer.Tick -= Expire;
-            _timer.Dispose();
+            _expiryTimer.Stop();
+            _expiryTimer.Tick -= ExpireDisconnectedParticipants;
+            _expiryTimer.Dispose();
             _textArea.Paint -= Paint;
             _textArea.Disposed -= TextAreaDisposed;
             _participants.Clear();

@@ -2,13 +2,17 @@ using CIARE.Utils;
 using ICSharpCode.TextEditor;
 using Microsoft.AspNetCore.SignalR.Client;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using Timer = System.Windows.Forms.Timer;
 
 namespace CIARE.LiveShareManage
 {
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     internal sealed class LiveShareCaretPublisher : IDisposable
     {
+        private const int HeartbeatMilliseconds = 2000;
         private readonly HubConnection _connection;
         private readonly TextEditorControl _editor;
         private readonly UserDisplay _display;
@@ -16,6 +20,9 @@ namespace CIARE.LiveShareManage
         private readonly Timer _timer;
         private bool _started;
         private bool _disposed;
+        private bool _pending;
+        private long _nextHeartbeat;
+        private Task _publishTask = Task.CompletedTask;
 
         internal LiveShareCaretPublisher(HubConnection connection, TextEditorControl editor,
             UserDisplay display, string sessionId)
@@ -42,6 +49,7 @@ namespace CIARE.LiveShareManage
                 return;
             var caret = _editor.ActiveTextAreaControl.Caret;
             _display.ShowLocal(GlobalVariables.liveShareNickname, caret.Line, caret.Column);
+            _pending = true;
             _timer.Start();
         }
 
@@ -49,19 +57,43 @@ namespace CIARE.LiveShareManage
 
         private async void Publish(object sender, EventArgs e)
         {
-            _timer.Stop();
-            if (_disposed || _connection.State != HubConnectionState.Connected || GlobalVariables.codeWriter)
+            if (_disposed || !_started || !_publishTask.IsCompleted ||
+                _connection.State != HubConnectionState.Connected || GlobalVariables.codeWriter ||
+                (!_pending && Environment.TickCount64 < _nextHeartbeat))
                 return;
+            _pending = false;
+            _nextHeartbeat = Environment.TickCount64 + HeartbeatMilliseconds;
             var caret = _editor.ActiveTextAreaControl.Caret;
             string position = LiveSharePosition.Encode(caret.Line, caret.Column, GlobalVariables.liveShareNickname);
             try
             {
                 // Empty code carries presence only; moving a cursor never replaces a document.
-                await _connection.InvokeAsync("GetSendCode", _sessionId, string.Empty, position);
+                _publishTask = _connection.InvokeAsync("GetSendCode", _sessionId, string.Empty, position);
+                await _publishTask;
             }
             catch
             {
                 // The connection's Closed handler handles loss of connectivity.
+            }
+        }
+
+        internal async Task LeaveAsync()
+        {
+            Dispose();
+            if (_connection.State != HubConnectionState.Connected)
+                return;
+            try
+            {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                // Finish an in-flight heartbeat before announcing departure so it cannot
+                // recreate the marker. A nameless caret works with the existing relay API.
+                await _publishTask.WaitAsync(timeout.Token).ConfigureAwait(false);
+                await _connection.InvokeAsync("GetSendCode", _sessionId, string.Empty, "0|0", timeout.Token)
+                    .ConfigureAwait(false);
+            }
+            catch
+            {
+                // If the network is already down, peers expire the missing heartbeat.
             }
         }
 

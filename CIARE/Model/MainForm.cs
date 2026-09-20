@@ -648,7 +648,7 @@ namespace CIARE
             }
 
             // Stop Live share if connected.
-            Task.Run(() => LiveShareEventsFeature._apiConnectionEvents.CloseConnection(hubConnection));
+            _ = LiveShareEventsFeature._apiConnectionEvents?.CloseConnection(hubConnection);
 
             ExplorerLayoutFeature.SaveFileExplorerWidth(force: true);
             ExplorerLayoutFeature.SaveFileExplorerNuGetHeight(force: true);

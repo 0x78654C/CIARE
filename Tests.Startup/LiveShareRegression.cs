@@ -25,6 +25,14 @@ internal static class LiveShareRegression
 {
     internal static void Run(MainForm form, Action<bool, string> assert, string scenario)
     {
+        RunSession(form, assert, scenario, disconnectNotifications: true);
+        RunSession(form, assert, scenario, disconnectNotifications: false);
+    }
+
+    private static void RunSession(MainForm form, Action<bool, string> assert, string scenario, bool disconnectNotifications)
+    {
+        LiveShareTestHub.Messages = 0;
+        LiveShareTestHub.DisconnectNotifications = disconnectNotifications;
         Control.CheckForIllegalCrossThreadCalls = true;
         const string password = "local-test-password";
         var builder = WebApplication.CreateBuilder(Array.Empty<string>());
@@ -37,11 +45,16 @@ internal static class LiveShareRegression
         string url = server.Urls.Single() + "/live";
         var sender = new HubConnectionBuilder().WithUrl(url).Build();
         var receiver = new HubConnectionBuilder().WithUrl(url).Build();
+        var otherParticipant = new HubConnectionBuilder().WithUrl(url).Build();
         var replies = new ConcurrentQueue<(string Code, string Position)>();
         sender.On<string, string, string>("GetSend", (code, position, _) => replies.Enqueue((code, position)));
+        var otherReplies = new ConcurrentQueue<(string Code, string Position, string Id)>();
+        otherParticipant.On<string, string, string>("GetSend", (code, position, id) => otherReplies.Enqueue((code, position, id)));
         var editor = SelectedEditor.GetSelectedEditor();
         var area = editor.ActiveTextAreaControl.TextArea;
         using var source = new TextEditorControl();
+        using var senderDisplay = new UserDisplay(source);
+        using var senderPresence = new LiveShareCaretPublisher(sender, source, senderDisplay, "local-test");
         try
         {
             GlobalVariables.apiUrl = url;
@@ -159,16 +172,78 @@ internal static class LiveShareRegression
             ApiConnectionEvents.ClearUserDisplay(sender);
             using (var snapshot = Capture(area))
                 assert(!BadgeBounds(snapshot).IsEmpty, "A stale connection cannot clear the current participant display");
-            Pump(3300);
+            source.ActiveTextAreaControl.Caret.Position = new TextLocation(3, 0);
+            senderPresence.Start();
+            int beforeHeartbeat = changed;
+            Pump(UserDisplay.PresenceTimeoutMilliseconds + 1500);
             using (var snapshot = Capture(area))
-                assert(BadgeBounds(snapshot).IsEmpty, "Typing badge expires after inactivity");
+                assert(!BadgeBounds(snapshot).IsEmpty, "Heartbeats keep an idle participant visible beyond the disconnect timeout");
+            assert(changed == beforeHeartbeat, "Presence heartbeats do not rewrite the document");
 
-            Complete(sender.InvokeAsync("GetSendCode", "local-test", AESEncryption.Encrypt("disconnect", password), "0|3|Ana"));
-            PumpUntil(() => editor.Text == "disconnect");
-            Complete(receiver.StopAsync());
+            ApiConnectionEvents.StartPresence(receiver);
+            Complete(sender.InvokeAsync("GetSendCode", "local-test", AESEncryption.Encrypt(source.Text, password), "0|3|Ana"));
+            PumpUntil(() => editor.Text == source.Text);
+            Complete(otherParticipant.StartAsync());
+            Complete(otherParticipant.InvokeAsync("GetSendCode", "local-test", string.Empty, "50|3|Ana"));
             Pump(100);
             using (var snapshot = Capture(area))
-                assert(BadgeBounds(snapshot).IsEmpty, "Disconnect removes the typing badge");
+                assert(!BadgeBounds(snapshot).IsEmpty, "Remote name and caret are visible before disconnect");
+            string disconnectedId = sender.ConnectionId;
+            if (!disconnectNotifications)
+                Complete(senderPresence.LeaveAsync());
+            Complete(sender.StopAsync());
+            PumpUntil(() =>
+            {
+                using var snapshot = Capture(area);
+                return BadgeBounds(snapshot).IsEmpty;
+            });
+            using (var snapshot = Capture(area))
+            {
+                assert(BadgeBounds(snapshot).IsEmpty, "Remote disconnect removes the blue name and caret");
+                assert(!BadgeBounds(snapshot, local: true).IsEmpty, "Remote disconnect preserves the local name and caret");
+                snapshot.Save(Path.Combine(AppContext.BaseDirectory, scenario +
+                    (disconnectNotifications ? "-remote-disconnect.png" : "-legacy-disconnect.png")));
+            }
+            assert(receiver.State == HubConnectionState.Connected && editor.Text == source.Text,
+                "Remote disconnect preserves the local connection and shared document");
+            area.VirtualTop = new Point(0, area.TextView.FontHeight * 45);
+            using (var snapshot = Capture(area))
+                assert(!BadgeBounds(snapshot).IsEmpty, "Another connected participant with the same nickname keeps their caret");
+            area.VirtualTop = Point.Empty;
+
+            Complete(sender.StartAsync());
+            assert(sender.ConnectionId != disconnectedId, "Rejoining participant gets a new connection identity");
+            Complete(sender.InvokeAsync("GetSendCode", "local-test", string.Empty, "0|3|Ana"));
+            PumpUntil(() =>
+            {
+                using var snapshot = Capture(area);
+                return !BadgeBounds(snapshot).IsEmpty;
+            });
+            Complete(sender.SendAsync("AbortConnection"));
+            PumpUntil(() =>
+            {
+                using var snapshot = Capture(area);
+                return BadgeBounds(snapshot).IsEmpty;
+            });
+            assert(receiver.State == HubConnectionState.Connected, "Unexpected remote disconnect also removes its name and caret");
+            using (var snapshot = Capture(area))
+                assert(!BadgeBounds(snapshot, local: true).IsEmpty, "Missing remote heartbeats never expire the local marker");
+
+            Complete(otherParticipant.InvokeAsync("GetSendCode", "local-test", string.Empty, "0|3|Ana"));
+            PumpUntil(() =>
+            {
+                using var snapshot = Capture(area);
+                return !BadgeBounds(snapshot).IsEmpty;
+            });
+            string receiverId = receiver.ConnectionId;
+            Complete(ApiConnectionEvents.StopConnection(receiver));
+            PumpUntil(() => otherReplies.Any(reply => reply.Id == receiverId && reply.Code == string.Empty && reply.Position == "0|0"));
+            assert(receiver.State == HubConnectionState.Disconnected,
+                "Stopping a session announces departure through the existing relay before closing the connection");
+            Pump(100);
+            using (var snapshot = Capture(area))
+                assert(BadgeBounds(snapshot).IsEmpty && BadgeBounds(snapshot, local: true).IsEmpty,
+                    "Local disconnect removes all names and carets");
             GlobalVariables.connected = false;
             GlobalVariables.liveDisconnected = false;
         }
@@ -178,6 +253,7 @@ internal static class LiveShareRegression
             ApiConnectionEvents.ClearUserDisplay();
             Complete(sender.DisposeAsync().AsTask());
             Complete(receiver.DisposeAsync().AsTask());
+            Complete(otherParticipant.DisposeAsync().AsTask());
             Complete(server.DisposeAsync().AsTask());
             form.hubConnection = null;
             GlobalVariables.liveDisconnected = false;
@@ -217,7 +293,7 @@ internal static class LiveShareRegression
         var elapsed = Stopwatch.StartNew();
         while (!condition())
         {
-            if (elapsed.ElapsedMilliseconds > 10000)
+            if (elapsed.ElapsedMilliseconds > 15000)
                 throw new TimeoutException("Live Share test did not complete.");
             Application.DoEvents();
             Thread.Sleep(10);
@@ -236,6 +312,7 @@ public sealed class LiveShareTestHub : Hub
 {
     internal static int Messages;
     internal static string LastPosition;
+    internal static bool DisconnectNotifications;
     public async Task GetSendCode(string sessionId, string code, string position)
     {
         if (position?.Length > 64)
@@ -243,5 +320,14 @@ public sealed class LiveShareTestHub : Hub
         Interlocked.Increment(ref Messages);
         LastPosition = position;
         await Clients.Others.SendAsync("GetSend", code, position, Context.ConnectionId);
+    }
+
+    public void AbortConnection() => Context.Abort();
+
+    public override async Task OnDisconnectedAsync(Exception exception)
+    {
+        if (DisconnectNotifications)
+            await Clients.Others.SendAsync("UserDisconnected", Context.ConnectionId);
+        await base.OnDisconnectedAsync(exception);
     }
 }
