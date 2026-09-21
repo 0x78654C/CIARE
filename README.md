@@ -135,7 +135,7 @@ Collaborate on the same project or file in real time with another person.
 
 ![Live Share Settings](https://github.com/0x78654C/CIARE/blob/main/Media/ls_setting.png?raw=true)
 
-**2.** Go to **Live → Live Share Manage** and click **Start Live Share**. Share the generated Session ID and Password with your collaborator.
+**2.** Go to **Live → Live Share Manage**, enter **Your nickname**, and click **Start Live Share**. Share the generated Session ID and Password with your collaborator.
 
 ![Live Share Start](https://github.com/0x78654C/CIARE/blob/main/Media/ls_start.png?raw=true)
 
@@ -144,7 +144,9 @@ When broadcasting, a red notification bubble appears in the top-right corner and
 ![Live Share Notification](https://github.com/0x78654C/CIARE/blob/main/Media/ls_notify.png?raw=true)
 ![Live Share Active](https://github.com/0x78654C/CIARE/assets/13780514/fc1a8915-4439-4b5c-88f4-d957ece90f2e)
 
-**3.** To join a session, go to **Live → Live Share Manage**, enter the Session ID and Password in the **Remote Session Id/Password** fields, then click **Remote Connect**.
+**3.** To join a session, go to **Live → Live Share Manage**, choose **Your nickname**, enter the Session ID and Password in the **Remote Session Id/Password** fields, then click **Remote Connect**.
+
+Nicknames are remembered and appear when participants join, type, or move their carets, disappearing after three seconds of inactivity. Your nickname is marked **(you)** in green; remote users have separate blue carets and labels. Remote activity preserves your cursor, selection, and scroll position. Both participants need a client with nickname support to see these labels; older clients can still share code.
 
 ![Live Share Remote](https://github.com/0x78654C/CIARE/blob/main/Media/ls_remote.png?raw=true)
 
