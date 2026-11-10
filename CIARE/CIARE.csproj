@@ -126,6 +126,7 @@
     <!-- Independent utility classes open as code; MainForm owns the form designer. -->
     <UtilityFeature Include="Utils\Completion\*.cs;Utils\Editor\*.cs;Utils\Explorer\*.cs;Utils\Navigation\*.cs;Utils\Projects\*.cs;Utils\Window\*.cs" />
     <UtilityFeature Include="Utils\NuGetManage\NuGet.cs;Utils\NuGetManage\NuGetMetadata.cs;LiveShareManage\LiveShareEvents.cs" />
+    <UtilityFeature Include="Designer\*.cs" />
     <Compile Update="@(UtilityFeature)">
       <SubType>Code</SubType>
     </Compile>

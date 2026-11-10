@@ -78,6 +78,7 @@ namespace CIARE
         internal global::CIARE.Utils.Window.WindowState WindowStateFeature { get; }
         internal global::CIARE.Utils.Window.WindowTheme WindowThemeFeature { get; }
         internal Utils.Window.MenuStatusLayout MenuStatusLayoutFeature { get; }
+        internal Designer.FormDesignerFeature FormDesignerFeature { get; }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) =>
             EditorCommandsFeature.ProcessCmdKey(ref msg, keyData) || base.ProcessCmdKey(ref msg, keyData);
@@ -402,6 +403,7 @@ namespace CIARE
 
         public MainForm()
         {
+            FormDesignerFeature = new Designer.FormDesignerFeature(this);
             MenuStatusLayoutFeature = new Utils.Window.MenuStatusLayout(this);
             LiveShareEventsFeature = new global::CIARE.LiveShareManage.LiveShareEvents(this);
             CompletionParsingFeature = new global::CIARE.Utils.Completion.CompletionParsing(this);
@@ -443,6 +445,7 @@ namespace CIARE
             autoStartFile.CheckSetAtiveFormState();
             autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
+            FormDesignerFeature.Initialize();
             MenuStatusLayoutFeature.Initialize();
             ErrorsFeature.ConfigureErrorsListView();
             // Buffer individual surfaces. Compositing the entire HWND tree delays
@@ -596,6 +599,8 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            // Owned designers receive FormClosing first; preserve a cancelled save prompt.
+            if (e.Cancel) return;
             // Store tab text of current opened tab.
             var toolTipText = EditorTabControl.SelectedTab.ToolTipText.Trim();
             if (toolTipText.StartsWith("Add Tab"))

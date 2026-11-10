@@ -414,6 +414,19 @@ namespace CIARE
             File.WriteAllText(projectPath,
                 SelectedTemplate.BuildProjectFile(targetFramework, _nativeAotCheckBox.Checked), Encoding.UTF8);
             File.WriteAllText(starterPath, SelectedTemplate.BuildStarterFile(projectName, rootNamespace), Encoding.UTF8);
+            if (SelectedTemplate.UsesFormDesigner)
+            {
+                var layout = new Designer.DesignDocument();
+                layout.Form.Name = "MainForm";
+                layout.Form.Text = projectName;
+                layout.Form.Namespace = rootNamespace;
+                layout.Form.Size = new Size(800, 450);
+                layout.Form.Children.Add(Designer.DesignCatalog.Create("Label", "label1", new Point(24, 24)));
+                layout.Form.Children[0].Text = "Hello, Windows Forms!";
+                layout.Form.Children[0].Width = 240;
+                Designer.DesignCodeGenerator.Export(layout, Path.Combine(projectDirectory, "MainForm.cs"));
+                Designer.DesignDocument.WriteAtomic(Path.Combine(projectDirectory, "MainForm.ciareform"), layout.Serialize());
+            }
 
             if (addToExistingSolution)
                 AddProjectToSolution(solutionPath, projectName, projectPath);
@@ -898,21 +911,9 @@ namespace CIARE
                         "    [STAThread]\r\n" +
                         "    private static void Main()\r\n" +
                         "    {\r\n" +
+                        "        Application.EnableVisualStyles();\r\n" +
+                        "        Application.SetCompatibleTextRenderingDefault(false);\r\n" +
                         "        Application.Run(new MainForm());\r\n" +
-                        "    }\r\n" +
-                        "}\r\n\r\n" +
-                        "public sealed class MainForm : Form\r\n" +
-                        "{\r\n" +
-                        "    public MainForm()\r\n" +
-                        "    {\r\n" +
-                        $"        Text = \"{projectName}\";\r\n" +
-                        "        ClientSize = new Size(800, 450);\r\n" +
-                        "        Controls.Add(new Label\r\n" +
-                        "        {\r\n" +
-                        "            AutoSize = true,\r\n" +
-                        "            Location = new Point(24, 24),\r\n" +
-                        "            Text = \"Hello, Windows Forms!\"\r\n" +
-                        "        });\r\n" +
                         "    }\r\n" +
                         "}\r\n")
             };
@@ -937,6 +938,7 @@ namespace CIARE
             private string Name { get; }
             public string StarterFileName { get; }
             public bool RequiresWindowsTargetFramework { get; }
+            public bool UsesFormDesigner => Name == "Windows Forms App";
 
             public string BuildProjectFile(string targetFramework, bool publishAot) =>
                 _projectFileFactory(targetFramework, publishAot);

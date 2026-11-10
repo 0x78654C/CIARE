@@ -131,6 +131,11 @@ internal static class StartupRegression
         elapsed.Stop();
         Assert(visibleEvents == 1, "Main form shown once");
         Assert(form.isLoaded, "Main form loaded");
+        if (scenario == "form-designer")
+        {
+            FormDesignerRegression.Run(form, Assert);
+            return;
+        }
         if (scenario.StartsWith("live-share"))
         {
             LiveShareRegression.Run(form, Assert, scenario);

@@ -64,6 +64,16 @@
 - Errors & Warnings tab uses a sortable `ListView` — click any column header to sort; the *Line* column sorts numerically
 - C# 14 keyword support
 
+### Windows Forms Designer
+- **File → New Windows Form…** or **View → Form Designer…** (`Ctrl+Shift+D`) opens a native visual designer.
+- Search the Toolbox, then drag a control onto the form, click to place it, or double-click to add it. Includes 18 common WinForms controls, panels, and group boxes.
+- Select, move, and resize controls with handles; use the Document Outline to select nested controls. Includes grid snapping, keyboard movement, undo/redo, copy/paste, and front/back ordering.
+- **Properties** edits names, text, layout, colors, items, and control-specific settings. The adjacent **Events** tab assigns typed handlers. Double-click an event or a control to create a handler; **Edit code** exports and opens its implementation in CIARE.
+- **Save** stores a `.ciareform` layout. Open it from the designer or File Explorer to continue editing. New **Windows Forms App** projects include `MainForm.ciareform`.
+- **Export C#…** writes a partial form `.cs` and generated `.Designer.cs` into your WinForms project. Re-export after layout/event changes; existing handler bodies are preserved and missing handlers are added. Save open C# editor changes before exporting.
+- **Preview** (`F5`) opens interactive controls without executing handler code. **View Code** shows the generated source.
+- The designer edits CIARE layouts; it does not import arbitrary existing Visual Studio `.Designer.cs` files. Exported forms require a Windows-targeted project with `UseWindowsForms` enabled.
+
 ### Workspace & Files
 - **File Explorer** — built-in tree-view panel docked alongside the editor; open any folder to browse and open files directly
 - File Explorer state (open folder path and panel visibility) is saved to the Windows Registry and restored automatically on next launch

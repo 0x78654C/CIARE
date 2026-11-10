@@ -449,6 +449,11 @@ namespace CIARE.Utils.Explorer
 
         internal void OpenFileFromExplorer(string filePath)
         {
+            if (string.Equals(Path.GetExtension(filePath), ".ciareform", StringComparison.OrdinalIgnoreCase))
+            {
+                _mainForm.FormDesignerFeature.Open(filePath);
+                return;
+            }
             try
             {
                 if (TabControllerManage.IsFileOpenedInTab(_mainForm.EditorTabControl, filePath))

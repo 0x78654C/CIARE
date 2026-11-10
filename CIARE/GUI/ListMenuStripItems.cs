@@ -54,10 +54,11 @@ namespace CIARE.GUI
                 MainForm.Instance.hotKeyToolStripMenuItem,
                 MainForm.Instance.fullScreenToolStripMenuItem
             };
-            // Help also contains commands added at runtime, such as the update checker.
-            foreach (ToolStripItem item in MainForm.Instance.helpToolStripMenuItem.DropDownItems)
-                if (item is ToolStripMenuItem menuItem && !listToosStripM.Contains(menuItem))
-                    listToosStripM.Add(menuItem);
+            // Include commands added by features at runtime, including the form designer.
+            foreach (var parent in new[] { MainForm.Instance.helpToolStripMenuItem, MainForm.Instance.fIleToolStripMenuItem, MainForm.Instance.viewToolStripMenuItem })
+                foreach (ToolStripItem item in parent.DropDownItems)
+                    if (item is ToolStripMenuItem menuItem && !listToosStripM.Contains(menuItem))
+                        listToosStripM.Add(menuItem);
             return listToosStripM;
         }
 
