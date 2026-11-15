@@ -93,25 +93,5 @@ namespace CIARE.Utils
             }
         }
 
-        /// <summary>
-        /// Check if api domain is up.
-        /// </summary>
-        /// <returns></returns>
-        public bool IsLiveApiConnected()
-        {
-            var url = IpAddress.EndsWith("/live") ? GlobalVariables.apiUrl.Replace("/live", "/ping"):"";
-            try
-            {
-                HttpClient client = new HttpClient();
-                HttpResponseMessage response = Task.Run(() => client.GetAsync(url)).Result;
-                HttpContent httpContent = response.Content;
-                bool isResponding = response.StatusCode == HttpStatusCode.OK;
-                return isResponding;
-            }
-            catch
-            {
-                return false;
-            }
-        }
     }
 }

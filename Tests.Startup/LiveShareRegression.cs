@@ -26,24 +26,26 @@ internal static class LiveShareRegression
 {
     internal static void Run(MainForm form, Action<bool, string> assert, string scenario)
     {
-        if (scenario == "live-share-connection")
+        // Async button handlers and availability checks need the application's persistent UI loop.
+        // Standalone DoEvents calls uninstall the WinForms synchronization context on exit.
+        using var context = new ApplicationContext();
+        Exception failure = null;
+        form.BeginInvoke((Action)(() =>
         {
-            // Async button handlers need the same persistent UI message loop as the application.
-            // Standalone DoEvents calls uninstall the WinForms synchronization context on exit.
-            using var context = new ApplicationContext();
-            Exception failure = null;
-            form.BeginInvoke((Action)(() =>
+            try
             {
-                try { RunConnectionChecks(form, assert); }
-                catch (Exception error) { failure = error; }
-                finally { context.ExitThread(); }
-            }));
-            Application.Run(context);
-            if (failure != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
-            return;
-        }
-        RunSession(form, assert, scenario, disconnectNotifications: true);
-        RunSession(form, assert, scenario, disconnectNotifications: false);
+                if (scenario == "live-share-connection") RunConnectionChecks(form, assert);
+                else
+                {
+                    RunSession(form, assert, scenario, disconnectNotifications: true);
+                    RunSession(form, assert, scenario, disconnectNotifications: false);
+                }
+            }
+            catch (Exception error) { failure = error; }
+            finally { context.ExitThread(); }
+        }));
+        Application.Run(context);
+        if (failure != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
     }
 
     private static void RunSession(MainForm form, Action<bool, string> assert, string scenario, bool disconnectNotifications)
@@ -284,8 +286,28 @@ internal static class LiveShareRegression
         builder.Logging.ClearProviders(); builder.WebHost.UseUrls("http://127.0.0.1:0"); builder.Services.AddSignalR();
         var server = builder.Build();
         int pingRequests = 0;
+        int slowRequests = 0;
+        var slowStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var slowCancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        bool probeQueryReceived = false;
         server.Use(async (context, next) => { if (context.Request.Path.Value.EndsWith("/ping")) Interlocked.Increment(ref pingRequests); await next(); });
         server.MapHub<LiveShareTestHub>("/collaboration");
+        server.MapPost("/warning/negotiate", () => Microsoft.AspNetCore.Http.Results.Content("<html>ngrok warning</html>", "text/html"));
+        server.MapPost("/unavailable/negotiate", () => Microsoft.AspNetCore.Http.Results.StatusCode(503));
+        server.MapPost("/rejected/negotiate", () => Microsoft.AspNetCore.Http.Results.Json(new { error = "Negotiation rejected" }));
+        server.MapPost("/query/negotiate", (Microsoft.AspNetCore.Http.HttpContext context) =>
+        {
+            probeQueryReceived = context.Request.Query["key"] == "a+b" && context.Request.Query["negotiateVersion"] == "1"
+                && context.Request.Headers["ngrok-skip-browser-warning"] == "true";
+            return Microsoft.AspNetCore.Http.Results.Json(new { connectionId = "probe", connectionToken = "probe-token", negotiateVersion = 1,
+                availableTransports = new[] { new { transport = "WebSockets", transferFormats = new[] { "Text" } } } });
+        });
+        server.MapPost("/slow/negotiate", async (Microsoft.AspNetCore.Http.HttpContext context) =>
+        {
+            Interlocked.Increment(ref slowRequests); slowStarted.TrySetResult();
+            try { await Task.Delay(Timeout.Infinite, context.RequestAborted); }
+            catch (OperationCanceledException) { slowCancelled.TrySetResult(); }
+        });
         Complete(server.StartAsync());
         string url = server.Urls.Single() + "/collaboration";
         const string password = "latest-signalr-password";
@@ -298,6 +320,15 @@ internal static class LiveShareRegression
         using var dialogs = DismissMessages();
         try
         {
+            bool Check(string address)
+            {
+                var task = LiveShareAvailability.CheckAsync(address); Complete(task); return task.Result;
+            }
+            assert(Check(url), "The live hub is detected without a ping route or shared session");
+            assert(!Check(server.Urls.Single() + "/warning"), "An HTTP 200 warning page is not mistaken for a live API");
+            assert(!Check(server.Urls.Single() + "/unavailable") && !Check(url + "/missing"), "HTTP errors report the API as unavailable");
+            assert(!Check(server.Urls.Single() + "/rejected"), "Negotiation errors are not reported as online");
+            assert(Check(server.Urls.Single() + "/query/?key=a%2Bb") && probeQueryReceived, "Availability checks preserve query parameters and bypass ngrok's warning page");
             Complete(observer.StartAsync());
             assert(typeof(HubConnection).Assembly.GetName().Version.Major >= 11, "Connection tests run with the upgraded SignalR client");
             using (var manage = new LiveShareHost { ShowInTaskbar = false, Opacity = 0 })
@@ -306,6 +337,16 @@ internal static class LiveShareRegression
                 Control Field(string name) => manage.Controls.Find(name, true).Single();
                 Field("nicknameTxt").Text = "SignalR tester"; Field("passwordTxt").Text = password; Field("sessionTxt").Text = "connection-test";
                 var start = (Button)Field("startLiveBtn");
+                PumpUntil(() => Field("connectionStatusLbl").Text == "API online — not connected");
+                assert(form.hubConnection == null && !GlobalVariables.connected && pingRequests == 0,
+                    "Opening the dialog checks availability without starting or joining a session");
+                GlobalVariables.apiUrl = server.Urls.Single() + "/unavailable";
+                Complete(manage.RefreshApiAvailabilityAsync());
+                assert(Field("connectionStatusLbl").Text == "API offline or unavailable" && start.Enabled,
+                    "An unavailable API shows an offline indicator while still allowing a connection attempt");
+                GlobalVariables.apiUrl = url;
+                Complete(manage.RefreshApiAvailabilityAsync());
+                assert(Field("connectionStatusLbl").Text == "API online — not connected", "Availability recovers when the API returns");
                 assert(manage.Visible && start.Enabled && form.LiveShareEventsFeature.CanShareEditor(editor), "The host dialog is ready on an ordinary code tab");
                 start.PerformClick();
                 assert(!start.Enabled, "Starting disables duplicate connection attempts");
@@ -384,6 +425,47 @@ internal static class LiveShareRegression
             Pump(150);
             assert(cancelled.State == HubConnectionState.Disconnected && !GlobalVariables.connected, "An explicit stop does not trigger automatic reconnect");
             Complete(cancelled.DisposeAsync().AsTask());
+            form.hubConnection = null;
+
+            GlobalVariables.apiUrl = server.Urls.Single() + "/slow";
+            using (var closing = new LiveShareHost { ShowInTaskbar = false, Opacity = 0 })
+            {
+                closing.Show(form);
+                Complete(slowStarted.Task);
+                Complete(closing.RefreshApiAvailabilityAsync());
+                assert(slowRequests == 1, "Slow availability checks do not overlap or block the UI");
+                closing.Close();
+                Complete(slowCancelled.Task);
+                assert(closing.IsDisposed, "Closing the dialog cancels its pending availability request");
+            }
+            GlobalVariables.apiUrl = url;
+            foreach (string theme in new[] { "C#-Light", "C#-Dark", "C#-DarkVS", "C#-NordWave" })
+            {
+                form.WindowThemeFeature.SetHighLighter(editor, theme, persistSetting: false);
+                using var themed = new LiveShareHost { ShowInTaskbar = false, Opacity = 0 };
+                themed.Show(form);
+                var button = (Button)themed.Controls.Find("startLiveBtn", true).Single();
+                var colors = ThemeManager.GetCompletionThemeColors(theme);
+                assert(button.FlatStyle == FlatStyle.Flat && button.ForeColor == colors.ForeColor && button.FlatAppearance.BorderColor == colors.BorderColor,
+                    theme + " buttons use the active theme instead of native bright borders");
+                Color enabled = button.BackColor;
+                button.Enabled = false;
+                assert(button.BackColor != Color.Gray && button.ForeColor != colors.ForeColor,
+                    theme + " disabled buttons retain the theme and use subdued text");
+                using (var painted = Capture(button))
+                {
+                    bool hasTextColor = false;
+                    for (int y = 2; y < painted.Height - 2; y++)
+                        for (int x = 2; x < painted.Width - 2; x++)
+                            hasTextColor |= painted.GetPixel(x, y).ToArgb() == button.ForeColor.ToArgb();
+                    assert(hasTextColor, theme + " disabled button text is actually painted in its readable theme color");
+                }
+                using (var disabled = Capture(themed)) disabled.Save(Path.Combine(AppContext.BaseDirectory, "live-share-" + theme + "-disabled.png"));
+                button.Enabled = true;
+                assert(button.BackColor == enabled && button.ForeColor == colors.ForeColor, theme + " button colors recover immediately when enabled");
+                using (var enabledImage = Capture(themed)) enabledImage.Save(Path.Combine(AppContext.BaseDirectory, "live-share-" + theme + "-enabled.png"));
+                themed.Close();
+            }
         }
         finally
         {
@@ -428,7 +510,7 @@ internal static class LiveShareRegression
     {
         control.Refresh();
         var bitmap = new Bitmap(control.Width, control.Height);
-        control.DrawToBitmap(bitmap, control.ClientRectangle);
+        control.DrawToBitmap(bitmap, new Rectangle(Point.Empty, control.Size));
         return bitmap;
     }
 

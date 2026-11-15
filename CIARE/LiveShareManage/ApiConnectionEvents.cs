@@ -221,8 +221,6 @@ namespace CIARE.LiveShareManage
                 connectBtn.Text = "Remote Connect";
                 MessageBox.Show("Connected Stoped", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 liveShareBtn.Enabled = true;
-                if (GlobalVariables.darkColor)
-                    liveShareBtn.BackColor = Color.FromArgb(30, 30, 30);
             }
             else
             {
@@ -245,8 +243,6 @@ namespace CIARE.LiveShareManage
                     await StartSession(hubConnection, textEditorControl, password, sessionId, hosting: false, cancellationToken);
                     connectBtn.Text = "Stop Connection";
                     liveShareBtn.Enabled = false;
-                    if (GlobalVariables.darkColor)
-                        liveShareBtn.BackColor = Color.Gray;
                     MessageBox.Show("Connected to remote session!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     form.Close();
                 }
@@ -314,8 +310,6 @@ namespace CIARE.LiveShareManage
                 await StopConnection(hubConnection);
                 MainForm.Instance.liveStatusPb.Image = null;
                 connectBtn.Enabled = true;
-                if (GlobalVariables.darkColor)
-                    connectBtn.BackColor = Color.FromArgb(30, 30, 30);
                 GlobalVariables.livePassword = string.Empty;
                 GlobalVariables.connected = false;
                 GlobalVariables.liveDisconnected = false;
@@ -336,8 +330,6 @@ namespace CIARE.LiveShareManage
                     await StartSession(hubConnection, textEditorControl, password, sessionId, hosting: true, cancellationToken);
                     startShareBtn.Text = "Stop Live Share";
                     connectBtn.Enabled = false;
-                    if (GlobalVariables.darkColor)
-                        connectBtn.BackColor = Color.Gray;
                     MessageBox.Show("Live Share started!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }

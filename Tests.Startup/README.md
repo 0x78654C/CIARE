@@ -16,6 +16,8 @@ Run the Live Share checks with `& .\Tests.Startup\Run.ps1 -Scenarios @('live-sha
 
 The `live-share-connection` scenario exercises the actual Start/Join buttons using SignalR Client 11 against a custom hub route without `/ping`, automatic host/guest reconnection after an abrupt transport loss, session re-registration, stopping without health/password checks, failed negotiation/join cleanup, and cancellation/retry. The `form-designer` scenario also verifies that Live Share is blocked on designer tabs and allowed on their separate code tabs.
 
+Availability coverage includes a live hub, HTTP errors, misleading HTTP 200 warning pages, negotiation errors, preserved URL query parameters, recovery, overlapping checks, and cancellation when closing. Button snapshots cover light, dark, DarkVS, and NordWave palettes in enabled and disabled states.
+
 The `dark` scenario also loads all 11 bundled C# themes and checks actual token colors for modern keywords, common .NET types, comments, escaped/verbatim strings, nullable directives, XML documentation, and punctuation. It checks text/selection contrast, completion palette consistency, and exact span delimiters, and saves a `theme-*.png` editor preview for every palette alongside the startup snapshots.
 
 The dark scenario also cancels the normal close sequence with two unsaved documents and verifies that CIARE stays open with both documents intact, including when Save As is cancelled after choosing to save. This covers the save prompt used when handing off to the updater. Isolated startup tests do not enable production GitHub checks.

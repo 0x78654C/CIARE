@@ -13,6 +13,7 @@
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
+            if (disposing) StopApiAvailabilityChecks();
             if (disposing && (components != null))
             {
                 components.Dispose();
@@ -33,16 +34,17 @@
             liveShareStartGrp = new System.Windows.Forms.GroupBox();
             passwordTxt = new System.Windows.Forms.TextBox();
             passwordLbl = new System.Windows.Forms.Label();
-            startLiveBtn = new System.Windows.Forms.Button();
+            startLiveBtn = new LiveShareManage.LiveShareButton();
             sessionTxt = new System.Windows.Forms.TextBox();
             sessionIdLbl = new System.Windows.Forms.Label();
             remoteGrp = new System.Windows.Forms.GroupBox();
             remotePasswordTxt = new System.Windows.Forms.TextBox();
             remotePassLbl = new System.Windows.Forms.Label();
-            connectHostBtn = new System.Windows.Forms.Button();
+            connectHostBtn = new LiveShareManage.LiveShareButton();
             remoteSessioniDtxt = new System.Windows.Forms.TextBox();
             remoteSessionLbl = new System.Windows.Forms.Label();
             liveApiPb = new System.Windows.Forms.PictureBox();
+            connectionStatusLbl = new System.Windows.Forms.Label();
             checkLiveAPITimer = new System.Windows.Forms.Timer(components);
             nicknameLbl = new System.Windows.Forms.Label();
             nicknameTxt = new System.Windows.Forms.TextBox();
@@ -186,6 +188,13 @@
             liveApiPb.Size = new System.Drawing.Size(18, 19);
             liveApiPb.TabIndex = 20;
             liveApiPb.TabStop = false;
+            //
+            // connectionStatusLbl
+            //
+            connectionStatusLbl.AutoSize = true;
+            connectionStatusLbl.Location = new System.Drawing.Point(29, 276);
+            connectionStatusLbl.Name = "connectionStatusLbl";
+            connectionStatusLbl.Text = "Checking API…";
             // 
             // checkLiveAPITimer
             // 
@@ -216,6 +225,7 @@
             Controls.Add(nicknameTxt);
             Controls.Add(nicknameLbl);
             Controls.Add(liveApiPb);
+            Controls.Add(connectionStatusLbl);
             Controls.Add(remoteGrp);
             Controls.Add(liveShareStartGrp);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -238,6 +248,7 @@
         #endregion
 
         private System.Windows.Forms.GroupBox liveShareStartGrp;
+        private System.Windows.Forms.Label connectionStatusLbl;
         private System.Windows.Forms.Button startLiveBtn;
         private System.Windows.Forms.TextBox sessionTxt;
         private System.Windows.Forms.Label sessionIdLbl;

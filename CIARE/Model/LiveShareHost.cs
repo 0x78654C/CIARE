@@ -17,10 +17,17 @@ namespace CIARE
         private const string NicknameRegistryKey = "LiveShareNickname";
         private bool _connectionBusy;
         private CancellationTokenSource _connectionCancellation;
+        private CancellationTokenSource _availabilityCancellation = new();
+        private bool _apiCheckBusy;
+        private bool? _apiReachable;
+        private string _apiCheckedUrl;
+        private DateTime _nextApiCheck;
 
         public LiveShareHost()
         {
             InitializeComponent();
+            startLiveBtn.EnabledChanged += (_, _) => ApplyButtonTheme(startLiveBtn);
+            connectHostBtn.EnabledChanged += (_, _) => ApplyButtonTheme(connectHostBtn);
             string savedNickname = RegistryManagement.RegKey_Read(
                 $"HKEY_CURRENT_USER\\{GlobalVariables.registryPath}", NicknameRegistryKey);
             nicknameTxt.Text = LiveSharePosition.TryNormalizeNickname(savedNickname, out string nickname)
@@ -60,15 +67,14 @@ namespace CIARE
             // Set remote password in textbox.
             SetRemotePassword(remotePasswordTxt, GlobalVariables.livePassword, GlobalVariables.apiRemoteConnected);
 
-            // Set live share button dark mode for disable status.
-            SetColorButtonsOnDisable(startLiveBtn, GlobalVariables.darkColor);
-
-            // Set remote connect button dark mode for disable status.
-            SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
+            ApplyButtonTheme(startLiveBtn);
+            ApplyButtonTheme(connectHostBtn);
 
             // Display the current SignalR connection state on the UI thread.
+            RefreshConnectionStatus();
             checkLiveAPITimer.Enabled = true;
             checkLiveAPITimer.Start();
+            _ = RefreshApiAvailabilityAsync();
         }
 
         /// <summary>
@@ -204,12 +210,69 @@ namespace CIARE
         /// </summary>
         private void RefreshConnectionStatus()
         {
-            liveApiPb.Image = MainForm.Instance.hubConnection?.State switch
+            var state = MainForm.Instance.hubConnection?.State ?? HubConnectionState.Disconnected;
+            bool? reachable = _apiCheckedUrl == GlobalVariables.apiUrl ? _apiReachable : null;
+            connectionStatusLbl.Text = state switch
+            {
+                HubConnectionState.Connected => "API online — connected to Live Share",
+                HubConnectionState.Connecting => "Connecting to Live Share…",
+                HubConnectionState.Reconnecting => "Reconnecting to Live Share…",
+                _ => reachable switch
+                {
+                    true => "API online — not connected",
+                    false => "API offline or unavailable",
+                    _ => "Checking API…"
+                }
+            };
+            liveApiPb.Image = state switch
             {
                 HubConnectionState.Connected => Properties.Resources.green_dot,
                 HubConnectionState.Connecting or HubConnectionState.Reconnecting => Properties.Resources.orange_dot,
-                _ => Properties.Resources.red_dot
+                _ => reachable switch
+                {
+                    true => Properties.Resources.green_dot,
+                    false => Properties.Resources.red_dot,
+                    _ => Properties.Resources.orange_dot
+                }
             };
+        }
+
+        internal async Task RefreshApiAvailabilityAsync()
+        {
+            if (_apiCheckBusy || IsDisposed || Disposing || _availabilityCancellation == null) return;
+            // A working session is stronger evidence than a separate probe, and consumes no extra requests.
+            if (MainForm.Instance.hubConnection?.State is HubConnectionState.Connected or HubConnectionState.Connecting or HubConnectionState.Reconnecting)
+                return;
+            string url = GlobalVariables.apiUrl;
+            var cancellationToken = _availabilityCancellation.Token;
+            _apiCheckBusy = true;
+            if (_apiCheckedUrl != url)
+            {
+                _apiCheckedUrl = url;
+                _apiReachable = null;
+                RefreshConnectionStatus();
+            }
+            try
+            {
+                bool reachable = await LiveShareAvailability.CheckAsync(url, cancellationToken);
+                if (cancellationToken.IsCancellationRequested || IsDisposed || Disposing) return;
+                _apiCheckedUrl = url;
+                _apiReachable = reachable;
+                RefreshConnectionStatus();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+            finally
+            {
+                _apiCheckBusy = false;
+                _nextApiCheck = DateTime.UtcNow.AddSeconds(15);
+            }
+        }
+
+        private void StopApiAvailabilityChecks()
+        {
+            _availabilityCancellation?.Cancel();
+            _availabilityCancellation?.Dispose();
+            _availabilityCancellation = null;
         }
 
         /// <summary>
@@ -258,37 +321,46 @@ namespace CIARE
         {
             _connectionBusy = false;
             _connectionCancellation?.Dispose(); _connectionCancellation = null;
-            if (!IsDisposed) RefreshConnectionButtons();
+            if (!IsDisposed)
+            {
+                RefreshConnectionButtons();
+                RefreshConnectionStatus();
+            }
         }
 
         private void RefreshConnectionButtons()
         {
             SetLiveButtonText(GlobalVariables.apiRemoteConnected, GlobalVariables.apiConnected, startLiveBtn, connectHostBtn);
             SetRemoteButtonText(GlobalVariables.apiRemoteConnected, GlobalVariables.apiConnected, connectHostBtn, startLiveBtn);
-            SetColorButtonsOnDisable(startLiveBtn, GlobalVariables.darkColor);
-            SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
+            ApplyButtonTheme(startLiveBtn);
+            ApplyButtonTheme(connectHostBtn);
         }
 
         /// <summary>
-        /// Set color to gray on disabled button to be displayed properly in dark mode.
+        /// Use the active editor palette for every button state, without native bright borders.
         /// </summary>
         /// <param name="button"></param>
-        /// <param name="darkMode"></param>
-        private void SetColorButtonsOnDisable(Button button, bool darkMode)
+        private void ApplyButtonTheme(Button button)
         {
-            if (!darkMode)
-                return;
-
-            if (button.Enabled)
-            {
-                if (GlobalVariables.isVStheme)
-                    button.BackColor = Color.FromArgb(30, 30, 30);
-                else
-                    button.BackColor = Color.FromArgb(2, 0, 10);
-            }
-            else
-                button.BackColor = Color.Gray;
+            string themeName = MainForm.Instance?.WindowThemeFeature._appliedTheme
+                ?? (GlobalVariables.darkColor ? "C#-Dark" : "C#-Light");
+            var colors = ThemeManager.GetCompletionThemeColors(themeName);
+            Color background = GlobalVariables.darkColor ? GlobalVariables.controlBgColor : SystemColors.Control;
+            Color panel = GlobalVariables.darkColor ? GlobalVariables.formBgColor : SystemColors.Control;
+            button.FlatStyle = FlatStyle.Flat;
+            button.UseVisualStyleBackColor = false;
+            button.BackColor = button.Enabled ? background : panel;
+            button.ForeColor = button.Enabled ? colors.ForeColor : Blend(colors.ForeColor, panel, 50);
+            button.FlatAppearance.BorderSize = 1;
+            button.FlatAppearance.BorderColor = button.Enabled ? colors.BorderColor : Blend(colors.BorderColor, panel, 50);
+            button.FlatAppearance.MouseOverBackColor = Blend(background, colors.AccentColor, 20);
+            button.FlatAppearance.MouseDownBackColor = Blend(background, colors.AccentColor, 35);
         }
+
+        private static Color Blend(Color first, Color second, int percent) => Color.FromArgb(
+            (first.R * (100 - percent) + second.R * percent) / 100,
+            (first.G * (100 - percent) + second.G * percent) / 100,
+            (first.B * (100 - percent) + second.B * percent) / 100);
 
 
         /// <summary>
@@ -330,14 +402,16 @@ namespace CIARE
         }
 
         /// <summary>
-        /// Refresh status and buttons without making a separate health request.
+        /// Refresh connection status and periodically probe idle hubs without overlapping requests.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void checkLiveAPITimer_Tick(object sender, EventArgs e)
+        private async void checkLiveAPITimer_Tick(object sender, EventArgs e)
         {
             RefreshConnectionStatus();
             if (!_connectionBusy) RefreshConnectionButtons();
+            if (_apiCheckedUrl != GlobalVariables.apiUrl || DateTime.UtcNow >= _nextApiCheck)
+                await RefreshApiAvailabilityAsync();
         }
 
         /// <summary>
@@ -348,6 +422,7 @@ namespace CIARE
         private void LiveShareHost_FormClosing(object sender, FormClosingEventArgs e)
         {
             _connectionCancellation?.Cancel();
+            StopApiAvailabilityChecks();
             SaveNickname(showValidation: false);
             checkLiveAPITimer.Stop();
             checkLiveAPITimer.Enabled = false;

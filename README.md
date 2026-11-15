@@ -136,7 +136,9 @@ Install-Package log4net -Version 2.0.14
 
 Collaborate on the same project or file in real time with another person.
 
-Live Share uses SignalR Client 11 and reconnects automatically after temporary network loss, rejoining the session and restoring document/presence updates. Enter the hub URL itself; a separate `/ping` endpoint is not required. Connection status and Stop remain available while reconnecting.
+Live Share reconnects automatically after temporary network loss, rejoining the session and restoring document/presence updates.
+
+The management window checks API availability on opening and every 15 seconds while disconnected, using the hub's SignalR negotiation endpoint. Green means online, red means offline or unavailable, and orange means checking or connecting. Checks run in the background and stop when the window closes. Buttons follow the active editor theme, including disabled and hover states.
 
 Live Share is available only in code tabs. In the Windows Forms designer, use **View Code** first; the designer tab cannot start or join a Live Share session.
 
