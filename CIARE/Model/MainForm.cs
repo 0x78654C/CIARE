@@ -446,6 +446,7 @@ namespace CIARE
             autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
             FormDesignerFeature.Initialize();
+            LiveShareEventsFeature.Initialize();
             MenuStatusLayoutFeature.Initialize();
             ErrorsFeature.ConfigureErrorsListView();
             // Buffer individual surfaces. Compositing the entire HWND tree delays

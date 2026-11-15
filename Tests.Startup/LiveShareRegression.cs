@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -25,6 +26,22 @@ internal static class LiveShareRegression
 {
     internal static void Run(MainForm form, Action<bool, string> assert, string scenario)
     {
+        if (scenario == "live-share-connection")
+        {
+            // Async button handlers need the same persistent UI message loop as the application.
+            // Standalone DoEvents calls uninstall the WinForms synchronization context on exit.
+            using var context = new ApplicationContext();
+            Exception failure = null;
+            form.BeginInvoke((Action)(() =>
+            {
+                try { RunConnectionChecks(form, assert); }
+                catch (Exception error) { failure = error; }
+                finally { context.ExitThread(); }
+            }));
+            Application.Run(context);
+            if (failure != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
+            return;
+        }
         RunSession(form, assert, scenario, disconnectNotifications: true);
         RunSession(form, assert, scenario, disconnectNotifications: false);
     }
@@ -44,7 +61,7 @@ internal static class LiveShareRegression
         Complete(server.StartAsync());
         string url = server.Urls.Single() + "/live";
         var sender = new HubConnectionBuilder().WithUrl(url).Build();
-        var receiver = new HubConnectionBuilder().WithUrl(url).Build();
+        var receiver = LiveShareConnection.Create(url);
         var otherParticipant = new HubConnectionBuilder().WithUrl(url).Build();
         var replies = new ConcurrentQueue<(string Code, string Position)>();
         sender.On<string, string, string>("GetSend", (code, position, _) => replies.Enqueue((code, position)));
@@ -260,6 +277,153 @@ internal static class LiveShareRegression
         }
     }
 
+    private static void RunConnectionChecks(MainForm form, Action<bool, string> assert)
+    {
+        Control.CheckForIllegalCrossThreadCalls = true;
+        var builder = WebApplication.CreateBuilder(Array.Empty<string>());
+        builder.Logging.ClearProviders(); builder.WebHost.UseUrls("http://127.0.0.1:0"); builder.Services.AddSignalR();
+        var server = builder.Build();
+        int pingRequests = 0;
+        server.Use(async (context, next) => { if (context.Request.Path.Value.EndsWith("/ping")) Interlocked.Increment(ref pingRequests); await next(); });
+        server.MapHub<LiveShareTestHub>("/collaboration");
+        Complete(server.StartAsync());
+        string url = server.Urls.Single() + "/collaboration";
+        const string password = "latest-signalr-password";
+        var observer = new HubConnectionBuilder().WithUrl(url).Build();
+        var received = new ConcurrentQueue<(string Code, string Id)>();
+        observer.On<string, string, string>("GetSend", (code, _, id) => received.Enqueue((code, id)));
+        var editor = SelectedEditor.GetSelectedEditor();
+        editor.Text = "class SharedSource { }";
+        GlobalVariables.apiUrl = url;
+        using var dialogs = DismissMessages();
+        try
+        {
+            Complete(observer.StartAsync());
+            assert(typeof(HubConnection).Assembly.GetName().Version.Major >= 11, "Connection tests run with the upgraded SignalR client");
+            using (var manage = new LiveShareHost { ShowInTaskbar = false, Opacity = 0 })
+            {
+                manage.Show(form); Application.DoEvents();
+                Control Field(string name) => manage.Controls.Find(name, true).Single();
+                Field("nicknameTxt").Text = "SignalR tester"; Field("passwordTxt").Text = password; Field("sessionTxt").Text = "connection-test";
+                var start = (Button)Field("startLiveBtn");
+                assert(manage.Visible && start.Enabled && form.LiveShareEventsFeature.CanShareEditor(editor), "The host dialog is ready on an ordinary code tab");
+                start.PerformClick();
+                assert(!start.Enabled, "Starting disables duplicate connection attempts");
+                PumpUntil(() => GlobalVariables.apiConnected && start.Enabled);
+                var connection = form.hubConnection;
+                PumpUntil(() => received.Any(r => r.Id == connection.ConnectionId && !string.IsNullOrEmpty(r.Code)));
+                assert(connection.State == HubConnectionState.Connected && pingRequests == 0,
+                    "The real Start button connects to a custom hub route without requiring a ping endpoint");
+                assert(AESEncryption.Decrypt(received.First(r => !string.IsNullOrEmpty(r.Code)).Code, password) == editor.Text,
+                    "The host publishes encrypted source through SignalR 11");
+                int reconnecting = 0;
+                connection.Reconnecting += _ => { Interlocked.Increment(ref reconnecting); return Task.CompletedTask; };
+                string oldId = connection.ConnectionId;
+                editor.Text = "class SharedSource { public int Updated; }";
+                GlobalVariables.isConnected = true; // Suppress the informational participant-joined dialog.
+                Complete(connection.SendAsync("BreakTransport"));
+                PumpUntil(() => reconnecting > 0 && GlobalVariables.connected && connection.State == HubConnectionState.Connected && connection.ConnectionId != oldId);
+                PumpUntil(() => received.Any(r => r.Id == connection.ConnectionId && !string.IsNullOrEmpty(r.Code)));
+                assert(received.Any(r => r.Id == connection.ConnectionId && !string.IsNullOrEmpty(r.Code) && AESEncryption.Decrypt(r.Code, password) == editor.Text),
+                    "Automatic reconnect registers the new connection ID and republishes the host's current document");
+                assert(GlobalVariables.apiConnected && !GlobalVariables.liveDisconnected, "Reconnection restores the host's UI state");
+
+                GlobalVariables.apiUrl = "http://127.0.0.1:1/offline"; Field("passwordTxt").Text = "";
+                start.PerformClick();
+                PumpUntil(() => !GlobalVariables.connected && !GlobalVariables.apiConnected && start.Enabled);
+                assert(connection.State == HubConnectionState.Disconnected && !GlobalVariables.liveDisconnected && !editor.ReadOnly,
+                    "Stop remains available without a reachable health endpoint or password validation");
+                manage.Close();
+            }
+
+            GlobalVariables.apiUrl = url; received.Clear();
+            using (var join = new LiveShareHost { ShowInTaskbar = false, Opacity = 0 })
+            {
+                join.Show(form); Application.DoEvents();
+                join.Controls.Find("remotePasswordTxt", true).Single().Text = password;
+                join.Controls.Find("remoteSessioniDtxt", true).Single().Text = "connection-test";
+                ((Button)join.Controls.Find("connectHostBtn", true).Single()).PerformClick();
+                PumpUntil(() => GlobalVariables.apiRemoteConnected && !join.Visible);
+            }
+            var joined = form.hubConnection;
+            PumpUntil(() => received.Any(r => r.Id == joined.ConnectionId && r.Code == "remote"));
+            assert(joined.State == HubConnectionState.Connected && GlobalVariables.apiRemoteConnected,
+                "The real Join button creates a fresh connection after a stopped host session");
+            Complete(observer.InvokeAsync("GetSendCode", "connection-test", AESEncryption.Encrypt("// remote snapshot", password), "0|0|Host"));
+            PumpUntil(() => editor.Text == "// remote snapshot");
+            assert(!editor.ReadOnly, "A joined snapshot unlocks the shared editor");
+            string joinedId = joined.ConnectionId;
+            Complete(joined.SendAsync("BreakTransport"));
+            PumpUntil(() => GlobalVariables.connected && joined.State == HubConnectionState.Connected && joined.ConnectionId != joinedId);
+            PumpUntil(() => received.Any(r => r.Id == joined.ConnectionId && r.Code == "remote"));
+            assert(GlobalVariables.apiRemoteConnected && !GlobalVariables.apiConnected, "A reconnecting guest requests the session snapshot and keeps its guest role");
+            Complete(ApiConnectionEvents.StopConnection(joined)); Complete(joined.DisposeAsync().AsTask());
+
+            foreach (bool rejectInvocation in new[] { false, true })
+            {
+                var failed = LiveShareConnection.Create(rejectInvocation ? url : url + "/missing");
+                form.hubConnection = failed;
+                bool rejected = false;
+                try { Complete(ApiConnectionEvents.StartSession(failed, editor, password, rejectInvocation ? "reject" : "connection-test", hosting: false)); }
+                catch (Exception) { rejected = true; }
+                assert(rejected && failed.State == HubConnectionState.Disconnected && !GlobalVariables.connected && !GlobalVariables.apiRemoteConnected && !editor.ReadOnly,
+                    rejectInvocation ? "A failed join invocation cleans up the transport and restores editor access" : "Negotiation errors are surfaced without leaving a stuck session");
+                Complete(failed.DisposeAsync().AsTask());
+            }
+            var cancelled = LiveShareConnection.Create(url); form.hubConnection = cancelled;
+            using (var cancellation = new CancellationTokenSource())
+            {
+                cancellation.Cancel(); bool wasCancelled = false;
+                try { Complete(ApiConnectionEvents.StartSession(cancelled, editor, password, "connection-test", true, cancellation.Token)); }
+                catch (OperationCanceledException) { wasCancelled = true; }
+                assert(wasCancelled && !GlobalVariables.connected && cancelled.State == HubConnectionState.Disconnected, "Cancelling an initial connection leaves it ready for another attempt");
+            }
+            Complete(ApiConnectionEvents.StartSession(cancelled, editor, password, "connection-test", hosting: true));
+            assert(GlobalVariables.connected && GlobalVariables.apiConnected, "Starting again after cancellation succeeds");
+            Complete(ApiConnectionEvents.StopConnection(cancelled));
+            Pump(150);
+            assert(cancelled.State == HubConnectionState.Disconnected && !GlobalVariables.connected, "An explicit stop does not trigger automatic reconnect");
+            Complete(cancelled.DisposeAsync().AsTask());
+        }
+        finally
+        {
+            if (form.hubConnection != null) Complete(form.hubConnection.DisposeAsync().AsTask());
+            ApiConnectionEvents.ClearUserDisplay(); form.hubConnection = null;
+            GlobalVariables.connected = GlobalVariables.apiConnected = GlobalVariables.apiRemoteConnected = GlobalVariables.liveDisconnected = false;
+            editor.ReadOnly = false;
+            Complete(observer.DisposeAsync().AsTask()); Complete(server.DisposeAsync().AsTask());
+        }
+    }
+
+    private static System.Windows.Forms.Timer DismissMessages()
+    {
+        uint thread = GetCurrentThreadId();
+        var timer = new System.Windows.Forms.Timer { Interval = 30 };
+        timer.Tick += (_, _) => EnumThreadWindows(thread, (handle, _) =>
+        {
+            var name = new System.Text.StringBuilder(64); GetClassName(handle, name, name.Capacity);
+            if (name.ToString() == "#32770")
+            {
+                EnumChildWindows(handle, (child, _) =>
+                {
+                    var text = new System.Text.StringBuilder(2048); GetWindowText(child, text, text.Capacity);
+                    if (text.Length > 4) Console.Error.WriteLine("Live Share dialog: " + text);
+                    return true;
+                }, IntPtr.Zero);
+                SendMessage(handle, 0x0010, IntPtr.Zero, IntPtr.Zero); // WM_CLOSE dismisses OK-only dialogs.
+            }
+            return true;
+        }, IntPtr.Zero);
+        timer.Start(); return timer;
+    }
+    private delegate bool WindowCallback(IntPtr handle, IntPtr argument);
+    [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll")] private static extern bool EnumThreadWindows(uint thread, WindowCallback callback, IntPtr argument);
+    [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, WindowCallback callback, IntPtr argument);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr handle, System.Text.StringBuilder text, int length);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr handle, System.Text.StringBuilder name, int length);
+    [DllImport("user32.dll", EntryPoint = "SendMessageW")] private static extern IntPtr SendMessage(IntPtr handle, uint message, IntPtr wParam, IntPtr lParam);
+
     private static Bitmap Capture(Control control)
     {
         control.Refresh();
@@ -315,6 +479,7 @@ public sealed class LiveShareTestHub : Hub
     internal static bool DisconnectNotifications;
     public async Task GetSendCode(string sessionId, string code, string position)
     {
+        if (sessionId == "reject") throw new HubException("Session rejected for connection regression.");
         if (position?.Length > 64)
             throw new HubException("Position exceeds deployed server limit.");
         Interlocked.Increment(ref Messages);
@@ -323,6 +488,7 @@ public sealed class LiveShareTestHub : Hub
     }
 
     public void AbortConnection() => Context.Abort();
+    public void BreakTransport() => Context.GetHttpContext().Abort();
 
     public override async Task OnDisconnectedAsync(Exception exception)
     {

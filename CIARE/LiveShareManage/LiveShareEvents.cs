@@ -1,11 +1,11 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CIARE.GUI;
 using CIARE.LiveShareManage;
 using CIARE.Utils;
 using Microsoft.AspNetCore.SignalR.Client;
-using Button = System.Windows.Forms.Button;
 
 namespace CIARE.LiveShareManage
 {
@@ -18,6 +18,7 @@ namespace CIARE.LiveShareManage
         {
             _mainForm = mainForm;
         }
+        internal void Initialize() => _mainForm.EditorTabControl.SelectedIndexChanged += (_, _) => RefreshAvailability();
         internal HubConnection hubConnection;
         internal ApiConnectionEvents _apiConnectionEvents;
 
@@ -28,8 +29,24 @@ namespace CIARE.LiveShareManage
         /// <param name="e"></param>
         internal void liveShareHostToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            LiveShareHost liveShareHost = new LiveShareHost();
-            liveShareHost.ShowDialog();
+            if (!CanShareEditor(_mainForm.EditorTabControl.SelectedTab?.Controls.OfType<ICSharpCode.TextEditor.TextEditorControl>().FirstOrDefault())) return;
+            using var liveShareHost = new LiveShareHost();
+            liveShareHost.ShowDialog(_mainForm);
+        }
+
+        internal bool CanShareEditor(ICSharpCode.TextEditor.TextEditorControl editor)
+        {
+            if (editor == null || editor.IsDisposed || editor.Parent is not TabPage page) return false;
+            var form = _mainForm.FormDesignerFeature?.Get(page);
+            return form == null || form.Page != page || !form.IsDesignView;
+        }
+
+        internal void RefreshAvailability()
+        {
+            if (_mainForm.IsDisposed || _mainForm.Disposing || _mainForm.liveShareToolStripMenuItem.IsDisposed) return;
+            bool enabled = CanShareEditor(_mainForm.EditorTabControl.SelectedTab?.Controls.OfType<ICSharpCode.TextEditor.TextEditorControl>().FirstOrDefault());
+            _mainForm.liveShareToolStripMenuItem.Enabled = enabled;
+            _mainForm.liveShareToolStripMenuItem.ToolTipText = enabled ? "Share the active code tab" : "Use View Code to share this form's source";
         }
 
         /// <summary>
@@ -55,11 +72,7 @@ namespace CIARE.LiveShareManage
         /// <param name="e"></param>
         internal void liveStatusPb_Paint(object sender, PaintEventArgs e)
         {
-            if (GlobalVariables.connected && GlobalVariables.liveDisconnected)
-            {
-                if (GlobalVariables.apiRemoteConnected || GlobalVariables.apiConnected)
-                    ApiConnectionEvents.ManageHubDisconnection(hubConnection, new Button());
-            }
+            // Connection state is handled by SignalR's Reconnecting, Reconnected and Closed events.
         }
     }
 }

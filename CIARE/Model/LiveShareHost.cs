@@ -3,9 +3,10 @@ using CIARE.LiveShareManage;
 using CIARE.Utils;
 using Microsoft.AspNetCore.SignalR.Client;
 using System;
-using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CIARE
@@ -13,8 +14,9 @@ namespace CIARE
     [SupportedOSPlatform("windows")]
     public partial class LiveShareHost : Form
     {
-        private const long LiveShareMaxBufferBytes = 8L * 1024L * 1024L;
         private const string NicknameRegistryKey = "LiveShareNickname";
+        private bool _connectionBusy;
+        private CancellationTokenSource _connectionCancellation;
 
         public LiveShareHost()
         {
@@ -27,11 +29,14 @@ namespace CIARE
 
         private void LiveShareHost_Load(object sender, EventArgs e)
         {
-            // Check if CIARE is reconnecting to Live API.
-            CheckReconnectionStatus();
+            if (!MainForm.Instance.LiveShareEventsFeature.CanShareEditor(SelectedEditor.GetSelectedEditor()))
+            {
+                Close(); return;
+            }
 
             // Check if api url exist.
             CheckApiUrl(ref GlobalVariables.apiUrl);
+            if (IsDisposed || string.IsNullOrWhiteSpace(GlobalVariables.apiUrl)) return;
 
             // Set dark mode if enabled.
             FrmColorMod.ToogleColorMode(this, GlobalVariables.darkColor);
@@ -61,7 +66,7 @@ namespace CIARE
             // Set remote connect button dark mode for disable status.
             SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
 
-            // Start timer for check if live share API is up.
+            // Display the current SignalR connection state on the UI thread.
             checkLiveAPITimer.Enabled = true;
             checkLiveAPITimer.Start();
         }
@@ -91,39 +96,31 @@ namespace CIARE
         /// <param name="e"></param>
         private async void startLiveBtn_Click(object sender, EventArgs e)
         {
+            if (_connectionBusy) return;
             if (!GlobalVariables.apiConnected && !SaveNickname())
                 return;
-
-            // Check if live share API is up.
-            Network network = new Network(GlobalVariables.apiUrl);
-            if (!network.IsLiveApiConnected())
-            {
-                MessageBox.Show("The API link seems down for the moment!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (passwordTxt.Text.Length < 5)
+            if (!GlobalVariables.apiConnected && passwordTxt.Text.Length < 5)
             {
                 MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            GlobalVariables.livePassword = passwordTxt.Text;
-            GlobalVariables.sessionId = sessionTxt.Text;
             GlobalVariables.typeConnection = true;
+            BeginConnectionChange();
             try
             {
-                GlobalVariables.liveTabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
-                HubConnectionBuild();
-                await ApiConnectionEvents.StartShare(MainForm.Instance.hubConnection, GlobalVariables.livePassword, GlobalVariables.sessionId,
-                    startLiveBtn, connectHostBtn, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
-                SetColorButtonsOnDisable(startLiveBtn, GlobalVariables.darkColor);
-                SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
+                if (!GlobalVariables.apiConnected)
+                {
+                    GlobalVariables.liveTabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
+                    await HubConnectionBuild();
+                }
+                await ApiConnectionEvents.StartShare(MainForm.Instance.hubConnection, passwordTxt.Text, sessionTxt.Text,
+                    startLiveBtn, connectHostBtn, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex), _connectionCancellation.Token);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
+            finally { EndConnectionChange(); }
         }
 
         /// <summary>
@@ -203,12 +200,16 @@ namespace CIARE
         }
 
         /// <summary>
-        /// Check if live share API is up.
+        /// Display the current SignalR connection state.
         /// </summary>
-        private void CheckIfAPIisALIVE()
+        private void RefreshConnectionStatus()
         {
-            Network network = new Network(GlobalVariables.apiUrl);
-                liveApiPb.Image = (network.IsLiveApiConnected()) ? Properties.Resources.green_dot : Properties.Resources.red_dot;
+            liveApiPb.Image = MainForm.Instance.hubConnection?.State switch
+            {
+                HubConnectionState.Connected => Properties.Resources.green_dot,
+                HubConnectionState.Connecting or HubConnectionState.Reconnecting => Properties.Resources.orange_dot,
+                _ => Properties.Resources.red_dot
+            };
         }
 
         /// <summary>
@@ -218,39 +219,54 @@ namespace CIARE
         /// <param name="e"></param>
         private async void connectHostBtn_Click(object sender, EventArgs e)
         {
+            if (_connectionBusy) return;
             if (!GlobalVariables.apiRemoteConnected && !SaveNickname())
                 return;
-
-            Network network = new Network(GlobalVariables.apiUrl);
-            if (!network.IsLiveApiConnected())
-            {
-                MessageBox.Show("The API link seems down for the moment!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (remotePasswordTxt.Text.Length < 5)
+            if (!GlobalVariables.apiRemoteConnected && remotePasswordTxt.Text.Length < 5)
             {
                 MessageBox.Show("Minimum password length is 5 characters!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            GlobalVariables.livePassword = remotePasswordTxt.Text;
-            GlobalVariables.sessionId = remoteSessioniDtxt.Text;
             GlobalVariables.remoteSessionId = remoteSessioniDtxt.Text;
             GlobalVariables.typeConnection = false;
+            BeginConnectionChange();
             try
             {
-                GlobalVariables.liveTabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
-                HubConnectionBuild();
+                if (!GlobalVariables.apiRemoteConnected)
+                {
+                    GlobalVariables.liveTabIndex = MainForm.Instance.EditorTabControl.SelectedIndex;
+                    await HubConnectionBuild();
+                }
                 await ApiConnectionEvents.Connect(this, MainForm.Instance.hubConnection, connectHostBtn, startLiveBtn,
-                    GlobalVariables.livePassword, GlobalVariables.sessionId, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex));
-                SetColorButtonsOnDisable(startLiveBtn, GlobalVariables.darkColor);
-                SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
+                    remotePasswordTxt.Text, remoteSessioniDtxt.Text, SelectedEditor.GetSelectedEditor(GlobalVariables.liveTabIndex), _connectionCancellation.Token);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            MainForm.Instance.EditorTabControl.SelectTab(GlobalVariables.liveTabIndex);
+            finally { EndConnectionChange(); }
+        }
+
+        private void BeginConnectionChange()
+        {
+            _connectionBusy = true;
+            _connectionCancellation = new CancellationTokenSource();
+            startLiveBtn.Enabled = connectHostBtn.Enabled = false;
+        }
+
+        private void EndConnectionChange()
+        {
+            _connectionBusy = false;
+            _connectionCancellation?.Dispose(); _connectionCancellation = null;
+            if (!IsDisposed) RefreshConnectionButtons();
+        }
+
+        private void RefreshConnectionButtons()
+        {
+            SetLiveButtonText(GlobalVariables.apiRemoteConnected, GlobalVariables.apiConnected, startLiveBtn, connectHostBtn);
+            SetRemoteButtonText(GlobalVariables.apiRemoteConnected, GlobalVariables.apiConnected, connectHostBtn, startLiveBtn);
+            SetColorButtonsOnDisable(startLiveBtn, GlobalVariables.darkColor);
+            SetColorButtonsOnDisable(connectHostBtn, GlobalVariables.darkColor);
         }
 
         /// <summary>
@@ -278,32 +294,16 @@ namespace CIARE
         /// <summary>
         /// Hub connection builder.
         /// </summary>
-        private void HubConnectionBuild()
+        private async Task HubConnectionBuild()
         {
-            if (!GlobalVariables.connected)
+            var previous = MainForm.Instance.hubConnection;
+            if (previous != null)
             {
-                MainForm.Instance.hubConnection = new HubConnectionBuilder()
-      .WithUrl(GlobalVariables.apiUrl, opts =>
-        {
-            opts.TransportMaxBufferSize = LiveShareMaxBufferBytes;
-            opts.ApplicationMaxBufferSize = LiveShareMaxBufferBytes;
-        }
-      )
-      .Build();
-                ApiConnectionEvents.ApiConnection(MainForm.Instance.hubConnection, GlobalVariables.apiUrl);
+                if (previous.State != HubConnectionState.Disconnected) return;
+                MainForm.Instance.hubConnection = null;
+                await previous.DisposeAsync();
             }
-        }
-
-        /// <summary>
-        /// Check if CIARE is reconnecting to Live API.
-        /// </summary>
-        private void CheckReconnectionStatus()
-        {
-            if (GlobalVariables.liveDisconnected || GlobalVariables.reconnectionCount < 6)
-            {
-                MessageBox.Show("You cannot access this setting when trying to reconnect to Live Share API!", "CIARE - Live Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                this.Close();
-            }
+            MainForm.Instance.hubConnection = LiveShareConnection.Create(GlobalVariables.apiUrl);
         }
 
         /// <summary>
@@ -330,24 +330,15 @@ namespace CIARE
         }
 
         /// <summary>
-        /// Timer function for call API live check if is up in background.
+        /// Refresh status and buttons without making a separate health request.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void checkLiveAPITimer_Tick(object sender, EventArgs e)
         {
-            var worker = new BackgroundWorker();
-            worker.DoWork += APICheck_DoWork;
-            worker.RunWorkerAsync();
+            RefreshConnectionStatus();
+            if (!_connectionBusy) RefreshConnectionButtons();
         }
-
-        /// <summary>
-        /// BW function for check if live API is UP;
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void APICheck_DoWork(object sender, DoWorkEventArgs e) =>
-            CheckIfAPIisALIVE();
 
         /// <summary>
         /// Close timer on form closing.
@@ -356,6 +347,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void LiveShareHost_FormClosing(object sender, FormClosingEventArgs e)
         {
+            _connectionCancellation?.Cancel();
             SaveNickname(showValidation: false);
             checkLiveAPITimer.Stop();
             checkLiveAPITimer.Enabled = false;

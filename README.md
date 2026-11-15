@@ -136,6 +136,10 @@ Install-Package log4net -Version 2.0.14
 
 Collaborate on the same project or file in real time with another person.
 
+Live Share uses SignalR Client 11 and reconnects automatically after temporary network loss, rejoining the session and restoring document/presence updates. Enter the hub URL itself; a separate `/ping` endpoint is not required. Connection status and Stop remain available while reconnecting.
+
+Live Share is available only in code tabs. In the Windows Forms designer, use **View Code** first; the designer tab cannot start or join a Live Share session.
+
 **Built on:** [ASP.NET SignalR](https://dotnet.microsoft.com/en-us/apps/aspnet/signalr)
 
 **Requires:** A hosted [CIARE Live Share API](https://github.com/0x78654C/CIARELiveShareAPI)

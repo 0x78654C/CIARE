@@ -239,6 +239,7 @@ internal sealed class FormDesignTab : IDisposable
         if (CodePage != null && !CodePage.IsDisposed) CodePage.Text = (CodeDirty ? "*" : "") + Path.GetFileName(CodePath) + "               ";
         if (Page == _main.EditorTabControl.SelectedTab || CodePage != null && CodePage == _main.EditorTabControl.SelectedTab)
             _main.Text = (dirty ? "*" : "") + _main.Text.TrimStart('*');
+        _main.LiveShareEventsFeature.RefreshAvailability();
     }
     internal void UpdatePath(string path)
     {

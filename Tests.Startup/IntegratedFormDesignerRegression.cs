@@ -45,6 +45,9 @@ internal static class IntegratedFormDesignerRegression
         var page = main.EditorTabControl.SelectedTab;
         var tab = main.FormDesignerFeature.Get(page);
         assert(tab != null && tab.IsDesignView, "Opening a form automatically displays its embedded design view");
+        assert(!main.liveShareToolStripMenuItem.Enabled && !main.LiveShareEventsFeature.CanShareEditor(tab.CodeEditor), "Live Share is disabled on the form designer tab");
+        main.LiveShareEventsFeature.liveShareHostToolStripMenuItem_Click(null, EventArgs.Empty);
+        assert(main.OwnedForms.Length == 0, "The Live Share command does not open a dialog from a designer tab");
         assert(tab.Designer.Parent == page && tab.Designer.FindForm() == main && main.OwnedForms.Length == 0, "The designer is inside the main editor without a separate window");
         assert(ReferenceEquals(page.Controls[0], tab.CodeEditor) && ReferenceEquals(SelectedEditor.GetSelectedEditor(), tab.CodeEditor), "Editor services retain the form's code editor");
         var tree = main.ExplorerFeature._fileExplorerTree;
@@ -56,6 +59,7 @@ internal static class IntegratedFormDesignerRegression
         tab.Designer.Controls.OfType<ToolStrip>().SelectMany(s => s.Items.OfType<ToolStripButton>()).Single(b => b.Text == "View Code").PerformClick();
         var codePage = main.EditorTabControl.SelectedTab;
         var sourceEditor = SelectedEditor.GetSelectedEditor();
+        assert(main.liveShareToolStripMenuItem.Enabled && main.LiveShareEventsFeature.CanShareEditor(sourceEditor), "Live Share is available on the form's separate code tab");
         assert(codePage != page && codePage == tab.CodePage && codePage.ToolTipText == path && sourceEditor.Visible && sourceEditor.Text == Code,
             "View Code opens the form source in a separate editor tab");
         assert(tab.IsDesignView && page.Text.Contains("[Design]") && !codePage.Text.Contains("[Design]") && tab.Designer.Parent == page,
