@@ -134,6 +134,7 @@ internal static class StartupRegression
         if (scenario == "form-designer")
         {
             FormDesignerRegression.Run(form, Assert);
+            IntegratedFormDesignerRegression.Run(form, Assert);
             return;
         }
         if (scenario.StartsWith("live-share"))

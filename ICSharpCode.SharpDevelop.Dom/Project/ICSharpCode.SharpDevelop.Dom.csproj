@@ -45,7 +45,7 @@
     <ProjectReference Include="..\..\NRefactory\Project\NRefactory.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="log4net" Version="3.3.0" />
+    <PackageReference Include="log4net" Version="3.6.0" />
   </ItemGroup>
   <PropertyGroup>
     <NoWarn>$(NoWarn);WFO1000</NoWarn>

@@ -294,6 +294,13 @@ MessageBoxIcon.Warning);
                 countTabs++;
                 bool isSelectedTab = countTabs - 1 == selectedIndex;
 
+                var designedForm = MainForm.Instance.FormDesignerFeature.Get(tab);
+                if (designedForm != null && (checkAll || isSelectedTab))
+                {
+                    if (!designedForm.ConfirmClose()) { GlobalVariables.noClear = true; return; }
+                    continue;
+                }
+
                 // Check if editor is empty.
                 if (IsEditorEmpty(countTabs - 1)) continue;
 
@@ -354,8 +361,8 @@ MessageBoxIcon.Warning);
         {
             var index = MainForm.Instance.EditorTabControl.SelectedIndex;
             ManageUnsavedData(textEditor, index, false);
-            //if (GlobalVariables.noClear)
-            //    return;
+            if (GlobalVariables.noClear)
+                return;
             string openedData = OpenFile();
 
             if (s_isTabOpen) return;
@@ -379,6 +386,7 @@ MessageBoxIcon.Warning);
                 TabControllerManage.StoreDeleteTabs(previousTabPath, filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, index);  // Store tabs title and index.
             AutoStartFile autoStartFile = new AutoStartFile(GlobalVariables.regUserRunPath, GlobalVariables.markFile, GlobalVariables.markFile, GlobalVariables.openedFilePath);
             autoStartFile.CheckFilePath();
+            MainForm.Instance.FormDesignerFeature.Attach(MainForm.Instance.EditorTabControl.SelectedTab);
         }
 
         /// <summary>
@@ -390,8 +398,8 @@ MessageBoxIcon.Warning);
         {
             var index = MainForm.Instance.EditorTabControl.SelectedIndex;
             ManageUnsavedData(textEditor, index, false);
-            //if (GlobalVariables.noClear)
-            //    return;
+            if (GlobalVariables.noClear)
+                return;
             FileInfo fileInfo = new FileInfo(filePath);
             GlobalVariables.openedFilePath = filePath;
             GlobalVariables.openedFileName = fileInfo.Name;
@@ -408,6 +416,7 @@ MessageBoxIcon.Warning);
                 if (GlobalVariables.OStartUp)
                     TabControllerManage.StoreDeleteTabs(previousTabPath, filePath, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, index);  // Store tabs title and index.
             }
+            MainForm.Instance.FormDesignerFeature.Attach(MainForm.Instance.EditorTabControl.SelectedTab);
         }
 
         /// <summary>
@@ -416,6 +425,7 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void SaveToFileDialog()
         {
+            if (MainForm.Instance.FormDesignerFeature.TrySaveActive()) return;
             try
             {
                 string titleTab = MainForm.Instance.EditorTabControl.SelectedTab.Text.Trim();
@@ -485,6 +495,7 @@ MessageBoxIcon.Warning);
         /// <param name="textEditor"></param>
         public static void SaveAsDialog(TextEditorControl textEditor)
         {
+            if (MainForm.Instance.FormDesignerFeature.TrySaveActive(true)) return;
             SaveFile(textEditor.Text);
             if (string.IsNullOrEmpty(GlobalVariables.openedFilePath))
                 return;
@@ -528,6 +539,7 @@ MessageBoxIcon.Warning);
             MainForm.Instance.Text = $"CIARE {GlobalVariables.versionName}";
             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page               ";
             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = string.Empty;
+            MainForm.Instance.FormDesignerFeature.Detach(MainForm.Instance.EditorTabControl.SelectedTab);
             MainForm.Instance.markStartFileChk.Checked = false;
             if (GlobalVariables.OStartUp)
             {

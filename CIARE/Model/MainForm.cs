@@ -599,7 +599,7 @@ namespace CIARE
         /// <param name="e"></param>
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // Owned designers receive FormClosing first; preserve a cancelled save prompt.
+            // Preserve cancellation from other closing handlers.
             if (e.Cancel) return;
             // Store tab text of current opened tab.
             var toolTipText = EditorTabControl.SelectedTab.ToolTipText.Trim();

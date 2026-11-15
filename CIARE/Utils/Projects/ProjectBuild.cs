@@ -85,6 +85,12 @@ internal sealed class ProjectBuild
                 string.Equals(_mainForm.ProjectContextFeature.GetProjectPathFromExplorerPath(path), projectPath, StringComparison.OrdinalIgnoreCase) ||
                 (IsCSharpFilePath(path) && ProjectContainsSourceFile(projectPath, path));
             if (!belongsToProject) continue;
+            var formDesigner = _mainForm.FormDesignerFeature.Get(page);
+            if (formDesigner != null)
+            {
+                if (!formDesigner.Save(false)) throw new InvalidOperationException("The form must be saved before building the project.");
+                continue;
+            }
             TextEditorControl editor = page.Controls.OfType<TextEditorControl>().FirstOrDefault();
             if (editor == null) continue;
             File.WriteAllText(path, editor.Text);

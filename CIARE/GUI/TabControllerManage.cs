@@ -311,7 +311,11 @@ namespace CIARE.GUI
                         tabControl.SelectedTab = page;
                         // Preserve selection-time work: a new file gets its path after selection,
                         // avoiding an extra disk hash/completion pass while the tab is constructed.
-                        if (filePath != null) page.ToolTipText = filePath;
+                        if (filePath != null)
+                        {
+                            page.ToolTipText = filePath;
+                            MainForm.Instance.FormDesignerFeature.Attach(page);
+                        }
                     }
                 });
             }

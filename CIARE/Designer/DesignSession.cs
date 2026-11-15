@@ -32,6 +32,12 @@ internal sealed class DesignSession
         Changed?.Invoke(this, EventArgs.Empty);
     }
     internal void MarkSaved() { _saved = _committed; Changed?.Invoke(this, EventArgs.Empty); }
+    internal void AcceptSavedDocument(DesignDocument document)
+    {
+        document.Validate(); Document = document;
+        _saved = _committed = document.Serialize();
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
     internal void Select(string id)
     {
         SelectedId = Document.Find(id)?.Id ?? Document.Form.Id;
@@ -66,19 +72,31 @@ internal sealed class DesignSession
     internal DesignNode Add(string kind, DesignNode parent, Point location)
     {
         var node = DesignCatalog.Create(kind, Document.UniqueName(kind), location);
-        Change(() => { node.TabIndex = parent.Children.Count; parent.Children.Insert(0, node); SelectedId = node.Id; });
+        Change(() =>
+        {
+            if (parent.Kind == "TabControl" && kind != "TabPage")
+            {
+                if (parent.Children.Count == 0) parent.Children.Add(DesignCatalog.Create("TabPage", Document.UniqueName("TabPage"), Point.Empty));
+                parent = parent.Children[0];
+            }
+            node.TabIndex = parent.Children.Count; parent.Children.Insert(0, node); SelectedId = node.Id;
+            if (kind == "TabControl") node.Children.Add(DesignCatalog.Create("TabPage", Document.UniqueName("TabPage"), Point.Empty));
+        });
         return node;
     }
     internal void Delete()
     {
         var selected = Selected;
         if (selected == Document.Form) return;
+        if (selected.SourceMember.Contains('.')) throw new InvalidOperationException("Internal container panels cannot be deleted. Select the containing control instead.");
         var parent = Document.ParentOf(selected);
         Change(() => { parent.Children.Remove(selected); SelectedId = parent.Id; });
     }
     internal void Copy()
     {
         if (Selected == Document.Form) return;
+        if (DesignDocument.Enumerate(Selected).Any(n => n.SourceType.Length > 0 || n.SourceMember.Contains('.')))
+            throw new InvalidOperationException("Copy controls with custom types or internal panels in the designer source.");
         _clipboard = JsonSerializer.Serialize(Selected, DesignDocument.JsonOptions);
     }
     internal void Paste()
@@ -94,6 +112,8 @@ internal sealed class DesignSession
             foreach (var node in DesignDocument.Enumerate(clone))
             {
                 node.Id = Guid.NewGuid().ToString("N");
+                node.SourceMember = "";
+                node.SourceType = "";
                 node.Name = Document.UniqueName(node.Kind);
                 node.Events.Clear();
             }

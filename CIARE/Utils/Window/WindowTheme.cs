@@ -51,6 +51,7 @@ namespace CIARE.Utils.Window
                 ApplyTabControlDarkMode(_mainForm.EditorTabControl, darkBg);
                 ApplyTabControlDarkMode(_mainForm.outputTabControl, darkBg);
                 _mainForm.ExplorerFeature.ApplyFileExplorerTheme(highlight);
+                _mainForm.FormDesignerFeature.ApplyTheme();
                 return;
             }
             GlobalVariables.darkColor = false;
@@ -61,6 +62,7 @@ namespace CIARE.Utils.Window
             ApplyTabControlDarkMode(_mainForm.EditorTabControl, SystemColors.Window);
             ApplyTabControlDarkMode(_mainForm.outputTabControl, SystemColors.Window);
             _mainForm.ExplorerFeature.ApplyFileExplorerTheme(highlight);
+            _mainForm.FormDesignerFeature.ApplyTheme();
         }
 
         /// <summary>

@@ -21,6 +21,7 @@ internal sealed class DesignCanvas : Control
     private int _handle = -1;
     internal bool SnapToGrid = true;
     internal bool ShowGrid = true;
+    internal Color SelectionColor = Color.FromArgb(0, 122, 204);
     internal string ToolKind;
     internal event EventHandler DefaultEventRequested;
     internal event EventHandler ToolPlaced;
@@ -83,7 +84,7 @@ internal sealed class DesignCanvas : Control
         using var border = new Pen(Color.FromArgb(130, 130, 140));
         g.DrawRectangle(border, Origin.X - 1, Origin.Y - 30, form.Width + 1, form.Height + 30);
         var selection = NodeBounds(_session.Selected.Id);
-        using var accent = new Pen(Color.FromArgb(0, 122, 204), 1);
+        using var accent = new Pen(SelectionColor, 1);
         if (!selection.IsEmpty)
         {
             selection.Inflate(2, 2); g.DrawRectangle(accent, selection);
@@ -92,7 +93,7 @@ internal sealed class DesignCanvas : Control
         }
         if (_dragging)
         {
-            using var ghost = new Pen(Color.FromArgb(0, 122, 204)) { DashStyle = DashStyle.Dash };
+            using var ghost = new Pen(SelectionColor) { DashStyle = DashStyle.Dash };
             g.DrawRectangle(ghost, _ghost);
         }
         TextRenderer.DrawText(g, "Double-click a control to create its default event handler", Font,
@@ -142,6 +143,7 @@ internal sealed class DesignCanvas : Control
         }
         if (_session.Selected == _session.Document.Form && _handle is not (3 or 4 or 5)) return;
         if (_session.Selected.Dock != DockStyle.None && _session.Selected != _session.Document.Form) return;
+        if (_session.Selected.SourceMember.Contains('.')) return;
         _original = NodeBounds(_session.Selected.Id); _ghost = _original; _start = e.Location;
         _dragging = true; Capture = true;
     }

@@ -96,31 +96,32 @@
     </FileAssociation>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Humanizer.Core" Version="3.0.1" />
+    <PackageReference Include="Humanizer.Core" Version="3.0.10" />
     <PackageReference Include="ICSharpCode.NRefactory" Version="5.5.1" />
-    <PackageReference Include="log4net" Version="3.3.0" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.10" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="5.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">
+    <PackageReference Include="log4net" Version="3.6.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="11.0.0" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="11.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="5.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.12.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="5.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="5.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="5.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="5.0.0" />
-    <PackageReference Include="Mono.Cecil" Version="0.11.5" />
-    <PackageReference Include="NuGet.Protocol" Version="7.3.1" />
-    <PackageReference Include="System.Composition" Version="10.0.0" />
-    <PackageReference Include="System.Composition.AttributedModel" Version="10.0.0" />
-    <PackageReference Include="System.Composition.Convention" Version="10.0.0" />
-    <PackageReference Include="System.Composition.Hosting" Version="10.0.0" />
-    <PackageReference Include="System.Composition.Runtime" Version="10.0.0" />
-    <PackageReference Include="System.Composition.TypedParts" Version="10.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="5.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="5.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="5.12.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="5.12.0" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.6" />
+    <PackageReference Include="NuGet.Protocol" Version="8.0.0" />
+    <PackageReference Include="System.Composition" Version="11.0.0" />
+    <PackageReference Include="System.Composition.AttributedModel" Version="11.0.0" />
+    <PackageReference Include="System.Composition.Convention" Version="11.0.0" />
+    <PackageReference Include="System.Composition.Hosting" Version="11.0.0" />
+    <PackageReference Include="System.Composition.Runtime" Version="11.0.0" />
+    <PackageReference Include="System.Composition.TypedParts" Version="11.0.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="11.0.0" />
   </ItemGroup>
   <ItemGroup>
     <!-- Independent utility classes open as code; MainForm owns the form designer. -->

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using CIARE.GUI;
@@ -197,11 +198,15 @@ namespace CIARE.Utils.Explorer
 
             try
             {
-                MoveExplorerItem(path, newPath, isDirectory);
+                var formFiles = GetFormFileRenames(path, newPath, isDirectory);
+                if (formFiles.Count == 0) MoveExplorerItem(path, newPath, isDirectory);
+                else MoveFormFiles(formFiles);
                 _mainForm.StartupProjectFeature.UpdateLoadedSolutionAfterExplorerRename(path, newPath, isDirectory);
                 _mainForm.StartupProjectFeature.UpdateStartupProjectAfterExplorerRename(path, newPath, isDirectory);
                 _mainForm.ProjectPathsFeature.UpdateProjectReferencesAfterExplorerRename(path, newPath, isDirectory);
                 _mainForm.TabsFeature.UpdateOpenTabsAfterExplorerRename(path, newPath, isDirectory);
+                foreach (var related in formFiles.Skip(1))
+                    _mainForm.TabsFeature.UpdateOpenTabsAfterExplorerRename(related.Source, related.Target, false);
 
                 _mainForm.ExplorerTreeFeature.RefreshAndExpandExplorerFolder(parentPath);
                 _mainForm.ExplorerTreeFeature.SelectExplorerPath(newPath);
@@ -274,6 +279,33 @@ namespace CIARE.Utils.Explorer
             }
         }
 
+        internal static List<(string Source, string Target)> GetFormFileRenames(string path, string newPath, bool isDirectory)
+        {
+            var files = new List<(string Source, string Target)>();
+            if (isDirectory || !path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ||
+                path.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase) || !File.Exists(Path.ChangeExtension(path, ".Designer.cs"))) return files;
+            if (!newPath.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("A Windows Form must keep its .cs extension.");
+            files.Add((path, newPath));
+            foreach (string extension in new[] { ".Designer.cs", ".resx", ".ciareform" })
+            {
+                string source = Path.ChangeExtension(path, extension), target = Path.ChangeExtension(newPath, extension);
+                if (!File.Exists(source)) continue;
+                if ((File.Exists(target) || Directory.Exists(target)) && !string.Equals(source, target, StringComparison.OrdinalIgnoreCase))
+                    throw new IOException("A related form file already exists: " + Path.GetFileName(target));
+                files.Add((source, target));
+            }
+            return files;
+        }
+        internal static void MoveFormFiles(List<(string Source, string Target)> files)
+        {
+            var moved = new List<(string Source, string Target)>();
+            try { foreach (var file in files) { MoveExplorerItem(file.Source, file.Target, false); moved.Add(file); } }
+            catch
+            {
+                foreach (var file in moved.AsEnumerable().Reverse()) MoveExplorerItem(file.Target, file.Source, false);
+                throw;
+            }
+        }
         private static void MoveExplorerItem(string path, string newPath, bool isDirectory)
         {
             string normalizedPath = NormalizeCompletionPath(path);

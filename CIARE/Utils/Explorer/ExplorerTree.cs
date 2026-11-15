@@ -125,7 +125,8 @@ namespace CIARE.Utils.Explorer
                 if (tag == null) continue;
                 if (string.Equals(tag, path, StringComparison.OrdinalIgnoreCase))
                     return child;
-                if (path.StartsWith(tag + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                if (path.StartsWith(tag + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                    File.Exists(tag) && child.Nodes.Count > 0)
                 {
                     var found = FindTreeNodeByPath(child, path);
                     if (found != null) return found;
@@ -190,6 +191,15 @@ namespace CIARE.Utils.Explorer
                 ToolTipText = file.FullName
             };
             _mainForm.StartupProjectFeature.ApplyStartupProjectNodeStyle(node);
+            if (file.Extension.Equals(".cs", StringComparison.OrdinalIgnoreCase) && !file.Name.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase) &&
+                File.Exists(Path.ChangeExtension(file.FullName, ".Designer.cs")))
+            {
+                foreach (string extension in new[] { ".Designer.cs", ".resx", ".ciareform" })
+                {
+                    string related = Path.ChangeExtension(file.FullName, extension);
+                    if (File.Exists(related)) node.Nodes.Add(CreateFileNode(new FileInfo(related)));
+                }
+            }
             return node;
         }
 
@@ -285,7 +295,7 @@ namespace CIARE.Utils.Explorer
                 {
                     string path = NormalizeCompletionPath(line);
                     if (string.IsNullOrEmpty(path) ||
-                        !Directory.Exists(path) ||
+                        (!Directory.Exists(path) && !File.Exists(path)) ||
                         !IsSameOrChildDirectory(path, rootPath))
                     {
                         continue;
@@ -326,6 +336,9 @@ namespace CIARE.Utils.Explorer
                 {
                     if (ShouldHideExplorerItem(file.Attributes))
                         continue;
+                    string owner = file.Name.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase)
+                        ? file.FullName[..^12] + ".cs" : file.Extension is ".resx" or ".ciareform" ? Path.ChangeExtension(file.FullName, ".cs") : null;
+                    if (owner != null && File.Exists(owner) && File.Exists(Path.ChangeExtension(owner, ".Designer.cs"))) continue;
                     node.Nodes.Add(CreateFileNode(file));
                 }
             }

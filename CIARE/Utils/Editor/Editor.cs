@@ -222,6 +222,7 @@ namespace CIARE.Utils.Editor
             editor.Document.FoldingManager.UpdateFoldings(null, null);
 
             // Trigger real-time type checking after a short debounce.
+            _mainForm.FormDesignerFeature.Get(_mainForm.EditorTabControl.SelectedTab)?.RefreshCaption();
             ScheduleCurrentTypeCheck(editor, code);
         }
 

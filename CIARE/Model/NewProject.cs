@@ -424,8 +424,7 @@ namespace CIARE
                 layout.Form.Children.Add(Designer.DesignCatalog.Create("Label", "label1", new Point(24, 24)));
                 layout.Form.Children[0].Text = "Hello, Windows Forms!";
                 layout.Form.Children[0].Width = 240;
-                Designer.DesignCodeGenerator.Export(layout, Path.Combine(projectDirectory, "MainForm.cs"));
-                Designer.DesignDocument.WriteAtomic(Path.Combine(projectDirectory, "MainForm.ciareform"), layout.Serialize());
+                Designer.FormDesignerFeature.CreateFiles(Path.Combine(projectDirectory, "MainForm.cs"), layout);
             }
 
             if (addToExistingSolution)
@@ -442,7 +441,7 @@ namespace CIARE
                 WorkspacePath = addToExistingSolution || createNewSolution ? solutionDirectory : projectDirectory,
                 ProjectFilePath = projectPath,
                 SolutionFilePath = solutionPath,
-                StarterFilePath = starterPath
+                StarterFilePath = SelectedTemplate.UsesFormDesigner ? Path.Combine(projectDirectory, "MainForm.cs") : starterPath
             };
         }
 

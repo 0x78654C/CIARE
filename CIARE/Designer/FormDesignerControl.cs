@@ -11,7 +11,7 @@ using ICSharpCode.TextEditor;
 namespace CIARE.Designer;
 
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-internal sealed class FormDesignerWindow : Form
+internal sealed class FormDesignerControl : UserControl
 {
     internal readonly DesignSession Session = new();
     internal readonly DesignCanvas Canvas;
@@ -26,25 +26,23 @@ internal sealed class FormDesignerWindow : Form
     private readonly TreeView _outline = new() { Dock = DockStyle.Fill, BorderStyle = BorderStyle.None, HideSelection = false };
     private readonly Label _selection = new() { Dock = DockStyle.Top, Height = 32, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(8, 0, 0, 0) };
     private readonly Label _documentTab = new() { Dock = DockStyle.Top, Height = 34, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(12, 0, 0, 0) };
-    private readonly TabControl _inspector = new() { Dock = DockStyle.Fill };
+    private readonly DesignerInspectorTabs _inspector = new() { Dock = DockStyle.Fill };
+    internal readonly TextBox PropertySearch = new() { Dock = DockStyle.Top, PlaceholderText = "Search properties" };
+    internal readonly TextBox EventSearch = new() { Dock = DockStyle.Top, PlaceholderText = "Search events or handlers" };
     private readonly ToolStripStatusLabel _status = new() { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
     private readonly ToolStripStatusLabel _coordinates = new();
     private readonly ToolStrip _commands = new() { GripStyle = ToolStripGripStyle.Hidden, Padding = new Padding(6, 4, 6, 4) };
     private readonly ToolStrip _layout = new() { GripStyle = ToolStripGripStyle.Hidden, Padding = new Padding(6, 2, 6, 2) };
     private ToolStripButton _undo, _redo;
     private bool _refreshing;
-    private string _path;
-    private string _exportPath;
-    internal string LayoutPath => _path;
+    internal FormDesignTab Host;
 
-    internal FormDesignerWindow(MainForm main, string path = null)
+    internal FormDesignerControl(MainForm main)
     {
         _main = main;
         Font = new Font("Segoe UI", 9F);
-        Text = "Form Designer — CIARE"; Name = "FormDesignerWindow";
-        StartPosition = FormStartPosition.CenterParent; ClientSize = new Size(1280, 780); MinimumSize = new Size(960, 640);
-        AutoScaleMode = AutoScaleMode.Dpi; KeyPreview = true;
-        if (main != null) Icon = main.Icon;
+        Name = "FormDesignerControl"; Size = new Size(1000, 680); Dock = DockStyle.Fill;
+        AutoScaleMode = AutoScaleMode.Dpi;
         Canvas = new DesignCanvas(Session);
         BuildLayout(); BuildCommands(); PopulateToolbox(); ApplyTheme();
         Session.Changed += (_, _) => RefreshDocument();
@@ -54,6 +52,8 @@ internal sealed class FormDesignerWindow : Form
         Canvas.ToolPlaced += (_, _) => { _toolbox.SelectedNode = _toolbox.Nodes[0]; SetStatus("Control added. Drag to move; use the handles to resize."); };
         Properties.PropertyValueChanged += (_, _) => Attempt(Session.Commit);
         _search.TextChanged += (_, _) => PopulateToolbox();
+        PropertySearch.TextChanged += (_, _) => Properties.SelectedObject = new DesignPropertyView(Session.Selected, PropertySearch.Text);
+        EventSearch.TextChanged += (_, _) => RefreshSelection();
         _toolbox.AfterSelect += (_, e) => { Canvas.ToolKind = e.Node.Tag as string; SetStatus(Canvas.ToolKind == null ? "Select a control on the form or in Document Outline." : "Click the form to place a " + Canvas.ToolKind + ", or drag it from the Toolbox."); };
         _toolbox.ItemDrag += (_, e) => { if (e.Item is TreeNode { Tag: string kind }) _toolbox.DoDragDrop(new DataObject(DesignCanvas.ToolboxFormat, kind), DragDropEffects.Copy); };
         _toolbox.NodeMouseDoubleClick += (_, e) =>
@@ -75,15 +75,18 @@ internal sealed class FormDesignerWindow : Form
             Attempt(() => Session.BindEvent(eventName, handler));
         };
         EventGrid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) CreateEvent((string)EventGrid.Rows[e.RowIndex].Cells[0].Value); };
-        FormClosing += (_, e) => { if (!e.Cancel && !ConfirmSave()) e.Cancel = true; };
-        Shown += (_, _) => Canvas.Focus();
-        if (path != null) LoadLayout(path); else RefreshDocument();
+        EventGrid.EditingControlShowing += (_, e) =>
+        {
+            var theme = DesignerTheme.For(_main);
+            e.Control.BackColor = theme.Field; e.Control.ForeColor = theme.Text;
+        };
+        RefreshDocument();
     }
     private static Label Heading(string text) => new() { Text = text, Dock = DockStyle.Top, Height = 30, Padding = new Padding(8, 0, 0, 0), TextAlign = ContentAlignment.MiddleLeft };
     private void BuildLayout()
     {
-        var workspace = new SplitContainer { Dock = DockStyle.Fill, FixedPanel = FixedPanel.Panel1, Size = new Size(1280, 680), SplitterDistance = 190, Panel1MinSize = 150, Panel2MinSize = 600 };
-        var inspectorSplit = new SplitContainer { Dock = DockStyle.Fill, FixedPanel = FixedPanel.Panel2, Size = new Size(1080, 680), SplitterDistance = 755, Panel1MinSize = 300, Panel2MinSize = 280 };
+        var workspace = new SplitContainer { Dock = DockStyle.Fill, FixedPanel = FixedPanel.Panel1, Size = new Size(1280, 680), SplitterDistance = 170, Panel1MinSize = 110, Panel2MinSize = 320 };
+        var inspectorSplit = new SplitContainer { Dock = DockStyle.Fill, FixedPanel = FixedPanel.Panel2, Size = new Size(1080, 680), SplitterDistance = 820, Panel1MinSize = 100, Panel2MinSize = 210 };
         workspace.Panel2.Controls.Add(inspectorSplit);
         var searchPanel = new Panel { Dock = DockStyle.Top, Height = 39, Padding = new Padding(8) };
         searchPanel.Controls.Add(_search);
@@ -93,7 +96,7 @@ internal sealed class FormDesignerWindow : Form
         inspectorSplit.Panel1.Controls.Add(scroll); inspectorSplit.Panel1.Controls.Add(_documentTab);
         var outlinePanel = new Panel { Dock = DockStyle.Top, Height = 170 };
         outlinePanel.Controls.Add(_outline); outlinePanel.Controls.Add(Heading("DOCUMENT OUTLINE"));
-        var propertyPage = new TabPage("Properties"); propertyPage.Controls.Add(Properties);
+        var propertyPage = new TabPage("Properties"); propertyPage.Controls.Add(Properties); propertyPage.Controls.Add(SearchPanel(PropertySearch));
         var eventPage = new TabPage("⚡ Events");
         EventGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Event", HeaderText = "Event", ReadOnly = true, FillWeight = 44 });
         EventGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Handler", HeaderText = "Event handler", FillWeight = 56 });
@@ -107,11 +110,16 @@ internal sealed class FormDesignerWindow : Form
         edit.Click += (_, _) => EditHandler();
         eventButtons.Controls.Add(create); eventButtons.Controls.Add(edit);
         eventFooter.Controls.Add(eventHint); eventFooter.Controls.Add(eventButtons);
-        eventPage.Controls.Add(EventGrid); eventPage.Controls.Add(eventFooter);
+        eventPage.Controls.Add(EventGrid); eventPage.Controls.Add(SearchPanel(EventSearch)); eventPage.Controls.Add(eventFooter);
         _inspector.TabPages.Add(propertyPage); _inspector.TabPages.Add(eventPage);
         inspectorSplit.Panel2.Controls.Add(_inspector); inspectorSplit.Panel2.Controls.Add(_selection); inspectorSplit.Panel2.Controls.Add(outlinePanel);
         var status = new StatusStrip(); status.Items.Add(_status); status.Items.Add(_coordinates);
         Controls.Add(workspace); Controls.Add(_layout); Controls.Add(_commands); Controls.Add(status);
+    }
+    private static Panel SearchPanel(TextBox search)
+    {
+        var panel = new Panel { Dock = DockStyle.Top, Height = 36, Padding = new Padding(6) };
+        panel.Controls.Add(search); return panel;
     }
     private ToolStripButton Button(ToolStrip strip, string text, Action action, string tooltip = null)
     {
@@ -120,18 +128,16 @@ internal sealed class FormDesignerWindow : Form
     }
     private void BuildCommands()
     {
-        Button(_commands, "New", () => { if (ConfirmSave()) { _path = _exportPath = null; Session.Reset(new()); } });
-        Button(_commands, "Open…", OpenLayout, "Open a CIARE form layout (Ctrl+O)");
-        Button(_commands, "Save", () => Save(false), "Save layout (Ctrl+S)");
-        Button(_commands, "Save As…", () => Save(true));
+        Button(_commands, "Save", () => Host?.Save(false), "Save form and designer source (Ctrl+S)");
         _commands.Items.Add(new ToolStripSeparator());
         _undo = Button(_commands, "Undo", Session.Undo, "Undo (Ctrl+Z)");
         _redo = Button(_commands, "Redo", Session.Redo, "Redo (Ctrl+Y)");
         Button(_commands, "Delete", Session.Delete);
         _commands.Items.Add(new ToolStripSeparator());
         Button(_commands, "▶ Preview", Preview, "Preview controls without running event-handler code (F5)");
-        Button(_commands, "View Code", ViewCode);
-        Button(_commands, "Export C#…", () => Export(), "Export .cs and .Designer.cs; existing handler bodies are preserved");
+        Button(_commands, "View Code", () => Host?.ShowCode());
+        Button(_commands, "Designer Source", () => Host?.OpenRelated(".Designer.cs"));
+        Button(_commands, "Resources", () => Host?.OpenRelated(".resx"));
         var snap = Button(_layout, "Snap to Grid", () => { }); snap.CheckOnClick = true; snap.Checked = true;
         snap.CheckedChanged += (_, _) => Canvas.SnapToGrid = snap.Checked;
         var grid = Button(_layout, "Show Grid", () => { }); grid.CheckOnClick = true; grid.Checked = true;
@@ -178,12 +184,15 @@ internal sealed class FormDesignerWindow : Form
         _refreshing = true;
         var selected = Session.Selected;
         _selection.Text = selected.ToString();
-        Properties.SelectedObject = new DesignPropertyView(selected);
+        Properties.SelectedObject = new DesignPropertyView(selected, PropertySearch.Text);
         string activeEvent = EventGrid.CurrentRow?.Cells[0].Value as string;
         EventGrid.Rows.Clear();
         string defaultEvent = DesignCatalog.DefaultEvent(selected.Kind);
         foreach (var spec in DesignCatalog.EventsFor(selected.Kind).OrderBy(e => e.Name != defaultEvent).ThenBy(e => e.Name))
         {
+            string filter = EventSearch.Text.Trim();
+            if (filter.Length > 0 && !spec.Name.Contains(filter, StringComparison.OrdinalIgnoreCase) &&
+                !selected.Events.GetValueOrDefault(spec.Name, "").Contains(filter, StringComparison.OrdinalIgnoreCase)) continue;
             int row = EventGrid.Rows.Add(spec.Name, selected.Events.GetValueOrDefault(spec.Name, ""));
             EventGrid.Rows[row].Cells[1].ToolTipText = $"void handler(object sender, {spec.ArgumentType} e)";
             if (spec.Name == activeEvent) EventGrid.CurrentCell = EventGrid.Rows[row].Cells[1];
@@ -206,7 +215,7 @@ internal sealed class FormDesignerWindow : Form
             string handler = Session.CreateHandler(eventName);
             _inspector.SelectedIndex = 1;
             foreach (DataGridViewRow row in EventGrid.Rows) if ((string)row.Cells[0].Value == eventName) EventGrid.CurrentCell = row.Cells[1];
-            SetStatus($"{eventName} → {handler}. Use Edit code to export and implement this handler.");
+            SetStatus($"{eventName} → {handler}. Use Edit code to implement this handler in the Code view.");
         });
     }
     private void EditHandler()
@@ -214,97 +223,21 @@ internal sealed class FormDesignerWindow : Form
         Attempt(() =>
         {
             string eventName = CurrentEvent(); CreateEvent(eventName);
-            if (!Export()) return;
-            _main?.ExplorerTreeFeature.OpenFileFromExplorer(_exportPath);
-            var editor = SelectedEditor.GetSelectedEditor();
-            string handler = Session.Selected.Events.GetValueOrDefault(eventName);
-            int offset = handler == null ? -1 : editor?.Text.IndexOf("void " + handler + "(", StringComparison.Ordinal) ?? -1;
-            if (offset >= 0)
-            {
-                int line = editor.Document.OffsetToPosition(offset).Line;
-                editor.ActiveTextAreaControl.Caret.Line = line;
-                editor.ActiveTextAreaControl.TextArea.ScrollTo(line);
-            }
-            // Owned windows stay above their owner; make the editor visible for implementation.
-            if (_main != null) { WindowState = FormWindowState.Minimized; _main.Activate(); }
+            Host?.EditHandler(Session.Selected.Events.GetValueOrDefault(eventName));
         });
     }
-    private void SetStatus(string text) => _status.Text = text;
+    internal void SetStatus(string text) => _status.Text = text;
     private void Attempt(Action action)
     {
         try { action(); }
         catch (Exception error) { SetStatus(error.Message); MessageBox.Show(this, error.Message, "Form Designer", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
-    internal void LoadLayout(string path)
-    {
-        var document = DesignDocument.Load(path);
-        _path = Path.GetFullPath(path); _exportPath = null; Session.Reset(document);
-        SetStatus("Opened " + Path.GetFileName(path));
-    }
-    private void OpenLayout()
-    {
-        using var dialog = new OpenFileDialog { Filter = "CIARE form layouts (*.ciareform)|*.ciareform", Title = "Open Form Layout" };
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
-        // Validate before asking to discard the current layout.
-        var document = DesignDocument.Load(dialog.FileName);
-        if (!ConfirmSave()) return;
-        _path = dialog.FileName; _exportPath = null; Session.Reset(document);
-        SetStatus("Opened " + Path.GetFileName(_path));
-    }
-    internal bool Save(bool saveAs)
-    {
-        if (!CommitEditors()) return false;
-        string path = _path;
-        if (path == null || saveAs)
-        {
-            using var dialog = new SaveFileDialog { Filter = "CIARE form layout (*.ciareform)|*.ciareform", DefaultExt = "ciareform",
-                FileName = path == null ? Session.Document.Form.Name + ".ciareform" : Path.GetFileName(path), InitialDirectory = path == null ? "" : Path.GetDirectoryName(path) };
-            if (dialog.ShowDialog(this) != DialogResult.OK) return false;
-            path = dialog.FileName;
-        }
-        try
-        {
-            DesignDocument.WriteAtomic(path, Session.Document.Serialize());
-            _path = path; Session.MarkSaved(); SetStatus("Layout saved: " + Path.GetFileName(path)); return true;
-        }
-        catch (Exception error) { MessageBox.Show(this, error.Message, "Save Form Layout", MessageBoxButtons.OK, MessageBoxIcon.Error); return false; }
-    }
-    private bool CommitEditors()
+    internal bool CommitEditors()
     {
         if (!ValidateChildren()) return false;
         if (!EventGrid.EndEdit()) return false;
         try { Session.Commit(); return true; }
         catch (Exception error) { MessageBox.Show(this, error.Message, "Form Designer", MessageBoxButtons.OK, MessageBoxIcon.Warning); return false; }
-    }
-    internal bool ConfirmSave()
-    {
-        if (!CommitEditors()) return false;
-        if (!Session.IsDirty) return true;
-        var answer = MessageBox.Show(this, "Save changes to " + Session.Document.Form.Name + "?", "Form Designer", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
-        return answer == DialogResult.No || answer == DialogResult.Yes && Save(false);
-    }
-    private bool Export()
-    {
-        if (!CommitEditors()) return false;
-        using var dialog = new SaveFileDialog { Filter = "C# form code (*.cs)|*.cs", DefaultExt = "cs", Title = "Export Form — handler code is preserved",
-            FileName = _exportPath == null ? Session.Document.Form.Name + ".cs" : Path.GetFileName(_exportPath),
-            InitialDirectory = Path.GetDirectoryName(_exportPath ?? _path ?? "") ?? "", OverwritePrompt = false };
-        if (dialog.ShowDialog(this) != DialogResult.OK) return false;
-        string path = dialog.FileName;
-        if (path.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Choose the code-behind name, such as Form1.cs. The .Designer.cs file is created alongside it.");
-        string designerPath = Path.ChangeExtension(path, ".Designer.cs");
-        var openEditors = _main?.EditorTabControl.TabPages.Cast<TabPage>().Where(p =>
-            string.Equals(p.ToolTipText.Trim(), path, StringComparison.OrdinalIgnoreCase) || string.Equals(p.ToolTipText.Trim(), designerPath, StringComparison.OrdinalIgnoreCase))
-            .Select(p => (Page: p, Editor: p.Controls.OfType<TextEditorControl>().FirstOrDefault())).Where(p => p.Editor != null).ToArray();
-        if (openEditors != null)
-            foreach (var item in openEditors)
-                if (!File.Exists(item.Page.ToolTipText.Trim()) || item.Editor.Text != File.ReadAllText(item.Page.ToolTipText.Trim()))
-                    throw new InvalidDataException("Save changes in the open C# editor before exporting this form.");
-        DesignCodeGenerator.Export(Session.Document, path); _exportPath = path;
-        if (openEditors != null)
-            foreach (var item in openEditors) item.Editor.Text = File.ReadAllText(item.Page.ToolTipText.Trim());
-        SetStatus("Exported " + Path.GetFileName(path) + " and " + Path.GetFileName(designerPath) + ". Save the layout to continue designing later.");
-        return true;
     }
     private void Preview()
     {
@@ -312,27 +245,10 @@ internal sealed class FormDesignerWindow : Form
         using var preview = DesignCatalog.CreatePreview(Session.Document);
         preview.ShowDialog(this);
     }
-    private void ViewCode()
-    {
-        if (!CommitEditors()) return;
-        using var viewer = new Form { Text = Session.Document.Form.Name + " — Generated C#", ClientSize = new Size(900, 650), StartPosition = FormStartPosition.CenterParent, Icon = Icon };
-        var tabs = new TabControl { Dock = DockStyle.Fill };
-        void Add(string name, string source)
-        {
-            var page = new TabPage(name);
-            var editor = new TextEditorControl { Dock = DockStyle.Fill };
-            editor.SetHighlighting("C#"); editor.Text = source; editor.Document.ReadOnly = true;
-            page.Controls.Add(editor); tabs.TabPages.Add(page);
-        }
-        Add(Session.Document.Form.Name + ".Designer.cs", DesignCodeGenerator.GenerateDesigner(Session.Document));
-        Add(Session.Document.Form.Name + ".cs", DesignCodeGenerator.GenerateCodeBehind(Session.Document, _exportPath != null && File.Exists(_exportPath) ? File.ReadAllText(_exportPath) : null));
-        viewer.Controls.Add(tabs); viewer.ShowDialog(this);
-    }
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
-        if (keyData == (Keys.Control | Keys.S)) { Save(false); return true; }
-        if (keyData == (Keys.Control | Keys.Shift | Keys.S)) { Save(true); return true; }
-        if (keyData == (Keys.Control | Keys.O)) { Attempt(OpenLayout); return true; }
+        if (keyData == (Keys.Control | Keys.S)) { Host?.Save(false); return true; }
+        if (keyData == (Keys.Control | Keys.Shift | Keys.S)) { Host?.Save(true); return true; }
         if (keyData == Keys.F5) { Attempt(Preview); return true; }
         if (keyData == Keys.Escape && Canvas.ContainsFocus) { Canvas.ToolKind = null; Canvas.CancelDrag(); return true; }
         // Let text fields, the property grid and event cells handle their own editing shortcuts.
@@ -342,10 +258,10 @@ internal sealed class FormDesignerWindow : Form
             {
                 case Keys.Control | Keys.Z: Session.Undo(); return true;
                 case Keys.Control | Keys.Y: Session.Redo(); return true;
-                case Keys.Control | Keys.C: Session.Copy(); return true;
-                case Keys.Control | Keys.X: Session.Copy(); Session.Delete(); return true;
+                case Keys.Control | Keys.C: Attempt(Session.Copy); return true;
+                case Keys.Control | Keys.X: Attempt(() => { Session.Copy(); Session.Delete(); }); return true;
                 case Keys.Control | Keys.V: Attempt(Session.Paste); return true;
-                case Keys.Delete: Session.Delete(); return true;
+                case Keys.Delete: Attempt(Session.Delete); return true;
             }
             var key = keyData & Keys.KeyCode;
             if (key is Keys.Left or Keys.Right or Keys.Up or Keys.Down && (keyData & Keys.Control) == 0)
@@ -355,7 +271,7 @@ internal sealed class FormDesignerWindow : Form
                 int dx = key == Keys.Left ? -step : key == Keys.Right ? step : 0;
                 int dy = key == Keys.Up ? -step : key == Keys.Down ? step : 0;
                 bool resize = (keyData & Keys.Shift) != 0;
-                if (node.Dock == DockStyle.None)
+                if (node.Dock == DockStyle.None && !node.SourceMember.Contains('.'))
                     Attempt(() => Session.Change(() =>
                     {
                         if (resize) node.Size = new Size(Math.Clamp(node.Width + dx, 16, 2400), Math.Clamp(node.Height + dy, 16, 1800));
@@ -366,46 +282,39 @@ internal sealed class FormDesignerWindow : Form
         }
         return base.ProcessCmdKey(ref msg, keyData);
     }
-    private void ApplyTheme()
+    internal void ApplyTheme()
     {
-        bool dark = GlobalVariables.darkColor;
-        Color panel = dark ? Color.FromArgb(37, 37, 38) : Color.FromArgb(246, 246, 248);
-        Color field = dark ? Color.FromArgb(30, 30, 30) : Color.White;
-        Color text = dark ? Color.FromArgb(225, 225, 228) : Color.FromArgb(35, 35, 40);
+        var theme = DesignerTheme.For(_main);
+        Color panel = theme.Panel, field = theme.Field, text = theme.Text;
         void Apply(Control control)
         {
             control.BackColor = control is TextBox or TreeView or PropertyGrid ? field : panel;
             control.ForeColor = text;
+            if (control is ToolStrip strip) theme.ApplyStrip(strip);
+            if (control is Button button)
+            {
+                button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderColor = theme.Border;
+                button.FlatAppearance.MouseOverBackColor = field; button.UseVisualStyleBackColor = false;
+            }
             foreach (Control child in control.Controls) Apply(child);
         }
         Apply(this);
-        Canvas.BackColor = dark ? Color.FromArgb(24, 24, 26) : Color.FromArgb(220, 223, 228);
+        _inspector.Theme = theme; _inspector.Invalidate();
+        Canvas.BackColor = field;
+        Canvas.SelectionColor = theme.Accent; Canvas.Invalidate();
         Canvas.Parent.BackColor = Canvas.BackColor;
-        _documentTab.BackColor = dark ? Color.FromArgb(45, 45, 48) : Color.White;
+        _documentTab.BackColor = panel;
         Properties.ViewBackColor = field; Properties.ViewForeColor = text; Properties.HelpBackColor = panel; Properties.HelpForeColor = text;
         Properties.CategoryForeColor = text; Properties.CategorySplitterColor = panel; Properties.LineColor = panel;
         Properties.CommandsBackColor = panel; Properties.CommandsForeColor = text;
+        Properties.ViewBorderColor = theme.Border; Properties.HelpBorderColor = theme.Border; Properties.CommandsBorderColor = theme.Border;
+        Properties.SelectedItemWithFocusBackColor = theme.Selection; Properties.SelectedItemWithFocusForeColor = theme.SelectionText;
+        Properties.DisabledItemForeColor = SystemColors.GrayText;
         EventGrid.BackgroundColor = field; EventGrid.DefaultCellStyle.BackColor = field; EventGrid.DefaultCellStyle.ForeColor = text;
-        EventGrid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(0, 122, 204); EventGrid.DefaultCellStyle.SelectionForeColor = Color.White;
-        EventGrid.GridColor = panel; EventGrid.EnableHeadersVisualStyles = false;
+        EventGrid.DefaultCellStyle.SelectionBackColor = theme.Selection; EventGrid.DefaultCellStyle.SelectionForeColor = theme.SelectionText;
+        EventGrid.GridColor = theme.Border; EventGrid.EnableHeadersVisualStyles = false;
         EventGrid.ColumnHeadersDefaultCellStyle.BackColor = panel; EventGrid.ColumnHeadersDefaultCellStyle.ForeColor = text;
-        foreach (var strip in new[] { _commands, _layout })
-        {
-            strip.Renderer = new ToolStripProfessionalRenderer(new DesignerColorTable(panel));
-            foreach (ToolStripItem item in strip.Items) item.ForeColor = text;
-        }
-        HandleCreated += (_, _) => FrmColorMod.SetDarkTitleBar(Handle, dark);
-    }
-    private sealed class DesignerColorTable(Color panel) : ProfessionalColorTable
-    {
-        public override Color ToolStripGradientBegin => panel;
-        public override Color ToolStripGradientMiddle => panel;
-        public override Color ToolStripGradientEnd => panel;
-        public override Color ButtonSelectedHighlight => Color.FromArgb(0, 122, 204);
-        public override Color ButtonSelectedGradientBegin => Color.FromArgb(0, 122, 204);
-        public override Color ButtonSelectedGradientEnd => Color.FromArgb(0, 122, 204);
-        public override Color ButtonCheckedGradientBegin => Color.FromArgb(0, 90, 155);
-        public override Color ButtonCheckedGradientEnd => Color.FromArgb(0, 90, 155);
-        public override Color ButtonCheckedGradientMiddle => Color.FromArgb(0, 90, 155);
+        EventGrid.ColumnHeadersDefaultCellStyle.SelectionBackColor = panel; EventGrid.ColumnHeadersDefaultCellStyle.SelectionForeColor = text;
+        if (EventGrid.EditingControl != null) { EventGrid.EditingControl.BackColor = field; EventGrid.EditingControl.ForeColor = text; }
     }
 }

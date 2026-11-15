@@ -35,6 +35,8 @@ internal sealed class DesignNode
     [JsonIgnore, Category("Appearance")] public Color BackColor { get => Color.FromArgb(BackColorArgb); set => BackColorArgb = value.ToArgb(); }
     [JsonIgnore, Category("Appearance")] public Color ForeColor { get => Color.FromArgb(ForeColorArgb); set => ForeColorArgb = value.ToArgb(); }
     [Category("Appearance")] public float FontSize { get; set; } = 9;
+    [Category("Appearance")] public string FontFamily { get; set; } = "Segoe UI";
+    [Category("Appearance")] public FontStyle FontStyle { get; set; } = FontStyle.Regular;
     [Category("Behavior")] public bool Checked { get; set; }
     [Category("Behavior")] public bool Multiline { get; set; }
     [Category("Data"), Description("One item per line.")]
@@ -45,9 +47,12 @@ internal sealed class DesignNode
     [Category("Data"), DisplayName("Value")] public DateTime Date { get; set; } = DateTime.Today;
     [Browsable(false)] public List<DesignNode> Children { get; set; } = new();
     [Browsable(false)] public Dictionary<string, string> Events { get; set; } = new();
-    [JsonIgnore, Browsable(false)] public bool IsContainer => Kind is "Form" or "Panel" or "GroupBox";
+    [Browsable(false)] public string SourceMember { get; set; } = "";
+    [Browsable(false)] public string SourceType { get; set; } = "";
+    [Browsable(false)] public Dictionary<string, string> Options { get; set; } = new();
+    [JsonIgnore, Browsable(false)] public bool IsContainer => Kind is "Form" or "Panel" or "GroupBox" or "TabControl" or "TabPage" or "FlowLayoutPanel" or "TableLayoutPanel";
     internal Rectangle Bounds { get => new(Location, Size); set { Location = value.Location; Size = value.Size; } }
-    public override string ToString() => $"{Name}  :  {Kind}";
+    public override string ToString() => $"{Name}  :  {(SourceType.Length == 0 ? Kind : SourceType)}";
 }
 
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
@@ -103,7 +108,7 @@ internal sealed class DesignDocument
     internal void Validate()
     {
         if (Version != 1 || Form == null || Form.Kind != "Form") throw new InvalidDataException("This is not a supported CIARE form layout.");
-        if (string.IsNullOrWhiteSpace(Form.Namespace) || !Form.Namespace.Split('.').All(IsIdentifier))
+        if (Form.Namespace == null || Form.Namespace.Length > 0 && !Form.Namespace.Split('.').All(IsIdentifier))
             throw new InvalidDataException("Namespace must contain valid C# identifiers separated by dots.");
         var names = new HashSet<string>(StringComparer.Ordinal);
         var ids = new HashSet<string>(StringComparer.Ordinal);
@@ -115,10 +120,13 @@ internal sealed class DesignDocument
                 throw new InvalidDataException("Component names must be unique C# identifiers and must not hide Form members.");
             if (string.IsNullOrEmpty(node.Id) || !ids.Add(node.Id)) throw new InvalidDataException("Component IDs must be unique.");
             if (node != Form && !DesignCatalog.Controls.Any(c => c.Kind == node.Kind)) throw new InvalidDataException("Unsupported control: " + node.Kind);
-            if (node.Width < 16 || node.Height < 16 || node.Width > 2400 || node.Height > 1800 || node.X < 0 || node.Y < 0 || node.X > 2400 || node.Y > 1800)
+            if (node.Width < 1 || node.Height < 1 || node.Width > 4000 || node.Height > 3000 || node.X < -4000 || node.Y < -3000 || node.X > 4000 || node.Y > 3000)
                 throw new InvalidDataException("Use a size from 16 × 16 to 2400 × 1800 and a nonnegative location within 2400 × 1800.");
             if (!float.IsFinite(node.FontSize) || node.FontSize < 6 || node.FontSize > 72 || node.TabIndex < 0 || node.TabIndex > 32767)
                 throw new InvalidDataException("Font size must be 6–72 pt and TabIndex must be 0–32767.");
+            if (string.IsNullOrWhiteSpace(node.FontFamily) || node.FontFamily.Length > 128 || ((int)node.FontStyle & ~15) != 0)
+                throw new InvalidDataException("Choose a valid font family and style.");
+            DesignOptions.Validate(node);
             if (node.BackColor.A != 255 || node.ForeColor.A != 255) throw new InvalidDataException("Use opaque colors for controls.");
             if (!Enum.IsDefined(node.Dock) || ((int)node.Anchor & ~15) != 0) throw new InvalidDataException("Invalid layout setting.");
             if (node.Minimum < 0 || node.Maximum < node.Minimum || node.Value < node.Minimum || node.Value > node.Maximum || node.Maximum > 1000000)
@@ -128,6 +136,8 @@ internal sealed class DesignDocument
             if (node.Children == null || node.Events == null || node.Items == null || node.Items.Length > 1000 || node.Items.Any(i => i == null))
                 throw new InvalidDataException("Invalid control data.");
             if (node.Children.Count > 0 && !node.IsContainer) throw new InvalidDataException("Only forms, panels, and group boxes can contain controls.");
+            if (node.Children.Any(c => c != null && (node.Kind == "TabControl" ? c.Kind != "TabPage" : c.Kind == "TabPage")))
+                throw new InvalidDataException("TabPage controls belong inside a TabControl; add ordinary controls to a tab page.");
             foreach (var child in node.Children) Check(child, depth + 1);
         }
         Check(Form, 0);
@@ -151,7 +161,8 @@ internal sealed class DesignDocument
 internal sealed class DesignPropertyView : CustomTypeDescriptor
 {
     private readonly DesignNode _node;
-    internal DesignPropertyView(DesignNode node) { _node = node; }
+    private readonly string _filter;
+    internal DesignPropertyView(DesignNode node, string filter = "") { _node = node; _filter = filter.Trim(); }
     public override object GetPropertyOwner(PropertyDescriptor pd) => _node;
     public override PropertyDescriptorCollection GetProperties() => GetProperties(null);
     public override PropertyDescriptorCollection GetProperties(Attribute[] attributes)
@@ -169,6 +180,10 @@ internal sealed class DesignPropertyView : CustomTypeDescriptor
             "Date" => _node.Kind == "DateTimePicker",
             _ => true
         });
-        return new PropertyDescriptorCollection(TypeDescriptor.GetProperties(typeof(DesignNode)).Cast<PropertyDescriptor>().Where(Show).ToArray());
+        var properties = TypeDescriptor.GetProperties(typeof(DesignNode)).Cast<PropertyDescriptor>().Where(Show)
+            .Concat(DesignOptions.Descriptors(_node)).Where(p => _filter.Length == 0 || p.DisplayName.Contains(_filter, StringComparison.OrdinalIgnoreCase) || p.Category.Contains(_filter, StringComparison.OrdinalIgnoreCase));
+        return new PropertyDescriptorCollection(properties
+            .Select(p => _node.SourceMember.Contains('.') || _node.SourceMember.Length > 0 && p.Name is "Name" or "Namespace"
+                ? TypeDescriptor.CreateProperty(typeof(DesignNode), p, ReadOnlyAttribute.Yes) : p).ToArray());
     }
 }

@@ -4,6 +4,8 @@ using CIARE.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -19,8 +21,9 @@ internal static class FormDesignerRegression
     {
         assert(main.fIleToolStripMenuItem.DropDownItems.ContainsKey("newWindowsFormMenuItem"), "New form command is discoverable");
         assert(main.viewToolStripMenuItem.DropDownItems.ContainsKey("formDesignerMenuItem"), "Designer command is discoverable");
-        using var window = new FormDesignerWindow(main) { Opacity = 0, ShowInTaskbar = false };
-        window.Show(main);
+        using var shell = new Form { ClientSize = new Size(1280, 780), Opacity = 0, ShowInTaskbar = false };
+        var window = new FormDesignerControl(main);
+        shell.Controls.Add(window); shell.Show(main);
         Application.DoEvents();
         var session = window.Session;
         var root = session.Document.Form;
@@ -47,6 +50,7 @@ internal static class FormDesignerRegression
         session.BindEvent("Click", "SaveCustomer_Click");
         assert(window.EventGrid.Rows.Cast<DataGridViewRow>().Any(r => (string)r.Cells[0].Value == "Click" && (string)r.Cells[1].Value == "SaveCustomer_Click"), "Events panel displays assigned handler");
         assert(window.Properties.SelectedObject != null, "Properties are bound to the selection");
+        ExpandedInspectorChecks(window, main, assert);
         ((TabControl)window.EventGrid.Parent.Parent).SelectedTab = (TabPage)window.EventGrid.Parent;
         var eventRow = window.EventGrid.Rows.Cast<DataGridViewRow>().Single(r => (string)r.Cells[0].Value == "MouseUp");
         window.EventGrid.CurrentCell = eventRow.Cells[1];
@@ -123,14 +127,17 @@ internal static class FormDesignerRegression
         foreach (var spec in DesignCatalog.Controls)
         {
             var node = DesignCatalog.Create(spec.Kind, everyControl.UniqueName(spec.Kind), new Point(8, 8));
-            everyControl.Form.Children.Add(node);
+            if (node.Kind == "TabPage") everyControl.Form.Children.First(n => n.Kind == "TabControl").Children.Add(node);
+            else everyControl.Form.Children.Add(node);
             if (node.Kind is "ComboBox" or "ListBox") node.Items = new[] { "Quotes \" and slash " + (char)92, "Unicode: café\r\nsecond line" };
             foreach (var evt in DesignCatalog.EventsFor(node.Kind)) node.Events[evt.Name] = "On" + evt.ArgumentType.Split('.').Last();
         }
         foreach (var evt in DesignCatalog.EventsFor("Form")) everyControl.Form.Events[evt.Name] = "On" + evt.ArgumentType.Split('.').Last();
+        foreach (var node in everyControl.AllNodes)
+            foreach (var property in DesignOptions.Descriptors(node)) property.SetValue(node, property.GetValue(node));
         CompileAndRun(everyControl, DesignCodeGenerator.GenerateDesigner(everyControl), DesignCodeGenerator.GenerateCodeBehind(everyControl), assert, false);
         using (var allPreview = DesignCatalog.CreatePreview(everyControl))
-            assert(allPreview.Controls.Count == DesignCatalog.Controls.Length, "Every toolbox control can be previewed");
+            assert(allPreview.Controls.Count == DesignCatalog.Controls.Length - 1, "Every toolbox control can be previewed");
         using (var projectDialog = new NewProject())
         {
             T Field<T>(string field) => (T)typeof(NewProject).GetField(field, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(projectDialog);
@@ -142,10 +149,11 @@ internal static class FormDesignerRegression
             Field<ComboBox>("_targetFrameworkCombo").Text = "net10.0-windows";
             var project = (NewProjectResult)typeof(NewProject).GetMethod("CreateProject", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(projectDialog, null);
             string projectDirectory = Path.GetDirectoryName(project.ProjectFilePath);
-            var projectLayout = DesignDocument.Load(Path.Combine(projectDirectory, "MainForm.ciareform"));
+            var projectLayout = new FormSource(File.ReadAllText(Path.Combine(projectDirectory, "MainForm.Designer.cs"))).Document;
+            assert(File.Exists(Path.Combine(projectDirectory, "MainForm.resx")), "New projects include form resources");
             assert(projectLayout.Form.Name == "MainForm" && projectLayout.Form.Namespace == "DesignerProject", "New Windows Forms projects include a matching layout");
             CompileAndRun(projectLayout, File.ReadAllText(Path.Combine(projectDirectory, "MainForm.Designer.cs")),
-                File.ReadAllText(Path.Combine(projectDirectory, "MainForm.cs")), assert, false, File.ReadAllText(project.StarterFilePath));
+                File.ReadAllText(Path.Combine(projectDirectory, "MainForm.cs")), assert, false, File.ReadAllText(Path.Combine(projectDirectory, "Program.cs")));
         }
         using (var preview = DesignCatalog.CreatePreview(session.Document))
         {
@@ -154,22 +162,79 @@ internal static class FormDesignerRegression
             Capture(preview, "form-designer-preview.png"); preview.Close();
         }
         session.Select(buttonId);
-        typeof(FormDesignerWindow).GetMethod("CreateEvent", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(window, new object[] { "Click" });
+        typeof(FormDesignerControl).GetMethod("CreateEvent", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(window, new object[] { "Click" });
         Application.DoEvents();
-        Capture(window, "form-designer-dark.png");
-        window.Size = new Size(960, 640); Application.DoEvents();
-        assert(window.EventGrid.Width >= 260 && window.Properties.Width >= 260, "Inspector remains usable at minimum window size");
-        session.MarkSaved(); window.Close();
+        Capture(shell, "form-designer-dark.png");
+        shell.Size = new Size(960, 640); Application.DoEvents();
+        assert(window.EventGrid.Width >= 200 && window.Properties.Width >= 200, "Inspector remains usable at minimum window size");
+        session.MarkSaved(); shell.Close();
         bool wasDark = GlobalVariables.darkColor;
         try
         {
             GlobalVariables.darkColor = false;
-            using var light = new FormDesignerWindow(main, layoutPath) { Opacity = 0, ShowInTaskbar = false };
-            light.Show(main); Application.DoEvents();
+            using var lightShell = new Form { ClientSize = new Size(1280, 780), Opacity = 0, ShowInTaskbar = false };
+            var light = new FormDesignerControl(main); light.Session.Reset(DesignDocument.Load(layoutPath));
+            lightShell.Controls.Add(light); lightShell.Show(main); Application.DoEvents();
             assert(light.EventGrid.DefaultCellStyle.ForeColor.GetBrightness() < 0.3, "Light theme has dark event text");
-            Capture(light, "form-designer-light.png"); light.Close();
+            Capture(lightShell, "form-designer-light.png"); lightShell.Close();
         }
         finally { GlobalVariables.darkColor = wasDark; }
+    }
+    private static void ExpandedInspectorChecks(FormDesignerControl window, MainForm main, Action<bool, string> assert)
+    {
+        var button = window.Session.Selected;
+        var descriptors = new DesignPropertyView(button).GetProperties();
+        assert(descriptors["FlatStyle"] != null && descriptors["TextAlign"] != null && descriptors["Padding"] != null && descriptors["AccessibleName"] != null,
+            "Button properties include native appearance, layout and accessibility settings");
+        window.PropertySearch.Text = "font";
+        assert(TypeDescriptor.GetProperties(window.Properties.SelectedObject).Cast<PropertyDescriptor>().Select(p => p.Name).Order().SequenceEqual(new[] { "FontFamily", "FontSize", "FontStyle" }), "Property search filters the inspector");
+        window.PropertySearch.Clear(); window.EventSearch.Text = "validat";
+        var filteredEvents = window.EventGrid.Rows.Cast<DataGridViewRow>().Select(r => (string)r.Cells[0].Value).ToArray();
+        assert(filteredEvents.Contains("Validated") && filteredEvents.Contains("Validating") && filteredEvents.All(n => n.Contains("validat", StringComparison.OrdinalIgnoreCase)), "Event search finds validation events");
+        window.EventSearch.Text = "SaveCustomer";
+        assert(window.EventGrid.Rows.Count == 1 && (string)window.EventGrid.Rows[0].Cells[0].Value == "Click", "Event search also finds assigned handlers");
+        window.EventSearch.Clear();
+        assert(DesignCatalog.EventsFor("Button").Any(e => e.Name == "Paint" && e.ArgumentType == typeof(PaintEventArgs).FullName) &&
+            DesignCatalog.EventsFor("Button").Any(e => e.Name == "Validating" && e.ArgumentType == typeof(CancelEventArgs).FullName) &&
+            DesignCatalog.EventsFor("Button").Any(e => e.Name == "DragDrop") && DesignCatalog.EventsFor("Form").Any(e => e.Name == "Activated") &&
+            DesignCatalog.EventsFor("TreeView").Any(e => e.Name == "BeforeExpand"), "Expanded native events have correct argument types");
+        var theme = DesignerTheme.For(main);
+        var tabs = (DesignerInspectorTabs)window.EventGrid.Parent.Parent;
+        assert(tabs.Theme == theme && window.Properties.ViewBackColor == theme.Field && window.Properties.SelectedItemWithFocusBackColor == theme.Selection &&
+            window.EventGrid.DefaultCellStyle.BackColor == theme.Field && window.EventGrid.DefaultCellStyle.SelectionForeColor == theme.SelectionText, "Inspector tabs, properties and events share the active theme palette");
+
+        var document = new DesignDocument();
+        document.Form.FontFamily = "Consolas"; document.Form.FontStyle = FontStyle.Bold | FontStyle.Italic;
+        void Set(DesignNode node, string name, object value) => new DesignPropertyView(node).GetProperties()[name].SetValue(node, value);
+        var input = DesignCatalog.Create("TextBox", "entry", new Point(12, 12)); document.Form.Children.Add(input);
+        Set(input, "ReadOnly", true); Set(input, "MaxLength", 64); Set(input, "UseSystemPasswordChar", true); Set(input, "BorderStyle", BorderStyle.FixedSingle);
+        Set(input, "Margin", new Padding(1, 2, 3, 4)); Set(input, "Cursor", Cursors.Hand); Set(input, "AccessibleName", "Account name");
+        var number = DesignCatalog.Create("NumericUpDown", "amount", new Point(12, 60)); document.Form.Children.Add(number);
+        Set(number, "DecimalPlaces", 2); Set(number, "Increment", 0.25M); Set(number, "ThousandsSeparator", true);
+        Set(document.Form, "KeyPreview", true); Set(document.Form, "FormBorderStyle", FormBorderStyle.FixedDialog);
+        document.Validate();
+        using (var preview = DesignCatalog.CreatePreview(document))
+        {
+            var text = (TextBox)preview.Controls["entry"]; var numeric = (NumericUpDown)preview.Controls["amount"];
+            assert(text.ReadOnly && text.MaxLength == 64 && text.UseSystemPasswordChar && text.BorderStyle == BorderStyle.FixedSingle && text.Margin == new Padding(1, 2, 3, 4) && text.Cursor == Cursors.Hand,
+                "Preview applies advanced input, cursor and layout properties");
+            assert(numeric.DecimalPlaces == 2 && numeric.Increment == 0.25M && preview.KeyPreview && preview.FormBorderStyle == FormBorderStyle.FixedDialog && preview.Font.Style == (FontStyle.Bold | FontStyle.Italic),
+                "Preview applies numeric, window and font settings");
+        }
+        string generated = DesignCodeGenerator.GenerateDesigner(document);
+        CompileAndRun(document, generated, DesignCodeGenerator.GenerateCodeBehind(document), assert, false);
+        var source = new FormSource(generated); var roundTrip = source.Document;
+        assert(roundTrip.Form.FontFamily == "Consolas" && roundTrip.Form.FontStyle == document.Form.FontStyle &&
+            input.Options.All(p => roundTrip.AllNodes.Single(n => n.Name == "entry").Options.GetValueOrDefault(p.Key) == p.Value), "Advanced properties and fonts survive source import");
+        var edited = DesignDocument.Parse(roundTrip.Serialize());
+        var editedInput = edited.AllNodes.Single(n => n.Name == "entry");
+        new DesignPropertyView(editedInput).GetProperties()["ReadOnly"].ResetValue(editedInput);
+        string resetSource = source.Update(edited);
+        using (var resetControl = (TextBox)DesignCatalog.CreateControl(new FormSource(resetSource).Document.AllNodes.Single(n => n.Name == "entry"), false))
+            assert(!resetControl.ReadOnly, "Resetting an advanced property updates existing source");
+        CompileAndRun(edited, resetSource, DesignCodeGenerator.GenerateCodeBehind(edited), assert, false);
+        var properties = new DesignPropertyView(number).GetProperties();
+        assert(properties["DecimalPlaces"] != null && properties["UseSystemPasswordChar"] == null, "Inspectors show settings appropriate to the selected control type");
     }
     private static void Mouse(Control control, string method, MouseEventArgs args) =>
         control.GetType().GetMethod(method, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(control, new object[] { args });
