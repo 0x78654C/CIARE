@@ -67,7 +67,7 @@ namespace CIARE.Utils.Editor
                 UpdateActiveEditorPathFromSelectedTab();
         }
 
-        private void UpdateActiveEditorPathFromSelectedTab()
+        internal void UpdateActiveEditorPathFromSelectedTab()
         {
             try
             {

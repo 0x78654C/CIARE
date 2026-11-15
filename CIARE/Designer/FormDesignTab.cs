@@ -16,6 +16,8 @@ internal sealed class FormDesignTab : IDisposable
     private readonly MainForm _main;
     internal readonly TabPage Page;
     internal readonly TextEditorControl CodeEditor;
+    internal TabPage CodePage { get; private set; }
+    private TextEditorControl _codeViewEditor;
     internal string CodePath { get; private set; }
     internal FormDesignerControl Designer { get; private set; }
     private readonly ToolStrip _views = new() { Dock = DockStyle.Bottom, GripStyle = ToolStripGripStyle.Hidden, Height = 29 };
@@ -23,8 +25,8 @@ internal sealed class FormDesignTab : IDisposable
     private readonly ToolStripLabel _message = new() { AutoSize = false, Width = 280 };
     private FormSource _source;
     private string _savedCode;
-    private bool _saving;
-    internal bool IsDesignView => Designer?.Visible == true;
+    private bool _saving, _syncingCode;
+    internal bool IsDesignView => _design.Checked;
     internal bool CodeDirty => CodeEditor.Text != _savedCode;
     internal bool DesignDirty => Designer?.Session.IsDirty == true;
     internal FormDesignTab(MainForm main, TabPage page, string codePath)
@@ -46,6 +48,7 @@ internal sealed class FormDesignTab : IDisposable
     {
         try
         {
+            _main.EditorTabControl.SelectedTab = Page;
             string sourceText = _main.FormDesignerFeature.ReadText(FormSource.DesignerPath(CodePath));
             if (Designer == null)
             {
@@ -72,13 +75,53 @@ internal sealed class FormDesignTab : IDisposable
         }
         catch (Exception error)
         {
-            ShowCode(); _message.Text = "Designer: " + error.Message; _message.ToolTipText = error.Message;
+            ShowInlineCode(); _message.Text = "Designer: " + error.Message; _message.ToolTipText = error.Message;
             if (reportError) MessageBox.Show(_main, error.Message, "Form Designer", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
     internal void ShowCode()
     {
         if (Designer != null && !Designer.CommitEditors()) return;
+        if (CodePage == null || CodePage.IsDisposed)
+        {
+            TabControllerManage.AddNewTab(_main.EditorTabControl, initialText: CodeEditor.Text);
+            var page = _main.EditorTabControl.SelectedTab;
+            if (page == Page) return;
+            page.ToolTipText = CodePath;
+            LinkCodePage(page);
+        }
+        _main.EditorTabControl.SelectedTab = CodePage;
+        _main.TabsFeature.UpdateActiveEditorPathFromSelectedTab();
+        RefreshCaption(); _codeViewEditor.Focus();
+        _main.EditorFeature.ScheduleCurrentTypeCheck(_codeViewEditor);
+    }
+    internal void LinkCodePage(TabPage page)
+    {
+        DetachCodePage();
+        CodePage = page;
+        if (page is EditorTabPage editorPage) editorPage.FormCodeView = true;
+        _codeViewEditor = page.Controls.OfType<TextEditorControl>().First();
+        _codeViewEditor.TextChanged += CodeViewChanged;
+        page.Disposed += CodePageDisposed;
+        RefreshCaption();
+    }
+    internal void DetachCodePage()
+    {
+        if (CodePage == null) return;
+        _codeViewEditor.TextChanged -= CodeViewChanged;
+        CodePage.Disposed -= CodePageDisposed;
+        CodePage = null; _codeViewEditor = null;
+    }
+    private void CodePageDisposed(object sender, EventArgs e) => DetachCodePage();
+    private void CopyCode(TextEditorControl source, TextEditorControl target)
+    {
+        if (_syncingCode || target == null || target.IsDisposed || target.Text == source.Text) return;
+        try { _syncingCode = true; target.Text = source.Text; }
+        finally { _syncingCode = false; }
+    }
+    private void CodeViewChanged(object sender, EventArgs e) { CopyCode(_codeViewEditor, CodeEditor); RefreshCaption(); }
+    internal void ShowInlineCode()
+    {
         if (Designer != null) Designer.Visible = false;
         CodeEditor.Visible = true; _code.Checked = true; _design.Checked = false;
         CodeEditor.Focus(); Page.PerformLayout(); RefreshCaption();
@@ -111,12 +154,13 @@ internal sealed class FormDesignTab : IDisposable
     {
         if (Designer == null || !Designer.CommitEditors()) return;
         CodeEditor.Text = MergeHandlers(); ShowCode();
-        int offset = handler == null ? -1 : CodeEditor.Text.IndexOf("void " + handler + "(", StringComparison.Ordinal);
+        var editor = _codeViewEditor ?? CodeEditor;
+        int offset = handler == null ? -1 : editor.Text.IndexOf("void " + handler + "(", StringComparison.Ordinal);
         if (offset >= 0)
         {
-            var position = CodeEditor.Document.OffsetToPosition(offset);
-            CodeEditor.ActiveTextAreaControl.Caret.Position = position;
-            CodeEditor.ActiveTextAreaControl.TextArea.ScrollTo(position.Line);
+            var position = editor.Document.OffsetToPosition(offset);
+            editor.ActiveTextAreaControl.Caret.Position = position;
+            editor.ActiveTextAreaControl.TextArea.ScrollTo(position.Line);
         }
     }
     internal bool Save(bool saveAs)
@@ -156,7 +200,7 @@ internal sealed class FormDesignTab : IDisposable
             if (!string.Equals(target, CodePath, StringComparison.OrdinalIgnoreCase))
             {
                 string previousPath = CodePath;
-                CodePath = target; Page.ToolTipText = target;
+                Page.ToolTipText = target; UpdatePath(target);
                 if (GlobalVariables.OStartUp) TabControllerManage.StoreDeleteTabs(previousPath, target, GlobalVariables.userProfileDirectory,
                     GlobalVariables.tabsFilePathAll, _main.EditorTabControl.TabPages.IndexOf(Page));
                 if (Page == _main.EditorTabControl.SelectedTab)
@@ -192,10 +236,21 @@ internal sealed class FormDesignTab : IDisposable
         if (Page.IsDisposed) return;
         bool dirty = CodeDirty || DesignDirty;
         Page.Text = (dirty ? "*" : "") + Path.GetFileName(CodePath) + (IsDesignView ? " [Design]" : "") + "               ";
-        if (Page == _main.EditorTabControl.SelectedTab) _main.Text = (dirty ? "*" : "") + _main.Text.TrimStart('*');
+        if (CodePage != null && !CodePage.IsDisposed) CodePage.Text = (CodeDirty ? "*" : "") + Path.GetFileName(CodePath) + "               ";
+        if (Page == _main.EditorTabControl.SelectedTab || CodePage != null && CodePage == _main.EditorTabControl.SelectedTab)
+            _main.Text = (dirty ? "*" : "") + _main.Text.TrimStart('*');
     }
-    internal void UpdatePath(string path) { CodePath = path; RefreshCaption(); }
-    private void CodeChanged(object sender, EventArgs e) => RefreshCaption();
+    internal void UpdatePath(string path)
+    {
+        CodePath = path;
+        if (CodePage != null)
+        {
+            CodePage.ToolTipText = path;
+            if (_main.EditorTabControl.SelectedTab == CodePage) _main.TabsFeature.UpdateActiveEditorPathFromSelectedTab();
+        }
+        RefreshCaption();
+    }
+    private void CodeChanged(object sender, EventArgs e) { CopyCode(CodeEditor, _codeViewEditor); RefreshCaption(); }
     private void DesignChanged(object sender, EventArgs e) => RefreshCaption();
     internal void ApplyTheme()
     {
@@ -204,6 +259,7 @@ internal sealed class FormDesignTab : IDisposable
     }
     public void Dispose()
     {
+        DetachCodePage();
         CodeEditor.TextChanged -= CodeChanged;
         if (Designer != null) { Designer.Session.Changed -= DesignChanged; Designer.Dispose(); }
         _views.Dispose(); if (!CodeEditor.IsDisposed) CodeEditor.Visible = true;

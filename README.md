@@ -65,7 +65,7 @@
 - C# 14 keyword support
 
 ### Windows Forms Designer
-- Open a WinForms `.cs` file with its matching `.Designer.cs` to see the designer **inside the editor tab**. **Code / Design** buttons switch views; `F7` opens code and `Ctrl+Shift+D` opens Design.
+- Open a WinForms `.cs` file with its matching `.Designer.cs` to see the designer **inside the editor tab**. **View Code**, **Code**, and `F7` open the form's `.cs` source in a separate editor tab while keeping the designer open. Repeated clicks reuse that code tab; edits and saves stay synchronized. `Ctrl+Shift+D` returns to the designer.
 - File Explorer nests `MainForm.Designer.cs` and `MainForm.resx` under `MainForm.cs`, like Visual Studio. The document also has shortcuts to its designer source and resources.
 - **File → New Windows Form…** creates the `.cs`, `.Designer.cs`, and `.resx` together. New Windows Forms projects open `MainForm.cs` in Design view.
 - Search the Toolbox, then drag a control onto the form, click to place it, or double-click to add it. Includes common controls, panels, group boxes, tab pages, and layout panels.

@@ -15,7 +15,7 @@ internal sealed class DesignCanvas : Control
     private readonly DesignSession _session;
     private readonly Dictionary<string, Rectangle> _bounds = new();
     private Bitmap _render;
-    private bool _dragging;
+    private bool _dragging, _dragPending;
     private Point _start;
     private Rectangle _original, _ghost;
     private int _handle = -1;
@@ -37,7 +37,7 @@ internal sealed class DesignCanvas : Control
         RefreshDesign();
     }
     private void SessionChanged(object sender, EventArgs e) => RefreshDesign();
-    private void SelectionChanged(object sender, EventArgs e) => Invalidate();
+    private void SelectionChanged(object sender, EventArgs e) => CancelDrag();
     internal Rectangle NodeBounds(string id) => _bounds.TryGetValue(id, out var bounds) ? bounds : Rectangle.Empty;
     internal void RefreshDesign()
     {
@@ -134,6 +134,7 @@ internal sealed class DesignCanvas : Control
     {
         base.OnMouseDown(e); Focus();
         if (e.Button != MouseButtons.Left) return;
+        CancelDrag();
         if (ToolKind != null) { TryChange(() => AddAt(ToolKind, e.Location)); return; }
         _handle = Array.FindIndex(Handles(NodeBounds(_session.Selected.Id)), r => r.Contains(e.Location));
         if (_handle < 0)
@@ -145,16 +146,24 @@ internal sealed class DesignCanvas : Control
         if (_session.Selected.Dock != DockStyle.None && _session.Selected != _session.Document.Form) return;
         if (_session.Selected.SourceMember.Contains('.')) return;
         _original = NodeBounds(_session.Selected.Id); _ghost = _original; _start = e.Location;
-        _dragging = true; Capture = true;
+        _dragPending = true; Capture = true;
     }
     protected override void OnMouseMove(MouseEventArgs e)
     {
         base.OnMouseMove(e);
-        if (!_dragging)
+        if (!_dragging && !_dragPending)
         {
             int handle = Array.FindIndex(Handles(NodeBounds(_session.Selected.Id)), r => r.Contains(e.Location));
             Cursor = ToolKind != null ? Cursors.Cross : handle switch { 0 or 4 => Cursors.SizeNWSE, 2 or 6 => Cursors.SizeNESW, 1 or 5 => Cursors.SizeNS, 3 or 7 => Cursors.SizeWE, _ => Cursors.Default };
             return;
+        }
+        if ((e.Button & MouseButtons.Left) == 0) { CancelDrag(); return; }
+        if (_dragPending)
+        {
+            var size = SystemInformation.DragSize;
+            var threshold = new Rectangle(_start.X - size.Width / 2, _start.Y - size.Height / 2, size.Width, size.Height);
+            if (threshold.Contains(e.Location)) return;
+            _dragPending = false; _dragging = true;
         }
         int dx = e.X - _start.X, dy = e.Y - _start.Y;
         int left = _original.Left, top = _original.Top, right = _original.Right, bottom = _original.Bottom;
@@ -179,17 +188,19 @@ internal sealed class DesignCanvas : Control
     protected override void OnMouseUp(MouseEventArgs e)
     {
         base.OnMouseUp(e);
-        if (!_dragging) return;
+        if (e.Button != MouseButtons.Left || (!_dragging && !_dragPending)) return;
+        bool changed = _dragging && _ghost != _original;
         var bounds = _ghost;
         CancelDrag();
+        if (!changed) return;
         var node = _session.Selected;
         var parent = _session.Document.ParentOf(node);
         var offset = parent == null ? Origin : NodeBounds(parent.Id).Location;
         bounds.Offset(-offset.X, -offset.Y);
         TryChange(() => _session.Change(() => node.Bounds = bounds));
     }
-    internal void CancelDrag() { _dragging = false; Capture = false; Invalidate(); }
-    protected override void OnMouseCaptureChanged(EventArgs e) { base.OnMouseCaptureChanged(e); if (!Capture) { _dragging = false; Invalidate(); } }
+    internal void CancelDrag() { _dragging = _dragPending = false; Capture = false; Invalidate(); }
+    protected override void OnMouseCaptureChanged(EventArgs e) { base.OnMouseCaptureChanged(e); if (!Capture) { _dragging = _dragPending = false; Invalidate(); } }
     protected override void OnMouseDoubleClick(MouseEventArgs e)
     {
         base.OnMouseDoubleClick(e); CancelDrag();

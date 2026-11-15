@@ -13,7 +13,7 @@ namespace CIARE.Designer;
 internal sealed class FormDesignerFeature(MainForm main)
 {
     private readonly Dictionary<TabPage, FormDesignTab> _tabs = new();
-    internal FormDesignTab Get(TabPage page) => page != null && _tabs.TryGetValue(page, out var tab) ? tab : null;
+    internal FormDesignTab Get(TabPage page) => page == null ? null : _tabs.TryGetValue(page, out var tab) ? tab : _tabs.Values.FirstOrDefault(t => t.CodePage == page);
     internal void Initialize()
     {
         var create = new ToolStripMenuItem("New Windows Form…") { Name = "newWindowsFormMenuItem" };
@@ -38,6 +38,7 @@ internal sealed class FormDesignerFeature(MainForm main)
     internal void Attach(TabPage page, bool showDesign = true)
     {
         if (page == null || page.IsDisposed || !page.Controls.OfType<TextEditorControl>().Any()) return;
+        if (page is EditorTabPage { FormCodeView: true }) return;
         string path = page.ToolTipText?.Trim();
         var prior = Get(page);
         if (prior != null)
@@ -51,9 +52,14 @@ internal sealed class FormDesignerFeature(MainForm main)
         if (!text.Contains("InitializeComponent", StringComparison.Ordinal)) return;
         var tab = new FormDesignTab(main, page, path); _tabs.Add(page, tab);
         page.Disposed += (_, _) => Detach(page);
-        if (showDesign) tab.ShowDesign(false); else tab.ShowCode();
+        if (showDesign) tab.ShowDesign(false); else tab.ShowInlineCode();
     }
-    internal void Detach(TabPage page) { if (_tabs.Remove(page, out var tab)) tab.Dispose(); }
+    internal void Detach(TabPage page)
+    {
+        if (_tabs.Remove(page, out var tab)) tab.Dispose();
+        else Get(page)?.DetachCodePage();
+        if (page is EditorTabPage editorPage) editorPage.FormCodeView = false;
+    }
     internal void Open(string path = null, bool newWindow = false)
     {
         try
@@ -68,7 +74,15 @@ internal sealed class FormDesignerFeature(MainForm main)
                 path = code;
             }
             path = FormSource.CodePath(path);
+            var existing = _tabs.Values.FirstOrDefault(t => string.Equals(t.CodePath, path, StringComparison.OrdinalIgnoreCase));
+            if (existing != null) { existing.ShowDesign(); return; }
             main.ExplorerTreeFeature.OpenFileFromExplorer(path);
+            if (main.EditorTabControl.SelectedTab is EditorTabPage { FormCodeView: true } codePage && File.Exists(FormSource.DesignerPath(path)))
+            {
+                string codeText = codePage.Controls.OfType<TextEditorControl>().First().Text;
+                TabControllerManage.AddNewTab(main.EditorTabControl, initialText: codeText, filePath: path);
+                Get(main.EditorTabControl.SelectedTab)?.LinkCodePage(codePage);
+            }
             Attach(main.EditorTabControl.SelectedTab, false);
             var tab = Get(main.EditorTabControl.SelectedTab);
             if (tab != null) tab.ShowDesign();

@@ -25,6 +25,7 @@ internal static class FormDesignerRegression
         var window = new FormDesignerControl(main);
         shell.Controls.Add(window); shell.Show(main);
         Application.DoEvents();
+        SelectionWithoutDragChecks(window, assert);
         var session = window.Session;
         var root = session.Document.Form;
         session.Change(() => { root.Text = "Customer details"; root.Name = "CustomerForm"; root.Namespace = "DesignerTest"; });
@@ -179,6 +180,43 @@ internal static class FormDesignerRegression
             Capture(lightShell, "form-designer-light.png"); lightShell.Close();
         }
         finally { GlobalVariables.darkColor = wasDark; }
+    }
+    private static void SelectionWithoutDragChecks(FormDesignerControl window, Action<bool, string> assert)
+    {
+        var document = new DesignDocument();
+        var button = DesignCatalog.Create("Button", "selectButton", new Point(13, 21));
+        button.Size = new Size(101, 33);
+        var combo = DesignCatalog.Create("ComboBox", "selectCombo", new Point(13, 89));
+        combo.Height = 55; // The native preview can have a different height than the stored layout.
+        document.Form.Children.Add(button); document.Form.Children.Add(combo);
+        var session = window.Session;
+        session.Reset(document);
+        string initial = document.Serialize();
+        var visible = window.Canvas.NodeBounds(button.Id);
+        var click = new Point(visible.Left + 20, visible.Top + 12);
+        void MouseAt(string method, Point point, MouseButtons buttons = MouseButtons.Left) => Mouse(window.Canvas, method, new MouseEventArgs(buttons, 1, point.X, point.Y, 0));
+        MouseAt("OnMouseDown", click); MouseAt("OnMouseUp", click);
+        assert(session.Selected.Id == button.Id && session.Document.Serialize() == initial && !session.IsDirty && !session.CanUndo,
+            "Click selects an off-grid control without changing its bounds, dirty state or undo history");
+        MouseAt("OnMouseDown", click); MouseAt("OnMouseMove", click); MouseAt("OnMouseUp", click);
+        assert(session.Document.Serialize() == initial && !session.CanUndo, "A stationary mouse-move event cannot snap a clicked control");
+        var jitter = new Point(click.X + Math.Max(0, (SystemInformation.DragSize.Width - 1) / 2), click.Y);
+        MouseAt("OnMouseDown", click); MouseAt("OnMouseMove", jitter); MouseAt("OnMouseUp", jitter);
+        assert(session.Document.Serialize() == initial && !session.IsDirty, "Pointer movement inside the Windows drag threshold remains a selection click");
+        var handle = new Point(visible.Right, visible.Bottom);
+        MouseAt("OnMouseDown", handle); MouseAt("OnMouseMove", handle); MouseAt("OnMouseUp", handle);
+        assert(session.Document.Serialize() == initial && !session.CanUndo, "Clicking a resize handle does not snap or resize the control");
+        visible = window.Canvas.NodeBounds(combo.Id);
+        var comboClick = new Point(visible.Left + 20, visible.Top + 10);
+        MouseAt("OnMouseDown", comboClick); MouseAt("OnMouseUp", comboClick);
+        assert(session.Selected.Id == combo.Id && session.Document.Serialize() == initial, "Selection does not replace stored dimensions with native preview dimensions");
+        MouseAt("OnMouseDown", click); window.Canvas.Capture = false;
+        MouseAt("OnMouseMove", new Point(click.X + 24, click.Y + 24)); MouseAt("OnMouseUp", new Point(click.X + 24, click.Y + 24));
+        assert(session.Document.Serialize() == initial && !session.CanUndo, "Losing mouse capture cancels a pending drag");
+        MouseAt("OnMouseDown", click); MouseAt("OnMouseMove", new Point(click.X + 24, click.Y + 24));
+        window.Canvas.CancelDrag(); MouseAt("OnMouseUp", new Point(click.X + 24, click.Y + 24));
+        assert(session.Document.Serialize() == initial && !session.IsDirty, "Cancelling an active drag preserves the original layout");
+        session.Reset(new DesignDocument());
     }
     private static void ExpandedInspectorChecks(FormDesignerControl window, MainForm main, Action<bool, string> assert)
     {

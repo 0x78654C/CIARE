@@ -53,6 +53,25 @@ internal static class IntegratedFormDesignerRegression
         assert(tree.Nodes[0].Nodes.Count == 1, "Nested form files are not duplicated at folder level");
         formNode.Expand();
 
+        tab.Designer.Controls.OfType<ToolStrip>().SelectMany(s => s.Items.OfType<ToolStripButton>()).Single(b => b.Text == "View Code").PerformClick();
+        var codePage = main.EditorTabControl.SelectedTab;
+        var sourceEditor = SelectedEditor.GetSelectedEditor();
+        assert(codePage != page && codePage == tab.CodePage && codePage.ToolTipText == path && sourceEditor.Visible && sourceEditor.Text == Code,
+            "View Code opens the form source in a separate editor tab");
+        assert(tab.IsDesignView && page.Text.Contains("[Design]") && !codePage.Text.Contains("[Design]") && tab.Designer.Parent == page,
+            "The original tab retains its designer and a distinct caption");
+        int tabCount = main.EditorTabControl.TabCount;
+        main.EditorTabControl.SelectedTab = page;
+        main.viewToolStripMenuItem.DropDownItems["formCodeMenuItem"].PerformClick();
+        assert(main.EditorTabControl.SelectedTab == codePage && main.EditorTabControl.TabCount == tabCount,
+            "View Code and F7 reuse the existing source tab");
+        sourceEditor.Document.Insert(sourceEditor.Document.TextLength, "\r\n// Separate code tab edit");
+        assert(tab.CodeDirty && tab.CodeEditor.Text == sourceEditor.Text && codePage.Text.StartsWith("*"), "Source edits synchronize with the form document");
+        sourceEditor.Document.UndoStack.Undo();
+        assert(!tab.CodeDirty && tab.CodeEditor.Text == Code, "Undo in the code tab also updates the form document");
+        main.FormDesignerFeature.Open();
+        assert(main.EditorTabControl.SelectedTab == page && tab.IsDesignView, "Form Designer returns from the code tab to the existing designer");
+
         var session = tab.Designer.Session;
         var button = session.Document.AllNodes.Single(n => n.Name == "saveButton");
         session.Select(button.Id);
@@ -64,12 +83,15 @@ internal static class IntegratedFormDesignerRegression
         assert(tab.DesignDirty && page.Text.StartsWith("*"), "Design changes mark the owning document dirty");
         assert(main.Text.StartsWith("*"), "Design changes also trigger the main editor's save-before-run behavior");
         tab.EditHandler("saveButton_MouseDown");
-        assert(!tab.IsDesignView && tab.CodeEditor.Visible && tab.CodeEditor.Text.Contains("void saveButton_MouseDown"), "Edit code switches to the same document and creates the handler");
-        tab.CodeEditor.Text = tab.CodeEditor.Text.Replace("// Add your event-handler code here.", "Text = \"New handler body\";");
+        assert(tab.IsDesignView && main.EditorTabControl.SelectedTab == codePage && sourceEditor.Text.Contains("void saveButton_MouseDown"), "Edit code creates the handler in the separate source tab");
+        assert(sourceEditor.Document.GetText(sourceEditor.Document.GetLineSegment(sourceEditor.ActiveTextAreaControl.Caret.Line)).Contains("void saveButton_MouseDown"), "Handler navigation positions the caret at its implementation");
+        sourceEditor.Text = sourceEditor.Text.Replace("// Add your event-handler code here.", "Text = \"New handler body\";");
         tab.ShowDesign();
         assert(tab.DesignDirty && session.Document.AllNodes.Any(n => n.Kind == "CheckBox"), "Switching between code and design preserves pending changes");
+        tab.ShowCode();
         FileManage.SaveToFileDialog();
-        assert(!tab.DesignDirty && !tab.CodeDirty && !page.Text.StartsWith("*"), "Normal Save saves both code and designer changes");
+        assert(!tab.DesignDirty && !tab.CodeDirty && !page.Text.StartsWith("*") && !codePage.Text.StartsWith("*"), "Save from the separate code tab saves both code and designer changes");
+        tab.ShowDesign();
         string savedCode = File.ReadAllText(path), savedDesigner = File.ReadAllText(FormSource.DesignerPath(path));
         assert(savedCode.Contains("Text = \"Existing handler body\";") && savedCode.Contains("Text = \"New handler body\";"), "Existing and edited handler implementations survive Save");
         assert(File.ReadAllText(Path.ChangeExtension(path, ".resx")) == resources, "Existing resources remain byte-for-byte unchanged");
@@ -155,21 +177,55 @@ internal static class IntegratedFormDesignerRegression
         secondSession.Undo();
         secondSession.Add("Button", secondSession.Document.Form, new Point(24, 24));
         string renamed = Path.Combine(directory, "RenamedForm.cs");
+        secondTab.ShowCode();
+        var secondCodePage = main.EditorTabControl.SelectedTab;
         var renames = Utils.Explorer.ExplorerActions.GetFormFileRenames(second, renamed, false);
         Utils.Explorer.ExplorerActions.MoveFormFiles(renames);
         foreach (var rename in renames) main.TabsFeature.UpdateOpenTabsAfterExplorerRename(rename.Source, rename.Target, false);
         assert(secondTab.CodePath == renamed && secondTab.DesignDirty && File.Exists(Path.ChangeExtension(renamed, ".resx")) && !File.Exists(second),
             "Renaming a form moves its companion files and preserves pending designer edits");
+        assert(secondCodePage.ToolTipText == renamed && GlobalVariables.openedFilePath == renamed && secondCodePage.Text.Trim() == "RenamedForm.cs",
+            "Renaming a form updates its separate source tab and active file path");
         assert(secondTab.Save(false), "A renamed form saves to its new source paths");
         main.EditorTabControl.SelectedTab = page;
         assert(main.FormDesignerFeature.Get(page) == tab && tab.IsDesignView, "Switching tabs restores the previous form view");
         main.EditorTabControl.SelectedTab = secondPage;
         TabControllerManage.CloseTabEvent(main.EditorTabControl, SelectedEditor.GetSelectedEditor());
         assert(secondPage.IsDisposed && main.FormDesignerFeature.Get(secondPage) == null, "Closing a form tab disposes its designer and registry entry");
+        main.EditorTabControl.SelectedTab = secondCodePage;
+        TabControllerManage.CloseTabEvent(main.EditorTabControl, SelectedEditor.GetSelectedEditor());
         main.EditorTabControl.SelectedTab = page;
         tab.ShowCode();
+        sourceEditor.Document.Insert(sourceEditor.Document.TextLength, "\r\n// Keep unsaved source while closing its view");
         TabControllerManage.CloseTabEvent(main.EditorTabControl, SelectedEditor.GetSelectedEditor());
-        assert(page.IsDisposed, "Code-view form tabs close normally");
+        assert(codePage.IsDisposed && !page.IsDisposed && tab.CodeDirty && tab.CodePage == null, "Closing the source tab keeps unsaved code in the designer document");
+        tab.ShowCode(); codePage = main.EditorTabControl.SelectedTab; sourceEditor = SelectedEditor.GetSelectedEditor();
+        assert(sourceEditor.Text.Contains("// Keep unsaved source while closing its view"), "Reopening the source tab restores pending edits");
+        FileManage.SaveToFileDialog();
+        main.EditorTabControl.SelectedTab = page;
+        TabControllerManage.CloseTabEvent(main.EditorTabControl, SelectedEditor.GetSelectedEditor());
+        main.EditorTabControl.SelectedTab = codePage;
+        assert(page.IsDisposed && !codePage.IsDisposed && main.FormDesignerFeature.Get(codePage) == null && sourceEditor.Visible,
+            "Closing the designer leaves the standalone source tab usable");
+        sourceEditor.Document.Insert(sourceEditor.Document.TextLength, "\r\n// Preserved when reopening the designer");
+        main.FormDesignerFeature.Open();
+        var reopened = main.FormDesignerFeature.Get(main.EditorTabControl.SelectedTab);
+        assert(reopened != null && reopened.Page != codePage && reopened.CodePage == codePage && reopened.CodeDirty && reopened.CodeEditor.Text == sourceEditor.Text,
+            "Reopening Design from a standalone source tab preserves unsaved code and separate views");
+        assert(reopened.Save(false), "Reopened linked views save successfully");
+        Capture(main, "form-designer-separate-code-tabs.png");
+        reopened.ShowCode();
+        string pendingSource = reopened.CodeEditor.Text;
+        FileManage.NewFile(SelectedEditor.GetSelectedEditor(), main.outputRBT);
+        assert(reopened.CodePage == null && reopened.CodeEditor.Text == pendingSource && SelectedEditor.GetSelectedEditor().Text == "",
+            "Replacing a source view with New File leaves the designer's code intact");
+        reopened.ShowCode();
+        string notesPath = Path.Combine(directory, "notes.txt"); File.WriteAllText(notesPath, "A different document");
+        FileManage.OpenFileDragDrop(SelectedEditor.GetSelectedEditor(), notesPath);
+        assert(reopened.CodePage == null && reopened.CodeEditor.Text == pendingSource && SelectedEditor.GetSelectedEditor().Text == "A different document",
+            "Opening a different file in the source tab detaches it before replacing its text");
+        reopened.ShowDesign(); reopened.ShowCode();
+        Capture(main, "form-designer-separate-code-view.png");
     }
     private static void Compile(string code, string designer, Action<bool, string> assert)
     {

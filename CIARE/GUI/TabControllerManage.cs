@@ -15,6 +15,7 @@ namespace CIARE.GUI
     internal sealed class EditorTabPage : TabPage
     {
         internal string InitialText;
+        internal bool FormCodeView;
 
         internal EditorTabPage(string caption) : base(caption) { }
     }
@@ -276,8 +277,13 @@ namespace CIARE.GUI
 
             if (GlobalVariables.OStartUp)
             {
-                StoreDeleteTabs(pathFile, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, pathFile);
-                DeleteFileSize(tabControl, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index.ToString());
+                var remainingView = tabControl.TabPages.Cast<TabPage>().FirstOrDefault(p => string.Equals(p.ToolTipText, pathFile, StringComparison.OrdinalIgnoreCase));
+                if (remainingView == null)
+                {
+                    StoreDeleteTabs(pathFile, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePathAll, 0, true, pathFile);
+                    DeleteFileSize(tabControl, pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, index.ToString());
+                }
+                else StoreFileMD5(pathFile, GlobalVariables.userProfileDirectory, GlobalVariables.tabsFilePath, tabControl.TabPages.IndexOf(remainingView));
             }
 
             GlobalVariables.noClear = false;

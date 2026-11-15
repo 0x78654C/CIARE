@@ -297,6 +297,9 @@ MessageBoxIcon.Warning);
                 var designedForm = MainForm.Instance.FormDesignerFeature.Get(tab);
                 if (designedForm != null && (checkAll || isSelectedTab))
                 {
+                    // Closing one code view leaves its buffer in the designer's document.
+                    // The owning designer handles the single save prompt when closing all views.
+                    if (designedForm.CodePage == tab) continue;
                     if (!designedForm.ConfirmClose()) { GlobalVariables.noClear = true; return; }
                     continue;
                 }
@@ -372,6 +375,7 @@ MessageBoxIcon.Warning);
                 GlobalVariables.noFileSelected = false;
                 return;
             }
+            MainForm.Instance.FormDesignerFeature.Detach(MainForm.Instance.EditorTabControl.SelectedTab);
             textEditor.Text = openedData;
             textEditor.Refresh();
             FileInfo fileInfo = new FileInfo(GlobalVariables.openedFilePath);
@@ -406,6 +410,7 @@ MessageBoxIcon.Warning);
             using (var reader = new StreamReader(filePath))
             {
                 MainForm.Instance.EditorTabControl.SelectTab(index);
+                MainForm.Instance.FormDesignerFeature.Detach(MainForm.Instance.EditorTabControl.SelectedTab);
                 textEditor.Text = reader.ReadToEnd();
                 var previousTabPath = MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText;
                 MainForm.Instance.Text = $"{fileInfo.Name} : {filePath} - CIARE {GlobalVariables.versionName}";
@@ -529,6 +534,7 @@ MessageBoxIcon.Warning);
                 return;
             Control ctrl = MainForm.Instance.EditorTabControl.Controls[index].Controls[0];
             textEditor = ctrl as TextEditorControl;
+            MainForm.Instance.FormDesignerFeature.Detach(MainForm.Instance.EditorTabControl.SelectedTab);
             textEditor.Text = "";
             textEditor.Refresh();
             logOutput.Clear();
@@ -539,7 +545,6 @@ MessageBoxIcon.Warning);
             MainForm.Instance.Text = $"CIARE {GlobalVariables.versionName}";
             MainForm.Instance.EditorTabControl.SelectedTab.Text = $"New Page               ";
             MainForm.Instance.EditorTabControl.SelectedTab.ToolTipText = string.Empty;
-            MainForm.Instance.FormDesignerFeature.Detach(MainForm.Instance.EditorTabControl.SelectedTab);
             MainForm.Instance.markStartFileChk.Checked = false;
             if (GlobalVariables.OStartUp)
             {
