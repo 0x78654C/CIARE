@@ -130,7 +130,7 @@ internal static class FormDesignerRegression
             var node = DesignCatalog.Create(spec.Kind, everyControl.UniqueName(spec.Kind), new Point(8, 8));
             if (node.Kind == "TabPage") everyControl.Form.Children.First(n => n.Kind == "TabControl").Children.Add(node);
             else everyControl.Form.Children.Add(node);
-            if (node.Kind is "ComboBox" or "ListBox") node.Items = new[] { "Quotes \" and slash " + (char)92, "Unicode: café\r\nsecond line" };
+            if (DesignCatalog.HasItems(node.Kind)) node.Items = new[] { "Quotes \" and slash " + (char)92, "Unicode: café\r\nsecond line" };
             foreach (var evt in DesignCatalog.EventsFor(node.Kind)) node.Events[evt.Name] = "On" + evt.ArgumentType.Split('.').Last();
         }
         foreach (var evt in DesignCatalog.EventsFor("Form")) everyControl.Form.Events[evt.Name] = "On" + evt.ArgumentType.Split('.').Last();
@@ -139,6 +139,7 @@ internal static class FormDesignerRegression
         CompileAndRun(everyControl, DesignCodeGenerator.GenerateDesigner(everyControl), DesignCodeGenerator.GenerateCodeBehind(everyControl), assert, false);
         using (var allPreview = DesignCatalog.CreatePreview(everyControl))
             assert(allPreview.Controls.Count == DesignCatalog.Controls.Length - 1, "Every toolbox control can be previewed");
+        ExpandedToolboxChecks(assert);
         using (var projectDialog = new NewProject())
         {
             T Field<T>(string field) => (T)typeof(NewProject).GetField(field, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(projectDialog);
@@ -181,6 +182,48 @@ internal static class FormDesignerRegression
         }
         finally { GlobalVariables.darkColor = wasDark; }
     }
+    private static void ExpandedToolboxChecks(Action<bool, string> assert)
+    {
+        string[] kinds = { "MaskedTextBox", "CheckedListBox", "DomainUpDown", "MonthCalendar", "DataGridView", "HScrollBar", "VScrollBar", "Splitter" };
+        var document = new DesignDocument();
+        document.Form.Size = new Size(1000, 660);
+        for (int index = 0; index < kinds.Length; index++)
+        {
+            string kind = kinds[index];
+            var node = DesignCatalog.Create(kind, document.UniqueName(kind), new Point(24 + index % 3 * 320, 24 + index / 3 * 210));
+            if (DesignCatalog.HasItems(kind)) node.Items = new[] { "First option", "Café \"second\"" };
+            if (DesignCatalog.HasRange(kind)) { node.Minimum = 10; node.Maximum = 200; node.Value = 75; }
+            if (kind == "MaskedTextBox") node.Options["Mask"] = "000-00-0000";
+            if (kind == "CheckedListBox") node.Options["CheckOnClick"] = "True";
+            if (kind == "MonthCalendar") node.Options["ShowWeekNumbers"] = "True";
+            if (kind == "DataGridView") { node.Options["ReadOnly"] = "True"; node.Options["AllowUserToAddRows"] = "False"; }
+            node.Events[DesignCatalog.DefaultEvent(kind)] = node.Name + "_Changed";
+            document.Form.Children.Add(node);
+            var properties = new DesignPropertyView(node).GetProperties();
+            assert(DesignCatalog.EventsFor(kind).Any(e => e.Name == DesignCatalog.DefaultEvent(kind)) && properties.Count > 20,
+                kind + " exposes native properties and a valid default event");
+        }
+        var source = new FormSource(DesignCodeGenerator.GenerateDesigner(document));
+        assert(source.Document.Form.Children.Count == kinds.Length && source.Document.AllNodes.All(n => n.SourceType.Length == 0),
+            "All eight added controls reopen as native designer controls");
+        var edited = DesignDocument.Parse(source.Document.Serialize());
+        foreach (var node in edited.Form.Children.Where(n => DesignCatalog.HasItems(n.Kind))) node.Items = new[] { "Updated", "Saved item" };
+        var reopened = new FormSource(source.Update(edited)).Document;
+        assert(reopened.Form.Children.Where(n => DesignCatalog.HasItems(n.Kind)).All(n => n.Items.SequenceEqual(new[] { "Updated", "Saved item" })),
+            "Checked lists and domain-up-down items survive editing and reopening source");
+        assert(reopened.Form.Children.Where(n => DesignCatalog.HasRange(n.Kind)).All(n => n.Minimum == 10 && n.Maximum == 200 && n.Value == 75),
+            "Scrollbar ranges survive source round trips");
+        using var preview = DesignCatalog.CreatePreview(reopened);
+        assert(preview.Controls.OfType<MaskedTextBox>().Single().Mask == "000-00-0000", "Masked input configuration is applied in preview");
+        assert(preview.Controls.OfType<CheckedListBox>().Single().CheckOnClick && preview.Controls.OfType<DomainUpDown>().Single().Items.Count == 2,
+            "List-specific properties and items are applied to native controls");
+        assert(preview.Controls.OfType<DataGridView>().Single().ColumnCount == 3 && preview.Controls.OfType<DataGridView>().Single().ReadOnly,
+            "The data grid previews configurable columns and behavior");
+        assert(preview.Controls.OfType<MonthCalendar>().Single().ShowWeekNumbers, "Calendar options survive source round trips");
+        preview.ShowInTaskbar = false; preview.Opacity = 0; preview.Show(); Application.DoEvents();
+        Capture(preview, "form-designer-more-controls.png"); preview.Close();
+    }
+
     private static void SelectionWithoutDragChecks(FormDesignerControl window, Action<bool, string> assert)
     {
         var document = new DesignDocument();

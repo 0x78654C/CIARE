@@ -20,22 +20,32 @@ internal static class DesignCatalog
         new("ListBox", "Common Controls", 160, 112, "≡"), new("DateTimePicker", "Common Controls", 216, 28, "▦"),
         new("NumericUpDown", "Common Controls", 120, 28, "↕"), new("PictureBox", "Common Controls", 128, 96, "▧"),
         new("RichTextBox", "Common Controls", 200, 112, "¶"), new("LinkLabel", "Common Controls", 120, 24, "↗"),
+        new("MaskedTextBox", "Common Controls", 160, 28, "##"), new("CheckedListBox", "Common Controls", 176, 112, "☑"),
+        new("DomainUpDown", "Common Controls", 160, 28, "↕"), new("MonthCalendar", "Common Controls", 230, 176, "▦"),
         new("Panel", "Containers", 256, 176, "□"), new("GroupBox", "Containers", 256, 176, "▤"),
         new("TabControl", "Containers", 320, 220, "▤"), new("TabPage", "Containers", 300, 190, "□"),
         new("FlowLayoutPanel", "Containers", 256, 176, "⇢"), new("TableLayoutPanel", "Containers", 256, 176, "▦"),
+        new("Splitter", "Containers", 6, 176, "║"),
+        new("DataGridView", "Data", 320, 184, "▦"),
         new("ProgressBar", "Display", 200, 24, "▬"), new("TrackBar", "Display", 200, 48, "↔"),
-        new("TreeView", "Display", 176, 160, "⊞"), new("ListView", "Display", 224, 160, "▥")
+        new("TreeView", "Display", 176, 160, "⊞"), new("ListView", "Display", 224, 160, "▥"),
+        new("HScrollBar", "Display", 200, 20, "↔"), new("VScrollBar", "Display", 20, 160, "↕")
     };
+    internal static bool HasItems(string kind) => kind is "ComboBox" or "ListBox" or "CheckedListBox" or "DomainUpDown";
+    internal static bool HasRange(string kind) => kind is "NumericUpDown" or "ProgressBar" or "TrackBar" or "HScrollBar" or "VScrollBar";
     internal static DesignNode Create(string kind, string name, Point location)
     {
         var spec = Controls.First(c => c.Kind == kind);
-        return new DesignNode
+        var node = new DesignNode
         {
-            Kind = kind, Name = name, Text = kind is "TextBox" or "RichTextBox" or "ComboBox" ? "" : name,
+            Kind = kind, Name = name, Text = kind is "TextBox" or "RichTextBox" or "ComboBox" or "MaskedTextBox" or "DomainUpDown" ? "" : name,
             Location = location, Width = spec.Width, Height = spec.Height,
-            BackColor = kind is "TextBox" or "RichTextBox" or "ComboBox" or "ListBox" or "TreeView" or "ListView" or "NumericUpDown"
+            BackColor = kind is "TextBox" or "RichTextBox" or "ComboBox" or "ListBox" or "TreeView" or "ListView" or "NumericUpDown" or "MaskedTextBox" or "CheckedListBox" or "DomainUpDown" or "MonthCalendar"
                 ? SystemColors.Window : SystemColors.Control
         };
+        if (kind == "Splitter") node.Dock = DockStyle.Left;
+        if (kind == "DataGridView") node.Options["ColumnCount"] = "3";
+        return node;
     }
     internal static Type ControlType(string kind) => typeof(Control).Assembly.GetType("System.Windows.Forms." + kind) ?? typeof(Control);
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, EventSpec[]> EventCache = new();
@@ -48,9 +58,11 @@ internal static class DesignCatalog
             .OrderBy(e => e.Name).ToArray());
     internal static string DefaultEvent(string kind) => kind switch
     {
-        "Form" => "Load", "TextBox" or "RichTextBox" => "TextChanged", "CheckBox" or "RadioButton" => "CheckedChanged",
+        "Form" => "Load", "TextBox" or "RichTextBox" or "MaskedTextBox" => "TextChanged", "CheckBox" or "RadioButton" => "CheckedChanged",
         "ComboBox" or "ListBox" or "ListView" => "SelectedIndexChanged", "TreeView" => "AfterSelect", "LinkLabel" => "LinkClicked",
-        "NumericUpDown" or "DateTimePicker" or "TrackBar" => "ValueChanged", _ => "Click"
+        "NumericUpDown" or "DateTimePicker" or "TrackBar" => "ValueChanged", "CheckedListBox" => "ItemCheck",
+        "DomainUpDown" => "SelectedItemChanged", "MonthCalendar" => "DateChanged", "DataGridView" => "CellContentClick",
+        "HScrollBar" or "VScrollBar" => "Scroll", "Splitter" => "SplitterMoved", _ => "Click"
     };
 
     internal static Control CreateControl(DesignNode node, bool designing)
@@ -62,6 +74,11 @@ internal static class DesignCatalog
             "ComboBox" => new ComboBox(), "ListBox" => new ListBox { IntegralHeight = false }, "DateTimePicker" => new DateTimePicker { Value = node.Date },
             "NumericUpDown" => new NumericUpDown { Minimum = node.Minimum, Maximum = node.Maximum, Value = node.Value },
             "PictureBox" => new PictureBox { BorderStyle = BorderStyle.FixedSingle }, "RichTextBox" => new RichTextBox(),
+            "MaskedTextBox" => new MaskedTextBox(), "CheckedListBox" => new CheckedListBox { IntegralHeight = false },
+            "DomainUpDown" => new DomainUpDown(), "MonthCalendar" => new MonthCalendar(), "DataGridView" => new DataGridView(),
+            "Splitter" => new Splitter(),
+            "HScrollBar" => new HScrollBar { Minimum = node.Minimum, Maximum = node.Maximum, Value = node.Value },
+            "VScrollBar" => new VScrollBar { Minimum = node.Minimum, Maximum = node.Maximum, Value = node.Value },
             "LinkLabel" => new LinkLabel(), "Panel" => new Panel(), "GroupBox" => new GroupBox(),
             "TabControl" => new TabControl(), "TabPage" => new TabPage(),
             "FlowLayoutPanel" => new FlowLayoutPanel(), "TableLayoutPanel" => new TableLayoutPanel(),
@@ -95,6 +112,7 @@ internal static class DesignCatalog
             }
             if (control is ComboBox combo) combo.Items.AddRange(node.Items);
             if (control is ListBox list) list.Items.AddRange(node.Items);
+            if (control is DomainUpDown domain) domain.Items.AddRange(node.Items);
             DesignOptions.Apply(node, control);
             foreach (var child in node.Children) control.Controls.Add(CreateControl(child, designing));
             control.ResumeLayout(true);

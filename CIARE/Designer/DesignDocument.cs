@@ -171,12 +171,12 @@ internal sealed class DesignPropertyView : CustomTypeDescriptor
         {
             "Namespace" => _node.Kind == "Form",
             "Visible" => _node.Kind != "Form",
-            "Text" => _node.Kind is "Form" or "Button" or "Label" or "TextBox" or "CheckBox" or "RadioButton" or "ComboBox" or "GroupBox" or "RichTextBox" or "LinkLabel",
+            "Text" => _node.Kind is "Form" or "Button" or "Label" or "TextBox" or "CheckBox" or "RadioButton" or "ComboBox" or "GroupBox" or "RichTextBox" or "LinkLabel" or "MaskedTextBox" or "DomainUpDown",
             "Location" or "Anchor" or "Dock" or "TabIndex" => _node.Kind != "Form",
             "Checked" => _node.Kind is "CheckBox" or "RadioButton",
             "Multiline" => _node.Kind == "TextBox",
-            "Items" => _node.Kind is "ComboBox" or "ListBox",
-            "Minimum" or "Maximum" or "Value" => _node.Kind is "NumericUpDown" or "ProgressBar" or "TrackBar",
+            "Items" => DesignCatalog.HasItems(_node.Kind),
+            "Minimum" or "Maximum" or "Value" => DesignCatalog.HasRange(_node.Kind),
             "Date" => _node.Kind == "DateTimePicker",
             _ => true
         });

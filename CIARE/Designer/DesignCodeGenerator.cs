@@ -53,13 +53,13 @@ internal static class DesignCodeGenerator
             if (!node.Visible && node != root) Set("Visible", "false");
             if (node.Kind is "CheckBox" or "RadioButton") Set("Checked", node.Checked ? "true" : "false");
             if (node.Kind == "TextBox") Set("Multiline", node.Multiline ? "true" : "false");
-            if (node.Kind == "ListBox") Set("IntegralHeight", "false");
+            if (node.Kind is "ListBox" or "CheckedListBox") Set("IntegralHeight", "false");
             if (node.Kind == "PictureBox") Set("BorderStyle", "global::System.Windows.Forms.BorderStyle.FixedSingle");
-            if (node.Kind is "NumericUpDown" or "ProgressBar" or "TrackBar")
+            if (DesignCatalog.HasRange(node.Kind))
             {
                 Set("Maximum", node.Maximum.ToString()); Set("Minimum", node.Minimum.ToString()); Set("Value", node.Value.ToString());
             }
-            if (node.Kind is "ComboBox" or "ListBox" && node.Items.Length > 0)
+            if (DesignCatalog.HasItems(node.Kind) && node.Items.Length > 0)
                 code.AppendLine($"            {target}.Items.AddRange(new object[] {{ {string.Join(", ", node.Items.Select(Literal))} }});");
             foreach (var option in DesignOptions.Expressions(node)) Set(option.Key, option.Value);
             foreach (var binding in node.Events.OrderBy(e => e.Key)) code.AppendLine($"            {target}.{binding.Key} += this.{binding.Value};");

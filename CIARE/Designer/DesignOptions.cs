@@ -27,6 +27,12 @@ internal static class DesignOptions
         "DecimalPlaces", "Increment", "ThousandsSeparator", "Hexadecimal", "TickFrequency", "LargeChange", "SmallChange", "TickStyle", "Orientation",
         "SizeMode", "Style", "MarqueeAnimationSpeed", "AutoScroll", "FlowDirection", "WrapContents", "RowCount", "ColumnCount",
         "Format", "CustomFormat", "ShowCheckBox", "ShowUpDown", "DetectUrls", "ZoomFactor",
+        "Mask", "PromptChar", "AsciiOnly", "BeepOnError", "HidePromptOnLeave", "RejectInputOnFirstFailure", "ResetOnPrompt", "ResetOnSpace", "SkipLiterals", "CutCopyMaskFormat", "TextMaskFormat", "InsertKeyMode",
+        "CheckOnClick", "ThreeDCheckBoxes", "Wrap", "InterceptArrowKeys", "UpDownAlign",
+        "ShowToday", "ShowTodayCircle", "ShowWeekNumbers", "MaxSelectionCount", "FirstDayOfWeek", "CalendarDimensions",
+        "AllowUserToAddRows", "AllowUserToDeleteRows", "AllowUserToOrderColumns", "AllowUserToResizeColumns", "AllowUserToResizeRows", "AutoGenerateColumns",
+        "AutoSizeColumnsMode", "AutoSizeRowsMode", "ColumnHeadersVisible", "RowHeadersVisible", "CellBorderStyle", "ColumnHeadersBorderStyle", "RowHeadersBorderStyle", "EditMode",
+        "MinSize", "MinExtra",
         "FormBorderStyle", "StartPosition", "ControlBox", "MaximizeBox", "MinimizeBox", "ShowIcon", "ShowInTaskbar", "KeyPreview", "TopMost"
     };
     private sealed record Option(PropertyDescriptor Property, object Default);
@@ -35,7 +41,7 @@ internal static class DesignOptions
     {
         using var control = (Control)Activator.CreateInstance(DesignCatalog.ControlType(key));
         return TypeDescriptor.GetProperties(control).Cast<PropertyDescriptor>()
-            .Where(p => Names.Contains(p.Name) && !p.IsReadOnly && p.IsBrowsable)
+            .Where(p => Names.Contains(p.Name) && !p.IsReadOnly && (p.IsBrowsable || key == "DataGridView" && p.Name == "ColumnCount"))
             .Where(p => p.PropertyType.IsEnum || p.PropertyType == typeof(string) || p.PropertyType == typeof(bool) ||
                 p.PropertyType == typeof(int) || p.PropertyType == typeof(decimal) || p.PropertyType == typeof(float) ||
                 p.PropertyType == typeof(char) || p.PropertyType == typeof(Size) || p.PropertyType == typeof(Padding) || p.PropertyType == typeof(Cursor))
@@ -44,7 +50,7 @@ internal static class DesignOptions
     private static object DefaultValue(string kind, PropertyDescriptor property, Control control) => property.Name switch
     {
         "AutoSize" => false,
-        "IntegralHeight" when kind == "ListBox" => false,
+        "IntegralHeight" when kind is "ListBox" or "CheckedListBox" => false,
         "BorderStyle" when kind == "PictureBox" => BorderStyle.FixedSingle,
         "StartPosition" when kind == "Form" => FormStartPosition.CenterParent,
         _ => property.GetValue(control)
@@ -65,7 +71,7 @@ internal static class DesignOptions
             if (type.IsEnum && !Enum.IsDefined(type, value)) throw new InvalidDataException("Choose a valid " + entry.Key + " value.");
             if (value is int number)
             {
-                int minimum = entry.Key is "MaxDropDownItems" or "DropDownWidth" ? 1 : 0;
+                int minimum = entry.Key is "MaxDropDownItems" or "DropDownWidth" or "MaxSelectionCount" ? 1 : 0;
                 int maximum = entry.Key switch { "MaxLength" => int.MaxValue, "MaxDropDownItems" => 100, "DecimalPlaces" => 99, "RowCount" or "ColumnCount" => 1000, _ => 1000000 };
                 if (number < minimum || number > maximum) throw new InvalidDataException($"{entry.Key} must be between {minimum} and {maximum}.");
             }
@@ -143,7 +149,8 @@ internal static class DesignOptions
     private sealed class OptionDescriptor : PropertyDescriptor
     {
         private readonly Option _option;
-        internal OptionDescriptor(Option option) : base(option.Property.Name, option.Property.Attributes.Cast<Attribute>().ToArray()) { _option = option; }
+        internal OptionDescriptor(Option option) : base(option.Property.Name, option.Property.Attributes.Cast<Attribute>()
+            .Where(a => a is not BrowsableAttribute).Append(BrowsableAttribute.Yes).ToArray()) { _option = option; }
         public override Type ComponentType => typeof(DesignNode);
         public override Type PropertyType => _option.Property.PropertyType;
         public override bool IsReadOnly => false;

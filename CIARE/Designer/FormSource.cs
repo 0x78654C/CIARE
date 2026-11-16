@@ -102,7 +102,7 @@ internal sealed class FormSource
                     }
             }
             else if (methodPath.EndsWith(".Items", StringComparison.Ordinal) && method.Name.Identifier.ValueText == "AddRange" &&
-                _members.TryGetValue(methodPath[..^6], out var owner) && owner.Kind is "ComboBox" or "ListBox")
+                _members.TryGetValue(methodPath[..^6], out var owner) && DesignCatalog.HasItems(owner.Kind))
             {
                 owner.Items = call.ArgumentList.Arguments.SelectMany(a => ArrayValues(a.Expression))
                     .OfType<LiteralExpressionSyntax>().Where(l => l.IsKind(SyntaxKind.StringLiteralExpression)).Select(l => l.Token.ValueText).ToArray();
@@ -277,7 +277,7 @@ internal sealed class FormSource
             if (old == null) additions.Add($"this.{node.Name} = new global::System.Windows.Forms.{node.Kind}();");
             foreach (var property in props)
                 if (!oldProps.TryGetValue(property.Key, out string prior) || prior != property.Value) Set(node, property.Key, property.Value);
-            if (node.Kind is "ComboBox" or "ListBox" && (old == null || !node.Items.SequenceEqual(old.Items)))
+            if (DesignCatalog.HasItems(node.Kind) && (old == null || !node.Items.SequenceEqual(old.Items)))
             {
                 string owner = node.SourceMember.Length == 0 ? node.Name : node.SourceMember;
                 foreach (var statement in statements.OfType<ExpressionStatementSyntax>())
@@ -348,7 +348,7 @@ internal sealed class FormSource
         if (n.Kind is "CheckBox" or "RadioButton") props["Checked"] = n.Checked ? "true" : "false";
         if (n.Kind == "TextBox") props["Multiline"] = n.Multiline ? "true" : "false";
         if (n.Kind == "DateTimePicker") props["Value"] = $"new global::System.DateTime({n.Date.Ticks}L)";
-        if (n.Kind is "NumericUpDown" or "TrackBar" or "ProgressBar")
+        if (DesignCatalog.HasRange(n.Kind))
         { props["Maximum"] = n.Maximum.ToString(CultureInfo.InvariantCulture); props["Minimum"] = n.Minimum.ToString(CultureInfo.InvariantCulture); props["Value"] = n.Value.ToString(CultureInfo.InvariantCulture); }
         foreach (var option in DesignOptions.Expressions(n, true)) props[option.Key] = option.Value;
         return props;
