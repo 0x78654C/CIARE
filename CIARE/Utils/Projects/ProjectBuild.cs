@@ -86,6 +86,11 @@ internal sealed class ProjectBuild
                 (IsCSharpFilePath(path) && ProjectContainsSourceFile(projectPath, path));
             if (!belongsToProject) continue;
             var formDesigner = _mainForm.FormDesignerFeature.Get(page);
+            if (_mainForm.WpfDesignerFeature.Get(page) is { } wpfDesigner)
+            {
+                if (!wpfDesigner.Save(false)) throw new InvalidOperationException("The WPF document must be saved before building the project.");
+                continue;
+            }
             if (formDesigner != null)
             {
                 if (!formDesigner.Save(false)) throw new InvalidOperationException("The form must be saved before building the project.");

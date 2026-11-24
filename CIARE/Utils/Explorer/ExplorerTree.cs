@@ -191,6 +191,8 @@ namespace CIARE.Utils.Explorer
                 ToolTipText = file.FullName
             };
             _mainForm.StartupProjectFeature.ApplyStartupProjectNodeStyle(node);
+            if (file.Extension.Equals(".xaml", StringComparison.OrdinalIgnoreCase) && File.Exists(file.FullName + ".cs"))
+                node.Nodes.Add(CreateFileNode(new FileInfo(file.FullName + ".cs")));
             if (file.Extension.Equals(".cs", StringComparison.OrdinalIgnoreCase) && !file.Name.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase) &&
                 File.Exists(Path.ChangeExtension(file.FullName, ".Designer.cs")))
             {
@@ -336,6 +338,7 @@ namespace CIARE.Utils.Explorer
                 {
                     if (ShouldHideExplorerItem(file.Attributes))
                         continue;
+                    if (file.Name.EndsWith(".xaml.cs", StringComparison.OrdinalIgnoreCase) && File.Exists(file.FullName[..^3])) continue;
                     string owner = file.Name.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase)
                         ? file.FullName[..^12] + ".cs" : file.Extension is ".resx" or ".ciareform" ? Path.ChangeExtension(file.FullName, ".cs") : null;
                     if (owner != null && File.Exists(owner) && File.Exists(Path.ChangeExtension(owner, ".Designer.cs"))) continue;

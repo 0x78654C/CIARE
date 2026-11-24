@@ -223,6 +223,7 @@ namespace CIARE.Utils.Editor
 
             // Trigger real-time type checking after a short debounce.
             _mainForm.FormDesignerFeature.Get(_mainForm.EditorTabControl.SelectedTab)?.RefreshCaption();
+            _mainForm.WpfDesignerFeature.Get(_mainForm.EditorTabControl.SelectedTab)?.RefreshCaption();
             ScheduleCurrentTypeCheck(editor, code);
         }
 

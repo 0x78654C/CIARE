@@ -295,6 +295,13 @@ MessageBoxIcon.Warning);
                 bool isSelectedTab = countTabs - 1 == selectedIndex;
 
                 var designedForm = MainForm.Instance.FormDesignerFeature.Get(tab);
+                var wpfDocument = MainForm.Instance.WpfDesignerFeature.Get(tab);
+                if (wpfDocument != null && (checkAll || isSelectedTab))
+                {
+                    if (wpfDocument.XamlPage == tab) continue;
+                    if (!wpfDocument.ConfirmClose()) { GlobalVariables.noClear = true; return; }
+                    continue;
+                }
                 if (designedForm != null && (checkAll || isSelectedTab))
                 {
                     // Closing one code view leaves its buffer in the designer's document.

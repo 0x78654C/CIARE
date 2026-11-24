@@ -16,6 +16,7 @@ namespace CIARE.GUI
     {
         internal string InitialText;
         internal bool FormCodeView;
+        internal bool WpfXamlView;
 
         internal EditorTabPage(string caption) : base(caption) { }
     }

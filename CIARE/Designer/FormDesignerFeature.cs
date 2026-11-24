@@ -30,7 +30,11 @@ internal sealed class FormDesignerFeature(MainForm main)
         view.Click += (_, _) => Open();
         main.viewToolStripMenuItem.DropDownItems.Add(view);
         var code = new ToolStripMenuItem("View Code") { Name = "formCodeMenuItem", ShortcutKeys = Keys.F7 };
-        code.Click += (_, _) => Get(main.EditorTabControl.SelectedTab)?.ShowCode();
+        code.Click += (_, _) =>
+        {
+            if (main.WpfDesignerFeature.Get(main.EditorTabControl.SelectedTab) is { } wpf) wpf.TryShowCode();
+            else Get(main.EditorTabControl.SelectedTab)?.ShowCode();
+        };
         main.viewToolStripMenuItem.DropDownItems.Add(code);
         main.EditorTabControl.SelectedIndexChanged += (_, _) => Attach(main.EditorTabControl.SelectedTab, false);
         main.Disposed += (_, _) => { foreach (var tab in _tabs.Values.ToArray()) tab.Dispose(); _tabs.Clear(); };
@@ -47,7 +51,8 @@ internal sealed class FormDesignerFeature(MainForm main)
             Detach(page);
         }
         if (string.IsNullOrWhiteSpace(path) || !path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ||
-            path.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase) || !File.Exists(FormSource.DesignerPath(path))) return;
+            path.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase) || !File.Exists(FormSource.DesignerPath(path)))
+        { main.WpfDesignerFeature.Attach(page, showDesign); return; }
         string text = page.Controls.OfType<TextEditorControl>().First().Text;
         if (!text.Contains("InitializeComponent", StringComparison.Ordinal)) return;
         var tab = new FormDesignTab(main, page, path); _tabs.Add(page, tab);
@@ -56,6 +61,7 @@ internal sealed class FormDesignerFeature(MainForm main)
     }
     internal void Detach(TabPage page)
     {
+        main.WpfDesignerFeature.Detach(page);
         if (_tabs.Remove(page, out var tab)) tab.Dispose();
         else Get(page)?.DetachCodePage();
         if (page is EditorTabPage editorPage) editorPage.FormCodeView = false;
@@ -138,9 +144,10 @@ internal sealed class FormDesignerFeature(MainForm main)
     }
     internal bool TrySaveActive(bool saveAs = false)
     {
+        if (main.WpfDesignerFeature.TrySaveActive(saveAs)) return true;
         var tab = Get(main.EditorTabControl.SelectedTab);
         if (tab == null) return false;
         tab.Save(saveAs); return true;
     }
-    internal void ApplyTheme() { foreach (var tab in _tabs.Values) tab.ApplyTheme(); }
+    internal void ApplyTheme() { foreach (var tab in _tabs.Values) tab.ApplyTheme(); main.WpfDesignerFeature.ApplyTheme(); }
 }

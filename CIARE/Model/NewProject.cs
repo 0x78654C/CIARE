@@ -287,6 +287,8 @@ namespace CIARE
 
         private void UpdateTemplateSelection()
         {
+            _nativeAotCheckBox.Enabled = !SelectedTemplate.UsesWpfDesigner;
+            if (SelectedTemplate.UsesWpfDesigner) _nativeAotCheckBox.Checked = false;
             if (SelectedTemplate.RequiresWindowsTargetFramework &&
                 !_targetFrameworkCombo.Text.EndsWith("-windows", StringComparison.OrdinalIgnoreCase))
             {
@@ -426,6 +428,12 @@ namespace CIARE
                 layout.Form.Children[0].Width = 240;
                 Designer.FormDesignerFeature.CreateFiles(Path.Combine(projectDirectory, "MainForm.cs"), layout);
             }
+            if (SelectedTemplate.UsesWpfDesigner)
+            {
+                var document = Designer.Wpf.WpfDocument.Create(rootNamespace + ".MainWindow", projectName);
+                document.Add("TextBlock", document.Root, 24, 24).SetAttributeValue("Text", "Hello, WPF!");
+                Designer.Wpf.WpfDesignerFeature.CreateFiles(Path.Combine(projectDirectory, "MainWindow.xaml"), document);
+            }
 
             if (addToExistingSolution)
                 AddProjectToSolution(solutionPath, projectName, projectPath);
@@ -441,7 +449,8 @@ namespace CIARE
                 WorkspacePath = addToExistingSolution || createNewSolution ? solutionDirectory : projectDirectory,
                 ProjectFilePath = projectPath,
                 SolutionFilePath = solutionPath,
-                StarterFilePath = SelectedTemplate.UsesFormDesigner ? Path.Combine(projectDirectory, "MainForm.cs") : starterPath
+                StarterFilePath = SelectedTemplate.UsesFormDesigner ? Path.Combine(projectDirectory, "MainForm.cs") :
+                    SelectedTemplate.UsesWpfDesigner ? Path.Combine(projectDirectory, "MainWindow.xaml") : starterPath
             };
         }
 
@@ -842,7 +851,7 @@ namespace CIARE
         }
 
         private static string BuildSdkProjectFile(string targetFramework, string outputType = null,
-            bool useWindowsForms = false, bool publishAot = false)
+            bool useWindowsForms = false, bool publishAot = false, bool useWpf = false)
         {
             var builder = new StringBuilder();
             builder.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><Project Sdk=\"Microsoft.NET.Sdk\">");
@@ -854,6 +863,8 @@ namespace CIARE
                 builder.AppendLine("    <PublishAot>true</PublishAot>");
             if (useWindowsForms)
                 builder.AppendLine("    <UseWindowsForms>true</UseWindowsForms>");
+            if (useWpf)
+                builder.AppendLine("    <UseWPF>true</UseWPF>");
             builder.AppendLine("    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>");
             builder.AppendLine("    <ImplicitUsings>enable</ImplicitUsings>");
             builder.AppendLine("    <Nullable>enable</Nullable>");
@@ -914,7 +925,15 @@ namespace CIARE
                         "        Application.SetCompatibleTextRenderingDefault(false);\r\n" +
                         "        Application.Run(new MainForm());\r\n" +
                         "    }\r\n" +
-                        "}\r\n")
+                        "}\r\n"),
+
+                new ProjectTemplate(
+                    "WPF App", "Program.cs", true,
+                    (targetFramework, publishAot) => BuildSdkProjectFile(targetFramework, "WinExe", useWpf: true),
+                    (projectName, rootNamespace) =>
+                        $"namespace {rootNamespace};\r\n\r\n" +
+                        "internal static class Program\r\n{\r\n    [global::System.STAThread]\r\n    private static void Main()\r\n    {\r\n" +
+                        "        var app = new global::System.Windows.Application();\r\n        app.Run(new MainWindow());\r\n    }\r\n}\r\n")
             };
 
             private readonly Func<string, bool, string> _projectFileFactory;
@@ -938,6 +957,7 @@ namespace CIARE
             public string StarterFileName { get; }
             public bool RequiresWindowsTargetFramework { get; }
             public bool UsesFormDesigner => Name == "Windows Forms App";
+            public bool UsesWpfDesigner => Name == "WPF App";
 
             public string BuildProjectFile(string targetFramework, bool publishAot) =>
                 _projectFileFactory(targetFramework, publishAot);

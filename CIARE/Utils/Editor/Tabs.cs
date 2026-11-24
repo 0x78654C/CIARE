@@ -48,6 +48,7 @@ namespace CIARE.Utils.Editor
                 tabPage.ToolTipText = renamedPath;
                 tabPage.Text = $"{Path.GetFileName(renamedPath)}               ";
                 _mainForm.FormDesignerFeature.Get(tabPage)?.UpdatePath(renamedPath);
+                _mainForm.WpfDesignerFeature.Get(tabPage)?.UpdatePath(renamedPath);
 
                 if (GlobalVariables.OStartUp)
                 {

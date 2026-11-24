@@ -131,6 +131,7 @@ internal static class StartupRegression
         elapsed.Stop();
         Assert(visibleEvents == 1, "Main form shown once");
         Assert(form.isLoaded, "Main form loaded");
+        if (scenario == "wpf-designer") { WpfDesignerRegression.Run(form, Assert); return; }
         if (scenario == "form-designer")
         {
             FormDesignerRegression.Run(form, Assert);

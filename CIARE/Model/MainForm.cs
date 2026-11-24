@@ -79,6 +79,7 @@ namespace CIARE
         internal global::CIARE.Utils.Window.WindowTheme WindowThemeFeature { get; }
         internal Utils.Window.MenuStatusLayout MenuStatusLayoutFeature { get; }
         internal Designer.FormDesignerFeature FormDesignerFeature { get; }
+        internal Designer.Wpf.WpfDesignerFeature WpfDesignerFeature { get; }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) =>
             EditorCommandsFeature.ProcessCmdKey(ref msg, keyData) || base.ProcessCmdKey(ref msg, keyData);
@@ -404,6 +405,7 @@ namespace CIARE
         public MainForm()
         {
             FormDesignerFeature = new Designer.FormDesignerFeature(this);
+            WpfDesignerFeature = new Designer.Wpf.WpfDesignerFeature(this);
             MenuStatusLayoutFeature = new Utils.Window.MenuStatusLayout(this);
             LiveShareEventsFeature = new global::CIARE.LiveShareManage.LiveShareEvents(this);
             CompletionParsingFeature = new global::CIARE.Utils.Completion.CompletionParsing(this);
@@ -446,6 +448,7 @@ namespace CIARE
             autoStartFile.OpenFilesOnLongOn(ReadArgs(s_args));
             InitializeComponent();
             FormDesignerFeature.Initialize();
+            WpfDesignerFeature.Initialize();
             LiveShareEventsFeature.Initialize();
             MenuStatusLayoutFeature.Initialize();
             ErrorsFeature.ConfigureErrorsListView();

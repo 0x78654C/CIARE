@@ -75,6 +75,14 @@
 - Standard WinForms designer declarations are read directly without running application code. Custom or unsupported controls use placeholder previews; their source is preserved. Rename existing classes and fields in source, then reopen Design view. Legacy `.ciareform` layouts can still be opened and converted to source files.
 - **Preview** (`F5` in Design view) opens interactive controls without executing handler code. Forms require a Windows-targeted project with `UseWindowsForms` enabled.
 
+### WPF Designer
+- Open a WPF `Window`, `Page`, or `UserControl` `.xaml` file to use Design view inside the editor tab. **View XAML** opens a synchronized source tab; **View Code / F7** opens its separate `.xaml.cs` code-behind. **View → WPF Designer / Ctrl+Alt+D** returns to Design view.
+- **File → New WPF Window…** creates XAML and code-behind together. The **WPF App** project template creates a Windows-targeted project with `UseWPF` enabled and opens `MainWindow.xaml` in Design view. File Explorer nests `.xaml.cs` under `.xaml`.
+- The searchable toolbox includes 31 native WPF controls and containers, including Grid, Canvas, StackPanel, WrapPanel, DockPanel, Border, GroupBox, ScrollViewer, tabs, lists, TreeView, and DataGrid. Drag controls onto containers, click to place, or double-click to add. Select nested controls in the Document Outline; move and resize with handles or arrow keys, with snapping, undo/redo, and copy/paste.
+- Theme-aware **Properties** and **Events** panels edit layout, appearance, behavior, attached Grid/Canvas/Dock properties, and native events. Double-click a control or event to create a typed C# handler while retaining existing implementations. Property elements and advanced markup remain editable in XAML.
+- **Ctrl+S** saves XAML and open code-behind edits. Returning to Design view reloads source changes; malformed XAML stays available in source view. Bindings, resources, custom markup, and comments are retained when editing the design.
+- **Preview / F5** shows interactive built-in WPF controls without running project code or event handlers. Bindings, resource expressions, styles/templates, images, and custom controls use simplified previews; edit these in XAML and run the project to see their final appearance. Live Share is available from the separate source tabs.
+
 ### Workspace & Files
 - **File Explorer** — built-in tree-view panel docked alongside the editor; open any folder to browse and open files directly
 - File Explorer state (open folder path and panel visibility) is saved to the Windows Registry and restored automatically on next launch

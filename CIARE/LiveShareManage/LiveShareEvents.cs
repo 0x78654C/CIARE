@@ -37,6 +37,8 @@ namespace CIARE.LiveShareManage
         internal bool CanShareEditor(ICSharpCode.TextEditor.TextEditorControl editor)
         {
             if (editor == null || editor.IsDisposed || editor.Parent is not TabPage page) return false;
+            var wpf = _mainForm.WpfDesignerFeature.Get(page);
+            if (wpf != null && wpf.Page == page && wpf.IsDesignView) return false;
             var form = _mainForm.FormDesignerFeature?.Get(page);
             return form == null || form.Page != page || !form.IsDesignView;
         }
